@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -75,7 +76,11 @@ class Panel515 : Form
     Slider speed, bright;
     ComboBox idleBox, dimBox, sleepBox;
     CheckBox startup;
-    Button saveBtn;
+    Button saveBtn, more;
+    bool moved;
+
+    [DllImport("user32.dll")] static extern bool ReleaseCapture();
+    [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, IntPtr l);
 
     public Panel515()
     {
@@ -89,6 +94,7 @@ class Panel515 : Form
         ClientSize = new Size(360, 10);
         Padding = new Padding(1);
         debounce.Tick += (s, e) => { debounce.Stop(); Preview(); };
+        MouseDown += Drag;
 
         int y = 12, x0 = 16, w = 328;
         var title = Lbl("G515 Lighting", x0, y, Theme.Dim);
@@ -112,7 +118,7 @@ class Panel515 : Form
             swatchCtl[i] = p;
             Controls.Add(p);
         }
-        var more = Btn("…", x0 + 6 * (sw + 6), y, sw, 26);
+        more = Btn("…", x0 + 6 * (sw + 6), y, sw, 26);
         more.Click += (s, e) => PickColor();
         swatchCtl[6] = more;
         y += 34;
@@ -161,6 +167,14 @@ class Panel515 : Form
         Sync();
     }
 
+    void Drag(object s, MouseEventArgs e)
+    {
+        if (e.Button != MouseButtons.Left) return;
+        ReleaseCapture();
+        SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero);
+        moved = true;
+    }
+
     protected override void OnPaint(PaintEventArgs e)
     {
         using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
@@ -169,6 +183,7 @@ class Panel515 : Form
     Label Lbl(string t, int x, int y, Color c)
     {
         var l = new Label { Text = t, Location = new Point(x, y), AutoSize = true, ForeColor = c };
+        l.MouseDown += Drag;
         Controls.Add(l);
         return l;
     }
@@ -233,6 +248,12 @@ class Panel515 : Form
         effectHead.Text = "Effect" + (unknownStored && !dirty ? ":  factory animation" : d != null ? ":  " + d.Name : "");
         for (int i = 0; i < effectBtns.Length; i++) Mark(effectBtns[i], !(unknownStored && !dirty) && G515.Effects[i].Id == cur.Effect);
         foreach (var c in swatchCtl) { c.Enabled = d != null && d.Color; c.Invalidate(); }
+        bool custom = !Swatches.Contains(cur.Color);
+        int lum = ((cur.Color >> 16 & 0xFF) * 299 + (cur.Color >> 8 & 0xFF) * 587 + (cur.Color & 0xFF) * 114) / 1000;
+        more.BackColor = custom ? Color.FromArgb(cur.Color | unchecked((int)0xFF000000)) : Theme.Btn;
+        more.ForeColor = custom && lum > 140 ? Color.Black : Theme.Text;
+        more.FlatAppearance.BorderColor = custom && more.Enabled ? Theme.Accent : Theme.Border;
+        more.FlatAppearance.BorderSize = custom && more.Enabled ? 2 : 1;
         speed.Enabled = d != null && d.Speed;
         if (speed.Enabled) speed.Value = (d.MaxP - cur.Period) * 100 / (d.MaxP - d.MinP);
         speedHead.Text = speed.Enabled ? "Speed  " + speed.Value + "%" : "Speed";
@@ -326,7 +347,7 @@ class Panel515 : Form
     public void ShowPanel()
     {
         var wa = Screen.FromPoint(Cursor.Position).WorkingArea;
-        Location = new Point(wa.Right - Width - 12, wa.Bottom - Height - 12);
+        if (!moved) Location = new Point(wa.Right - Width - 12, wa.Bottom - Height - 12);
         Show();
         Activate();
         dirty = false;
