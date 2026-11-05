@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.2-alpha] - 2026-11-05
+
+### Changed
+
+- No changes to the app. This release is for testing the update from 0.0.1-alpha.
+
 ## [0.0.1-alpha] - 2026-11-05
 
 ### Added
