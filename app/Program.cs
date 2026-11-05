@@ -8,6 +8,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
+[assembly: System.Reflection.AssemblyVersion("0.0.1")]
+[assembly: System.Reflection.AssemblyFileVersion("0.0.1")]
+[assembly: System.Reflection.AssemblyInformationalVersion("0.0.1-alpha")]
+
 static class Theme
 {
     public static readonly Color Bg = Color.FromArgb(28, 28, 28), Btn = Color.FromArgb(43, 43, 43),
@@ -101,7 +105,7 @@ class Panel515 : Form
         MouseDown += Drag;
 
         int y = 12, x0 = 16, w = 328;
-        var title = Lbl(demo ? "G-Lite — demo" : "G-Lite", x0, y, Theme.Dim);
+        var title = Lbl("G-Lite " + Application.ProductVersion + (demo ? " — demo" : ""), x0, y, Theme.Dim);
         if (demo)
         {
             var view = new KeyboardView(fake, Model.Load("g515-tkl.json"));
@@ -429,7 +433,7 @@ class Panel515 : Form
             Application.EnableVisualStyles();
             var fake = demo ? new FakeHidpp() : null;
             var panel = new Panel515(fake);
-            var tray = new NotifyIcon { Icon = MakeIcon(), Text = demo ? "G-Lite (demo)" : "G-Lite", Visible = true };
+            var tray = new NotifyIcon { Icon = MakeIcon(), Text = "G-Lite " + Application.ProductVersion + (demo ? " (demo)" : ""), Visible = true };
             tray.ContextMenuStrip = new ContextMenuStrip();
             tray.ContextMenuStrip.Items.Add("Open", null, (s, e) => panel.ShowPanel());
             tray.ContextMenuStrip.Items.Add("Quit", null, (s, e) => { tray.Visible = false; Application.Exit(); });

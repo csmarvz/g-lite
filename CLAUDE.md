@@ -46,6 +46,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - The repo is MIT. Don't bring in code from GPL projects.
 - `backup-*/` and `lighting-backup.reg` stay untracked.
 - No code comments unless asked.
+- The version is set by the three assembly attributes at the top of `app/Program.cs`. Change all three together.
 - Never commit unless explicitly asked.
 - Keep the binary small. Prefer the simplest thing that works.
 - Write plainly, without filler.
