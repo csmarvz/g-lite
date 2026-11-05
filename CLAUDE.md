@@ -18,10 +18,18 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `Hidpp`: HID++ 2.0 over the receiver
   - `Lighting`: the lighting settings
   - `G515`: the effect table, profile encode and decode, CRC32, onboard file read and write, preview
-- `app/Program.cs`: `MainWindow`, with the device sidebar, the Settings screen, updates and run on startup, and `Main`, with the tray icon, the single-instance mutex and `--demo`
+- `app/Program.cs`:
+  - `MainWindow`: the device sidebar, one page per found device, rescans on plug and unplug, the Settings screen, updates and run on startup
+  - `Main`: the tray icon, the single-instance mutex and `--demo`
+- `app/Devices.cs`:
+  - `Devices.Scan`: finds every Logitech HID++ interface. Direct devices answer at index 0xFF. Receivers list their paired slots (register 0xB5), and each slot is pinged. It returns G devices only.
+  - `Found`: what the scan learned about a device
+  - `Probe`: the scan's HID++ calls. HID++ 1.0 errors come back on the receiver's short collection.
+  - Names of devices seen awake are kept as `seen.<wireless id>` in `settings.txt`, for when they're asleep.
 - `app/Page515.cs`:
-  - `Page515`: the G515 screen, the device work queue, the preview debounce and the profiles
+  - `Page515`: the G515 screen, the device work queue, the preview debounce and the profiles, stored as `profile.g515.<name>`
   - `KeyPicture`: the live key picture
+- `app/Pages.cs`: `InfoPage` for G devices G-Lite can't change yet or that are asleep, and `EmptyPage`
 - `app/Ui.cs`:
   - `Theme`: dark, light or system, from `theme=` in `settings.txt`
   - The owner-drawn controls. They read `Theme` when they paint. Labels and containers register their colours with `Ui.Style`, so a theme change restyles them.

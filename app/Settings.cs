@@ -44,6 +44,21 @@ static class Settings
     {
         if (!File.Exists(Location) || new FileInfo(Location).Length == 0) Write(Read());
         try { Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(@"Software\GLite", false); } catch { }
+        Rename("set.", "profile.g515.");
+    }
+
+    public static void Rename(string from, string to)
+    {
+        var d = Read();
+        var old = d.Keys.Where(k => k.StartsWith(from)).ToList();
+        if (old.Count == 0) return;
+        foreach (var k in old)
+        {
+            var n = to + k.Substring(from.Length);
+            if (!d.ContainsKey(n)) d[n] = d[k];
+            d.Remove(k);
+        }
+        Write(d);
     }
 
     public static string Get(string key)

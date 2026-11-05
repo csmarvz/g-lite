@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Management;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -15,7 +14,8 @@ class HidppError : Exception
 
 class Hidpp : IDisposable
 {
-    const byte Idx = 1, Swid = 0x0B;
+    const byte Swid = 0x0B;
+    readonly byte Idx = 1;
     FileStream fs;
     byte[] rbuf = new byte[20];
     Task<int> pending;
@@ -26,15 +26,11 @@ class Hidpp : IDisposable
 
     protected Hidpp(bool open) { }
 
-    public Hidpp()
+    public Hidpp(string path, byte index)
     {
-        string path = null;
-        using (var s = new ManagementObjectSearcher("SELECT DeviceID FROM Win32_PnPEntity WHERE DeviceID LIKE 'HID\\\\VID_046D&PID_C547&MI_02&COL02%'"))
-            foreach (ManagementObject o in s.Get())
-                path = @"\\?\" + ((string)o["DeviceID"]).Replace('\\', '#') + "#{4d1e55b2-f16f-11cf-88cb-001111000030}";
-        if (path == null) throw new IOException("Lightspeed receiver not found");
+        Idx = index;
         var h = CreateFile(path, 0xC0000000, 3, IntPtr.Zero, 3, 0x40000000, IntPtr.Zero);
-        if (h.IsInvalid) throw new IOException("Cannot open receiver (error " + Marshal.GetLastWin32Error() + ")");
+        if (h.IsInvalid) throw new IOException("Can't open the device (error " + Marshal.GetLastWin32Error() + ")");
         fs = new FileStream(h, FileAccess.ReadWrite, 1, true);
     }
 

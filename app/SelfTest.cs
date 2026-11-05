@@ -94,6 +94,17 @@ static class SelfTest
         Settings.Set("set.Night", "1,FFFFFF,5000,1,50,60,300,20");
         Settings.Remove("set.Night");
         Check(!Settings.Keys().Contains("set.Night"), "a removed set is gone from the file");
+        Settings.Set("set.Evening", "1,FF8000,5000,1,50,60,300,40");
+        Settings.Set("profile.g515.Day", "1,FFFFFF,5000,1,50,60,300,100");
+        Settings.Set("set.Day", "1,000000,5000,1,50,60,300,0");
+        Settings.Init();
+        Check(Settings.Get("profile.g515.Evening").StartsWith("1,FF8000") && Settings.Get("profile.g515.Day").StartsWith("1,FFFFFF") && !Settings.Keys().Any(k => k.StartsWith("set.")),
+            "old sets move to G515 profiles without overwriting");
+        Check(Found.LooksG("G515 LIGHTSPEED TKL") && Found.LooksG("G Pro Wireless Gaming Mouse") && Found.LooksG("PRO X Wireless Gaming Headset") && Found.LooksG("G502 X PLUS")
+            && !Found.LooksG("MX KEYS S") && !Found.LooksG("Logitech USB Receiver") && !Found.LooksG(""), "G devices are told from other Logitech devices");
+        Check(new Found { Name = "G Pro Wireless Gaming Mouse" }.Short == "G Pro Wireless" && new Found { Name = "G515 LIGHTSPEED TKL" }.Short == "G515 TKL", "short device names");
+        Check(Found.FromVolts(4200) == 100 && Found.FromVolts(3300) == 0 && Found.FromVolts(3800) == 50, "battery estimate from the voltage");
+        Check(new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071, 0x8040, 0x8101 } }.IsG515 && !new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071 } }.IsG515, "the G515 needs its three features");
         Check(Settings.Get("theme") == "system" && Theme.Mode == "system", "theme starts on system");
         Theme.Mode = "light";
         Check(Theme.Light && Settings.Get("theme") == "light", "light theme is saved and applied");

@@ -82,9 +82,9 @@ static class Ui
         return c;
     }
 
-    public static void Restyle() { foreach (var s in styles) if (!s.Key.IsDisposed) s.Value(); }
+    public static void Restyle() { styles.RemoveAll(s => s.Key.IsDisposed); foreach (var s in styles) s.Value(); }
 
-    public static void Refont() { foreach (var f in fonts) if (!f.Item1.IsDisposed) f.Item1.Font = Win.Px(f.Item2, K, f.Item3); }
+    public static void Refont() { fonts.RemoveAll(f => f.Item1.IsDisposed); foreach (var f in fonts) f.Item1.Font = Win.Px(f.Item2, K, f.Item3); }
 
     public static Font Get(float pt, string face)
     {
@@ -174,6 +174,21 @@ static class Icons
                         double a = i * Math.PI / 4;
                         g.DrawLine(p, 12 + (float)Math.Cos(a) * 6.5f, 12 + (float)Math.Sin(a) * 6.5f, 12 + (float)Math.Cos(a) * 9.5f, 12 + (float)Math.Sin(a) * 9.5f);
                     }
+                    break;
+                case "mouse":
+                    using (var path = Ui.Round(new RectangleF(6, 3, 12, 18), 6)) g.DrawPath(p, path);
+                    g.DrawLine(p, 12, 7, 12, 10);
+                    break;
+                case "headset":
+                    g.DrawLine(p, 4, 15, 4, 12);
+                    g.DrawArc(p, 4, 4, 16, 16, 180, 180);
+                    g.DrawLine(p, 20, 12, 20, 15);
+                    using (var path = Ui.Round(new RectangleF(3, 14, 4, 6), 1.5f)) g.DrawPath(p, path);
+                    using (var path = Ui.Round(new RectangleF(17, 14, 4, 6), 1.5f)) g.DrawPath(p, path);
+                    break;
+                case "device":
+                    using (var path = Ui.Round(new RectangleF(4, 4, 16, 16), 3)) g.DrawPath(p, path);
+                    g.FillEllipse(b, 10.5f, 10.5f, 3, 3);
                     break;
                 case "keyboard":
                     using (var path = Ui.Round(new RectangleF(2, 6, 20, 12), 2)) g.DrawPath(p, path);

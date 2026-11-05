@@ -98,8 +98,16 @@ class KeyPicture : Ctl
     }
 }
 
-class Page515 : Control
+interface IPage
 {
+    void Shown();
+    void Hidden();
+    Task Queue { get; }
+}
+
+class Page515 : Control, IPage
+{
+    public const string Prefix = "profile.g515.";
     static readonly int[] Swatches = { 0xFFFFFF, 0xFF2020, 0xFF8000, 0xFFD000, 0x30D050, 0x3080FF };
     static readonly int[] IdleSecs = { 0, 15, 30, 60, 120, 300, 600 };
     static readonly string[] IdleText = { "Never", "15 s", "30 s", "1 min", "2 min", "5 min", "10 min" };
@@ -117,6 +125,8 @@ class Page515 : Control
     Hidpp dev;
     readonly FakeHidpp fake;
     readonly bool demo;
+    Found found;
+    string readAt = "";
     Task queue = Task.FromResult(0);
     int previewSeq;
     readonly Timer debounce = new Timer { Interval = 120 };
@@ -134,8 +144,9 @@ class Page515 : Control
     readonly KeyPicture picture;
     public string Note;
 
-    public Page515(FakeHidpp fake, MouseEventHandler drag)
+    public Page515(Found found, FakeHidpp fake, MouseEventHandler drag)
     {
+        this.found = found;
         this.fake = fake;
         demo = fake != null;
         Ui.Style(this, () => BackColor = Theme.Bg);
@@ -144,7 +155,7 @@ class Page515 : Control
         var model = Model.Load("g515-tkl.json");
 
         Ui.Text(this, model.Name, 20, 14, () => Theme.Text, 13.5f, Ui.Semi).MouseDown += drag;
-        sub = Ui.Text(this, demo ? "Demo keyboard" : "LIGHTSPEED receiver", 21, 44, () => Theme.Dim, 9f);
+        sub = Ui.Text(this, "", 21, 44, () => Theme.Dim, 9f);
         sub.MouseDown += drag;
         var reread = Ui.Add(this, new Btn { Look = Look.Ghost, Icon = "refresh", AccessibleName = "Read again from the keyboard" }, 656 - 12 - 108, 10, 36, 28);
         reread.Click += (s, e) => Load();
@@ -164,7 +175,7 @@ class Page515 : Control
         delBtn.Click += (s, e) =>
         {
             if (naming) EndName();
-            else if (profiles.Index > 0) { Settings.Remove("set." + profiles.Items[profiles.Index]); LoadSets(null); }
+            else if (profiles.Index > 0) { Settings.Remove(Prefix + profiles.Items[profiles.Index]); LoadSets(null); }
         };
 
         var pic = Ui.Add(this, new Box(), 20, 118, 616, 209);
@@ -236,9 +247,20 @@ class Page515 : Control
 
         LoadSets(null);
         Sync();
+        SetFound(found);
     }
 
     public void Restyle() { Sync(); }
+
+    public void Shown() { Load(); }
+
+    public void Hidden() { Release(); }
+
+    public void SetFound(Found f)
+    {
+        found = f;
+        sub.Text = f.Link + (f.Battery >= 0 ? " · " + f.BatteryText : "") + (readAt != "" ? " · read at " + readAt : "");
+    }
 
     public Task Queue { get { return queue; } }
 
@@ -348,7 +370,7 @@ class Page515 : Control
     {
         profiles.Items.Clear();
         profiles.Items.Add(OnKeyboard);
-        foreach (var k in Settings.Keys().Where(k => k.StartsWith("set.")).Select(k => k.Substring(4)).OrderBy(k => k)) profiles.Items.Add(k);
+        foreach (var k in Settings.Keys().Where(k => k.StartsWith(Prefix)).Select(k => k.Substring(Prefix.Length)).OrderBy(k => k)) profiles.Items.Add(k);
         profiles.Index = select == null ? 0 : Math.Max(0, profiles.Items.IndexOf(select));
         ShowSets();
     }
@@ -383,7 +405,7 @@ class Page515 : Control
         try
         {
             int b;
-            cur = Lighting.FromText(Settings.Get("set." + profiles.Items[i]), out b);
+            cur = Lighting.FromText(Settings.Get(Prefix + profiles.Items[i]), out b);
             brightness = Math.Max(0, Math.Min(100, b));
             Changed(true);
         }
@@ -395,7 +417,7 @@ class Page515 : Control
         if (name == "") { Say("Type a name for the profile first", true); nameField.Box.Focus(); return; }
         if (name.Contains("=")) { Say("A profile name can't contain =", true); nameField.Box.Focus(); return; }
         if (name == OnKeyboard) { Say("Pick another name for the profile", true); nameField.Box.Focus(); return; }
-        Settings.Set("set." + name, cur.ToText(brightness));
+        Settings.Set(Prefix + name, cur.ToText(brightness));
         EndName();
         LoadSets(name);
         Say("Saved the profile " + name);
@@ -417,7 +439,7 @@ class Page515 : Control
         {
             try
             {
-                if (dev == null) dev = demo ? fake : new Hidpp();
+                if (dev == null) dev = demo ? fake : new Hidpp(found.Path, found.Index);
                 a(dev);
                 if (done != null && IsHandleCreated) BeginInvoke(done);
             }
@@ -483,7 +505,8 @@ class Page515 : Control
             if (!naming) profiles.Index = 0;
             ShowSets();
             Sync();
-            sub.Text = (demo ? "Demo keyboard" : "LIGHTSPEED receiver") + " · read at " + DateTime.Now.ToString("HH:mm");
+            readAt = DateTime.Now.ToString("HH:mm");
+            SetFound(found);
             Calm();
             if (Note == null) return;
             var n = Note;

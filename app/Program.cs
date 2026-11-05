@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -21,10 +22,18 @@ class MainWindow : Form
     const int W = 840, H = 680, SideW = 184, SideIn = SideW - 20;
 
     public NotifyIcon Tray;
-    readonly Page515 page;
-    readonly Control settingsPage;
-    readonly DevItem devItem;
-    readonly Btn settingsBtn;
+    readonly FakeHidpp fake;
+    readonly Dictionary<string, Control> pages = new Dictionary<string, Control>();
+    readonly Dictionary<string, DevItem> items = new Dictionary<string, DevItem>();
+    List<Found> found = new List<Found>();
+    string selected, note;
+    Control shown;
+    bool scanning;
+    readonly EmptyPage empty;
+    readonly Label noneText;
+    readonly Control side, settingsPage;
+    readonly Btn settingsBtn, scanBtn, minimize, close;
+    readonly System.Windows.Forms.Timer rescanSoon = new System.Windows.Forms.Timer { Interval = 1500 }, sleepers = new System.Windows.Forms.Timer { Interval = 15000 };
     readonly Box updBox;
     readonly Label updText, checkText, themeHint;
     readonly Seg themeSeg;
@@ -41,6 +50,7 @@ class MainWindow : Form
 
     public MainWindow(FakeHidpp fake)
     {
+        this.fake = fake;
         demo = fake != null;
         Win.Round(this);
         HandleCreated += (s, e) => Win.Border(this, Theme.Border);
@@ -53,21 +63,23 @@ class MainWindow : Form
         FormClosing += (s, e) => { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; ToTray(); } };
         MouseDown += Drag;
 
-        var side = Ui.Add(this, new Control(), 0, 0, SideW, H);
+        side = Ui.Add(this, new Control(), 0, 0, SideW, H);
         Ui.Style(side, () => side.BackColor = Theme.Side);
         side.Paint += (s, e) => { using (var p = new Pen(Theme.Border)) e.Graphics.DrawLine(p, side.Width - 1, 0, side.Width - 1, side.Height); };
         side.MouseDown += Drag;
         Ui.Add(side, new Brand { Tag2 = demo ? "demo" : "" }, 10, 12, SideIn, 34).MouseDown += Drag;
         Ui.Text(side, "DEVICES", 18, 58, () => Theme.Dim, 8.25f, Ui.Semi).MouseDown += Drag;
-        devItem = Ui.Add(side, new DevItem { Title = "G515 TKL", Sub = demo ? "Demo" : "LIGHTSPEED", On = true, AccessibleName = "G515 TKL" }, 10, 78, SideIn, 46);
-        devItem.Click += (s, e) => ShowDevice();
+        noneText = Ui.Text(side, "Looking…", 18, 82, () => Theme.Dim, 9f);
 
         int bottom = H - 14 - 36;
         var quit = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "power", Text = "Quit" }, 10, bottom, SideIn, 36);
-        quit.Click += (s, e) => { HidePanel(); page.Queue.Wait(5000); Application.Exit(); };
+        quit.Click += (s, e) => { HidePanel(); WaitAll(); Application.Exit(); };
         bottom -= 40;
         settingsBtn = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "gear", Text = "Settings" }, 10, bottom, SideIn, 36);
         settingsBtn.Click += (s, e) => ShowSettings();
+        bottom -= 40;
+        scanBtn = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "refresh", Text = "Scan for devices" }, 10, bottom, SideIn, 36);
+        scanBtn.Click += (s, e) => Rescan();
         if (demo)
         {
             bottom -= 40;
@@ -85,7 +97,9 @@ class MainWindow : Form
         var updSkip = Ui.Add(updBox, new Btn { Look = Look.Ghost, Text = "Skip" }, 94, 48, SideIn - 106, 32);
         updSkip.Click += (s, e) => { Updater.Skipped = available; ShowUpdate(null); };
 
-        page = Ui.Add(this, new Page515(fake, Drag), SideW, 0, W - SideW, H);
+        empty = Ui.Add(this, new EmptyPage(Drag, Rescan), SideW, 0, W - SideW, H);
+        rescanSoon.Tick += (s, e) => { rescanSoon.Stop(); Rescan(); };
+        sleepers.Tick += (s, e) => { if (Visible) Rescan(); };
 
         settingsPage = Ui.Add(this, new Control { Visible = false }, SideW, 0, W - SideW, H);
         Ui.Style(settingsPage, () => settingsPage.BackColor = Theme.Bg);
@@ -122,12 +136,10 @@ class MainWindow : Form
         runToggle = Ui.Add(start, new Toggle { AccessibleName = "Run on startup" }, 616 - 14 - 40, 21, 40, 22);
         runToggle.Changed += () => SetStartup(runToggle.Checked);
 
-        var minimize = Ui.Add(this, new Btn { Look = Look.Ghost, Icon = "minus", AccessibleName = "Minimize" }, W - 12 - 72, 10, 36, 28);
+        minimize = Ui.Add(this, new Btn { Look = Look.Ghost, Icon = "minus", AccessibleName = "Minimize" }, W - 12 - 72, 10, 36, 28);
         minimize.Click += (s, e) => WindowState = FormWindowState.Minimized;
-        var close = Ui.Add(this, new Btn { Look = Look.Ghost, Icon = "close", AccessibleName = "Close to tray" }, W - 12 - 36, 10, 36, 28);
+        close = Ui.Add(this, new Btn { Look = Look.Ghost, Icon = "close", AccessibleName = "Close to tray" }, W - 12 - 36, 10, 36, 28);
         close.Click += (s, e) => ToTray();
-        minimize.BringToFront();
-        close.BringToFront();
 
         Theme.Changed += Restyle;
         ShowThemeHint();
@@ -150,7 +162,7 @@ class MainWindow : Form
     void Restyle()
     {
         Ui.Restyle();
-        page.Restyle();
+        foreach (var p in pages.Values.OfType<Page515>()) p.Restyle();
         Win.Border(this, Theme.Border);
         ShowThemeHint();
         Invalidate(true);
@@ -164,14 +176,30 @@ class MainWindow : Form
         themeHint.Text = m == "system" ? "Follows Windows, which uses " + (Theme.SystemLight() ? "light" : "dark") + " mode right now" : "Always " + m;
     }
 
-    void ShowDevice()
+    Control Current
     {
+        get { Control c; return selected != null && pages.TryGetValue(selected, out c) ? c : null; }
+    }
+
+    void Pick(string key)
+    {
+        if (key == null || !pages.ContainsKey(key)) key = found.Count > 0 ? found[0].Key : null;
+        selected = key;
         settingsPage.Visible = false;
-        page.Visible = true;
-        devItem.On = true;
         settingsBtn.On = false;
-        devItem.Invalidate();
         settingsBtn.Invalidate();
+        foreach (var p in pages) p.Value.Visible = p.Key == key;
+        empty.Visible = key == null;
+        foreach (var i in items) { i.Value.On = i.Key == key; i.Value.Invalidate(); }
+        if (Visible) ShowPage(Current);
+    }
+
+    void ShowPage(Control now)
+    {
+        if (shown == now) return;
+        if (shown is IPage && !shown.IsDisposed) ((IPage)shown).Hidden();
+        shown = now;
+        if (shown is IPage) ((IPage)shown).Shown();
     }
 
     void ShowSettings()
@@ -180,12 +208,106 @@ class MainWindow : Form
         checkToggle.Checked = Updater.Check;
         autoToggle.Checked = Updater.Auto;
         ShowThemeHint();
-        page.Visible = false;
+        foreach (var p in pages.Values) p.Visible = false;
+        empty.Visible = false;
         settingsPage.Visible = true;
-        devItem.On = false;
+        foreach (var i in items.Values) { i.On = false; i.Invalidate(); }
         settingsBtn.On = true;
-        devItem.Invalidate();
         settingsBtn.Invalidate();
+    }
+
+    T Place<T>(Control parent, T c, int x, int y, int w, int h) where T : Control
+    {
+        Ui.Add(parent, c, x, y, w, h);
+        if (scale != 1) c.Scale(new SizeF(scale, scale));
+        return c;
+    }
+
+    public void Rescan()
+    {
+        if (scanning || !IsHandleCreated) return;
+        scanning = true;
+        scanBtn.Text = "Scanning…";
+        scanBtn.Enabled = false;
+        Task.Run(() =>
+        {
+            List<Found> list;
+            try { list = demo ? DemoDevices() : Devices.Scan(); }
+            catch (Exception) { list = new List<Found>(); }
+            BeginInvoke((Action)(() => Apply(list)));
+        });
+    }
+
+    void Apply(List<Found> list)
+    {
+        scanning = false;
+        scanBtn.Text = "Scan for devices";
+        scanBtn.Enabled = true;
+        empty.Searching(false);
+        found = list;
+        var keys = new HashSet<string>(list.Select(f => f.Key));
+        foreach (var k in pages.Keys.Where(k => !keys.Contains(k)).ToList()) Remove(k);
+        int y = 78;
+        foreach (var f in list)
+        {
+            bool g515 = f.IsG515 && !f.Asleep;
+            Control page;
+            if (pages.TryGetValue(f.Key, out page) && (page is Page515) != g515) { Remove(f.Key); page = null; }
+            if (page == null)
+            {
+                page = g515 ? (Control)new Page515(f, demo ? fake : null, Drag) : new InfoPage(f, Drag, Rescan);
+                Place(this, page, SideW, 0, W - SideW, H);
+                page.Visible = false;
+                pages[f.Key] = page;
+                if (page is Page515 && note != null) { ((Page515)page).Note = note; note = null; }
+            }
+            else if (page is Page515) ((Page515)page).SetFound(f);
+            else ((InfoPage)page).SetFound(f);
+            DevItem item;
+            if (!items.TryGetValue(f.Key, out item))
+            {
+                var key = f.Key;
+                item = Place(side, new DevItem(), 10, y, SideIn, 46);
+                item.Click += (s, e) => Pick(key);
+                items[key] = item;
+            }
+            item.Title = f.Short;
+            item.Sub = f.Sub;
+            item.Icon = f.Kind == "keyboard" || f.Kind == "mouse" || f.Kind == "headset" ? f.Kind : "device";
+            item.AccessibleName = f.Short;
+            item.Location = new Point(S(10), S(y));
+            item.Invalidate();
+            y += 50;
+        }
+        noneText.Text = "None found";
+        noneText.Visible = list.Count == 0;
+        minimize.BringToFront();
+        close.BringToFront();
+        sleepers.Enabled = list.Any(f => f.Asleep);
+        if (!settingsPage.Visible) Pick(selected);
+    }
+
+    void Remove(string key)
+    {
+        var page = pages[key];
+        if (shown == page) { if (page is IPage) ((IPage)page).Hidden(); shown = null; }
+        pages.Remove(key);
+        page.Dispose();
+        DevItem item;
+        if (items.TryGetValue(key, out item)) { items.Remove(key); item.Dispose(); }
+    }
+
+    void WaitAll() { foreach (var p in pages.Values.OfType<IPage>()) p.Queue.Wait(5000); }
+
+    static List<Found> DemoDevices()
+    {
+        Thread.Sleep(400);
+        return new List<Found>
+        {
+            new Found { Key = "demo|keyboard", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Link = "Demo", Battery = 82, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x8040, 0x8071, 0x8101 } },
+            new Found { Key = "demo|mouse", Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, Wpid = 0x4079, Battery = 48, Approx = true, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
+            new Found { Key = "demo|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "USB", Index = 0xFF, Battery = 48, Approx = true, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300, 0x8310 } },
+        };
     }
 
     int S(float v) { return (int)Math.Round(v * scale); }
@@ -213,6 +335,7 @@ class MainWindow : Form
     protected override void WndProc(ref Message m)
     {
         if (m.Msg == Win.DpiChanged) Rescale(Win.FromMessage(m));
+        if (m.Msg == 0x0219 && !demo) { rescanSoon.Stop(); rescanSoon.Start(); }
         base.WndProc(ref m);
     }
 
@@ -274,11 +397,11 @@ class MainWindow : Form
         {
             string v = null, err = null;
             try { v = Updater.Latest(); } catch (Exception ex) { err = ex.Message; }
-            BeginInvoke((Action)(() => Found(v, err, manual)));
+            BeginInvoke((Action)(() => GotVersion(v, err, manual)));
         });
     }
 
-    void Found(string v, string err, bool manual)
+    void GotVersion(string v, string err, bool manual)
     {
         if (err != null) { if (manual) checkText.Text = "Couldn't check for updates: " + err; return; }
         if (v == null || !Updater.Newer(v, Application.ProductVersion)) { if (manual) checkText.Text = "G-Lite is up to date"; return; }
@@ -291,19 +414,20 @@ class MainWindow : Form
     void Install(string v, bool show)
     {
         ShowUpdate(null);
-        page.Say("Downloading " + v + "…");
+        updText.Text = "Downloading " + v + "…";
+        updBox.Visible = true;
         Task.Run(() =>
         {
             try
             {
                 Updater.Install(v, show);
-                BeginInvoke((Action)(() => { HidePanel(); page.Queue.Wait(5000); if (Tray != null) Tray.Visible = false; Application.Exit(); }));
+                BeginInvoke((Action)(() => { HidePanel(); WaitAll(); if (Tray != null) Tray.Visible = false; Application.Exit(); }));
             }
-            catch (Exception ex) { BeginInvoke((Action)(() => page.Say("Update failed: " + ex.Message, true))); }
+            catch (Exception ex) { BeginInvoke((Action)(() => { ShowUpdate(v); updText.Text = "Update failed: " + ex.Message; })); }
         });
     }
 
-    public void SetNote(string note) { page.Note = note; }
+    public void SetNote(string n) { note = n; }
 
     public void ShowPanel()
     {
@@ -314,8 +438,8 @@ class MainWindow : Form
         Show();
         if (view != null && wantView) ShowView();
         Activate();
-        ShowDevice();
-        page.Load();
+        Pick(selected);
+        Rescan();
     }
 
     void ToTray()
@@ -329,7 +453,8 @@ class MainWindow : Form
     public void HidePanel()
     {
         Hide();
-        page.Release();
+        if (shown is IPage) ((IPage)shown).Hidden();
+        shown = null;
     }
 
     [STAThread]
@@ -358,6 +483,7 @@ class MainWindow : Form
             panel.Handle.ToString();
             panel.Tray = tray;
             panel.RefreshIcons();
+            panel.Rescan();
             SystemEvents.DisplaySettingsChanged += (o, e) => panel.RefreshIcons();
             SystemEvents.UserPreferenceChanged += (o, e) => { panel.RefreshIcons(); Theme.Apply(); };
             if (args.Contains("--restart")) panel.SetNote("Successfully updated to v" + Application.ProductVersion);
