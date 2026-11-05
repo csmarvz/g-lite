@@ -1,10 +1,21 @@
 # G-Lite
 Lightweight G Hub alternative.
 
+> [!WARNING]
+> **G-Lite is experimental.** It writes to your device's onboard memory, and a bug could leave a device in a bad state or brick it. It never touches the factory profile and checks every write, but it has only been tested on one keyboard. Use it at your own risk.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png">
   <img src="docs/screenshot-light.png" alt="G-Lite showing a G515 TKL with the Wave effect, a mouse and a headset in the sidebar" width="820">
 </picture>
+
+## Supported devices
+
+| Device | Connection | What G-Lite can do |
+|---|---|---|
+| G515 LIGHTSPEED TKL | LIGHTSPEED receiver | Lighting effects, colour, speed, direction, brightness, idle dimming and turn-off, profiles, saving to the keyboard |
+
+Other Logitech G devices show up in the sidebar with their connection, battery and firmware, but G-Lite can't change their settings yet. Devices that could come next are listed in [#11](https://github.com/csmarvz/g-lite/issues/11).
 
 ## Sources
 
