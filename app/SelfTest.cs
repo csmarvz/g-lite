@@ -43,6 +43,13 @@ static class SelfTest
         Check(G515.Decode(G515.Snapshot(fake).UserProfile).Same(white), "second store overwrites");
         var m = Model.Load("g515-tkl.json");
         Check(m.Name == "G515 LIGHTSPEED TKL" && m.Rows.Length == 7 && m.Rows[6].EndsWith("→"), "keyboard model loads");
+        var game = new Blocks();
+        for (int y = 0; y < Blocks.H; y++) game.Cells[y, Blocks.W - 1] = 1;
+        game.Cells[0, Blocks.W - 2] = 2;
+        game.ClearFull();
+        Check(game.Lines == 1 && game.Cells[0, Blocks.W - 1] == 2 && game.Cells[0, Blocks.W - 2] == 0, "full column clears and shifts");
+        game.Drop();
+        Check(!game.Over, "piece locks after drop");
         Console.WriteLine("selftest ok");
         return 0;
     }

@@ -105,6 +105,9 @@ class KeyboardView : Form
     readonly List<Tuple<PointF, double>> ripples = new List<Tuple<PointF, double>>();
     readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
     float width, height;
+    List<Point>[] cells;
+    Blocks game;
+    double nextStep, overAt;
 
     protected override bool ShowWithoutActivation { get { return true; } }
 
@@ -126,13 +129,21 @@ class KeyboardView : Form
             }
             height += keys.Count > before ? U : x;
         }
+        var rows = keys.Select(k => k.Item1.Y).Distinct().OrderBy(v => v).ToList();
+        cells = keys.Select(k =>
+        {
+            int r = rows.IndexOf(k.Item1.Y) - (rows.Count - Blocks.H);
+            if (r < 0) return null;
+            var l = Enumerable.Range(0, Blocks.W).Where(c => Pad + (c + 0.5f) * U >= k.Item1.X && Pad + (c + 0.5f) * U < k.Item1.Right + 4).Select(c => new Point(c, r)).ToList();
+            return l.Count > 0 ? l : null;
+        }).ToArray();
         Text = model.Name + " (demo)";
         BackColor = Color.FromArgb(28, 28, 28);
         DoubleBuffered = true;
         FormBorderStyle = FormBorderStyle.None;
         ClientSize = new Size((int)(width + 2 * Pad), (int)(Head + height + 2 * Pad + 20));
         var timer = new System.Windows.Forms.Timer { Interval = 33 };
-        timer.Tick += (s, e) => Invalidate();
+        timer.Tick += (s, e) => { Tick(); Invalidate(); };
         timer.Start();
         FormClosing += (s, e) => { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } };
         MouseDown += (s, e) =>
@@ -140,9 +151,43 @@ class KeyboardView : Form
             if (e.Button != MouseButtons.Left) return;
             if (e.Y >= Head + Pad / 2) { ripples.Add(Tuple.Create(new PointF(e.X, e.Y), clock.Elapsed.TotalSeconds)); return; }
             if (e.X > ClientSize.Width - Pad - 20) { Hide(); return; }
+            if (e.X > ClientSize.Width - Pad - 70) { if (game == null) Play(); else game = null; return; }
             ReleaseCapture();
             SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero);
         };
+    }
+
+    void Play()
+    {
+        game = new Blocks();
+        overAt = 0;
+        nextStep = clock.Elapsed.TotalMilliseconds + game.Interval;
+        Activate();
+    }
+
+    void Tick()
+    {
+        if (game == null) return;
+        double now = clock.Elapsed.TotalMilliseconds;
+        if (game.Over) { if (overAt == 0) overAt = now; else if (now - overAt > 2000) game = null; return; }
+        if (now >= nextStep) { game.Step(); nextStep = now + game.Interval; }
+    }
+
+    protected override bool ProcessCmdKey(ref Message msg, Keys key)
+    {
+        if (game == null) return base.ProcessCmdKey(ref msg, key);
+        switch (key)
+        {
+            case Keys.Up: game.Move(-1); break;
+            case Keys.Down: game.Move(1); break;
+            case Keys.Left: game.Rotate(); break;
+            case Keys.Right: game.Step(); break;
+            case Keys.Space: game.Drop(); nextStep = clock.Elapsed.TotalMilliseconds + game.Interval; break;
+            case Keys.Escape: game = null; break;
+            default: return base.ProcessCmdKey(ref msg, key);
+        }
+        Invalidate();
+        return true;
     }
 
     static Color Hsv(double h, double s, double v)
@@ -175,9 +220,11 @@ class KeyboardView : Form
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
         using (var font = new Font("Segoe UI", 7.5f))
-        foreach (var k in keys)
+        for (int ki = 0; ki < keys.Count; ki++)
         {
+            var k = keys[ki];
             var r = k.Item1;
+            Color fill = Color.FromArgb(30, 30, 32);
             double x = (r.X + r.Width / 2 - Pad) / width, y = (r.Y - Head - Pad) / height;
             Color c;
             if (def == null) c = Hsv(t / 8 - x, 1, 1);
@@ -202,7 +249,16 @@ class KeyboardView : Form
                     break;
                 default: c = Color.Black; break;
             }
+            if (game != null)
+            {
+                int hit = 0;
+                if (cells[ki] != null) foreach (var cell in cells[ki]) if (hit == 0) hit = game.At(cell.Y, cell.X);
+                bool arrow = "↑↓←→".Contains(k.Item2) && k.Item2.Length == 1;
+                c = hit != 0 ? (game.Over ? Color.FromArgb(255, 40, 40) : Color.FromArgb(hit | unchecked((int)0xFF000000))) : arrow ? Color.FromArgb(120, 120, 120) : Color.FromArgb(45, 45, 45);
+                if (hit != 0) fill = Scale(c, 0.45);
+            }
             c = Scale(c, bright / 100.0);
+            fill = Color.FromArgb(Math.Max(30, (int)(fill.R * bright / 100.0)), Math.Max(30, (int)(fill.G * bright / 100.0)), Math.Max(32, (int)(fill.B * bright / 100.0)));
             using (var path = new GraphicsPath())
             {
                 float rad = 5;
@@ -211,7 +267,7 @@ class KeyboardView : Form
                 path.AddArc(r.Right - rad * 2, r.Bottom - rad * 2, rad * 2, rad * 2, 0, 90);
                 path.AddArc(r.X, r.Bottom - rad * 2, rad * 2, rad * 2, 90, 90);
                 path.CloseFigure();
-                using (var key = new SolidBrush(Color.FromArgb(30, 30, 32))) g.FillPath(key, path);
+                using (var key = new SolidBrush(fill)) g.FillPath(key, path);
                 using (var pen = new Pen(Color.FromArgb(55, 55, 58))) g.DrawPath(pen, path);
                 using (var lit = new SolidBrush(c))
                     g.DrawString(k.Item2, font, lit, r, new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
@@ -224,9 +280,11 @@ class KeyboardView : Form
         {
             g.DrawString(Text, f, b, Pad, 12);
             g.DrawString("✕", f, b, ClientSize.Width - Pad - 14, 12);
+            using (var a = new SolidBrush(Color.FromArgb(63, 169, 138))) g.DrawString(game == null ? "Play" : "Stop", f, a, ClientSize.Width - Pad - 66, 12);
         }
         string what = def == null ? "factory animation (approximation)" : def.Name;
         if (id == 0x17) what += " — click the keys";
+        if (game != null) what = (game.Over ? "game over" : "↑↓ move   ← rotate   → down   Space drop   Esc stop") + "   ·   lines " + game.Lines;
         using (var f = new Font("Segoe UI", 9f))
         using (var b = new SolidBrush(Color.FromArgb(150, 150, 150)))
             g.DrawString(what + "   ·   brightness " + bright + "%", f, b, Pad, ClientSize.Height - 26);

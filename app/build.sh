@@ -6,9 +6,9 @@ OUT="$(wslpath -u "$(cd /mnt/c && cmd.exe /c 'echo %LOCALAPPDATA%' | tr -d '\r')
 mkdir -p build "$OUT"
 RES=$(for f in models/*.json; do printf ' /resource:%s,%s' "$f" "$(basename "$f")"; done)
 REFS="$RES /r:System.Runtime.Serialization.dll /r:System.Management.dll /r:System.Windows.Forms.dll /r:System.Drawing.dll"
-"$CSC" /nologo /optimize /target:exe /out:build/selftest.exe $REFS SelfTest.cs Keyboard.cs Fake.cs
+"$CSC" /nologo /optimize /target:exe /out:build/selftest.exe $REFS SelfTest.cs Keyboard.cs Fake.cs Game.cs
 chmod +x build/*.exe && build/selftest.exe
-"$CSC" /nologo /optimize /target:winexe /out:build/G515Lighting.exe $REFS Program.cs Keyboard.cs Fake.cs
+"$CSC" /nologo /optimize /target:winexe /out:build/G515Lighting.exe $REFS Program.cs Keyboard.cs Fake.cs Game.cs
 taskkill.exe /im G515Lighting.exe /f >/dev/null 2>&1 || true
 sleep 1
 cp build/G515Lighting.exe "$OUT/"
