@@ -5,6 +5,7 @@ using System.Threading;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 
 // In-memory G515 that answers the HID++ calls the app makes, for running without the keyboard.
 class FakeHidpp : Hidpp
@@ -90,7 +91,9 @@ class KeyboardView : Form
         "Shift:2.25|Z|X|C|V|B|N|M|,|.|/|Shift:2.75|_1.25|↑",
         "Ctrl:1.25|Win:1.25|Alt:1.25|:6.25|Alt:1.25|Fn:1.25|Menu:1.25|Ctrl:1.25|_.25|←|↓|→",
     };
-    const float U = 40, Pad = 16;
+    const float U = 40, Pad = 16, Head = 30;
+    [DllImport("user32.dll")] static extern bool ReleaseCapture();
+    [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, IntPtr l);
     readonly FakeHidpp kb;
     readonly List<Tuple<RectangleF, string>> keys = new List<Tuple<RectangleF, string>>();
     readonly List<Tuple<PointF, double>> ripples = new List<Tuple<PointF, double>>();
@@ -111,7 +114,7 @@ class KeyboardView : Form
                 var parts = t.Split(':');
                 float w = parts.Length > 1 ? float.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture) * U : U;
                 if (r == 4 && parts[0] == "↑") x = width - 2 * U;
-                keys.Add(Tuple.Create(new RectangleF(Pad + x, Pad + y, w - 4, U - 4), parts[0]));
+                keys.Add(Tuple.Create(new RectangleF(Pad + x, Head + Pad + y, w - 4, U - 4), parts[0]));
                 x += w;
                 width = Math.Max(width, x);
             }
@@ -119,14 +122,20 @@ class KeyboardView : Form
         Text = "G515 demo keyboard";
         BackColor = Color.FromArgb(28, 28, 28);
         DoubleBuffered = true;
-        FormBorderStyle = FormBorderStyle.FixedSingle;
-        MaximizeBox = false;
-        ClientSize = new Size((int)(width + 2 * Pad), (int)(6.5f * U + 2 * Pad + 20));
+        FormBorderStyle = FormBorderStyle.None;
+        ClientSize = new Size((int)(width + 2 * Pad), (int)(Head + 6.5f * U + 2 * Pad + 20));
         var timer = new System.Windows.Forms.Timer { Interval = 33 };
         timer.Tick += (s, e) => Invalidate();
         timer.Start();
         FormClosing += (s, e) => { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } };
-        MouseDown += (s, e) => ripples.Add(Tuple.Create(new PointF(e.X, e.Y), clock.Elapsed.TotalSeconds));
+        MouseDown += (s, e) =>
+        {
+            if (e.Button != MouseButtons.Left) return;
+            if (e.Y >= Head + Pad / 2) { ripples.Add(Tuple.Create(new PointF(e.X, e.Y), clock.Elapsed.TotalSeconds)); return; }
+            if (e.X > ClientSize.Width - Pad - 20) { Hide(); return; }
+            ReleaseCapture();
+            SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero);
+        };
     }
 
     static Color Hsv(double h, double s, double v)
@@ -162,7 +171,7 @@ class KeyboardView : Form
         foreach (var k in keys)
         {
             var r = k.Item1;
-            double x = (r.X + r.Width / 2 - Pad) / width, y = (r.Y - Pad) / (6.5 * U);
+            double x = (r.X + r.Width / 2 - Pad) / width, y = (r.Y - Head - Pad) / (6.5 * U);
             Color c;
             if (def == null) c = Hsv(t / 8 - x, 1, 1);
             else switch (id)
@@ -201,6 +210,13 @@ class KeyboardView : Form
                     g.DrawString(k.Item2, font, lit, r, new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
                 using (var under = new SolidBrush(Color.FromArgb(90, c))) g.FillRectangle(under, r.X + 6, r.Bottom - 4, r.Width - 12, 2);
             }
+        }
+        using (var pen = new Pen(Color.FromArgb(58, 58, 58))) g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+        using (var f = new Font("Segoe UI", 9f))
+        using (var b = new SolidBrush(Color.FromArgb(150, 150, 150)))
+        {
+            g.DrawString("G515 demo keyboard", f, b, Pad, 12);
+            g.DrawString("✕", f, b, ClientSize.Width - Pad - 14, 12);
         }
         string what = def == null ? "factory animation (approximation)" : def.Name;
         if (id == 0x17) what += " — click the keys";
