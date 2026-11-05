@@ -1,0 +1,32 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          v=${GITHUB_REF_NAME#v}
+          grep -q "AssemblyInformationalVersion(\"$v\")" app/Program.cs || { echo "app/Program.cs is not at version $v"; exit 1; }
+          grep -q "AssemblyVersion(\"${v%%-*}\")" app/Program.cs || { echo "AssemblyVersion is not ${v%%-*}"; exit 1; }
+      - run: cmd //c 'app\build.cmd'
+      - run: |
+          mkdir dist
+          cp app/build/GLite.exe dist/
+          (cd dist && sha256sum GLite.exe > checksums.txt)
+      - run: |
+          awk -v v="[${GITHUB_REF_NAME#v}]" '/^## /{p = index($0, v) > 0; next} p' CHANGELOG.md > notes.md
+          if [ -s notes.md ]; then set -- --notes-file notes.md; else set -- --generate-notes; fi
+          gh release create "$GITHUB_REF_NAME" dist/* "$@"
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -79,8 +79,11 @@ class Panel515 : Form
     Label effectHead, speedHead, brightHead, status;
     Slider speed, bright;
     ComboBox idleBox, dimBox, sleepBox;
-    CheckBox startup;
+    Form settings;
     Button saveBtn, more;
+    Label updText, updGo, updSkip;
+    string available;
+    public NotifyIcon Tray;
     bool moved, demo;
 
     [DllImport("user32.dll")] static extern bool ReleaseCapture();
@@ -169,12 +172,15 @@ class Panel515 : Form
         status = new Label { Location = new Point(x0, y), Size = new Size(w, 34), ForeColor = Theme.Dim, Cursor = Cursors.Hand };
         status.Click += (s, e) => { if (status.Text.Contains("Dynamic Lighting")) System.Diagnostics.Process.Start("ms-settings:personalization-lighting"); };
         Controls.Add(status);
+        updText = Lbl("", x0, y + 18, Theme.Dim);
+        updGo = Link("Update", x0 + w - 150, y + 18);
+        updGo.Click += (s, e) => Install(available);
+        updSkip = Link("Skip this version", x0 + w - 95, y + 18);
+        updSkip.Click += (s, e) => { Updater.Skipped = available; ShowUpdate(null); };
+        ShowUpdate(null);
         y += 38;
 
-        startup = new CheckBox { Text = "Run on startup", Location = new Point(x0, y + 5), AutoSize = true, ForeColor = Theme.Dim };
-        using (var k = Registry.CurrentUser.OpenSubKey(RunKey)) startup.Checked = k != null && k.GetValue("GLite") != null;
-        startup.CheckedChanged += (s, e) => SetStartup(startup.Checked);
-        Controls.Add(startup);
+        Btn("Settings", x0, y, 80, 30).Click += (s, e) => OpenSettings();
         var quit = Btn("Quit", x0 + w - 60, y, 60, 30);
         quit.Click += (s, e) => { HidePanel(); queue.Wait(5000); Application.Exit(); };
         saveBtn = Btn("Save to keyboard", x0 + w - 60 - 8 - 130, y, 130, 30);
@@ -313,6 +319,86 @@ class Panel515 : Form
 
     void Status(string s) { if (IsHandleCreated) BeginInvoke((Action)(() => status.Text = s)); }
 
+    Label Link(string t, int x, int y)
+    {
+        var l = new Label { Text = t, ForeColor = Theme.Accent, Location = new Point(x, y), AutoSize = true, Cursor = Cursors.Hand };
+        Controls.Add(l);
+        return l;
+    }
+
+    void OpenSettings()
+    {
+        if (settings == null)
+        {
+            settings = new Form { FormBorderStyle = FormBorderStyle.None, ShowInTaskbar = false, TopMost = true, StartPosition = FormStartPosition.Manual, BackColor = Theme.Bg, ForeColor = Theme.Text, Font = Font, ClientSize = new Size(220, 150) };
+            var f = settings;
+            f.Paint += (s, e) => { using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, f.Width - 1, f.Height - 1); };
+            MouseEventHandler drag = (s, e) => { if (e.Button != MouseButtons.Left) return; ReleaseCapture(); SendMessage(f.Handle, 0xA1, (IntPtr)2, IntPtr.Zero); };
+            f.MouseDown += drag;
+            var title = new Label { Text = "Settings", ForeColor = Theme.Dim, Location = new Point(16, 12), AutoSize = true };
+            title.MouseDown += drag;
+            var close = new Label { Text = "✕", ForeColor = Theme.Dim, Location = new Point(f.ClientSize.Width - 30, 12), AutoSize = true, Cursor = Cursors.Hand };
+            close.Click += (s, e) => f.Hide();
+            var startup = new CheckBox { Text = "Run on startup", Location = new Point(16, 42), AutoSize = true, ForeColor = Theme.Dim };
+            using (var k = Registry.CurrentUser.OpenSubKey(RunKey)) startup.Checked = k != null && k.GetValue("GLite") != null;
+            startup.CheckedChanged += (s, e) => SetStartup(startup.Checked);
+            var check = new CheckBox { Text = "Check for updates", Location = new Point(16, 68), AutoSize = true, ForeColor = Theme.Dim, Checked = Updater.Check };
+            check.CheckedChanged += (s, e) => Updater.Check = check.Checked;
+            var auto = new CheckBox { Text = "Auto-update", Location = new Point(16, 94), AutoSize = true, ForeColor = Theme.Dim, Checked = Updater.Auto };
+            auto.CheckedChanged += (s, e) => Updater.Auto = auto.Checked;
+            var now = new Label { Text = "Check update now", ForeColor = Theme.Accent, Location = new Point(16, 124), AutoSize = true, Cursor = Cursors.Hand };
+            now.Click += (s, e) => CheckUpdates(true);
+            f.Controls.AddRange(new Control[] { title, close, startup, check, auto, now });
+        }
+        settings.Location = new Point(Left - settings.Width - 8, Bottom - settings.Height);
+        settings.Show();
+        settings.Activate();
+    }
+
+    void ShowUpdate(string v)
+    {
+        available = v;
+        updText.Text = v == null ? "" : "Version " + v + " is available";
+        updText.Visible = updGo.Visible = updSkip.Visible = v != null;
+        status.Height = v == null ? 34 : 18;
+        if (Tray != null) Tray.Text = "G-Lite " + Application.ProductVersion + (demo ? " (demo)" : "") + (v == null ? "" : " · " + v + " available");
+    }
+
+    public void CheckUpdates(bool manual)
+    {
+        if (manual) status.Text = "Checking for updates…";
+        Task.Run(() =>
+        {
+            string v = null, err = null;
+            try { v = Updater.Latest(); } catch (Exception ex) { err = ex.Message; }
+            BeginInvoke((Action)(() => Found(v, err, manual)));
+        });
+    }
+
+    void Found(string v, string err, bool manual)
+    {
+        if (err != null) { if (manual) status.Text = "Couldn't check for updates: " + err; return; }
+        if (v == null || !Updater.Newer(v, Application.ProductVersion)) { if (manual) status.Text = "G-Lite is up to date"; return; }
+        if (!manual && v == Updater.Skipped) return;
+        if (!manual && Updater.Auto) { Install(v); return; }
+        if (manual) status.Text = "";
+        ShowUpdate(v);
+    }
+
+    void Install(string v)
+    {
+        status.Text = "Downloading " + v + "…";
+        Task.Run(() =>
+        {
+            try
+            {
+                Updater.Install(v);
+                BeginInvoke((Action)(() => { HidePanel(); queue.Wait(5000); if (Tray != null) Tray.Visible = false; Application.Exit(); }));
+            }
+            catch (Exception ex) { Status("Update failed: " + ex.Message); }
+        });
+    }
+
     void Do(Action<Hidpp> a, Action done = null)
     {
         queue = queue.ContinueWith(_ =>
@@ -390,6 +476,7 @@ class Panel515 : Form
     public void HidePanel()
     {
         Hide();
+        if (settings != null) settings.Hide();
         debounce.Stop();
         if (!dirty) return;
         dirty = false;
@@ -427,9 +514,12 @@ class Panel515 : Form
     static void Main(string[] args)
     {
         bool fresh, demo = args.Contains("--demo");
-        using (new Mutex(true, demo ? "GLiteDemo" : "GLite", out fresh))
+        using (var mutex = new Mutex(true, demo ? "GLiteDemo" : "GLite", out fresh))
         {
+            if (!fresh && args.Contains("--restart"))
+                try { fresh = mutex.WaitOne(15000); } catch (AbandonedMutexException) { fresh = true; }
             if (!fresh) return;
+            Updater.Cleanup();
             Application.EnableVisualStyles();
             var fake = demo ? new FakeHidpp() : null;
             var panel = new Panel515(fake);
@@ -440,6 +530,8 @@ class Panel515 : Form
             tray.MouseClick += (s, e) => { if (e.Button == MouseButtons.Left) { if (panel.Visible) panel.HidePanel(); else panel.ShowPanel(); } };
             panel.CreateControl();
             panel.Handle.ToString();
+            panel.Tray = tray;
+            if (Updater.Check) panel.CheckUpdates(false);
             Application.Run();
             tray.Visible = false;
         }

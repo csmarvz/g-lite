@@ -28,6 +28,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `FakeHidpp`: an in-memory G515
   - `KeyboardView`: the demo window
 - `app/Game.cs`: Blocks, played on the 15x5 grid over the main key block, and Snake and Mines (`KeyGame`), played on the keys of that block
+- `app/Update.cs`: `Updater`, which checks GitHub releases, verifies the download against `checksums.txt`, swaps the exe and restarts. Its settings are in `HKCU\Software\GLite`.
 - `app/SelfTest.cs`: self-checks with golden bytes from the real keyboard. Add a check here whenever the encoding or rules change.
 - `app/models/g515-tkl.json`: the key layout
   - A row is written `Label:width|...`.
@@ -47,6 +48,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `backup-*/` and `lighting-backup.reg` stay untracked.
 - No code comments unless asked.
 - The version is set by the three assembly attributes at the top of `app/Program.cs`. Change all three together.
+- To release: set the version, add its section to `CHANGELOG.md`, commit, then push a tag `v<version>`. `.github/workflows/release.yml` checks the tag matches the version, builds and publishes `GLite.exe` with `checksums.txt`. Releases are not marked as pre-releases, so `/releases/latest` finds them.
 - Never commit unless explicitly asked.
 - Keep the binary small. Prefer the simplest thing that works.
 - Write plainly, without filler.

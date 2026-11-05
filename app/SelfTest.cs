@@ -80,6 +80,9 @@ static class SelfTest
         mines = new Mines(wide, wideCells) { Placed = true };
         mines.Mine[1] = true;
         Check(mines.Near(0) == 1 && mines.Near(2) == 0, "neighbours follow the keys, not the grid");
+        Check(Updater.Newer("0.0.2-alpha", "0.0.1-alpha") && Updater.Newer("0.0.1", "0.0.1-alpha") && Updater.Newer("0.0.1-beta", "0.0.1-alpha") && Updater.Newer("v0.1.0", "0.0.9")
+            && !Updater.Newer("0.0.1-alpha", "0.0.1-alpha") && !Updater.Newer("0.0.1-alpha", "0.0.1") && !Updater.Newer("0.0.9", "0.0.10"), "versions compare");
+        Check(Updater.TagFrom("https://github.com/csmarvz/g-lite/releases/tag/v0.0.2-alpha") == "v0.0.2-alpha" && Updater.TagFrom("https://github.com/csmarvz/g-lite/releases") == null, "latest tag read from the redirect");
         Console.WriteLine("selftest ok");
         return 0;
     }
