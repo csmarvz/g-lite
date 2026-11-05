@@ -41,6 +41,8 @@ static class SelfTest
         Check(G515.Decode(G515.Snapshot(fake).UserProfile).Same(blue), "store then read back");
         G515.Store(fake, white);
         Check(G515.Decode(G515.Snapshot(fake).UserProfile).Same(white), "second store overwrites");
+        var m = Model.Load("g515-tkl.json");
+        Check(m.Name == "G515 LIGHTSPEED TKL" && m.Rows.Length == 7 && m.Rows[6].EndsWith("→"), "keyboard model loads");
         Console.WriteLine("selftest ok");
         return 0;
     }

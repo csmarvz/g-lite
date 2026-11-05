@@ -104,7 +104,7 @@ class Panel515 : Form
         var title = Lbl(demo ? "G515 Lighting — demo" : "G515 Lighting", x0, y, Theme.Dim);
         if (demo)
         {
-            var view = new KeyboardView(fake);
+            var view = new KeyboardView(fake, Model.Load("g515-tkl.json"));
             view.Show();
             var show = new Label { Text = "Show keyboard", ForeColor = Theme.Accent, Location = new Point(x0 + w - 120, y), AutoSize = true, Cursor = Cursors.Hand };
             show.Click += (s, e) => view.Visible = !view.Visible;

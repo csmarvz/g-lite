@@ -6,6 +6,21 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
+
+[DataContract]
+class Model
+{
+    [DataMember(Name = "name")] public string Name { get; set; }
+    [DataMember(Name = "rows")] public string[] Rows { get; set; }
+
+    public static Model Load(string file)
+    {
+        using (var s = typeof(Model).Assembly.GetManifestResourceStream(file))
+            return (Model)new DataContractJsonSerializer(typeof(Model)).ReadObject(s);
+    }
+}
 
 // In-memory G515 that answers the HID++ calls the app makes, for running without the keyboard.
 class FakeHidpp : Hidpp
@@ -82,15 +97,6 @@ class FakeHidpp : Hidpp
 
 class KeyboardView : Form
 {
-    static readonly string[] Rows =
-    {
-        "Esc|_1|F1|F2|F3|F4|_.5|F5|F6|F7|F8|_.5|F9|F10|F11|F12|_.25|PrtSc|ScrLk|Pause",
-        "`|1|2|3|4|5|6|7|8|9|0|-|=|Back:2|_.25|Ins|Home|PgUp",
-        "Tab:1.5|Q|W|E|R|T|Y|U|I|O|P|[|]|\\:1.5|_.25|Del|End|PgDn",
-        "Caps:1.75|A|S|D|F|G|H|J|K|L|;|'|Enter:2.25",
-        "Shift:2.25|Z|X|C|V|B|N|M|,|.|/|Shift:2.75|_1.25|↑",
-        "Ctrl:1.25|Win:1.25|Alt:1.25|:6.25|Alt:1.25|Fn:1.25|Menu:1.25|Ctrl:1.25|_.25|←|↓|→",
-    };
     const float U = 40, Pad = 16, Head = 30;
     [DllImport("user32.dll")] static extern bool ReleaseCapture();
     [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, IntPtr l);
@@ -98,32 +104,33 @@ class KeyboardView : Form
     readonly List<Tuple<RectangleF, string>> keys = new List<Tuple<RectangleF, string>>();
     readonly List<Tuple<PointF, double>> ripples = new List<Tuple<PointF, double>>();
     readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
-    float width;
+    float width, height;
 
     protected override bool ShowWithoutActivation { get { return true; } }
 
-    public KeyboardView(FakeHidpp kb)
+    public KeyboardView(FakeHidpp kb, Model model)
     {
         this.kb = kb;
-        for (int r = 0; r < Rows.Length; r++)
+        foreach (var row in model.Rows)
         {
-            float x = 0, y = r * U + (r > 0 ? U / 2 : 0);
-            foreach (var t in Rows[r].Split('|'))
+            float x = 0, y = height;
+            int before = keys.Count;
+            foreach (var t in row.Split('|'))
             {
                 if (t.StartsWith("_")) { x += float.Parse(t.Substring(1), System.Globalization.CultureInfo.InvariantCulture) * U; continue; }
                 var parts = t.Split(':');
                 float w = parts.Length > 1 ? float.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture) * U : U;
-                if (r == 4 && parts[0] == "↑") x = width - 2 * U;
                 keys.Add(Tuple.Create(new RectangleF(Pad + x, Head + Pad + y, w - 4, U - 4), parts[0]));
                 x += w;
                 width = Math.Max(width, x);
             }
+            height += keys.Count > before ? U : x;
         }
-        Text = "G515 demo keyboard";
+        Text = model.Name + " (demo)";
         BackColor = Color.FromArgb(28, 28, 28);
         DoubleBuffered = true;
         FormBorderStyle = FormBorderStyle.None;
-        ClientSize = new Size((int)(width + 2 * Pad), (int)(Head + 6.5f * U + 2 * Pad + 20));
+        ClientSize = new Size((int)(width + 2 * Pad), (int)(Head + height + 2 * Pad + 20));
         var timer = new System.Windows.Forms.Timer { Interval = 33 };
         timer.Tick += (s, e) => Invalidate();
         timer.Start();
@@ -171,7 +178,7 @@ class KeyboardView : Form
         foreach (var k in keys)
         {
             var r = k.Item1;
-            double x = (r.X + r.Width / 2 - Pad) / width, y = (r.Y - Head - Pad) / (6.5 * U);
+            double x = (r.X + r.Width / 2 - Pad) / width, y = (r.Y - Head - Pad) / height;
             Color c;
             if (def == null) c = Hsv(t / 8 - x, 1, 1);
             else switch (id)
@@ -215,7 +222,7 @@ class KeyboardView : Form
         using (var f = new Font("Segoe UI", 9f))
         using (var b = new SolidBrush(Color.FromArgb(150, 150, 150)))
         {
-            g.DrawString("G515 demo keyboard", f, b, Pad, 12);
+            g.DrawString(Text, f, b, Pad, 12);
             g.DrawString("✕", f, b, ClientSize.Width - Pad - 14, 12);
         }
         string what = def == null ? "factory animation (approximation)" : def.Name;
