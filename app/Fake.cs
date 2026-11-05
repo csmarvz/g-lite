@@ -106,7 +106,7 @@ class KeyboardView : Form
     readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
     float width, height;
     List<Point>[] cells;
-    Blocks game;
+    Game game;
     double nextStep, overAt;
 
     protected override bool ShowWithoutActivation { get { return true; } }
@@ -132,9 +132,9 @@ class KeyboardView : Form
         var rows = keys.Select(k => k.Item1.Y).Distinct().OrderBy(v => v).ToList();
         cells = keys.Select(k =>
         {
-            int r = rows.IndexOf(k.Item1.Y) - (rows.Count - Blocks.H);
+            int r = rows.IndexOf(k.Item1.Y) - (rows.Count - Game.H);
             if (r < 0) return null;
-            var l = Enumerable.Range(0, Blocks.W).Where(c => Pad + (c + 0.5f) * U >= k.Item1.X && Pad + (c + 0.5f) * U < k.Item1.Right + 4).Select(c => new Point(c, r)).ToList();
+            var l = Enumerable.Range(0, Game.W).Where(c => Pad + (c + 0.5f) * U >= k.Item1.X && Pad + (c + 0.5f) * U < k.Item1.Right + 4).Select(c => new Point(c, r)).ToList();
             return l.Count > 0 ? l : null;
         }).ToArray();
         Text = model.Name + " (demo)";
@@ -151,15 +151,17 @@ class KeyboardView : Form
             if (e.Button != MouseButtons.Left) return;
             if (e.Y >= Head + Pad / 2) { ripples.Add(Tuple.Create(new PointF(e.X, e.Y), clock.Elapsed.TotalSeconds)); return; }
             if (e.X > ClientSize.Width - Pad - 20) { Hide(); return; }
-            if (e.X > ClientSize.Width - Pad - 70) { if (game == null) Play(); else game = null; return; }
+            if (game != null) { if (e.X > ClientSize.Width - Pad - 70) game = null; return; }
+            if (e.X > ClientSize.Width - Pad - 70) { Play(new Snake()); return; }
+            if (e.X > ClientSize.Width - Pad - 125) { Play(new Blocks()); return; }
             ReleaseCapture();
             SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero);
         };
     }
 
-    void Play()
+    void Play(Game g)
     {
-        game = new Blocks();
+        game = g;
         overAt = 0;
         nextStep = clock.Elapsed.TotalMilliseconds + game.Interval;
         Activate();
@@ -176,16 +178,7 @@ class KeyboardView : Form
     protected override bool ProcessCmdKey(ref Message msg, Keys key)
     {
         if (game == null) return base.ProcessCmdKey(ref msg, key);
-        switch (key)
-        {
-            case Keys.Up: game.Move(-1); break;
-            case Keys.Down: game.Move(1); break;
-            case Keys.Left: game.Rotate(); break;
-            case Keys.Right: game.Step(); break;
-            case Keys.Space: game.Drop(); nextStep = clock.Elapsed.TotalMilliseconds + game.Interval; break;
-            case Keys.Escape: game = null; break;
-            default: return base.ProcessCmdKey(ref msg, key);
-        }
+        if (key == Keys.Escape) game = null; else game.Key(key);
         Invalidate();
         return true;
     }
@@ -280,11 +273,11 @@ class KeyboardView : Form
         {
             g.DrawString(Text, f, b, Pad, 12);
             g.DrawString("✕", f, b, ClientSize.Width - Pad - 14, 12);
-            using (var a = new SolidBrush(Color.FromArgb(63, 169, 138))) g.DrawString(game == null ? "Play" : "Stop", f, a, ClientSize.Width - Pad - 66, 12);
+            using (var a = new SolidBrush(Color.FromArgb(63, 169, 138))) g.DrawString(game == null ? "Blocks      Snake" : "Stop", f, a, ClientSize.Width - Pad - (game == null ? 120 : 66), 12);
         }
         string what = def == null ? "factory animation (approximation)" : def.Name;
         if (id == 0x17) what += " — click the keys";
-        if (game != null) what = (game.Over ? "game over" : "↑↓ move   ← rotate   → down   Space drop   Esc stop") + "   ·   lines " + game.Lines;
+        if (game != null) what = game.Over ? "game over   ·   score " + game.Score : game.Help;
         using (var f = new Font("Segoe UI", 9f))
         using (var b = new SolidBrush(Color.FromArgb(150, 150, 150)))
             g.DrawString(what + "   ·   brightness " + bright + "%", f, b, Pad, ClientSize.Height - 26);

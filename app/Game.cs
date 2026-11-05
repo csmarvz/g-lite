@@ -1,8 +1,22 @@
 using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Windows.Forms;
 
-class Blocks
+abstract class Game
 {
     public const int W = 15, H = 5;
+    public int Score;
+    public bool Over;
+    public abstract int Interval { get; }
+    public abstract string Help { get; }
+    public abstract void Step();
+    public abstract void Key(Keys k);
+    public abstract int At(int y, int x);
+}
+
+class Blocks : Game
+{
     static readonly int[][] Shapes =
     {
         new[] { 0, 0, 1, 0, 2, 0, 3, 0 },
@@ -18,12 +32,22 @@ class Blocks
     readonly Random rng = new Random();
     int[] piece;
     int px, py, color;
-    public int Lines;
-    public bool Over;
 
     public Blocks() { Spawn(); }
 
-    public int Interval { get { return Math.Max(120, 650 - Lines * 30); } }
+    public override int Interval { get { return Math.Max(120, 650 - Score * 30); } }
+    public override string Help { get { return "↑↓ move   ← rotate   → down   Space drop   Esc stop   ·   lines " + Score; } }
+
+    public override void Key(Keys k)
+    {
+        if (k == Keys.Up) Move(-1);
+        if (k == Keys.Down) Move(1);
+        if (k == Keys.Left) Rotate();
+        if (k == Keys.Right) Fall();
+        if (k == Keys.Space) while (Fall()) { }
+    }
+
+    public override void Step() { Fall(); }
 
     bool Fits(int[] p, int dx, int dy)
     {
@@ -56,7 +80,7 @@ class Blocks
             if (Fits(r, px, py + kick)) { piece = r; py += kick; return; }
     }
 
-    public bool Step()
+    bool Fall()
     {
         if (Over) return false;
         if (Fits(piece, px + 1, py)) { px++; return true; }
@@ -65,8 +89,6 @@ class Blocks
         Spawn();
         return false;
     }
-
-    public void Drop() { while (Step()) { } }
 
     public void ClearFull()
     {
@@ -77,15 +99,60 @@ class Blocks
             if (!full) continue;
             for (int c = x; c > 0; c--) for (int y = 0; y < H; y++) Cells[y, c] = Cells[y, c - 1];
             for (int y = 0; y < H; y++) Cells[y, 0] = 0;
-            Lines++;
+            Score++;
             x++;
         }
     }
 
-    public int At(int y, int x)
+    public override int At(int y, int x)
     {
         if (!Over)
             for (int i = 0; i < 4; i++) if (piece[2 * i] + px == x && piece[2 * i + 1] + py == y) return color;
         return Cells[y, x];
+    }
+}
+
+class Snake : Game
+{
+    readonly List<Point> body = new List<Point> { new Point(4, 2), new Point(3, 2), new Point(2, 2) };
+    readonly Random rng = new Random();
+    Point dir = new Point(1, 0), next = new Point(1, 0), food;
+
+    public Snake() { Feed(); }
+
+    public override int Interval { get { return Math.Max(110, 320 - Score * 12); } }
+    public override string Help { get { return "arrows steer   Esc stop   ·   length " + body.Count; } }
+
+    void Feed()
+    {
+        var free = new List<Point>();
+        for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) if (!body.Contains(new Point(x, y))) free.Add(new Point(x, y));
+        if (free.Count == 0) Over = true; else food = free[rng.Next(free.Count)];
+    }
+
+    public override void Key(Keys k)
+    {
+        var d = k == Keys.Up ? new Point(0, -1) : k == Keys.Down ? new Point(0, 1) : k == Keys.Left ? new Point(-1, 0) : k == Keys.Right ? new Point(1, 0) : dir;
+        if (d.X != -dir.X || d.Y != -dir.Y) next = d;
+    }
+
+    public override void Step()
+    {
+        if (Over) return;
+        dir = next;
+        var head = new Point(body[0].X + dir.X, body[0].Y + dir.Y);
+        bool eat = head == food;
+        if (!eat) body.RemoveAt(body.Count - 1);
+        if (head.X < 0 || head.X >= W || head.Y < 0 || head.Y >= H || body.Contains(head)) { Over = true; return; }
+        body.Insert(0, head);
+        if (eat) { Score++; Feed(); }
+    }
+
+    public override int At(int y, int x)
+    {
+        var p = new Point(x, y);
+        if (body[0] == p) return 0xB8FF6A;
+        if (body.Contains(p)) return 0x2FBF4A;
+        return food == p && !Over ? 0xFF3030 : 0;
     }
 }

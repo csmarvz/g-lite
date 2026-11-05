@@ -44,12 +44,18 @@ static class SelfTest
         var m = Model.Load("g515-tkl.json");
         Check(m.Name == "G515 LIGHTSPEED TKL" && m.Rows.Length == 7 && m.Rows[6].EndsWith("→"), "keyboard model loads");
         var game = new Blocks();
-        for (int y = 0; y < Blocks.H; y++) game.Cells[y, Blocks.W - 1] = 1;
-        game.Cells[0, Blocks.W - 2] = 2;
+        for (int y = 0; y < Game.H; y++) game.Cells[y, Game.W - 1] = 1;
+        game.Cells[0, Game.W - 2] = 2;
         game.ClearFull();
-        Check(game.Lines == 1 && game.Cells[0, Blocks.W - 1] == 2 && game.Cells[0, Blocks.W - 2] == 0, "full column clears and shifts");
-        game.Drop();
+        Check(game.Score == 1 && game.Cells[0, Game.W - 1] == 2 && game.Cells[0, Game.W - 2] == 0, "full column clears and shifts");
+        game.Key(System.Windows.Forms.Keys.Space);
         Check(!game.Over, "piece locks after drop");
+        var snake = new Snake();
+        snake.Key(System.Windows.Forms.Keys.Left);
+        snake.Step();
+        Check(!snake.Over && snake.At(2, 5) != 0, "snake ignores reversing into itself");
+        for (int i = 0; i < Game.W; i++) snake.Step();
+        Check(snake.Over, "snake dies at the wall");
         Console.WriteLine("selftest ok");
         return 0;
     }
