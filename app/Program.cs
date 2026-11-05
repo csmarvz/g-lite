@@ -107,7 +107,9 @@ class Panel515 : Form
             var view = new KeyboardView(fake);
             view.Show();
             var show = new Label { Text = "Show keyboard", ForeColor = Theme.Accent, Location = new Point(x0 + w - 120, y), AutoSize = true, Cursor = Cursors.Hand };
-            show.Click += (s, e) => view.Show();
+            show.Click += (s, e) => view.Visible = !view.Visible;
+            view.VisibleChanged += (s, e) => show.Text = view.Visible ? "Hide keyboard" : "Show keyboard";
+            show.Text = "Hide keyboard";
             Controls.Add(show);
         }
         var close = new Label { Text = "✕", ForeColor = Theme.Dim, Location = new Point(x0 + w - 14, y), AutoSize = true, Cursor = Cursors.Hand };
