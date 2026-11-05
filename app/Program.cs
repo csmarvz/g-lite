@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
-[assembly: System.Reflection.AssemblyVersion("0.0.2")]
-[assembly: System.Reflection.AssemblyFileVersion("0.0.2")]
-[assembly: System.Reflection.AssemblyInformationalVersion("0.0.2-alpha")]
+[assembly: System.Reflection.AssemblyVersion("0.0.3")]
+[assembly: System.Reflection.AssemblyFileVersion("0.0.3")]
+[assembly: System.Reflection.AssemblyInformationalVersion("0.0.3-alpha")]
 
 static class Theme
 {
