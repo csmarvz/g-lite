@@ -64,7 +64,7 @@ class Panel515 : Form
 
     Lighting cur = new Lighting(), stored;
     int brightness = 100, storedBrightness = -1;
-    bool loading, dirty, claimed, dialogOpen, unknownStored;
+    bool loading, dirty, claimed, unknownStored;
     Hidpp dev;
     Task queue = Task.FromResult(0);
     int previewSeq;
@@ -175,7 +175,6 @@ class Panel515 : Form
         saveBtn.Click += (s, e) => Save();
         ClientSize = new Size(360, y + 44);
 
-        Deactivate += (s, e) => { if (!dialogOpen) HidePanel(); };
         Sync();
     }
 
@@ -294,10 +293,8 @@ class Panel515 : Form
 
     void PickColor()
     {
-        dialogOpen = true;
         using (var dlg = new ColorDialog { FullOpen = true, Color = Color.FromArgb(cur.Color | unchecked((int)0xFF000000)) })
             if (dlg.ShowDialog(this) == DialogResult.OK) { cur.Color = dlg.Color.ToArgb() & 0xFFFFFF; Changed(true); }
-        dialogOpen = false;
         Activate();
     }
 
@@ -383,12 +380,10 @@ class Panel515 : Form
         });
     }
 
-    public DateTime HiddenAt;
 
-    void HidePanel()
+    public void HidePanel()
     {
         Hide();
-        HiddenAt = DateTime.UtcNow;
         debounce.Stop();
         if (!dirty) return;
         dirty = false;
@@ -436,7 +431,7 @@ class Panel515 : Form
             tray.ContextMenuStrip = new ContextMenuStrip();
             tray.ContextMenuStrip.Items.Add("Open", null, (s, e) => panel.ShowPanel());
             tray.ContextMenuStrip.Items.Add("Quit", null, (s, e) => { tray.Visible = false; Application.Exit(); });
-            tray.MouseClick += (s, e) => { if (e.Button == MouseButtons.Left) { if (!panel.Visible && (DateTime.UtcNow - panel.HiddenAt).TotalMilliseconds > 300) panel.ShowPanel(); } };
+            tray.MouseClick += (s, e) => { if (e.Button == MouseButtons.Left) { if (panel.Visible) panel.HidePanel(); else panel.ShowPanel(); } };
             panel.CreateControl();
             panel.Handle.ToString();
             Application.Run();
