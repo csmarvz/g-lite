@@ -54,8 +54,8 @@ static class SelfTest
         snake.Key(System.Windows.Forms.Keys.Left);
         snake.Step();
         Check(!snake.Over && snake.At(2, 5) != 0, "snake ignores reversing into itself");
-        for (int i = 0; i < Game.W; i++) snake.Step();
-        Check(snake.Over, "snake dies at the wall");
+        for (int i = 0; i < Game.W - 5; i++) snake.Step();
+        Check(!snake.Over && snake.At(2, 0) != 0, "snake wraps through the wall");
         Console.WriteLine("selftest ok");
         return 0;
     }

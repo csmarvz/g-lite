@@ -140,10 +140,10 @@ class Snake : Game
     {
         if (Over) return;
         dir = next;
-        var head = new Point(body[0].X + dir.X, body[0].Y + dir.Y);
+        var head = new Point((body[0].X + dir.X + W) % W, (body[0].Y + dir.Y + H) % H);
         bool eat = head == food;
         if (!eat) body.RemoveAt(body.Count - 1);
-        if (head.X < 0 || head.X >= W || head.Y < 0 || head.Y >= H || body.Contains(head)) { Over = true; return; }
+        if (body.Contains(head)) { Over = true; return; }
         body.Insert(0, head);
         if (eat) { Score++; Feed(); }
     }
