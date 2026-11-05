@@ -82,9 +82,12 @@ class Panel515 : Form
     [DllImport("user32.dll")] static extern bool ReleaseCapture();
     [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, IntPtr l);
 
-    public Panel515(bool demo)
+    FakeHidpp fake;
+
+    public Panel515(FakeHidpp fake)
     {
-        this.demo = demo;
+        this.fake = fake;
+        demo = fake != null;
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
         TopMost = true;
@@ -305,7 +308,7 @@ class Panel515 : Form
         {
             try
             {
-                if (dev == null) dev = demo ? new FakeHidpp() : new Hidpp();
+                if (dev == null) dev = demo ? fake : new Hidpp();
                 a(dev);
                 if (done != null) BeginInvoke(done);
             }
@@ -419,10 +422,14 @@ class Panel515 : Form
         {
             if (!fresh) return;
             Application.EnableVisualStyles();
-            var panel = new Panel515(demo);
+            var fake = demo ? new FakeHidpp() : null;
+            var panel = new Panel515(fake);
+            var view = demo ? new KeyboardView(fake) : null;
+            if (demo) view.Show();
             var tray = new NotifyIcon { Icon = MakeIcon(), Text = demo ? "G515 Lighting (demo)" : "G515 Lighting", Visible = true };
             tray.ContextMenuStrip = new ContextMenuStrip();
             tray.ContextMenuStrip.Items.Add("Open", null, (s, e) => panel.ShowPanel());
+            if (demo) tray.ContextMenuStrip.Items.Add("Demo keyboard", null, (s, e) => { view.Show(); view.Activate(); });
             tray.ContextMenuStrip.Items.Add("Quit", null, (s, e) => { tray.Visible = false; Application.Exit(); });
             tray.MouseClick += (s, e) => { if (e.Button == MouseButtons.Left) { if (!panel.Visible && (DateTime.UtcNow - panel.HiddenAt).TotalMilliseconds > 300) panel.ShowPanel(); } };
             panel.CreateControl();
