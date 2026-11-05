@@ -97,6 +97,8 @@ class KeyboardView : Form
     readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
     float width;
 
+    protected override bool ShowWithoutActivation { get { return true; } }
+
     public KeyboardView(FakeHidpp kb)
     {
         this.kb = kb;

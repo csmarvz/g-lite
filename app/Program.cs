@@ -101,7 +101,15 @@ class Panel515 : Form
         MouseDown += Drag;
 
         int y = 12, x0 = 16, w = 328;
-        var title = Lbl(demo ? "G515 Lighting — demo, no keyboard" : "G515 Lighting", x0, y, Theme.Dim);
+        var title = Lbl(demo ? "G515 Lighting — demo" : "G515 Lighting", x0, y, Theme.Dim);
+        if (demo)
+        {
+            var view = new KeyboardView(fake);
+            view.Show();
+            var show = new Label { Text = "Show keyboard", ForeColor = Theme.Accent, Location = new Point(x0 + w - 120, y), AutoSize = true, Cursor = Cursors.Hand };
+            show.Click += (s, e) => view.Show();
+            Controls.Add(show);
+        }
         var close = new Label { Text = "✕", ForeColor = Theme.Dim, Location = new Point(x0 + w - 14, y), AutoSize = true, Cursor = Cursors.Hand };
         close.Click += (s, e) => HidePanel();
         Controls.Add(close);
@@ -424,12 +432,9 @@ class Panel515 : Form
             Application.EnableVisualStyles();
             var fake = demo ? new FakeHidpp() : null;
             var panel = new Panel515(fake);
-            var view = demo ? new KeyboardView(fake) : null;
-            if (demo) view.Show();
             var tray = new NotifyIcon { Icon = MakeIcon(), Text = demo ? "G515 Lighting (demo)" : "G515 Lighting", Visible = true };
             tray.ContextMenuStrip = new ContextMenuStrip();
             tray.ContextMenuStrip.Items.Add("Open", null, (s, e) => panel.ShowPanel());
-            if (demo) tray.ContextMenuStrip.Items.Add("Demo keyboard", null, (s, e) => { view.Show(); view.Activate(); });
             tray.ContextMenuStrip.Items.Add("Quit", null, (s, e) => { tray.Visible = false; Application.Exit(); });
             tray.MouseClick += (s, e) => { if (e.Button == MouseButtons.Left) { if (!panel.Visible && (DateTime.UtcNow - panel.HiddenAt).TotalMilliseconds > 300) panel.ShowPanel(); } };
             panel.CreateControl();
