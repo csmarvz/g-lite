@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.0.4-alpha] - 2026-11-05
+
+### Added
+
+- G-Lite finds your Logitech G devices over LIGHTSPEED, Unifying and Bolt receivers, USB and Bluetooth, and lists them in a sidebar with their connection and battery. Devices that are paired but asleep stay in the list. The list updates when a device is plugged in or out, or when you click Scan for devices.
+- Devices G-Lite can't change yet show their connection, battery, firmware and features. When nothing is found, a screen says what to try and links to reporting your device.
+- Profiles: save the current lighting under a name, pick it again from the dropdown, or delete it. "As on the keyboard" goes back to what's saved on the keyboard.
+- A live picture of the keyboard shows the lighting you're setting.
+- A dark, light or system theme, in Settings.
+- The GL logo, as the app and tray icon.
+
+### Changed
+
+- The panel is now a window, with your devices on the left and the selected device on the right. Settings and Quit are in the sidebar. The window is no longer always on top.
+- Every lighting option stays visible. The ones the effect doesn't use are greyed out.
+- A custom colour keeps its own swatch, next to the + that picks a new one.
+- G-Lite scales with the display, including when it moves to a screen with a different scale.
+- Run on startup follows the switch in Task Manager's Startup apps, where G-Lite shows with com.csmarvz as its publisher.
+
 ## [0.0.3-alpha] - 2026-11-05
 
 ### Added
