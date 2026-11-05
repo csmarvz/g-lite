@@ -1,4 +1,5 @@
 # G-Lite
+Lightweight G Hub alternative.
 
 ## Sources
 
