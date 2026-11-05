@@ -101,7 +101,7 @@ class Panel515 : Form
         MouseDown += Drag;
 
         int y = 12, x0 = 16, w = 328;
-        var title = Lbl(demo ? "G515 Lighting — demo" : "G515 Lighting", x0, y, Theme.Dim);
+        var title = Lbl(demo ? "G-Lite — demo" : "G-Lite", x0, y, Theme.Dim);
         if (demo)
         {
             var view = new KeyboardView(fake, Model.Load("g515-tkl.json"));
@@ -168,7 +168,7 @@ class Panel515 : Form
         y += 38;
 
         startup = new CheckBox { Text = "Run on startup", Location = new Point(x0, y + 5), AutoSize = true, ForeColor = Theme.Dim };
-        using (var k = Registry.CurrentUser.OpenSubKey(RunKey)) startup.Checked = k != null && k.GetValue("G515Lighting") != null;
+        using (var k = Registry.CurrentUser.OpenSubKey(RunKey)) startup.Checked = k != null && k.GetValue("GLite") != null;
         startup.CheckedChanged += (s, e) => SetStartup(startup.Checked);
         Controls.Add(startup);
         var quit = Btn("Quit", x0 + w - 60, y, 60, 30);
@@ -303,8 +303,8 @@ class Panel515 : Form
     void SetStartup(bool on)
     {
         using (var k = Registry.CurrentUser.CreateSubKey(RunKey))
-            if (on) k.SetValue("G515Lighting", "\"" + Application.ExecutablePath + "\"");
-            else k.DeleteValue("G515Lighting", false);
+            if (on) k.SetValue("GLite", "\"" + Application.ExecutablePath + "\"");
+            else k.DeleteValue("GLite", false);
     }
 
     void Status(string s) { if (IsHandleCreated) BeginInvoke((Action)(() => status.Text = s)); }
@@ -423,13 +423,13 @@ class Panel515 : Form
     static void Main(string[] args)
     {
         bool fresh, demo = args.Contains("--demo");
-        using (new Mutex(true, demo ? "G515LightingDemo" : "G515Lighting", out fresh))
+        using (new Mutex(true, demo ? "GLiteDemo" : "GLite", out fresh))
         {
             if (!fresh) return;
             Application.EnableVisualStyles();
             var fake = demo ? new FakeHidpp() : null;
             var panel = new Panel515(fake);
-            var tray = new NotifyIcon { Icon = MakeIcon(), Text = demo ? "G515 Lighting (demo)" : "G515 Lighting", Visible = true };
+            var tray = new NotifyIcon { Icon = MakeIcon(), Text = demo ? "G-Lite (demo)" : "G-Lite", Visible = true };
             tray.ContextMenuStrip = new ContextMenuStrip();
             tray.ContextMenuStrip.Items.Add("Open", null, (s, e) => panel.ShowPanel());
             tray.ContextMenuStrip.Items.Add("Quit", null, (s, e) => { tray.Visible = false; Application.Exit(); });

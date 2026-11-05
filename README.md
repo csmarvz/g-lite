@@ -1,4 +1,4 @@
-# G515 Lighting
+# G-Lite
 
 ## Sources
 
