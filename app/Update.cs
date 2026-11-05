@@ -4,32 +4,15 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
-using Microsoft.Win32;
 
 static class Updater
 {
     const string Repo = "https://github.com/csmarvz/g-lite";
-    const string Key = @"Software\GLite";
+    static readonly string Temp = Path.Combine(Path.GetTempPath(), "GLite-update.exe");
 
-    public static bool Check { get { return Get("CheckUpdates", 1) == 1; } set { Set("CheckUpdates", value ? 1 : 0); } }
-    public static bool Auto { get { return Get("AutoUpdate", 0) == 1; } set { Set("AutoUpdate", value ? 1 : 0); } }
-
-    public static string Skipped
-    {
-        get { using (var k = Registry.CurrentUser.OpenSubKey(Key)) return k == null ? null : k.GetValue("SkipVersion") as string; }
-        set { using (var k = Registry.CurrentUser.CreateSubKey(Key)) k.SetValue("SkipVersion", value); }
-    }
-
-    static int Get(string name, int def)
-    {
-        using (var k = Registry.CurrentUser.OpenSubKey(Key))
-        {
-            var v = k == null ? null : k.GetValue(name);
-            return v is int ? (int)v : def;
-        }
-    }
-
-    static void Set(string name, int v) { using (var k = Registry.CurrentUser.CreateSubKey(Key)) k.SetValue(name, v); }
+    public static bool Check { get { return Settings.Get("check-updates") != "0"; } set { Settings.Set("check-updates", value ? "1" : "0"); } }
+    public static bool Auto { get { return Settings.Get("auto-update") == "1"; } set { Settings.Set("auto-update", value ? "1" : "0"); } }
+    public static string Skipped { get { return Settings.Get("skip-version"); } set { Settings.Set("skip-version", value); } }
 
     static string Exe { get { return System.Reflection.Assembly.GetEntryAssembly().Location; } }
 
@@ -70,7 +53,7 @@ static class Updater
         }
     }
 
-    public static void Install(string version)
+    public static void Install(string version, bool show)
     {
         ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
         string url = Repo + "/releases/download/v" + version + "/", exe = Exe;
@@ -86,17 +69,45 @@ static class Updater
         using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(bin)).Replace("-", "").ToLowerInvariant();
         if (!sums.Split('\n').Any(l => l.Contains("GLite.exe") && l.Trim().StartsWith(hash)))
             throw new Exception("the download doesn't match its checksum, so nothing was changed");
-        File.WriteAllBytes(exe + ".new", bin);
-        if (File.Exists(exe + ".old")) File.Delete(exe + ".old");
-        File.Move(exe, exe + ".old");
-        try { File.Move(exe + ".new", exe); }
-        catch { File.Move(exe + ".old", exe); throw; }
-        var args = Environment.GetCommandLineArgs().Skip(1).Where(a => a != "--restart").Concat(new[] { "--restart" });
+        try
+        {
+            File.WriteAllBytes(exe + ".new", bin);
+            if (File.Exists(exe + ".old")) File.Delete(exe + ".old");
+            File.Move(exe, exe + ".old");
+            try { File.Move(exe + ".new", exe); }
+            catch { File.Move(exe + ".old", exe); throw; }
+        }
+        catch (UnauthorizedAccessException) { Elevated(exe, bin); }
+        var args = Environment.GetCommandLineArgs().Skip(1).Where(a => a != "--restart" && a != "--tray").Concat(show ? new[] { "--restart" } : new[] { "--restart", "--tray" });
         Process.Start(exe, string.Join(" ", args));
+    }
+
+    static void Elevated(string exe, byte[] bin)
+    {
+        File.WriteAllBytes(Temp, bin);
+        Process p;
+        try { p = Process.Start(new ProcessStartInfo(Temp, "--swap \"" + exe + "\"") { Verb = "runas", UseShellExecute = true }); }
+        catch (System.ComponentModel.Win32Exception) { throw new Exception("the update needs administrator rights, and they weren't given"); }
+        p.WaitForExit();
+        if (p.ExitCode != 0) throw new Exception("couldn't replace " + exe);
+    }
+
+    public static int Swap(string exe)
+    {
+        try
+        {
+            if (File.Exists(exe + ".old")) File.Delete(exe + ".old");
+            File.Move(exe, exe + ".old");
+            try { File.Copy(Exe, exe); }
+            catch { File.Move(exe + ".old", exe); throw; }
+            return 0;
+        }
+        catch { return 1; }
     }
 
     public static void Cleanup()
     {
         try { if (File.Exists(Exe + ".old")) File.Delete(Exe + ".old"); } catch { }
+        try { if (File.Exists(Temp)) File.Delete(Temp); } catch { }
     }
 }

@@ -83,6 +83,12 @@ static class SelfTest
         Check(Updater.Newer("0.0.2-alpha", "0.0.1-alpha") && Updater.Newer("0.0.1", "0.0.1-alpha") && Updater.Newer("0.0.1-beta", "0.0.1-alpha") && Updater.Newer("v0.1.0", "0.0.9")
             && !Updater.Newer("0.0.1-alpha", "0.0.1-alpha") && !Updater.Newer("0.0.1-alpha", "0.0.1") && !Updater.Newer("0.0.9", "0.0.10"), "versions compare");
         Check(Updater.TagFrom("https://github.com/csmarvz/g-lite/releases/tag/v0.0.2-alpha") == "v0.0.2-alpha" && Updater.TagFrom("https://github.com/csmarvz/g-lite/releases") == null, "latest tag read from the redirect");
+        Settings.Location = System.IO.Path.GetTempFileName();
+        Settings.Init();
+        Check(Settings.Get("check-updates") == "1" && Settings.Get("skip-version") == "", "settings file starts with the defaults");
+        Settings.Set("skip-version", "0.0.3-alpha");
+        Check(Settings.Get("skip-version") == "0.0.3-alpha" && System.IO.File.ReadAllText(Settings.Location).Contains("skip-version=0.0.3-alpha"), "settings are written to the file");
+        System.IO.File.Delete(Settings.Location);
         Console.WriteLine("selftest ok");
         return 0;
     }

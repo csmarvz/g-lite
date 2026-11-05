@@ -84,6 +84,11 @@ class Panel515 : Form
     Label updText, updGo, updSkip;
     string available;
     public NotifyIcon Tray;
+    public string Note;
+    KeyboardView view;
+    bool wantView;
+    int statusTop;
+    Control[] bottomRow;
     bool moved, demo;
 
     [DllImport("user32.dll")] static extern bool ReleaseCapture();
@@ -95,8 +100,11 @@ class Panel515 : Form
     {
         this.fake = fake;
         demo = fake != null;
+        KeyboardView.Round(this);
         FormBorderStyle = FormBorderStyle.None;
-        ShowInTaskbar = false;
+        Text = "G-Lite";
+        Icon = MakeIcon();
+        FormClosing += (s, e) => { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; ToTray(); } };
         TopMost = true;
         StartPosition = FormStartPosition.Manual;
         BackColor = Theme.Bg;
@@ -111,16 +119,14 @@ class Panel515 : Form
         var title = Lbl("G-Lite " + Application.ProductVersion + (demo ? " — demo" : ""), x0, y, Theme.Dim);
         if (demo)
         {
-            var view = new KeyboardView(fake, Model.Load("g515-tkl.json"));
-            view.Show();
+            view = new KeyboardView(fake, Model.Load("g515-tkl.json"));
             var show = new Label { Text = "Show keyboard", ForeColor = Theme.Accent, Location = new Point(x0 + w - 120, y), AutoSize = true, Cursor = Cursors.Hand };
-            show.Click += (s, e) => view.Visible = !view.Visible;
-            view.VisibleChanged += (s, e) => show.Text = view.Visible ? "Hide keyboard" : "Show keyboard";
-            show.Text = "Hide keyboard";
+            show.Click += (s, e) => { if (view.Visible) view.Hide(); else ShowView(); };
+            view.VisibleChanged += (s, e) => { show.Text = view.Visible ? "Hide keyboard" : "Show keyboard"; wantView = view.Visible; };
             Controls.Add(show);
         }
         var close = new Label { Text = "✕", ForeColor = Theme.Dim, Location = new Point(x0 + w - 14, y), AutoSize = true, Cursor = Cursors.Hand };
-        close.Click += (s, e) => HidePanel();
+        close.Click += (s, e) => ToTray();
         Controls.Add(close);
         y += 30;
 
@@ -169,23 +175,25 @@ class Panel515 : Form
         sleepBox.SelectedIndexChanged += (s, e) => { if (!loading) { cur.Sleep = SleepSecs[sleepBox.SelectedIndex]; Changed(false); } };
         y += 40;
 
-        status = new Label { Location = new Point(x0, y), Size = new Size(w, 34), ForeColor = Theme.Dim, Cursor = Cursors.Hand };
+        status = new Label { Location = new Point(x0, y), Size = new Size(w, 34), ForeColor = Theme.Dim, Cursor = Cursors.Hand, AutoEllipsis = true };
         status.Click += (s, e) => { if (status.Text.Contains("Dynamic Lighting")) System.Diagnostics.Process.Start("ms-settings:personalization-lighting"); };
         Controls.Add(status);
         updText = Lbl("", x0, y + 18, Theme.Dim);
         updGo = Link("Update", x0 + w - 150, y + 18);
-        updGo.Click += (s, e) => Install(available);
+        updGo.Click += (s, e) => Install(available, true);
         updSkip = Link("Skip this version", x0 + w - 95, y + 18);
         updSkip.Click += (s, e) => { Updater.Skipped = available; ShowUpdate(null); };
-        ShowUpdate(null);
-        y += 38;
+        statusTop = y;
 
-        Btn("Settings", x0, y, 80, 30).Click += (s, e) => OpenSettings();
+        var settingsBtn = Btn("Settings", x0, y, 80, 30);
+        settingsBtn.Click += (s, e) => OpenSettings();
         var quit = Btn("Quit", x0 + w - 60, y, 60, 30);
         quit.Click += (s, e) => { HidePanel(); queue.Wait(5000); Application.Exit(); };
         saveBtn = Btn("Save to keyboard", x0 + w - 60 - 8 - 130, y, 130, 30);
         saveBtn.Click += (s, e) => Save();
-        ClientSize = new Size(360, y + 44);
+        bottomRow = new Control[] { settingsBtn, saveBtn, quit };
+        status.TextChanged += (s, e) => Relayout();
+        ShowUpdate(null);
 
         Sync();
     }
@@ -200,7 +208,7 @@ class Panel515 : Form
 
     protected override void OnPaint(PaintEventArgs e)
     {
-        using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+        if (!KeyboardView.Rounded) using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
     }
 
     Label Lbl(string t, int x, int y, Color c)
@@ -313,7 +321,7 @@ class Panel515 : Form
     void SetStartup(bool on)
     {
         using (var k = Registry.CurrentUser.CreateSubKey(RunKey))
-            if (on) k.SetValue("GLite", "\"" + Application.ExecutablePath + "\"");
+            if (on) k.SetValue("GLite", "\"" + Application.ExecutablePath + "\" --tray");
             else k.DeleteValue("GLite", false);
     }
 
@@ -326,13 +334,22 @@ class Panel515 : Form
         return l;
     }
 
+    void ShowView()
+    {
+        var wa = Screen.FromControl(this).WorkingArea;
+        view.StartPosition = FormStartPosition.Manual;
+        view.Location = new Point(Math.Max(wa.Left, Left - view.Width - 8), Math.Max(wa.Top, Top));
+        view.Show();
+    }
+
     void OpenSettings()
     {
         if (settings == null)
         {
             settings = new Form { FormBorderStyle = FormBorderStyle.None, ShowInTaskbar = false, TopMost = true, StartPosition = FormStartPosition.Manual, BackColor = Theme.Bg, ForeColor = Theme.Text, Font = Font, ClientSize = new Size(220, 150) };
             var f = settings;
-            f.Paint += (s, e) => { using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, f.Width - 1, f.Height - 1); };
+            KeyboardView.Round(f);
+            f.Paint += (s, e) => { if (!KeyboardView.Rounded) using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, f.Width - 1, f.Height - 1); };
             MouseEventHandler drag = (s, e) => { if (e.Button != MouseButtons.Left) return; ReleaseCapture(); SendMessage(f.Handle, 0xA1, (IntPtr)2, IntPtr.Zero); };
             f.MouseDown += drag;
             var title = new Label { Text = "Settings", ForeColor = Theme.Dim, Location = new Point(16, 12), AutoSize = true };
@@ -355,12 +372,27 @@ class Panel515 : Form
         settings.Activate();
     }
 
+    void Relayout()
+    {
+        int sh = status.Text == "" ? 0 : TextRenderer.MeasureText(status.Text, status.Font, new Size(status.Width, 100), TextFormatFlags.WordBreak).Height > 20 ? 34 : 18;
+        if (available != null) sh = Math.Min(sh, 18);
+        status.Height = sh;
+        int top = statusTop + sh;
+        foreach (var c in new Control[] { updText, updGo, updSkip }) c.Top = top;
+        int gap = sh + (available != null ? 20 : 0);
+        if (gap > 0) gap += 6;
+        foreach (var c in bottomRow) c.Top = statusTop + gap;
+        int bottom = Bottom;
+        ClientSize = new Size(ClientSize.Width, statusTop + gap + 44);
+        if (Visible) Top = bottom - Height;
+    }
+
     void ShowUpdate(string v)
     {
         available = v;
         updText.Text = v == null ? "" : "Version " + v + " is available";
         updText.Visible = updGo.Visible = updSkip.Visible = v != null;
-        status.Height = v == null ? 34 : 18;
+        Relayout();
         if (Tray != null) Tray.Text = "G-Lite " + Application.ProductVersion + (demo ? " (demo)" : "") + (v == null ? "" : " · " + v + " available");
     }
 
@@ -380,19 +412,20 @@ class Panel515 : Form
         if (err != null) { if (manual) status.Text = "Couldn't check for updates: " + err; return; }
         if (v == null || !Updater.Newer(v, Application.ProductVersion)) { if (manual) status.Text = "G-Lite is up to date"; return; }
         if (!manual && v == Updater.Skipped) return;
-        if (!manual && Updater.Auto) { Install(v); return; }
+        if (!manual && Updater.Auto) { Install(v, Visible); return; }
         if (manual) status.Text = "";
         ShowUpdate(v);
     }
 
-    void Install(string v)
+    void Install(string v, bool show)
     {
+        ShowUpdate(null);
         status.Text = "Downloading " + v + "…";
         Task.Run(() =>
         {
             try
             {
-                Updater.Install(v);
+                Updater.Install(v, show);
                 BeginInvoke((Action)(() => { HidePanel(); queue.Wait(5000); if (Tray != null) Tray.Visible = false; Application.Exit(); }));
             }
             catch (Exception ex) { Status("Update failed: " + ex.Message); }
@@ -450,6 +483,7 @@ class Panel515 : Form
         var wa = Screen.FromPoint(Cursor.Position).WorkingArea;
         if (!moved) Location = new Point(wa.Right - Width - 12, wa.Bottom - Height - 12);
         Show();
+        if (view != null && wantView) ShowView();
         Activate();
         dirty = false;
         status.Text = DynamicLightingOn() ? "Windows Dynamic Lighting is on and may override this. Click to open its settings." : "Reading keyboard…";
@@ -468,10 +502,24 @@ class Panel515 : Form
         {
             stored = l.Clone(); cur = l; brightness = b; storedBrightness = b; unknownStored = unknown;
             Sync();
-            if (!dl) status.Text = "";
+            if (!dl) status.Text = Note ?? "";
+            if (Note == null) return;
+            var n = Note;
+            Note = null;
+            var t = new System.Windows.Forms.Timer { Interval = 8000 };
+            t.Tick += (s, e) => { t.Dispose(); if (status.Text == n) status.Text = ""; };
+            t.Start();
         });
     }
 
+
+    void ToTray()
+    {
+        HidePanel();
+        if (Tray == null || Settings.Get("tray-tip-shown") == "1") return;
+        Tray.ShowBalloonTip(3000, "G-Lite", "G-Lite is still running in the tray.", ToolTipIcon.None);
+        Settings.Set("tray-tip-shown", "1");
+    }
 
     public void HidePanel()
     {
@@ -513,6 +561,7 @@ class Panel515 : Form
     [STAThread]
     static void Main(string[] args)
     {
+        if (args.Length == 2 && args[0] == "--swap") { Environment.ExitCode = Updater.Swap(args[1]); return; }
         bool fresh, demo = args.Contains("--demo");
         using (var mutex = new Mutex(true, demo ? "GLiteDemo" : "GLite", out fresh))
         {
@@ -520,6 +569,7 @@ class Panel515 : Form
                 try { fresh = mutex.WaitOne(15000); } catch (AbandonedMutexException) { fresh = true; }
             if (!fresh) return;
             Updater.Cleanup();
+            Settings.Init();
             Application.EnableVisualStyles();
             var fake = demo ? new FakeHidpp() : null;
             var panel = new Panel515(fake);
@@ -531,6 +581,13 @@ class Panel515 : Form
             panel.CreateControl();
             panel.Handle.ToString();
             panel.Tray = tray;
+            if (args.Contains("--restart")) panel.Note = "Successfully updated to v" + Application.ProductVersion;
+            using (var k = Registry.CurrentUser.OpenSubKey(RunKey, true))
+            {
+                var run = k == null ? null : k.GetValue("GLite") as string;
+                if (run != null && !run.Contains("--tray")) k.SetValue("GLite", run + " --tray");
+            }
+            if (!args.Contains("--tray")) panel.ShowPanel();
             if (Updater.Check) panel.CheckUpdates(false);
             Application.Run();
             tray.Visible = false;

@@ -28,7 +28,8 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `FakeHidpp`: an in-memory G515
   - `KeyboardView`: the demo window
 - `app/Game.cs`: Blocks, played on the 15x5 grid over the main key block, and Snake and Mines (`KeyGame`), played on the keys of that block
-- `app/Update.cs`: `Updater`, which checks GitHub releases, verifies the download against `checksums.txt`, swaps the exe and restarts. Its settings are in `HKCU\Software\GLite`.
+- `app/Update.cs`: `Updater`, which checks GitHub releases, verifies the download against `checksums.txt`, swaps the exe and restarts. If the exe's folder isn't writable, it runs the new exe elevated with `--swap <path>` to do the swap, then restarts unelevated.
+- `app/Settings.cs`: `settings.txt` with `key=value` lines, next to the exe, or in `%LOCALAPPDATA%\GLite` if that folder isn't writable. Run on startup stays in the Windows `Run` key.
 - `app/SelfTest.cs`: self-checks with golden bytes from the real keyboard. Add a check here whenever the encoding or rules change.
 - `app/models/g515-tkl.json`: the key layout
   - A row is written `Label:width|...`.

@@ -100,6 +100,18 @@ class KeyboardView : Form
     const float U = 40, Pad = 16, Head = 30;
     [DllImport("user32.dll")] static extern bool ReleaseCapture();
     [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, IntPtr l);
+    [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int value, int size);
+    public static bool Rounded;
+
+    public static void Round(Form f)
+    {
+        f.HandleCreated += (s, e) =>
+        {
+            int round = 2, border = 0x3A3A3A;
+            try { Rounded = DwmSetWindowAttribute(f.Handle, 33, ref round, 4) == 0 && DwmSetWindowAttribute(f.Handle, 34, ref border, 4) == 0; }
+            catch (DllNotFoundException) { }
+        };
+    }
     readonly FakeHidpp kb;
     readonly List<Tuple<RectangleF, string>> keys = new List<Tuple<RectangleF, string>>();
     readonly List<Tuple<PointF, double>> ripples = new List<Tuple<PointF, double>>();
@@ -115,6 +127,7 @@ class KeyboardView : Form
     public KeyboardView(FakeHidpp kb, Model model)
     {
         this.kb = kb;
+        Round(this);
         foreach (var row in model.Rows)
         {
             float x = 0, y = height;
@@ -142,6 +155,7 @@ class KeyboardView : Form
         BackColor = Color.FromArgb(28, 28, 28);
         DoubleBuffered = true;
         FormBorderStyle = FormBorderStyle.None;
+        ShowInTaskbar = false;
         ClientSize = new Size((int)(width + 2 * Pad), (int)(Head + height + 2 * Pad + 20));
         var timer = new System.Windows.Forms.Timer { Interval = 33 };
         timer.Tick += (s, e) => { Tick(); Invalidate(); };
@@ -269,7 +283,7 @@ class KeyboardView : Form
                 using (var under = new SolidBrush(Color.FromArgb(90, c))) g.FillRectangle(under, r.X + 6, r.Bottom - 4, r.Width - 12, 2);
             }
         }
-        using (var pen = new Pen(Color.FromArgb(58, 58, 58))) g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+        if (!Rounded) using (var pen = new Pen(Color.FromArgb(58, 58, 58))) g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
         using (var f = new Font("Segoe UI", 9f))
         using (var b = new SolidBrush(Color.FromArgb(150, 150, 150)))
         {
