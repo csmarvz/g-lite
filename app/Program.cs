@@ -77,13 +77,14 @@ class Panel515 : Form
     ComboBox idleBox, dimBox, sleepBox;
     CheckBox startup;
     Button saveBtn, more;
-    bool moved;
+    bool moved, demo;
 
     [DllImport("user32.dll")] static extern bool ReleaseCapture();
     [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, IntPtr l);
 
-    public Panel515()
+    public Panel515(bool demo)
     {
+        this.demo = demo;
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
         TopMost = true;
@@ -97,7 +98,7 @@ class Panel515 : Form
         MouseDown += Drag;
 
         int y = 12, x0 = 16, w = 328;
-        var title = Lbl("G515 Lighting", x0, y, Theme.Dim);
+        var title = Lbl(demo ? "G515 Lighting — demo, no keyboard" : "G515 Lighting", x0, y, Theme.Dim);
         var close = new Label { Text = "✕", ForeColor = Theme.Dim, Location = new Point(x0 + w - 14, y), AutoSize = true, Cursor = Cursors.Hand };
         close.Click += (s, e) => HidePanel();
         Controls.Add(close);
@@ -304,7 +305,7 @@ class Panel515 : Form
         {
             try
             {
-                if (dev == null) dev = new Hidpp();
+                if (dev == null) dev = demo ? new FakeHidpp() : new Hidpp();
                 a(dev);
                 if (done != null) BeginInvoke(done);
             }
@@ -411,15 +412,15 @@ class Panel515 : Form
     }
 
     [STAThread]
-    static void Main()
+    static void Main(string[] args)
     {
-        bool fresh;
-        using (new Mutex(true, "G515Lighting", out fresh))
+        bool fresh, demo = args.Contains("--demo");
+        using (new Mutex(true, demo ? "G515LightingDemo" : "G515Lighting", out fresh))
         {
             if (!fresh) return;
             Application.EnableVisualStyles();
-            var panel = new Panel515();
-            var tray = new NotifyIcon { Icon = MakeIcon(), Text = "G515 Lighting", Visible = true };
+            var panel = new Panel515(demo);
+            var tray = new NotifyIcon { Icon = MakeIcon(), Text = demo ? "G515 Lighting (demo)" : "G515 Lighting", Visible = true };
             tray.ContextMenuStrip = new ContextMenuStrip();
             tray.ContextMenuStrip.Items.Add("Open", null, (s, e) => panel.ShowPanel());
             tray.ContextMenuStrip.Items.Add("Quit", null, (s, e) => { tray.Visible = false; Application.Exit(); });

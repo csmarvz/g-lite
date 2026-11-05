@@ -31,6 +31,16 @@ static class SelfTest
             if (d.Speed) Check(back.Period == l.Period, d.Name + " period");
             if (d.Direction) Check(back.Direction == 6, d.Name + " direction");
         }
+        var fake = new FakeHidpp();
+        Check(G515.Decode(G515.Snapshot(fake).FactoryProfile) == null, "fake starts on factory profile");
+        var blue = new Lighting { Effect = 0x0A, Color = 0x3080FF, Period = 3000, Dim = 25, Idle = 30, Sleep = 600 };
+        G515.Claim(fake);
+        G515.Preview(fake, blue);
+        Check(fake.Live[1] == 2 && fake.Live[2] == 0x30, "preview sends breathe at effect index 2");
+        G515.Store(fake, blue);
+        Check(G515.Decode(G515.Snapshot(fake).UserProfile).Same(blue), "store then read back");
+        G515.Store(fake, white);
+        Check(G515.Decode(G515.Snapshot(fake).UserProfile).Same(white), "second store overwrites");
         Console.WriteLine("selftest ok");
         return 0;
     }

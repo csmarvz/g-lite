@@ -24,6 +24,8 @@ class Hidpp : IDisposable
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr sec, uint disp, uint flags, IntPtr tmpl);
 
+    protected Hidpp(bool open) { }
+
     public Hidpp()
     {
         string path = null;
@@ -36,9 +38,9 @@ class Hidpp : IDisposable
         fs = new FileStream(h, FileAccess.ReadWrite, 1, true);
     }
 
-    public void Dispose() { fs.Dispose(); }
+    public virtual void Dispose() { fs.Dispose(); }
 
-    public byte[] Call(byte feat, int fn, params byte[] p)
+    public virtual byte[] Call(byte feat, int fn, params byte[] p)
     {
         var msg = new byte[20];
         msg[0] = 0x11; msg[1] = Idx; msg[2] = feat; msg[3] = (byte)(fn << 4 | Swid);
