@@ -88,6 +88,21 @@ static class SelfTest
         Check(Settings.Get("check-updates") == "1" && Settings.Get("skip-version") == "", "settings file starts with the defaults");
         Settings.Set("skip-version", "0.0.3-alpha");
         Check(Settings.Get("skip-version") == "0.0.3-alpha" && System.IO.File.ReadAllText(Settings.Location).Contains("skip-version=0.0.3-alpha"), "settings are written to the file");
+        int setBright;
+        var set = Lighting.FromText(new Lighting { Effect = 0x16, Color = 0x3080FF, Period = 2500, Direction = 6 }.ToText(40), out setBright);
+        Check(set.Same(new Lighting { Effect = 0x16, Color = 0x3080FF, Period = 2500, Direction = 6 }) && setBright == 40, "a set round-trips through text");
+        Settings.Set("set.Night", "1,FFFFFF,5000,1,50,60,300,20");
+        Settings.Remove("set.Night");
+        Check(!Settings.Keys().Contains("set.Night"), "a removed set is gone from the file");
+        Check(Settings.Get("theme") == "system" && Theme.Mode == "system", "theme starts on system");
+        Theme.Mode = "light";
+        Check(Theme.Light && Settings.Get("theme") == "light", "light theme is saved and applied");
+        Theme.Mode = "dark";
+        Check(!Theme.Light && Theme.Text.R > 200, "dark theme is applied");
+        Settings.Set("theme", "pink");
+        Check(Theme.Mode == "system", "an unknown theme falls back to system");
+        var red = G515.Encode(new Lighting { Effect = 0x01, Color = 0xFF0000 }, 100);
+        Check(KeyboardView.Lit(0x01, red, 0.5, 0.5, 0, 0) == System.Drawing.Color.FromArgb(255, 0, 0) && KeyboardView.Lit(0x00, new byte[10], 0.5, 0.5, 0, 0).ToArgb() == System.Drawing.Color.Black.ToArgb(), "key colors for static and off");
         System.IO.File.Delete(Settings.Location);
         using (var logo = Logo.Draw(64))
             Check(logo.GetPixel(0, 0).A == 0 && logo.GetPixel(32, 4).A == 255 && logo.GetPixel(32, 32).A < 255, "logo is a white disc with a transparent GL");

@@ -1,6 +1,5 @@
 using System;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -15,197 +14,178 @@ using Microsoft.Win32;
 [assembly: System.Reflection.AssemblyProduct("G-Lite")]
 [assembly: System.Reflection.AssemblyCompany("com.csmarvz")]
 
-static class Theme
+class MainWindow : Form
 {
-    public static readonly Color Bg = Color.FromArgb(28, 28, 28), Btn = Color.FromArgb(43, 43, 43),
-        Border = Color.FromArgb(58, 58, 58), Text = Color.FromArgb(232, 232, 232), Dim = Color.FromArgb(150, 150, 150),
-        Accent = Color.FromArgb(63, 169, 138), AccentBg = Color.FromArgb(38, 48, 45);
-}
-
-class Slider : Control
-{
-    public int Max = 100, Value;
-    public event EventHandler Changed;
-
-    public Slider() { DoubleBuffered = true; Height = 20; Cursor = Cursors.Hand; }
-
-    float K { get { return Height / 20f; } }
-    int X(int v) { return (int)(7 * K) + (int)((long)v * (Width - 14 * K) / Max); }
-
-    protected override void OnPaint(PaintEventArgs e)
-    {
-        var g = e.Graphics;
-        g.SmoothingMode = SmoothingMode.AntiAlias;
-        var c = Enabled ? Theme.Accent : Theme.Border;
-        float k = K;
-        using (var track = new SolidBrush(Color.FromArgb(68, 68, 68))) g.FillRectangle(track, 7 * k, 8 * k, Width - 14 * k, 4 * k);
-        using (var b = new SolidBrush(c))
-        {
-            g.FillRectangle(b, 7 * k, 8 * k, X(Value) - 7 * k, 4 * k);
-            g.FillEllipse(b, X(Value) - 7 * k, 3 * k, 14 * k, 14 * k);
-        }
-    }
-
-    protected override void OnMouseDown(MouseEventArgs e) { Set(e.X); }
-    protected override void OnMouseMove(MouseEventArgs e) { if (e.Button == MouseButtons.Left) Set(e.X); }
-
-    void Set(int px)
-    {
-        int v = Math.Max(0, Math.Min(Max, (int)Math.Round((double)(px - 7 * K) * Max / (Width - 14 * K))));
-        if (v == Value) return;
-        Value = v;
-        Invalidate();
-        if (Changed != null) Changed(this, EventArgs.Empty);
-    }
-}
-
-class Panel515 : Form
-{
-    static readonly int[] Swatches = { 0xFFFFFF, 0xFF2020, 0xFF8000, 0xFFD000, 0x30D050, 0x3080FF };
-    static readonly int[] IdleSecs = { 0, 15, 30, 60, 120, 300, 600 };
-    static readonly string[] IdleText = { "Never dim", "Dim after 15 s", "Dim after 30 s", "Dim after 1 min", "Dim after 2 min", "Dim after 5 min", "Dim after 10 min" };
-    static readonly int[] DimPcts = { 0, 10, 25, 50, 75 };
-    static readonly int[] SleepSecs = { 0, 60, 120, 300, 600, 900, 1800 };
-    static readonly string[] SleepText = { "Never off", "Off after 1 min", "Off after 2 min", "Off after 5 min", "Off after 10 min", "Off after 15 min", "Off after 30 min" };
-    static readonly int[] Directions = { 6, 1, 3, 8 };
-    static readonly string[] DirText = { "← Left", "Right →", "Center out", "Center in" };
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+    const int W = 840, H = 680, SideW = 184, SideIn = SideW - 20;
 
-    Lighting cur = new Lighting(), stored;
-    int brightness = 100, storedBrightness = -1;
-    bool loading, dirty, claimed, unknownStored;
-    Hidpp dev;
-    Task queue = Task.FromResult(0);
-    int previewSeq;
-    System.Windows.Forms.Timer debounce = new System.Windows.Forms.Timer { Interval = 120 };
-
-    Button[] effectBtns, dirBtns;
-    Control[] swatchCtl;
-    Label effectHead, speedHead, brightHead, status;
-    Slider speed, bright;
-    ComboBox idleBox, dimBox, sleepBox;
-    Form settings;
-    CheckBox startup;
-    bool syncing;
-    Button saveBtn, more;
-    Label updText, updGo, updSkip;
-    string available;
     public NotifyIcon Tray;
-    public string Note;
-    KeyboardView view;
-    bool wantView;
-    int statusTop, traySize, bigSize;
+    readonly Page515 page;
+    readonly Control settingsPage;
+    readonly DevItem devItem;
+    readonly Btn settingsBtn;
+    readonly Box updBox;
+    readonly Label updText, checkText, themeHint;
+    readonly Seg themeSeg;
+    readonly Toggle runToggle, checkToggle, autoToggle;
+    readonly KeyboardView view;
+    readonly bool demo;
+    string available;
+    bool wantView, moved;
+    int traySize, bigSize;
     float scale = 1;
-    readonly System.Collections.Generic.List<Label> heads = new System.Collections.Generic.List<Label>();
-    Control[] bottomRow;
-    bool moved, demo;
 
     [DllImport("user32.dll")] static extern bool ReleaseCapture();
     [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, IntPtr l);
 
-    FakeHidpp fake;
-
-    public Panel515(FakeHidpp fake)
+    public MainWindow(FakeHidpp fake)
     {
-        this.fake = fake;
         demo = fake != null;
         Win.Round(this);
+        HandleCreated += (s, e) => Win.Border(this, Theme.Border);
         FormBorderStyle = FormBorderStyle.None;
         Text = "G-Lite";
-        FormClosing += (s, e) => { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; ToTray(); } };
-        TopMost = true;
         StartPosition = FormStartPosition.Manual;
-        BackColor = Theme.Bg;
-        ForeColor = Theme.Text;
-        Font = Win.Px(9, 1);
-        ClientSize = new Size(360, 10);
-        Padding = new Padding(1);
-        debounce.Tick += (s, e) => { debounce.Stop(); Preview(); };
+        ClientSize = new Size(W, H);
+        Ui.Style(this, () => BackColor = Theme.Bg);
+        Ui.Font(this, 9.75f, Ui.Regular);
+        FormClosing += (s, e) => { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; ToTray(); } };
         MouseDown += Drag;
 
-        int y = 12, x0 = 16, w = 328;
-        var title = Lbl("G-Lite " + Application.ProductVersion + (demo ? " — demo" : ""), x0, y, Theme.Dim);
+        var side = Ui.Add(this, new Control(), 0, 0, SideW, H);
+        Ui.Style(side, () => side.BackColor = Theme.Side);
+        side.Paint += (s, e) => { using (var p = new Pen(Theme.Border)) e.Graphics.DrawLine(p, side.Width - 1, 0, side.Width - 1, side.Height); };
+        side.MouseDown += Drag;
+        Ui.Add(side, new Brand { Tag2 = demo ? "demo" : "" }, 10, 12, SideIn, 34).MouseDown += Drag;
+        Ui.Text(side, "DEVICES", 18, 58, () => Theme.Dim, 8.25f, Ui.Semi).MouseDown += Drag;
+        devItem = Ui.Add(side, new DevItem { Title = "G515 TKL", Sub = demo ? "Demo" : "LIGHTSPEED", On = true, AccessibleName = "G515 TKL" }, 10, 78, SideIn, 46);
+        devItem.Click += (s, e) => ShowDevice();
+
+        int bottom = H - 14 - 36;
+        var quit = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "power", Text = "Quit" }, 10, bottom, SideIn, 36);
+        quit.Click += (s, e) => { HidePanel(); page.Queue.Wait(5000); Application.Exit(); };
+        bottom -= 40;
+        settingsBtn = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "gear", Text = "Settings" }, 10, bottom, SideIn, 36);
+        settingsBtn.Click += (s, e) => ShowSettings();
         if (demo)
         {
+            bottom -= 40;
             view = new KeyboardView(fake, Model.Load("g515-tkl.json"));
-            var show = new Label { Text = "Show keyboard", ForeColor = Theme.Accent, Location = new Point(x0 + w - 120, y), AutoSize = true, Cursor = Cursors.Hand };
+            var show = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "keyboard", Text = "Show keyboard" }, 10, bottom, SideIn, 36);
             show.Click += (s, e) => { if (view.Visible) view.Hide(); else ShowView(); };
             view.VisibleChanged += (s, e) => { show.Text = view.Visible ? "Hide keyboard" : "Show keyboard"; wantView = view.Visible; };
-            Controls.Add(show);
         }
-        var close = new Label { Text = "✕", ForeColor = Theme.Dim, Location = new Point(x0 + w - 14, y), AutoSize = true, Cursor = Cursors.Hand };
-        close.Click += (s, e) => ToTray();
-        Controls.Add(close);
-        y += 30;
-
-        effectHead = Head("Effect", x0, ref y);
-        effectBtns = Grid(G515.Effects.Select(d => d.Name).ToArray(), 3, x0, ref y, w, i => { cur.Effect = G515.Effects[i].Id; var d = G515.Effects[i]; if (d.Speed && (cur.Period < d.MinP || cur.Period > d.MaxP)) cur.Period = d.DefP; Changed(true); });
-
-        Head("Color", x0, ref y);
-        swatchCtl = new Control[Swatches.Length + 1];
-        int sw = (w - 6 * 6) / 7;
-        for (int i = 0; i < Swatches.Length; i++)
-        {
-            int c = Swatches[i];
-            var p = new Label { BackColor = Color.FromArgb(c | unchecked((int)0xFF000000)), Bounds = new Rectangle(x0 + i * (sw + 6), y, sw, 26), Cursor = Cursors.Hand };
-            p.Click += (s, e) => { cur.Color = c; Changed(true); };
-            p.Paint += (o, e) => { var l = (Control)o; if (cur.Color == c && l.Enabled) using (var pen = new Pen(Theme.Accent, 4 * scale)) e.Graphics.DrawRectangle(pen, 2 * scale - 1, 2 * scale - 1, l.Width - 4 * scale + 1, l.Height - 4 * scale + 1); };
-            swatchCtl[i] = p;
-            Controls.Add(p);
-        }
-        more = Btn("…", x0 + 6 * (sw + 6), y, sw, 26);
-        more.Click += (s, e) => PickColor();
-        swatchCtl[6] = more;
-        y += 34;
-
-        speedHead = Head("Speed", x0, ref y);
-        speed = new Slider { Location = new Point(x0, y), Width = w };
-        speed.Changed += (s, e) => { var d = G515.Def(cur.Effect); cur.Period = d.MaxP - (d.MaxP - d.MinP) * speed.Value / 100; Changed(false); };
-        Controls.Add(speed);
-        y += 28;
-
-        Head("Direction", x0, ref y);
-        dirBtns = Grid(DirText, 4, x0, ref y, w, i => { cur.Direction = Directions[i]; Changed(true); });
-
-        brightHead = Head("Brightness", x0, ref y);
-        bright = new Slider { Location = new Point(x0, y), Width = w };
-        bright.Changed += (s, e) => { brightness = bright.Value; brightHead.Text = "Brightness  " + brightness + "%"; dirty = true; saveBtn.Enabled = true; Mark(saveBtn, true); debounce.Stop(); debounce.Start(); };
-        Controls.Add(bright);
-        y += 28;
-
-        Head("When idle", x0, ref y);
-        int cw = (w - 12) / 3;
-        idleBox = Combo(IdleText, x0, y, cw + 20);
-        dimBox = Combo(DimPcts.Select(p => p == 0 ? "to dark" : "to " + p + "%").ToArray(), x0 + cw + 26, y, cw - 26);
-        sleepBox = Combo(SleepText, x0 + 2 * cw + 12, y, cw);
-        idleBox.SelectedIndexChanged += (s, e) => { if (!loading) { cur.Idle = IdleSecs[idleBox.SelectedIndex]; Changed(false); } };
-        dimBox.SelectedIndexChanged += (s, e) => { if (!loading) { cur.Dim = DimPcts[dimBox.SelectedIndex]; Changed(false); } };
-        sleepBox.SelectedIndexChanged += (s, e) => { if (!loading) { cur.Sleep = SleepSecs[sleepBox.SelectedIndex]; Changed(false); } };
-        y += 40;
-
-        status = new Label { Location = new Point(x0, y), Size = new Size(w, 34), ForeColor = Theme.Dim, Cursor = Cursors.Hand, AutoEllipsis = true };
-        status.Click += (s, e) => { if (status.Text.Contains("Dynamic Lighting")) System.Diagnostics.Process.Start("ms-settings:personalization-lighting"); };
-        Controls.Add(status);
-        updText = Lbl("", x0, y + 18, Theme.Dim);
-        updGo = Link("Update", x0 + w - 150, y + 18);
+        updBox = Ui.Add(side, new Box { Visible = false }, 10, bottom - 8 - 92, SideIn, 92);
+        updText = Ui.Text(updBox, "", 12, 10, () => Theme.Text, 9f);
+        updText.AutoSize = false;
+        updText.Size = new Size(SideIn - 24, 34);
+        var updGo = Ui.Add(updBox, new Btn { Look = Look.Primary, Text = "Update" }, 12, 48, 76, 32);
         updGo.Click += (s, e) => Install(available, true);
-        updSkip = Link("Skip this version", x0 + w - 95, y + 18);
+        var updSkip = Ui.Add(updBox, new Btn { Look = Look.Ghost, Text = "Skip" }, 94, 48, SideIn - 106, 32);
         updSkip.Click += (s, e) => { Updater.Skipped = available; ShowUpdate(null); };
-        statusTop = y;
 
-        var settingsBtn = Btn("Settings", x0, y, 80, 30);
-        settingsBtn.Click += (s, e) => OpenSettings();
-        var quit = Btn("Quit", x0 + w - 60, y, 60, 30);
-        quit.Click += (s, e) => { HidePanel(); queue.Wait(5000); Application.Exit(); };
-        saveBtn = Btn("Save to keyboard", x0 + w - 60 - 8 - 130, y, 130, 30);
-        saveBtn.Click += (s, e) => Save();
-        bottomRow = new Control[] { settingsBtn, saveBtn, quit };
-        status.TextChanged += (s, e) => Relayout();
+        page = Ui.Add(this, new Page515(fake, Drag), SideW, 0, W - SideW, H);
+
+        settingsPage = Ui.Add(this, new Control { Visible = false }, SideW, 0, W - SideW, H);
+        Ui.Style(settingsPage, () => settingsPage.BackColor = Theme.Bg);
+        settingsPage.MouseDown += Drag;
+        var sp = settingsPage;
+        Ui.Text(sp, "Settings", 20, 14, () => Theme.Text, 13.5f, Ui.Semi).MouseDown += Drag;
+
+        Ui.Text(sp, "Appearance", 20, 64, () => Theme.Dim, 9f, Ui.Semi);
+        var look = Ui.Add(sp, new Box(), 20, 86, 616, 64);
+        themeHint = Row(look, 0, "Theme", "");
+        themeSeg = Ui.Add(look, new Seg { Items = new[] { "System", "Dark", "Light" }, AccessibleName = "Theme" }, 616 - 14 - 240, 16, 240, 32);
+        themeSeg.Picked += i => { Theme.Mode = Theme.Modes[i]; ShowThemeHint(); };
+
+        Ui.Text(sp, "Updates", 20, 170, () => Theme.Dim, 9f, Ui.Semi);
+        var upd = Ui.Add(sp, new Box(), 20, 192, 616, 192);
+        Row(upd, 0, "Check for updates", "Looks for a new release on GitHub when G-Lite starts");
+        checkToggle = Ui.Add(upd, new Toggle { Checked = Updater.Check, AccessibleName = "Check for updates" }, 616 - 14 - 40, 21, 40, 22);
+        checkToggle.Changed += () => Updater.Check = checkToggle.Checked;
+        Rule(upd, 64);
+        Row(upd, 64, "Install updates automatically", "Otherwise G-Lite asks first");
+        autoToggle = Ui.Add(upd, new Toggle { Checked = Updater.Auto, AccessibleName = "Install updates automatically" }, 616 - 14 - 40, 64 + 21, 40, 22);
+        autoToggle.Changed += () => Updater.Auto = autoToggle.Checked;
+        Rule(upd, 128);
+        checkText = Row(upd, 128, "Version " + Application.ProductVersion, "");
+        checkText.AutoSize = false;
+        checkText.AutoEllipsis = true;
+        checkText.Size = new Size(616 - 14 - 180 - 14 - 14, 18);
+        var now = Ui.Add(upd, new Btn { Text = "Check for updates now" }, 616 - 14 - 180, 128 + 16, 180, 32);
+        now.Click += (s, e) => CheckUpdates(true);
+
+        Ui.Text(sp, "Startup", 20, 404, () => Theme.Dim, 9f, Ui.Semi);
+        var start = Ui.Add(sp, new Box(), 20, 426, 616, 64);
+        Row(start, 0, "Run on startup", "Starts in the tray when you sign in to Windows");
+        runToggle = Ui.Add(start, new Toggle { AccessibleName = "Run on startup" }, 616 - 14 - 40, 21, 40, 22);
+        runToggle.Changed += () => SetStartup(runToggle.Checked);
+
+        var minimize = Ui.Add(this, new Btn { Look = Look.Ghost, Icon = "minus", AccessibleName = "Minimize" }, W - 12 - 72, 10, 36, 28);
+        minimize.Click += (s, e) => WindowState = FormWindowState.Minimized;
+        var close = Ui.Add(this, new Btn { Look = Look.Ghost, Icon = "close", AccessibleName = "Close to tray" }, W - 12 - 36, 10, 36, 28);
+        close.Click += (s, e) => ToTray();
+        minimize.BringToFront();
+        close.BringToFront();
+
+        Theme.Changed += Restyle;
+        ShowThemeHint();
         ShowUpdate(null);
-
-        Sync();
         Rescale(Win.At(Point.Empty));
+    }
+
+    static Label Row(Control box, int y, string title, string hint)
+    {
+        Ui.Text(box, title, 14, y + 12, () => Theme.Text, 9.75f, Ui.Semi);
+        return Ui.Text(box, hint, 14, y + 33, () => Theme.Dim, 9f);
+    }
+
+    static void Rule(Control box, int y)
+    {
+        var l = Ui.Add(box, new Control(), 14, y, box.Width - 28, 1);
+        Ui.Style(l, () => l.BackColor = Theme.Border);
+    }
+
+    void Restyle()
+    {
+        Ui.Restyle();
+        page.Restyle();
+        Win.Border(this, Theme.Border);
+        ShowThemeHint();
+        Invalidate(true);
+        if (Tray != null && Tray.ContextMenuStrip != null) Tray.ContextMenuStrip.BackColor = Theme.Card;
+    }
+
+    void ShowThemeHint()
+    {
+        var m = Theme.Mode;
+        themeSeg.Index = Array.IndexOf(Theme.Modes, m);
+        themeHint.Text = m == "system" ? "Follows Windows, which uses " + (Theme.SystemLight() ? "light" : "dark") + " mode right now" : "Always " + m;
+    }
+
+    void ShowDevice()
+    {
+        settingsPage.Visible = false;
+        page.Visible = true;
+        devItem.On = true;
+        settingsBtn.On = false;
+        devItem.Invalidate();
+        settingsBtn.Invalidate();
+    }
+
+    void ShowSettings()
+    {
+        runToggle.Checked = StartupOn();
+        checkToggle.Checked = Updater.Check;
+        autoToggle.Checked = Updater.Auto;
+        ShowThemeHint();
+        page.Visible = false;
+        settingsPage.Visible = true;
+        devItem.On = false;
+        settingsBtn.On = true;
+        devItem.Invalidate();
+        settingsBtn.Invalidate();
     }
 
     int S(float v) { return (int)Math.Round(v * scale); }
@@ -216,11 +196,10 @@ class Panel515 : Form
         SuspendLayout();
         Scale(new SizeF(ns / scale, ns / scale));
         scale = ns;
-        Font = Win.Px(9, scale);
-        foreach (var h in heads) h.Font = Win.Px(9.5f, scale, "Segoe UI Semibold");
+        Ui.K = ns;
+        Ui.Refont();
         ResumeLayout();
-        Relayout();
-        if (settings != null) { settings.Dispose(); settings = null; }
+        Invalidate(true);
         RefreshIcons();
     }
 
@@ -250,117 +229,8 @@ class Panel515 : Form
         if (!Win.Rounded) using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
     }
 
-    Label Lbl(string t, int x, int y, Color c)
-    {
-        var l = new Label { Text = t, Location = new Point(x, y), AutoSize = true, ForeColor = c };
-        l.MouseDown += Drag;
-        Controls.Add(l);
-        return l;
-    }
-
-    Label Head(string t, int x, ref int y)
-    {
-        var l = Lbl(t, x, y, Theme.Text);
-        l.Font = Win.Px(9.5f, scale, "Segoe UI Semibold");
-        heads.Add(l);
-        y += 24;
-        return l;
-    }
-
-    Button Btn(string t, int x, int y, int w, int h)
-    {
-        var b = new Button { Text = t, Bounds = new Rectangle(x, y, w, h), FlatStyle = FlatStyle.Flat, BackColor = Theme.Btn, ForeColor = Theme.Text, Cursor = Cursors.Hand, TabStop = false };
-        b.FlatAppearance.BorderColor = Theme.Border;
-        Controls.Add(b);
-        return b;
-    }
-
-    Button[] Grid(string[] names, int cols, int x0, ref int y, int w, Action<int> click)
-    {
-        int bw = (w - (cols - 1) * 6) / cols;
-        var r = new Button[names.Length];
-        for (int i = 0; i < names.Length; i++)
-        {
-            int n = i;
-            r[i] = Btn(names[i], x0 + i % cols * (bw + 6), y + i / cols * 40, bw, 34);
-            r[i].Click += (s, e) => click(n);
-        }
-        y += (names.Length + cols - 1) / cols * 40 + 6;
-        return r;
-    }
-
-    ComboBox Combo(string[] items, int x, int y, int w)
-    {
-        var c = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, BackColor = Theme.Btn, ForeColor = Theme.Text, Location = new Point(x, y), Width = w };
-        c.Items.AddRange(items);
-        c.SelectedIndex = 0;
-        Controls.Add(c);
-        return c;
-    }
-
-    static void Pick(ComboBox c, int[] values, int v)
-    {
-        int best = 0;
-        for (int i = 0; i < values.Length; i++) if (Math.Abs(values[i] - v) < Math.Abs(values[best] - v)) best = i;
-        c.SelectedIndex = best;
-    }
-
-    static void Mark(Button b, bool on)
-    {
-        b.FlatAppearance.BorderColor = on ? Theme.Accent : Theme.Border;
-        b.FlatAppearance.BorderSize = on ? 2 : 1;
-        b.BackColor = on ? Theme.AccentBg : Theme.Btn;
-    }
-
-    void Sync()
-    {
-        loading = true;
-        var d = G515.Def(cur.Effect);
-        effectHead.Text = "Effect" + (unknownStored && !dirty ? ":  factory animation" : d != null ? ":  " + d.Name : "");
-        for (int i = 0; i < effectBtns.Length; i++) Mark(effectBtns[i], !(unknownStored && !dirty) && G515.Effects[i].Id == cur.Effect);
-        foreach (var c in swatchCtl) { c.Enabled = d != null && d.Color; c.Invalidate(); }
-        bool custom = !Swatches.Contains(cur.Color);
-        int lum = ((cur.Color >> 16 & 0xFF) * 299 + (cur.Color >> 8 & 0xFF) * 587 + (cur.Color & 0xFF) * 114) / 1000;
-        more.BackColor = custom ? Color.FromArgb(cur.Color | unchecked((int)0xFF000000)) : Theme.Btn;
-        more.ForeColor = custom && lum > 140 ? Color.Black : Theme.Text;
-        more.FlatAppearance.BorderColor = custom && more.Enabled ? Theme.Accent : Theme.Border;
-        more.FlatAppearance.BorderSize = custom && more.Enabled ? 2 : 1;
-        speed.Enabled = d != null && d.Speed;
-        if (speed.Enabled) speed.Value = (d.MaxP - cur.Period) * 100 / (d.MaxP - d.MinP);
-        speedHead.Text = speed.Enabled ? "Speed  " + speed.Value + "%" : "Speed";
-        speed.Invalidate();
-        for (int i = 0; i < dirBtns.Length; i++) { dirBtns[i].Enabled = d != null && d.Direction; Mark(dirBtns[i], dirBtns[i].Enabled && Directions[i] == cur.Direction); }
-        bright.Value = brightness;
-        brightHead.Text = "Brightness  " + brightness + "%";
-        bright.Invalidate();
-        Pick(idleBox, IdleSecs, cur.Idle);
-        Pick(dimBox, DimPcts, cur.Dim);
-        Pick(sleepBox, SleepSecs, cur.Sleep);
-        dimBox.Enabled = cur.Idle > 0;
-        saveBtn.Enabled = dirty;
-        Mark(saveBtn, dirty);
-        loading = false;
-    }
-
-    void Changed(bool now)
-    {
-        if (loading) return;
-        dirty = true;
-        Sync();
-        debounce.Stop();
-        if (now) Preview(); else debounce.Start();
-    }
-
-    void PickColor()
-    {
-        using (var dlg = new ColorDialog { FullOpen = true, Color = Color.FromArgb(cur.Color | unchecked((int)0xFF000000)) })
-            if (dlg.ShowDialog(this) == DialogResult.OK) { cur.Color = dlg.Color.ToArgb() & 0xFFFFFF; Changed(true); }
-        Activate();
-    }
-
     void SetStartup(bool on)
     {
-        if (syncing) return;
         using (var k = Registry.CurrentUser.CreateSubKey(RunKey))
             if (on) k.SetValue("GLite", "\"" + Application.ExecutablePath + "\" --tray");
             else k.DeleteValue("GLite", false);
@@ -380,15 +250,6 @@ class Panel515 : Form
         }
     }
 
-    void Status(string s) { if (IsHandleCreated) BeginInvoke((Action)(() => status.Text = s)); }
-
-    Label Link(string t, int x, int y)
-    {
-        var l = new Label { Text = t, ForeColor = Theme.Accent, Location = new Point(x, y), AutoSize = true, Cursor = Cursors.Hand };
-        Controls.Add(l);
-        return l;
-    }
-
     void ShowView()
     {
         var wa = Screen.FromControl(this).WorkingArea;
@@ -398,67 +259,17 @@ class Panel515 : Form
         view.Show();
     }
 
-    void OpenSettings()
-    {
-        if (settings == null)
-        {
-            settings = new Form { FormBorderStyle = FormBorderStyle.None, ShowInTaskbar = false, TopMost = true, StartPosition = FormStartPosition.Manual, BackColor = Theme.Bg, ForeColor = Theme.Text, Font = Win.Px(9, 1), ClientSize = new Size(220, 150) };
-            var f = settings;
-            Win.Round(f);
-            f.Paint += (o, e) => { if (!Win.Rounded) using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, f.Width - 1, f.Height - 1); };
-            MouseEventHandler drag = (s, e) => { if (e.Button != MouseButtons.Left) return; ReleaseCapture(); SendMessage(f.Handle, 0xA1, (IntPtr)2, IntPtr.Zero); };
-            f.MouseDown += drag;
-            var title = new Label { Text = "Settings", ForeColor = Theme.Dim, Location = new Point(16, 12), AutoSize = true };
-            title.MouseDown += drag;
-            var close = new Label { Text = "✕", ForeColor = Theme.Dim, Location = new Point(f.ClientSize.Width - 30, 12), AutoSize = true, Cursor = Cursors.Hand };
-            close.Click += (s, e) => f.Hide();
-            startup = new CheckBox { Text = "Run on startup", Location = new Point(16, 42), AutoSize = true, ForeColor = Theme.Dim };
-            startup.CheckedChanged += (s, e) => SetStartup(startup.Checked);
-            var check = new CheckBox { Text = "Check for updates", Location = new Point(16, 68), AutoSize = true, ForeColor = Theme.Dim, Checked = Updater.Check };
-            check.CheckedChanged += (s, e) => Updater.Check = check.Checked;
-            var auto = new CheckBox { Text = "Auto-update", Location = new Point(16, 94), AutoSize = true, ForeColor = Theme.Dim, Checked = Updater.Auto };
-            auto.CheckedChanged += (s, e) => Updater.Auto = auto.Checked;
-            var now = new Label { Text = "Check update now", ForeColor = Theme.Accent, Location = new Point(16, 124), AutoSize = true, Cursor = Cursors.Hand };
-            now.Click += (s, e) => CheckUpdates(true);
-            f.Controls.AddRange(new Control[] { title, close, startup, check, auto, now });
-            f.Scale(new SizeF(scale, scale));
-            f.Font = Win.Px(9, scale);
-        }
-        syncing = true;
-        startup.Checked = StartupOn();
-        syncing = false;
-        settings.Location = new Point(Left - settings.Width - S(8), Bottom - settings.Height);
-        settings.Show();
-        settings.Activate();
-    }
-
-    void Relayout()
-    {
-        int sh = status.Text == "" ? 0 : TextRenderer.MeasureText(status.Text, status.Font, new Size(status.Width, S(100)), TextFormatFlags.WordBreak).Height > status.Font.Height * 3 / 2 ? 34 : 18;
-        if (available != null) sh = Math.Min(sh, 18);
-        status.Height = S(sh);
-        int top = statusTop + sh;
-        foreach (var c in new Control[] { updText, updGo, updSkip }) c.Top = S(top);
-        int gap = sh + (available != null ? 20 : 0);
-        if (gap > 0) gap += 6;
-        foreach (var c in bottomRow) c.Top = S(statusTop + gap);
-        int bottom = Bottom;
-        ClientSize = new Size(ClientSize.Width, S(statusTop + gap + 44));
-        if (Visible) Top = bottom - Height;
-    }
-
     void ShowUpdate(string v)
     {
         available = v;
         updText.Text = v == null ? "" : "Version " + v + " is available";
-        updText.Visible = updGo.Visible = updSkip.Visible = v != null;
-        Relayout();
+        updBox.Visible = v != null;
         if (Tray != null) Tray.Text = "G-Lite " + Application.ProductVersion + (demo ? " (demo)" : "") + (v == null ? "" : " · " + v + " available");
     }
 
     public void CheckUpdates(bool manual)
     {
-        if (manual) status.Text = "Checking for updates…";
+        if (manual) checkText.Text = "Checking for updates…";
         Task.Run(() =>
         {
             string v = null, err = null;
@@ -469,110 +280,43 @@ class Panel515 : Form
 
     void Found(string v, string err, bool manual)
     {
-        if (err != null) { if (manual) status.Text = "Couldn't check for updates: " + err; return; }
-        if (v == null || !Updater.Newer(v, Application.ProductVersion)) { if (manual) status.Text = "G-Lite is up to date"; return; }
+        if (err != null) { if (manual) checkText.Text = "Couldn't check for updates: " + err; return; }
+        if (v == null || !Updater.Newer(v, Application.ProductVersion)) { if (manual) checkText.Text = "G-Lite is up to date"; return; }
         if (!manual && v == Updater.Skipped) return;
         if (!manual && Updater.Auto) { Install(v, Visible); return; }
-        if (manual) status.Text = "";
+        if (manual) checkText.Text = "Version " + v + " is available";
         ShowUpdate(v);
     }
 
     void Install(string v, bool show)
     {
         ShowUpdate(null);
-        status.Text = "Downloading " + v + "…";
+        page.Say("Downloading " + v + "…");
         Task.Run(() =>
         {
             try
             {
                 Updater.Install(v, show);
-                BeginInvoke((Action)(() => { HidePanel(); queue.Wait(5000); if (Tray != null) Tray.Visible = false; Application.Exit(); }));
+                BeginInvoke((Action)(() => { HidePanel(); page.Queue.Wait(5000); if (Tray != null) Tray.Visible = false; Application.Exit(); }));
             }
-            catch (Exception ex) { Status("Update failed: " + ex.Message); }
+            catch (Exception ex) { BeginInvoke((Action)(() => page.Say("Update failed: " + ex.Message, true))); }
         });
     }
 
-    void Do(Action<Hidpp> a, Action done = null)
-    {
-        queue = queue.ContinueWith(_ =>
-        {
-            try
-            {
-                if (dev == null) dev = demo ? fake : new Hidpp();
-                a(dev);
-                if (done != null) BeginInvoke(done);
-            }
-            catch (Exception ex)
-            {
-                if (dev != null && !(ex is HidppError)) { dev.Dispose(); dev = null; claimed = false; }
-                Status(ex.Message);
-            }
-        });
-    }
-
-    void Preview()
-    {
-        var l = cur.Clone();
-        int b = brightness, seq = ++previewSeq;
-        Do(h =>
-        {
-            if (seq != previewSeq) return;
-            if (b != G515.Brightness(h)) G515.SetBrightness(h, b);
-            if (!l.Same(stored)) { if (!claimed) { G515.Claim(h); claimed = true; } G515.Preview(h, l); }
-            Status("Previewing — Save to keep it");
-        });
-    }
-
-    void Save()
-    {
-        var l = cur.Clone();
-        saveBtn.Enabled = false;
-        dirty = false;
-        storedBrightness = brightness;
-        Status("Saving…");
-        Do(h => { G515.Store(h, l); claimed = false; }, () =>
-        {
-            stored = l; storedBrightness = brightness; dirty = false; unknownStored = false;
-            Sync();
-            status.Text = "Saved to keyboard ✓";
-        });
-    }
+    public void SetNote(string note) { page.Note = note; }
 
     public void ShowPanel()
     {
         var wa = Screen.FromPoint(Cursor.Position).WorkingArea;
         Rescale(Win.At(moved ? Location : Cursor.Position));
-        if (!moved) Location = new Point(wa.Right - Width - S(12), wa.Bottom - Height - S(12));
+        if (!moved) Location = new Point(Math.Max(wa.Left, wa.Right - Width - S(12)), Math.Max(wa.Top, wa.Bottom - Height - S(12)));
+        if (WindowState == FormWindowState.Minimized) WindowState = FormWindowState.Normal;
         Show();
         if (view != null && wantView) ShowView();
         Activate();
-        dirty = false;
-        status.Text = DynamicLightingOn() ? "Windows Dynamic Lighting is on and may override this. Click to open its settings." : "Reading keyboard…";
-        bool dl = status.Text.Contains("Dynamic");
-        Lighting l = null;
-        int b = 100;
-        bool unknown = false;
-        Do(h =>
-        {
-            var f = G515.Snapshot(h);
-            l = G515.Decode(f.UserProfile ?? f.FactoryProfile);
-            unknown = l == null;
-            if (l == null) l = new Lighting();
-            b = G515.Brightness(h);
-        }, () =>
-        {
-            stored = l.Clone(); cur = l; brightness = b; storedBrightness = b; unknownStored = unknown;
-            Sync();
-            if (!dl) status.Text = Note ?? "";
-            if (Note == null) return;
-            var n = Note;
-            Note = null;
-            var t = new System.Windows.Forms.Timer { Interval = 8000 };
-            t.Tick += (s, e) => { t.Dispose(); if (status.Text == n) status.Text = ""; };
-            t.Start();
-        });
+        ShowDevice();
+        page.Load();
     }
-
 
     void ToTray()
     {
@@ -585,23 +329,7 @@ class Panel515 : Form
     public void HidePanel()
     {
         Hide();
-        if (settings != null) settings.Hide();
-        debounce.Stop();
-        if (!dirty) return;
-        dirty = false;
-        int b = storedBrightness;
-        previewSeq++;
-        Do(h =>
-        {
-            if (b >= 0) G515.SetBrightness(h, b);
-            if (claimed) { G515.Release(h); claimed = false; }
-        });
-    }
-
-    static bool DynamicLightingOn()
-    {
-        using (var k = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Lighting"))
-            return k != null && Equals(k.GetValue("AmbientLightingEnabled"), 1);
+        page.Release();
     }
 
     [STAThread]
@@ -617,11 +345,12 @@ class Panel515 : Form
             if (!fresh) return;
             Updater.Cleanup();
             Settings.Init();
+            Theme.Apply();
             Application.EnableVisualStyles();
             var fake = demo ? new FakeHidpp() : null;
-            var panel = new Panel515(fake);
+            var panel = new MainWindow(fake);
             var tray = new NotifyIcon { Text = "G-Lite " + Application.ProductVersion + (demo ? " (demo)" : ""), Visible = true };
-            tray.ContextMenuStrip = new ContextMenuStrip();
+            tray.ContextMenuStrip = new ContextMenuStrip { Renderer = Ui.Menus, ShowImageMargin = false, BackColor = Theme.Card };
             tray.ContextMenuStrip.Items.Add("Open", null, (s, e) => panel.ShowPanel());
             tray.ContextMenuStrip.Items.Add("Quit", null, (s, e) => { tray.Visible = false; Application.Exit(); });
             tray.MouseClick += (s, e) => { if (e.Button == MouseButtons.Left) { if (panel.Visible) panel.HidePanel(); else panel.ShowPanel(); } };
@@ -630,8 +359,8 @@ class Panel515 : Form
             panel.Tray = tray;
             panel.RefreshIcons();
             SystemEvents.DisplaySettingsChanged += (o, e) => panel.RefreshIcons();
-            SystemEvents.UserPreferenceChanged += (o, e) => panel.RefreshIcons();
-            if (args.Contains("--restart")) panel.Note = "Successfully updated to v" + Application.ProductVersion;
+            SystemEvents.UserPreferenceChanged += (o, e) => { panel.RefreshIcons(); Theme.Apply(); };
+            if (args.Contains("--restart")) panel.SetNote("Successfully updated to v" + Application.ProductVersion);
             using (var k = Registry.CurrentUser.OpenSubKey(RunKey, true))
             {
                 var run = k == null ? null : k.GetValue("GLite") as string;

@@ -18,11 +18,13 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `Hidpp`: HID++ 2.0 over the receiver
   - `Lighting`: the lighting settings
   - `G515`: the effect table, profile encode and decode, CRC32, onboard file read and write, preview
-- `app/Program.cs`:
-  - `Theme`
-  - `Slider`
-  - `Panel515`: the panel, the device work queue and the preview debounce
-  - `Main`: the tray icon, the single-instance mutex and `--demo`
+- `app/Program.cs`: `MainWindow`, with the device sidebar, the Settings screen, updates and run on startup, and `Main`, with the tray icon, the single-instance mutex and `--demo`
+- `app/Page515.cs`:
+  - `Page515`: the G515 screen, the device work queue, the preview debounce and the profiles
+  - `KeyPicture`: the live key picture
+- `app/Ui.cs`:
+  - `Theme`: dark, light or system, from `theme=` in `settings.txt`
+  - The owner-drawn controls. They read `Theme` when they paint. Labels and containers register their colours with `Ui.Style`, so a theme change restyles them.
 - `app/Fake.cs`:
   - `Model`: loads `models/*.json`, which are embedded resources
   - `FakeHidpp`: an in-memory G515

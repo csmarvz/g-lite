@@ -203,7 +203,33 @@ class KeyboardView : Form
         return true;
     }
 
-    static Color Hsv(double h, double s, double v)
+    public static double PeriodOf(byte id, byte[] p)
+    {
+        double period = (id == 0x0A ? p[3] << 8 | p[4] : p[6] << 8 | p[7]) / 1000.0;
+        if (id == 0x17) period = (p[6] << 8 | p[7]) / 20.0;
+        return period <= 0 ? 5 : period;
+    }
+
+    public static Color Lit(byte id, byte[] p, double x, double y, double t, double ripple)
+    {
+        if (G515.Def(id) == null) return Hsv(t / 8 - x, 1, 1);
+        var color = Color.FromArgb(p[0], p[1], p[2]);
+        double period = PeriodOf(id, p);
+        int dir = p[9];
+        switch (id)
+        {
+            case 0x01: return color;
+            case 0x0A: return Scale(color, 0.5 - 0.5 * Math.Cos(2 * Math.PI * t / period));
+            case 0x15: return Hsv(t / period, p[1] / 255.0, 1);
+            case 0x16:
+                double off = dir == 6 ? x : dir == 3 ? -Math.Abs(x - 0.5) * 2 : dir == 8 ? Math.Abs(x - 0.5) * 2 : dir == 2 ? -y : dir == 7 ? y : -x;
+                return Hsv(t / period + off, p[1] / 255.0, 1);
+            case 0x17: return Scale(color, ripple);
+            default: return Color.Black;
+        }
+    }
+
+    public static Color Hsv(double h, double s, double v)
     {
         h = (h % 1 + 1) % 1 * 6;
         int i = (int)h;
@@ -212,7 +238,7 @@ class KeyboardView : Form
         return Color.FromArgb((int)(rgb[0] * 255), (int)(rgb[1] * 255), (int)(rgb[2] * 255));
     }
 
-    static Color Scale(Color c, double k)
+    public static Color Scale(Color c, double k)
     {
         k = Math.Max(0, Math.Min(1, k));
         return Color.FromArgb((int)(c.R * k), (int)(c.G * k), (int)(c.B * k));
@@ -224,11 +250,7 @@ class KeyboardView : Form
         kb.State(out id, out p, out bright);
         var def = G515.Def(id);
         double t = clock.Elapsed.TotalSeconds;
-        var color = Color.FromArgb(p[0], p[1], p[2]);
-        double period = (id == 0x0A ? p[3] << 8 | p[4] : p[6] << 8 | p[7]) / 1000.0;
-        if (id == 0x17) period = (p[6] << 8 | p[7]) / 20.0;
-        if (period <= 0) period = 5;
-        int dir = p[9];
+        double period = PeriodOf(id, p);
         ripples.RemoveAll(r => t - r.Item2 > 3);
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -240,29 +262,15 @@ class KeyboardView : Form
             var r = k.Item1;
             Color fill = Color.FromArgb(30, 30, 32);
             double x = (r.X + r.Width / 2 - Pad) / width, y = (r.Y - Head - Pad) / height;
-            Color c;
-            if (def == null) c = Hsv(t / 8 - x, 1, 1);
-            else switch (id)
-            {
-                case 0x01: c = color; break;
-                case 0x0A: c = Scale(color, 0.5 - 0.5 * Math.Cos(2 * Math.PI * t / period)); break;
-                case 0x15: c = Hsv(t / period, p[1] / 255.0, 1); break;
-                case 0x16:
-                    double off = dir == 6 ? x : dir == 3 ? -Math.Abs(x - 0.5) * 2 : dir == 8 ? Math.Abs(x - 0.5) * 2 : dir == 2 ? -y : dir == 7 ? y : -x;
-                    c = Hsv(t / period + off, p[1] / 255.0, 1);
-                    break;
-                case 0x17:
-                    double glow = 0;
-                    foreach (var rp in ripples)
-                    {
-                        double d = Math.Sqrt(Math.Pow(r.X + r.Width / 2 - rp.Item1.X, 2) + Math.Pow(r.Y + r.Height / 2 - rp.Item1.Y, 2)) / U;
-                        double front = (t - rp.Item2) * 8 / period;
-                        glow = Math.Max(glow, Math.Max(0, 1 - Math.Abs(d - front)) * Math.Max(0, 1 - (t - rp.Item2) / 3));
-                    }
-                    c = Scale(color, glow);
-                    break;
-                default: c = Color.Black; break;
-            }
+            double glow = 0;
+            if (id == 0x17)
+                foreach (var rp in ripples)
+                {
+                    double d = Math.Sqrt(Math.Pow(r.X + r.Width / 2 - rp.Item1.X, 2) + Math.Pow(r.Y + r.Height / 2 - rp.Item1.Y, 2)) / U;
+                    double front = (t - rp.Item2) * 8 / period;
+                    glow = Math.Max(glow, Math.Max(0, 1 - Math.Abs(d - front)) * Math.Max(0, 1 - (t - rp.Item2) / 3));
+                }
+            Color c = Lit(id, p, x, y, t, glow);
             if (game != null)
             {
                 int hit = 0;

@@ -39,6 +39,13 @@ static class Win
         return new Font(face, points * 96f / 72f * scale, FontStyle.Regular, GraphicsUnit.Pixel);
     }
 
+    public static void Border(Form f, Color c)
+    {
+        if (!f.IsHandleCreated) return;
+        int v = c.R | c.G << 8 | c.B << 16;
+        try { DwmSetWindowAttribute(f.Handle, 34, ref v, 4); } catch (DllNotFoundException) { }
+    }
+
     public static void Round(Form f)
     {
         f.HandleCreated += (s, e) =>

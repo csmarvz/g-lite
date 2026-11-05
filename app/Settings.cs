@@ -5,7 +5,7 @@ using System.Linq;
 
 static class Settings
 {
-    static readonly string[] Defaults = { "check-updates=1", "auto-update=0", "skip-version=", "tray-tip-shown=0" };
+    static readonly string[] Defaults = { "check-updates=1", "auto-update=0", "skip-version=", "tray-tip-shown=0", "theme=system" };
     public static string Location = Locate();
 
     static string Locate()
@@ -50,6 +50,14 @@ static class Settings
     {
         string v;
         return Read().TryGetValue(key, out v) ? v : "";
+    }
+
+    public static IEnumerable<string> Keys() { return Read().Keys; }
+
+    public static void Remove(string key)
+    {
+        var d = Read();
+        if (d.Remove(key)) Write(d);
     }
 
     public static void Set(string key, string value)

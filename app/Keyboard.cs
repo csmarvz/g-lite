@@ -93,6 +93,22 @@ class Lighting
     public byte Effect = 0x01;
     public int Color = 0xFFFFFF, Period = 5000, Direction = 1, Dim = 50, Idle = 60, Sleep = 300;
     public Lighting Clone() { return (Lighting)MemberwiseClone(); }
+
+    public string ToText(int brightness)
+    {
+        return string.Join(",", Effect, Color.ToString("X6"), Period, Direction, Dim, Idle, Sleep, brightness);
+    }
+
+    public static Lighting FromText(string text, out int brightness)
+    {
+        var v = text.Split(',');
+        brightness = int.Parse(v[7]);
+        return new Lighting
+        {
+            Effect = byte.Parse(v[0]), Color = int.Parse(v[1], System.Globalization.NumberStyles.HexNumber), Period = int.Parse(v[2]),
+            Direction = int.Parse(v[3]), Dim = int.Parse(v[4]), Idle = int.Parse(v[5]), Sleep = int.Parse(v[6]),
+        };
+    }
     public bool Same(Lighting o)
     {
         return o != null && Effect == o.Effect && Color == o.Color && Period == o.Period && Direction == o.Direction
