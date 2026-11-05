@@ -11,6 +11,9 @@ using Microsoft.Win32;
 [assembly: System.Reflection.AssemblyVersion("0.0.3")]
 [assembly: System.Reflection.AssemblyFileVersion("0.0.3")]
 [assembly: System.Reflection.AssemblyInformationalVersion("0.0.3-alpha")]
+[assembly: System.Reflection.AssemblyTitle("G-Lite")]
+[assembly: System.Reflection.AssemblyProduct("G-Lite")]
+[assembly: System.Reflection.AssemblyCompany("com.csmarvz")]
 
 static class Theme
 {
@@ -65,6 +68,7 @@ class Panel515 : Form
     static readonly int[] Directions = { 6, 1, 3, 8 };
     static readonly string[] DirText = { "← Left", "Right →", "Center out", "Center in" };
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
 
     Lighting cur = new Lighting(), stored;
     int brightness = 100, storedBrightness = -1;
@@ -80,6 +84,8 @@ class Panel515 : Form
     Slider speed, bright;
     ComboBox idleBox, dimBox, sleepBox;
     Form settings;
+    CheckBox startup;
+    bool syncing;
     Button saveBtn, more;
     Label updText, updGo, updSkip;
     string available;
@@ -320,9 +326,24 @@ class Panel515 : Form
 
     void SetStartup(bool on)
     {
+        if (syncing) return;
         using (var k = Registry.CurrentUser.CreateSubKey(RunKey))
             if (on) k.SetValue("GLite", "\"" + Application.ExecutablePath + "\" --tray");
             else k.DeleteValue("GLite", false);
+        using (var k = Registry.CurrentUser.CreateSubKey(ApprovedKey))
+            if (on) k.SetValue("GLite", new byte[] { 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, RegistryValueKind.Binary);
+            else k.DeleteValue("GLite", false);
+    }
+
+    static bool StartupOn()
+    {
+        using (var k = Registry.CurrentUser.OpenSubKey(RunKey))
+            if (k == null || k.GetValue("GLite") == null) return false;
+        using (var k = Registry.CurrentUser.OpenSubKey(ApprovedKey))
+        {
+            var v = k == null ? null : k.GetValue("GLite") as byte[];
+            return v == null || v.Length == 0 || (v[0] & 1) == 0;
+        }
     }
 
     void Status(string s) { if (IsHandleCreated) BeginInvoke((Action)(() => status.Text = s)); }
@@ -356,8 +377,7 @@ class Panel515 : Form
             title.MouseDown += drag;
             var close = new Label { Text = "✕", ForeColor = Theme.Dim, Location = new Point(f.ClientSize.Width - 30, 12), AutoSize = true, Cursor = Cursors.Hand };
             close.Click += (s, e) => f.Hide();
-            var startup = new CheckBox { Text = "Run on startup", Location = new Point(16, 42), AutoSize = true, ForeColor = Theme.Dim };
-            using (var k = Registry.CurrentUser.OpenSubKey(RunKey)) startup.Checked = k != null && k.GetValue("GLite") != null;
+            startup = new CheckBox { Text = "Run on startup", Location = new Point(16, 42), AutoSize = true, ForeColor = Theme.Dim };
             startup.CheckedChanged += (s, e) => SetStartup(startup.Checked);
             var check = new CheckBox { Text = "Check for updates", Location = new Point(16, 68), AutoSize = true, ForeColor = Theme.Dim, Checked = Updater.Check };
             check.CheckedChanged += (s, e) => Updater.Check = check.Checked;
@@ -367,6 +387,9 @@ class Panel515 : Form
             now.Click += (s, e) => CheckUpdates(true);
             f.Controls.AddRange(new Control[] { title, close, startup, check, auto, now });
         }
+        syncing = true;
+        startup.Checked = StartupOn();
+        syncing = false;
         settings.Location = new Point(Left - settings.Width - 8, Bottom - settings.Height);
         settings.Show();
         settings.Activate();
