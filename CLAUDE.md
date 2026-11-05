@@ -27,7 +27,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `Model`: loads `models/*.json`, which are embedded resources
   - `FakeHidpp`: an in-memory G515
   - `KeyboardView`: the demo window
-- `app/Game.cs`: Blocks and Snake, played on the 15x5 main key block
+- `app/Game.cs`: Blocks, played on the 15x5 grid over the main key block, and Snake and Mines (`KeyGame`), played on the keys of that block
 - `app/SelfTest.cs`: self-checks with golden bytes from the real keyboard. Add a check here whenever the encoding or rules change.
 - `app/models/g515-tkl.json`: the key layout
   - A row is written `Label:width|...`.

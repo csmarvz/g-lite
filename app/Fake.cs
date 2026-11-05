@@ -107,7 +107,8 @@ class KeyboardView : Form
     float width, height;
     List<Point>[] cells;
     Game game;
-    double nextStep, overAt;
+    Func<Game> make;
+    double nextStep;
 
     protected override bool ShowWithoutActivation { get { return true; } }
 
@@ -152,17 +153,18 @@ class KeyboardView : Form
             if (e.Y >= Head + Pad / 2) { ripples.Add(Tuple.Create(new PointF(e.X, e.Y), clock.Elapsed.TotalSeconds)); return; }
             if (e.X > ClientSize.Width - Pad - 20) { Hide(); return; }
             if (game != null) { if (e.X > ClientSize.Width - Pad - 70) game = null; return; }
-            if (e.X > ClientSize.Width - Pad - 70) { Play(new Snake()); return; }
-            if (e.X > ClientSize.Width - Pad - 125) { Play(new Blocks()); return; }
+            if (e.X > ClientSize.Width - Pad - 70) { Play(() => new Snake(cells)); return; }
+            if (e.X > ClientSize.Width - Pad - 125) { Play(() => new Blocks()); return; }
+            if (e.X > ClientSize.Width - Pad - 180) { Play(() => new Mines(keys.Select(k => k.Item1).ToArray(), cells)); return; }
             ReleaseCapture();
             SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero);
         };
     }
 
-    void Play(Game g)
+    void Play(Func<Game> m)
     {
-        game = g;
-        overAt = 0;
+        make = m;
+        game = m();
         nextStep = clock.Elapsed.TotalMilliseconds + game.Interval;
         Activate();
     }
@@ -171,14 +173,14 @@ class KeyboardView : Form
     {
         if (game == null) return;
         double now = clock.Elapsed.TotalMilliseconds;
-        if (game.Over) { if (overAt == 0) overAt = now; else if (now - overAt > 2000) game = null; return; }
+        if (game.Over) return;
         if (now >= nextStep) { game.Step(); nextStep = now + game.Interval; }
     }
 
     protected override bool ProcessCmdKey(ref Message msg, Keys key)
     {
         if (game == null) return base.ProcessCmdKey(ref msg, key);
-        if (key == Keys.Escape) game = null; else game.Key(key);
+        if (key == Keys.Escape) game = null; else if (game.Over) Play(make); else game.Key(key);
         Invalidate();
         return true;
     }
@@ -247,7 +249,7 @@ class KeyboardView : Form
                 int hit = 0;
                 if (cells[ki] != null) foreach (var cell in cells[ki]) if (hit == 0) hit = game.At(cell.Y, cell.X);
                 bool arrow = "↑↓←→".Contains(k.Item2) && k.Item2.Length == 1;
-                c = hit != 0 ? (game.Over ? Color.FromArgb(255, 40, 40) : Color.FromArgb(hit | unchecked((int)0xFF000000))) : arrow ? Color.FromArgb(120, 120, 120) : Color.FromArgb(45, 45, 45);
+                c = hit != 0 ? (game.Over && !(game is Mines) ? Color.FromArgb(255, 40, 40) : Color.FromArgb(hit | unchecked((int)0xFF000000))) : arrow ? Color.FromArgb(120, 120, 120) : Color.FromArgb(45, 45, 45);
                 if (hit != 0) fill = Scale(c, 0.45);
             }
             c = Scale(c, bright / 100.0);
@@ -273,13 +275,27 @@ class KeyboardView : Form
         {
             g.DrawString(Text, f, b, Pad, 12);
             g.DrawString("✕", f, b, ClientSize.Width - Pad - 14, 12);
-            using (var a = new SolidBrush(Color.FromArgb(63, 169, 138))) g.DrawString(game == null ? "Blocks      Snake" : "Stop", f, a, ClientSize.Width - Pad - (game == null ? 120 : 66), 12);
+            using (var a = new SolidBrush(Color.FromArgb(63, 169, 138))) g.DrawString(game == null ? "Mines      Blocks      Snake" : "Stop", f, a, ClientSize.Width - Pad - (game == null ? 175 : 66), 12);
         }
         string what = def == null ? "factory animation (approximation)" : def.Name;
         if (id == 0x17) what += " — click the keys";
-        if (game != null) what = game.Over ? "game over   ·   score " + game.Score : game.Help;
+        if (game != null) what = game.Over ? "game over   ·   score " + game.Score + "   ·   any key to play again" : game.Help;
         using (var f = new Font("Segoe UI", 9f))
         using (var b = new SolidBrush(Color.FromArgb(150, 150, 150)))
+        {
             g.DrawString(what + "   ·   brightness " + bright + "%", f, b, Pad, ClientSize.Height - 26);
+            if (game is Mines && !game.Over)
+            {
+                float lx = ClientSize.Width - Pad;
+                for (int i = Mines.LegendNames.Length - 1; i >= 0; i--)
+                {
+                    lx -= g.MeasureString(Mines.LegendNames[i], f).Width;
+                    g.DrawString(Mines.LegendNames[i], f, b, lx, ClientSize.Height - 26);
+                    lx -= 12;
+                    using (var sw = new SolidBrush(Color.FromArgb(Mines.LegendColors[i] | unchecked((int)0xFF000000)))) g.FillRectangle(sw, lx, ClientSize.Height - 23, 10, 10);
+                    lx -= 12;
+                }
+            }
+        }
     }
 }

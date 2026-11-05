@@ -112,21 +112,57 @@ class Blocks : Game
     }
 }
 
-class Snake : Game
+abstract class KeyGame : Game
 {
-    readonly List<Point> body = new List<Point> { new Point(4, 2), new Point(3, 2), new Point(2, 2) };
-    readonly Random rng = new Random();
-    Point dir = new Point(1, 0), next = new Point(1, 0), food;
+    protected readonly int[,] keyAt = new int[H, W];
+    protected readonly List<int> board = new List<int>();
 
-    public Snake() { Feed(); }
+    protected KeyGame(List<Point>[] cells)
+    {
+        for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) keyAt[y, x] = -1;
+        for (int i = 0; i < cells.Length; i++)
+        {
+            if (cells[i] == null) continue;
+            board.Add(i);
+            foreach (var p in cells[i]) keyAt[p.Y, p.X] = i;
+        }
+    }
+
+    protected Point Move(Point p, int dx, int dy, bool wrap)
+    {
+        int from = keyAt[p.Y, p.X], x = p.X, y = p.Y;
+        for (int i = 0; i < W * H; i++)
+        {
+            x += dx;
+            y += dy;
+            if (wrap) { x = (x + W) % W; y = (y + H) % H; }
+            else if (x < 0 || x >= W || y < 0 || y >= H) return p;
+            if (keyAt[y, x] >= 0 && keyAt[y, x] != from) return new Point(x, y);
+        }
+        return p;
+    }
+}
+
+class Snake : KeyGame
+{
+    readonly List<int> body = new List<int>();
+    readonly Random rng = new Random();
+    Point head = new Point(4, 2), dir = new Point(1, 0), next = new Point(1, 0);
+    int food;
+
+    public Snake(List<Point>[] cells) : base(cells)
+    {
+        for (int x = 4; x >= 2; x--) body.Add(keyAt[2, x]);
+        Feed();
+    }
 
     public override int Interval { get { return Math.Max(110, 320 - Score * 12); } }
     public override string Help { get { return "arrows steer   Esc stop   ·   length " + body.Count; } }
 
     void Feed()
     {
-        var free = new List<Point>();
-        for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) if (!body.Contains(new Point(x, y))) free.Add(new Point(x, y));
+        var free = new List<int>();
+        foreach (int k in board) if (!body.Contains(k)) free.Add(k);
         if (free.Count == 0) Over = true; else food = free[rng.Next(free.Count)];
     }
 
@@ -140,19 +176,120 @@ class Snake : Game
     {
         if (Over) return;
         dir = next;
-        var head = new Point((body[0].X + dir.X + W) % W, (body[0].Y + dir.Y + H) % H);
-        bool eat = head == food;
+        head = Move(head, dir.X, dir.Y, true);
+        int k = keyAt[head.Y, head.X];
+        bool eat = k == food;
         if (!eat) body.RemoveAt(body.Count - 1);
-        if (body.Contains(head)) { Over = true; return; }
-        body.Insert(0, head);
+        if (body.Contains(k)) { Over = true; return; }
+        body.Insert(0, k);
         if (eat) { Score++; Feed(); }
     }
 
     public override int At(int y, int x)
     {
-        var p = new Point(x, y);
-        if (body[0] == p) return 0xB8FF6A;
-        if (body.Contains(p)) return 0x2FBF4A;
-        return food == p && !Over ? 0xFF3030 : 0;
+        int k = keyAt[y, x];
+        if (k < 0) return 0;
+        if (body[0] == k) return 0xB8FF6A;
+        if (body.Contains(k)) return 0x2FBF4A;
+        return food == k && !Over ? 0xFF3030 : 0;
+    }
+}
+
+class Mines : KeyGame
+{
+    const int Count = 10;
+    public static readonly int[] LegendColors = { 0x707070, 0x3B7BFF, 0x3BE06A, 0xFFE03B, 0xC04AFF, 0xFF9A1F };
+    public static readonly string[] LegendNames = { "0", "1", "2", "3", "4+", "flag" };
+    public readonly bool[] Mine;
+    readonly int[] state;
+    readonly List<int>[] near;
+    readonly Random rng = new Random();
+    public bool Placed;
+    Point cur = new Point(W / 2, H / 2);
+    int flags;
+    bool blink;
+
+    public Mines(RectangleF[] keys, List<Point>[] cells) : base(cells)
+    {
+        Mine = new bool[keys.Length];
+        state = new int[keys.Length];
+        near = new List<int>[keys.Length];
+        for (int i = 0; i < keys.Length; i++) near[i] = new List<int>();
+        foreach (int i in board)
+        {
+            var a = keys[i];
+            a.Inflate(5, 5);
+            foreach (int j in board) if (j != i && a.IntersectsWith(keys[j])) near[i].Add(j);
+        }
+    }
+
+    public override int Interval { get { return 400; } }
+    public override string Help { get { return "arrows move   Space open   F flag   Esc stop   ·   mines " + (Count - flags); } }
+
+    public override void Step() { blink = !blink; }
+
+    public override void Key(Keys k)
+    {
+        if (Over) return;
+        if (k == Keys.Left) cur = Move(cur, -1, 0, false);
+        if (k == Keys.Right) cur = Move(cur, 1, 0, false);
+        if (k == Keys.Up) cur = Move(cur, 0, -1, false);
+        if (k == Keys.Down) cur = Move(cur, 0, 1, false);
+        int c = keyAt[cur.Y, cur.X];
+        if (k == Keys.Space) Open(c);
+        if (k == Keys.F && state[c] != 1) { state[c] = 2 - state[c]; flags += state[c] == 2 ? 1 : -1; }
+        blink = true;
+    }
+
+    void Place(int first)
+    {
+        Placed = true;
+        for (int n = 0; n < Count; )
+        {
+            int k = board[rng.Next(board.Count)];
+            if (Mine[k] || k == first || near[first].Contains(k)) continue;
+            Mine[k] = true;
+            n++;
+        }
+    }
+
+    public int Near(int k)
+    {
+        int n = 0;
+        foreach (int j in near[k]) if (Mine[j]) n++;
+        return n;
+    }
+
+    public void Open(int k)
+    {
+        if (state[k] != 0) return;
+        if (!Placed) Place(k);
+        if (Mine[k]) { Over = true; return; }
+        var todo = new Stack<int>();
+        todo.Push(k);
+        while (todo.Count > 0)
+        {
+            int i = todo.Pop();
+            if (state[i] != 0) continue;
+            state[i] = 1;
+            Score++;
+            if (Near(i) == 0) foreach (int j in near[i]) if (state[j] == 0 && !Mine[j]) todo.Push(j);
+        }
+        bool left = false;
+        foreach (int i in board) left |= !Mine[i] && state[i] != 1;
+        if (!left) Over = true;
+    }
+
+    public bool Opened(int k) { return state[k] == 1; }
+
+    public override int At(int y, int x)
+    {
+        int k = keyAt[y, x];
+        if (k < 0) return 0;
+        if (blink && !Over && k == keyAt[cur.Y, cur.X]) return 0xFFFFFF;
+        if (Over && Mine[k] && state[k] != 2) return 0xFF3030;
+        if (state[k] == 2) return LegendColors[5];
+        if (state[k] != 1) return 0;
+        return LegendColors[Math.Min(Near(k), 4)];
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
 
 static class SelfTest
 {
@@ -50,12 +51,35 @@ static class SelfTest
         Check(game.Score == 1 && game.Cells[0, Game.W - 1] == 2 && game.Cells[0, Game.W - 2] == 0, "full column clears and shifts");
         game.Key(System.Windows.Forms.Keys.Space);
         Check(!game.Over, "piece locks after drop");
-        var snake = new Snake();
+        var rects = new System.Drawing.RectangleF[Game.W * Game.H];
+        var cells = new List<System.Drawing.Point>[rects.Length];
+        for (int i = 0; i < rects.Length; i++)
+        {
+            rects[i] = new System.Drawing.RectangleF(i % Game.W * 40, i / Game.W * 40, 36, 36);
+            cells[i] = new List<System.Drawing.Point> { new System.Drawing.Point(i % Game.W, i / Game.W) };
+        }
+        var snake = new Snake(cells);
         snake.Key(System.Windows.Forms.Keys.Left);
         snake.Step();
         Check(!snake.Over && snake.At(2, 5) != 0, "snake ignores reversing into itself");
         for (int i = 0; i < Game.W - 5; i++) snake.Step();
         Check(!snake.Over && snake.At(2, 0) != 0, "snake wraps through the wall");
+        var mines = new Mines(rects, cells);
+        mines.Open(2 * Game.W + 7);
+        Check(!mines.Over && mines.Opened(2 * Game.W + 7) && mines.Near(2 * Game.W + 7) == 0, "first open is never a mine");
+        mines = new Mines(rects, cells) { Placed = true };
+        mines.Mine[0] = true;
+        mines.Open(rects.Length - 1);
+        Check(mines.Over && mines.Score == rects.Length - 1, "opening an empty key floods the board and wins");
+        mines = new Mines(rects, cells) { Placed = true };
+        mines.Mine[0] = true;
+        mines.Open(0);
+        Check(mines.Over && mines.Score == 0 && mines.At(0, 0) == 0xFF3030, "opening a mine ends the game and shows it");
+        var wide = new[] { new System.Drawing.RectangleF(0, 0, 76, 36), new System.Drawing.RectangleF(80, 0, 36, 36), new System.Drawing.RectangleF(20, 40, 36, 36) };
+        var wideCells = new[] { new List<System.Drawing.Point> { new System.Drawing.Point(0, 0), new System.Drawing.Point(1, 0) }, new List<System.Drawing.Point> { new System.Drawing.Point(2, 0) }, new List<System.Drawing.Point> { new System.Drawing.Point(0, 1) } };
+        mines = new Mines(wide, wideCells) { Placed = true };
+        mines.Mine[1] = true;
+        Check(mines.Near(0) == 1 && mines.Near(2) == 0, "neighbours follow the keys, not the grid");
         Console.WriteLine("selftest ok");
         return 0;
     }
