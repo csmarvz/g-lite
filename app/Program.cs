@@ -29,18 +29,20 @@ class Slider : Control
 
     public Slider() { DoubleBuffered = true; Height = 20; Cursor = Cursors.Hand; }
 
-    int X(int v) { return 7 + (int)((long)v * (Width - 14) / Max); }
+    float K { get { return Height / 20f; } }
+    int X(int v) { return (int)(7 * K) + (int)((long)v * (Width - 14 * K) / Max); }
 
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
         var c = Enabled ? Theme.Accent : Theme.Border;
-        using (var track = new SolidBrush(Color.FromArgb(68, 68, 68))) g.FillRectangle(track, 7, 8, Width - 14, 4);
+        float k = K;
+        using (var track = new SolidBrush(Color.FromArgb(68, 68, 68))) g.FillRectangle(track, 7 * k, 8 * k, Width - 14 * k, 4 * k);
         using (var b = new SolidBrush(c))
         {
-            g.FillRectangle(b, 7, 8, X(Value) - 7, 4);
-            g.FillEllipse(b, X(Value) - 7, 3, 14, 14);
+            g.FillRectangle(b, 7 * k, 8 * k, X(Value) - 7 * k, 4 * k);
+            g.FillEllipse(b, X(Value) - 7 * k, 3 * k, 14 * k, 14 * k);
         }
     }
 
@@ -49,7 +51,7 @@ class Slider : Control
 
     void Set(int px)
     {
-        int v = Math.Max(0, Math.Min(Max, (int)Math.Round((double)(px - 7) * Max / (Width - 14))));
+        int v = Math.Max(0, Math.Min(Max, (int)Math.Round((double)(px - 7 * K) * Max / (Width - 14 * K))));
         if (v == Value) return;
         Value = v;
         Invalidate();
@@ -93,7 +95,9 @@ class Panel515 : Form
     public string Note;
     KeyboardView view;
     bool wantView;
-    int statusTop;
+    int statusTop, traySize, bigSize;
+    float scale = 1;
+    readonly System.Collections.Generic.List<Label> heads = new System.Collections.Generic.List<Label>();
     Control[] bottomRow;
     bool moved, demo;
 
@@ -106,16 +110,15 @@ class Panel515 : Form
     {
         this.fake = fake;
         demo = fake != null;
-        KeyboardView.Round(this);
+        Win.Round(this);
         FormBorderStyle = FormBorderStyle.None;
         Text = "G-Lite";
-        Icon = MakeIcon();
         FormClosing += (s, e) => { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; ToTray(); } };
         TopMost = true;
         StartPosition = FormStartPosition.Manual;
         BackColor = Theme.Bg;
         ForeColor = Theme.Text;
-        Font = new Font("Segoe UI", 9f);
+        Font = Win.Px(9, 1);
         ClientSize = new Size(360, 10);
         Padding = new Padding(1);
         debounce.Tick += (s, e) => { debounce.Stop(); Preview(); };
@@ -147,7 +150,7 @@ class Panel515 : Form
             int c = Swatches[i];
             var p = new Label { BackColor = Color.FromArgb(c | unchecked((int)0xFF000000)), Bounds = new Rectangle(x0 + i * (sw + 6), y, sw, 26), Cursor = Cursors.Hand };
             p.Click += (s, e) => { cur.Color = c; Changed(true); };
-            p.Paint += (s, e) => { if (cur.Color == c && ((Control)s).Enabled) using (var pen = new Pen(Theme.Accent, 4)) e.Graphics.DrawRectangle(pen, 1, 1, sw - 3, 23); };
+            p.Paint += (o, e) => { var l = (Control)o; if (cur.Color == c && l.Enabled) using (var pen = new Pen(Theme.Accent, 4 * scale)) e.Graphics.DrawRectangle(pen, 2 * scale - 1, 2 * scale - 1, l.Width - 4 * scale + 1, l.Height - 4 * scale + 1); };
             swatchCtl[i] = p;
             Controls.Add(p);
         }
@@ -202,6 +205,36 @@ class Panel515 : Form
         ShowUpdate(null);
 
         Sync();
+        Rescale(Win.At(Point.Empty));
+    }
+
+    int S(float v) { return (int)Math.Round(v * scale); }
+
+    void Rescale(float ns)
+    {
+        if (ns == scale) return;
+        SuspendLayout();
+        Scale(new SizeF(ns / scale, ns / scale));
+        scale = ns;
+        Font = Win.Px(9, scale);
+        foreach (var h in heads) h.Font = Win.Px(9.5f, scale, "Segoe UI Semibold");
+        ResumeLayout();
+        Relayout();
+        if (settings != null) { settings.Dispose(); settings = null; }
+        RefreshIcons();
+    }
+
+    public void RefreshIcons()
+    {
+        int t = (int)Math.Round(16 * Win.At(Point.Empty)), b = S(32);
+        if (Tray != null && t != traySize) { traySize = t; Tray.Icon = Logo.Make(t); }
+        if (b != bigSize) { bigSize = b; Icon = Logo.Make(b); }
+    }
+
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == Win.DpiChanged) Rescale(Win.FromMessage(m));
+        base.WndProc(ref m);
     }
 
     void Drag(object s, MouseEventArgs e)
@@ -214,7 +247,7 @@ class Panel515 : Form
 
     protected override void OnPaint(PaintEventArgs e)
     {
-        if (!KeyboardView.Rounded) using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+        if (!Win.Rounded) using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
     }
 
     Label Lbl(string t, int x, int y, Color c)
@@ -228,7 +261,8 @@ class Panel515 : Form
     Label Head(string t, int x, ref int y)
     {
         var l = Lbl(t, x, y, Theme.Text);
-        l.Font = new Font("Segoe UI Semibold", 9.5f);
+        l.Font = Win.Px(9.5f, scale, "Segoe UI Semibold");
+        heads.Add(l);
         y += 24;
         return l;
     }
@@ -359,7 +393,8 @@ class Panel515 : Form
     {
         var wa = Screen.FromControl(this).WorkingArea;
         view.StartPosition = FormStartPosition.Manual;
-        view.Location = new Point(Math.Max(wa.Left, Left - view.Width - 8), Math.Max(wa.Top, Top));
+        view.Rescale(scale);
+        view.Location = new Point(Math.Max(wa.Left, Left - view.Width - S(8)), Math.Max(wa.Top, Top));
         view.Show();
     }
 
@@ -367,10 +402,10 @@ class Panel515 : Form
     {
         if (settings == null)
         {
-            settings = new Form { FormBorderStyle = FormBorderStyle.None, ShowInTaskbar = false, TopMost = true, StartPosition = FormStartPosition.Manual, BackColor = Theme.Bg, ForeColor = Theme.Text, Font = Font, ClientSize = new Size(220, 150) };
+            settings = new Form { FormBorderStyle = FormBorderStyle.None, ShowInTaskbar = false, TopMost = true, StartPosition = FormStartPosition.Manual, BackColor = Theme.Bg, ForeColor = Theme.Text, Font = Win.Px(9, 1), ClientSize = new Size(220, 150) };
             var f = settings;
-            KeyboardView.Round(f);
-            f.Paint += (s, e) => { if (!KeyboardView.Rounded) using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, f.Width - 1, f.Height - 1); };
+            Win.Round(f);
+            f.Paint += (o, e) => { if (!Win.Rounded) using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, f.Width - 1, f.Height - 1); };
             MouseEventHandler drag = (s, e) => { if (e.Button != MouseButtons.Left) return; ReleaseCapture(); SendMessage(f.Handle, 0xA1, (IntPtr)2, IntPtr.Zero); };
             f.MouseDown += drag;
             var title = new Label { Text = "Settings", ForeColor = Theme.Dim, Location = new Point(16, 12), AutoSize = true };
@@ -386,27 +421,29 @@ class Panel515 : Form
             var now = new Label { Text = "Check update now", ForeColor = Theme.Accent, Location = new Point(16, 124), AutoSize = true, Cursor = Cursors.Hand };
             now.Click += (s, e) => CheckUpdates(true);
             f.Controls.AddRange(new Control[] { title, close, startup, check, auto, now });
+            f.Scale(new SizeF(scale, scale));
+            f.Font = Win.Px(9, scale);
         }
         syncing = true;
         startup.Checked = StartupOn();
         syncing = false;
-        settings.Location = new Point(Left - settings.Width - 8, Bottom - settings.Height);
+        settings.Location = new Point(Left - settings.Width - S(8), Bottom - settings.Height);
         settings.Show();
         settings.Activate();
     }
 
     void Relayout()
     {
-        int sh = status.Text == "" ? 0 : TextRenderer.MeasureText(status.Text, status.Font, new Size(status.Width, 100), TextFormatFlags.WordBreak).Height > 20 ? 34 : 18;
+        int sh = status.Text == "" ? 0 : TextRenderer.MeasureText(status.Text, status.Font, new Size(status.Width, S(100)), TextFormatFlags.WordBreak).Height > status.Font.Height * 3 / 2 ? 34 : 18;
         if (available != null) sh = Math.Min(sh, 18);
-        status.Height = sh;
+        status.Height = S(sh);
         int top = statusTop + sh;
-        foreach (var c in new Control[] { updText, updGo, updSkip }) c.Top = top;
+        foreach (var c in new Control[] { updText, updGo, updSkip }) c.Top = S(top);
         int gap = sh + (available != null ? 20 : 0);
         if (gap > 0) gap += 6;
-        foreach (var c in bottomRow) c.Top = statusTop + gap;
+        foreach (var c in bottomRow) c.Top = S(statusTop + gap);
         int bottom = Bottom;
-        ClientSize = new Size(ClientSize.Width, statusTop + gap + 44);
+        ClientSize = new Size(ClientSize.Width, S(statusTop + gap + 44));
         if (Visible) Top = bottom - Height;
     }
 
@@ -504,7 +541,8 @@ class Panel515 : Form
     public void ShowPanel()
     {
         var wa = Screen.FromPoint(Cursor.Position).WorkingArea;
-        if (!moved) Location = new Point(wa.Right - Width - 12, wa.Bottom - Height - 12);
+        Rescale(Win.At(moved ? Location : Cursor.Position));
+        if (!moved) Location = new Point(wa.Right - Width - S(12), wa.Bottom - Height - S(12));
         Show();
         if (view != null && wantView) ShowView();
         Activate();
@@ -566,25 +604,11 @@ class Panel515 : Form
             return k != null && Equals(k.GetValue("AmbientLightingEnabled"), 1);
     }
 
-    static Icon MakeIcon()
-    {
-        var bmp = new Bitmap(32, 32);
-        using (var g = Graphics.FromImage(bmp))
-        using (var pen = new Pen(Color.White, 2.5f))
-        using (var dot = new SolidBrush(Color.White))
-        {
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.DrawRectangle(pen, 2, 8, 28, 17);
-            for (int r = 0; r < 2; r++) for (int c = 0; c < 5; c++) g.FillRectangle(dot, 6 + c * 4.5f, 12 + r * 4.5f, 2.5f, 2.5f);
-            g.FillRectangle(dot, 10, 20.5f, 12, 2.5f);
-        }
-        return Icon.FromHandle(bmp.GetHicon());
-    }
-
     [STAThread]
     static void Main(string[] args)
     {
         if (args.Length == 2 && args[0] == "--swap") { Environment.ExitCode = Updater.Swap(args[1]); return; }
+        Win.Aware();
         bool fresh, demo = args.Contains("--demo");
         using (var mutex = new Mutex(true, demo ? "GLiteDemo" : "GLite", out fresh))
         {
@@ -596,7 +620,7 @@ class Panel515 : Form
             Application.EnableVisualStyles();
             var fake = demo ? new FakeHidpp() : null;
             var panel = new Panel515(fake);
-            var tray = new NotifyIcon { Icon = MakeIcon(), Text = "G-Lite " + Application.ProductVersion + (demo ? " (demo)" : ""), Visible = true };
+            var tray = new NotifyIcon { Text = "G-Lite " + Application.ProductVersion + (demo ? " (demo)" : ""), Visible = true };
             tray.ContextMenuStrip = new ContextMenuStrip();
             tray.ContextMenuStrip.Items.Add("Open", null, (s, e) => panel.ShowPanel());
             tray.ContextMenuStrip.Items.Add("Quit", null, (s, e) => { tray.Visible = false; Application.Exit(); });
@@ -604,6 +628,9 @@ class Panel515 : Form
             panel.CreateControl();
             panel.Handle.ToString();
             panel.Tray = tray;
+            panel.RefreshIcons();
+            SystemEvents.DisplaySettingsChanged += (o, e) => panel.RefreshIcons();
+            SystemEvents.UserPreferenceChanged += (o, e) => panel.RefreshIcons();
             if (args.Contains("--restart")) panel.Note = "Successfully updated to v" + Application.ProductVersion;
             using (var k = Registry.CurrentUser.OpenSubKey(RunKey, true))
             {

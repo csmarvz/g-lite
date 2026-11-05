@@ -100,23 +100,11 @@ class KeyboardView : Form
     const float U = 40, Pad = 16, Head = 30;
     [DllImport("user32.dll")] static extern bool ReleaseCapture();
     [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, IntPtr l);
-    [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int value, int size);
-    public static bool Rounded;
-
-    public static void Round(Form f)
-    {
-        f.HandleCreated += (s, e) =>
-        {
-            int round = 2, border = 0x3A3A3A;
-            try { Rounded = DwmSetWindowAttribute(f.Handle, 33, ref round, 4) == 0 && DwmSetWindowAttribute(f.Handle, 34, ref border, 4) == 0; }
-            catch (DllNotFoundException) { }
-        };
-    }
     readonly FakeHidpp kb;
     readonly List<Tuple<RectangleF, string>> keys = new List<Tuple<RectangleF, string>>();
     readonly List<Tuple<PointF, double>> ripples = new List<Tuple<PointF, double>>();
     readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
-    float width, height;
+    float width, height, bw, bh, scale = 1;
     List<Point>[] cells;
     Game game;
     Func<Game> make;
@@ -127,7 +115,7 @@ class KeyboardView : Form
     public KeyboardView(FakeHidpp kb, Model model)
     {
         this.kb = kb;
-        Round(this);
+        Win.Round(this);
         foreach (var row in model.Rows)
         {
             float x = 0, y = height;
@@ -156,7 +144,9 @@ class KeyboardView : Form
         DoubleBuffered = true;
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
-        ClientSize = new Size((int)(width + 2 * Pad), (int)(Head + height + 2 * Pad + 20));
+        bw = width + 2 * Pad;
+        bh = Head + height + 2 * Pad + 20;
+        Rescale(Win.At(Point.Empty));
         var timer = new System.Windows.Forms.Timer { Interval = 33 };
         timer.Tick += (s, e) => { Tick(); Invalidate(); };
         timer.Start();
@@ -164,15 +154,29 @@ class KeyboardView : Form
         MouseDown += (s, e) =>
         {
             if (e.Button != MouseButtons.Left) return;
-            if (e.Y >= Head + Pad / 2) { ripples.Add(Tuple.Create(new PointF(e.X, e.Y), clock.Elapsed.TotalSeconds)); return; }
-            if (e.X > ClientSize.Width - Pad - 20) { Hide(); return; }
-            if (game != null) { if (e.X > ClientSize.Width - Pad - 70) game = null; return; }
-            if (e.X > ClientSize.Width - Pad - 70) { Play(() => new Snake(cells)); return; }
-            if (e.X > ClientSize.Width - Pad - 125) { Play(() => new Blocks()); return; }
-            if (e.X > ClientSize.Width - Pad - 180) { Play(() => new Mines(keys.Select(k => k.Item1).ToArray(), cells)); return; }
+            float ex = e.X / scale, ey = e.Y / scale;
+            if (ey >= Head + Pad / 2) { ripples.Add(Tuple.Create(new PointF(ex, ey), clock.Elapsed.TotalSeconds)); return; }
+            if (ex > bw - Pad - 20) { Hide(); return; }
+            if (game != null) { if (ex > bw - Pad - 70) game = null; return; }
+            if (ex > bw - Pad - 70) { Play(() => new Snake(cells)); return; }
+            if (ex > bw - Pad - 125) { Play(() => new Blocks()); return; }
+            if (ex > bw - Pad - 180) { Play(() => new Mines(keys.Select(k => k.Item1).ToArray(), cells)); return; }
             ReleaseCapture();
             SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero);
         };
+    }
+
+    public void Rescale(float ns)
+    {
+        scale = ns;
+        ClientSize = new Size((int)Math.Ceiling(bw * scale), (int)Math.Ceiling(bh * scale));
+        Invalidate();
+    }
+
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == Win.DpiChanged) Rescale(Win.FromMessage(m));
+        base.WndProc(ref m);
     }
 
     void Play(Func<Game> m)
@@ -228,7 +232,8 @@ class KeyboardView : Form
         ripples.RemoveAll(r => t - r.Item2 > 3);
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
-        using (var font = new Font("Segoe UI", 7.5f))
+        g.ScaleTransform(scale, scale);
+        using (var font = Win.Px(7.5f, 1))
         for (int ki = 0; ki < keys.Count; ki++)
         {
             var k = keys[ki];
@@ -283,30 +288,30 @@ class KeyboardView : Form
                 using (var under = new SolidBrush(Color.FromArgb(90, c))) g.FillRectangle(under, r.X + 6, r.Bottom - 4, r.Width - 12, 2);
             }
         }
-        if (!Rounded) using (var pen = new Pen(Color.FromArgb(58, 58, 58))) g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
-        using (var f = new Font("Segoe UI", 9f))
+        if (!Win.Rounded) using (var pen = new Pen(Color.FromArgb(58, 58, 58))) g.DrawRectangle(pen, 0, 0, bw - 1, bh - 1);
+        using (var f = Win.Px(9, 1))
         using (var b = new SolidBrush(Color.FromArgb(150, 150, 150)))
         {
             g.DrawString(Text, f, b, Pad, 12);
-            g.DrawString("✕", f, b, ClientSize.Width - Pad - 14, 12);
-            using (var a = new SolidBrush(Color.FromArgb(63, 169, 138))) g.DrawString(game == null ? "Mines      Blocks      Snake" : "Stop", f, a, ClientSize.Width - Pad - (game == null ? 175 : 66), 12);
+            g.DrawString("✕", f, b, bw - Pad - 14, 12);
+            using (var a = new SolidBrush(Color.FromArgb(63, 169, 138))) g.DrawString(game == null ? "Mines      Blocks      Snake" : "Stop", f, a, bw - Pad - (game == null ? 175 : 66), 12);
         }
         string what = def == null ? "factory animation (approximation)" : def.Name;
         if (id == 0x17) what += " — click the keys";
         if (game != null) what = game.Over ? "game over   ·   score " + game.Score + "   ·   any key to play again" : game.Help;
-        using (var f = new Font("Segoe UI", 9f))
+        using (var f = Win.Px(9, 1))
         using (var b = new SolidBrush(Color.FromArgb(150, 150, 150)))
         {
-            g.DrawString(what + "   ·   brightness " + bright + "%", f, b, Pad, ClientSize.Height - 26);
+            g.DrawString(what + "   ·   brightness " + bright + "%", f, b, Pad, bh - 26);
             if (game is Mines && !game.Over)
             {
-                float lx = ClientSize.Width - Pad;
+                float lx = bw - Pad;
                 for (int i = Mines.LegendNames.Length - 1; i >= 0; i--)
                 {
                     lx -= g.MeasureString(Mines.LegendNames[i], f).Width;
-                    g.DrawString(Mines.LegendNames[i], f, b, lx, ClientSize.Height - 26);
+                    g.DrawString(Mines.LegendNames[i], f, b, lx, bh - 26);
                     lx -= 12;
-                    using (var sw = new SolidBrush(Color.FromArgb(Mines.LegendColors[i] | unchecked((int)0xFF000000)))) g.FillRectangle(sw, lx, ClientSize.Height - 23, 10, 10);
+                    using (var sw = new SolidBrush(Color.FromArgb(Mines.LegendColors[i] | unchecked((int)0xFF000000)))) g.FillRectangle(sw, lx, bh - 23, 10, 10);
                     lx -= 12;
                 }
             }

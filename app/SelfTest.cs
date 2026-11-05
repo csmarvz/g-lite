@@ -8,7 +8,7 @@ static class SelfTest
 
     static void Check(bool ok, string what) { if (!ok) { Console.WriteLine("FAIL " + what); Environment.Exit(1); } }
 
-    static int Main()
+    static int Main(string[] args)
     {
         var factory = Hex("0101003c012cffffffffffffffffffffffffffffffffffffffffffffffff18ff008180aaff00006400000000000000000000000019ff008180aaff0000640000000000000000000000000300000000000000000010000104000200ffffffffffffffff");
         var factoryDir = Hex("5e380925010181014063996dec0101ff");
@@ -89,6 +89,9 @@ static class SelfTest
         Settings.Set("skip-version", "0.0.3-alpha");
         Check(Settings.Get("skip-version") == "0.0.3-alpha" && System.IO.File.ReadAllText(Settings.Location).Contains("skip-version=0.0.3-alpha"), "settings are written to the file");
         System.IO.File.Delete(Settings.Location);
+        using (var logo = Logo.Draw(64))
+            Check(logo.GetPixel(0, 0).A == 0 && logo.GetPixel(32, 4).A == 255 && logo.GetPixel(32, 32).A < 255, "logo is a white disc with a transparent GL");
+        if (args.Length > 0) Logo.WriteIco(args[0]);
         Console.WriteLine("selftest ok");
         return 0;
     }
