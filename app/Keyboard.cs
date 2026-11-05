@@ -100,7 +100,6 @@ class Lighting
     }
 }
 
-// Protocol notes: github.com/mevdschee/logirgb research/ (0x8071, 0x8101, 0x8040)
 static class G515
 {
     public static readonly EffectDef[] Effects =
