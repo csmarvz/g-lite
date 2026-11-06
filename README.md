@@ -1,6 +1,8 @@
 # G-Lite
 Lightweight G Hub alternative.
 
+[![Download alpha version](https://img.shields.io/badge/Download-alpha%20version-2ea44f?style=for-the-badge)](https://github.com/csmarvz/g-lite/releases/latest)
+
 > [!WARNING]
 > **G-Lite is experimental.** It writes to your device's onboard memory, and a bug could leave a device in a bad state or brick it. It never touches the factory profile, checks every write and backs up what's on a device before each save, but it has only been tested on one keyboard, one mouse and one headset. Use it at your own risk.
 
