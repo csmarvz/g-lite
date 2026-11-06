@@ -15,6 +15,9 @@ Lightweight G Hub alternative.
 
 1. Download `GLite.exe` from the [latest release](https://github.com/csmarvz/g-lite/releases/latest).
 2. Double-click `GLite.exe`.
+3. G-Lite finds your Logitech G devices and lists them on the left. Click one to change its settings.
+4. Click **Save to keyboard** or **Save to mouse** to keep your changes on the device.
+5. To go back to the factory settings, or to an earlier save, use **Backups** at the top of a keyboard or mouse screen.
 
 If Windows says it protected your PC, click **More info**, then **Run anyway**. G-Lite isn't signed yet.
 
