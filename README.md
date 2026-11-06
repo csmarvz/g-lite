@@ -11,6 +11,13 @@ Lightweight G Hub alternative.
   <img src="docs/screenshot-light.png" alt="G-Lite showing a G515 TKL with the Wave effect, a mouse and a headset in the sidebar" width="820">
 </picture>
 
+## How to use
+
+1. Download `GLite.exe` from the [latest release](https://github.com/csmarvz/g-lite/releases/latest).
+2. Double-click `GLite.exe`.
+
+If Windows says it protected your PC, click **More info**, then **Run anyway**. G-Lite isn't signed yet.
+
 ## Supported devices
 
 | Device | Connection | What G-Lite can do |
