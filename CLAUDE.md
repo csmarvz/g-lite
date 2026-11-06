@@ -29,12 +29,14 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/Pages.cs`:
   - `DevicePage`: what every device screen shares: the title, the profile row, the device work queue, the status line and the Backups menu. Profiles are stored as `profile.<device>.<name>`.
   - `ColorRow`: the colour swatches
+  - `ReportView`: the report screen that Report opens on every device screen, with Copy report and Open GitHub issue
   - `InfoPage` for G devices G-Lite can't change yet or that are asleep, and `EmptyPage`
 - `app/Page515.cs`:
   - `Page515`: the G515 screen, the preview debounce, the backups menu and the offer to restore when the saved lighting is half written. Profiles are `profile.g515.<name>`.
   - `KeyPicture`: the live key picture
 - `app/PageMouse.cs`: `PageMouse`, the mouse screen with Save to mouse, its backups and the offer to restore a damaged profile, and `MousePicture`
 - `app/PageHeadset.cs`: `PageHeadset`, the headset screen, and `HeadsetPicture`
+- `app/Report.cs`: `Report.Build`, a text report of a device for an issue. It calls only the functions listed in `Report.Reads`. Add a function there only when it's known to only read. It leaves out the unit ID (0x0003 fn 0), the friendly name (0x0007) and the device path.
 - `app/Backup.cs`: `Backups`, a copy of what's on a device taken before every save or restore, in `%LOCALAPPDATA%\GLite\backups\<device>\`: `G515` for the keyboard's four onboard files, the device name (like `gprowireless`) for a mouse's profile sector. Each line is `<4 hex digits>=<bytes>`. It keeps the first backup and the last ten.
 - `app/Mouse.cs`: `GMouse`, which reads and sets DPI (0x2201), the DPI stage (0x8100), the report rate (0x8060) and the lighting (0x8070), and reads, builds and writes the active onboard profile (0x8100)
 - `app/Headset.cs`: `GHeadset`, which reads and sets sidetone (0x8300) and the auto-off time (0x1F20 fn 1 and fn 2, in minutes, 0 is never). 0x1F20 fn 0 is the battery voltage, and byte 2 is 3 while charging.

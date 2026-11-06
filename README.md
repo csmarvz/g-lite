@@ -29,7 +29,7 @@ If Windows says it protected your PC, click **More info**, then **Run anyway**. 
 | G Pro Wireless | LIGHTSPEED receiver | DPI and DPI stage, logo lighting, report rate, profiles, saving to the mouse, backups and restoring them, factory profile |
 | PRO X Wireless | Its own LIGHTSPEED receiver | Sidetone, turning off when idle, battery, profiles |
 
-Other G mice and headsets with the same features get the same screens, but they haven't been tested. Other Logitech G devices show up in the sidebar with their connection, battery and firmware, but G-Lite can't change their settings yet. Devices that could come next are listed in [#11](https://github.com/csmarvz/g-lite/issues/11).
+Other G mice and headsets with the same features get the same screens, but they haven't been tested. Other Logitech G devices show up in the sidebar with their connection, battery and firmware, but G-Lite can't change their settings yet. Devices that could come next are listed in [#11](https://github.com/csmarvz/g-lite/issues/11). To help add yours, open it in G-Lite, click **Report** and send the report in a new issue.
 
 ## Sources
 

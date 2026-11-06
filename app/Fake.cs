@@ -121,6 +121,7 @@ class FakeMouse : Hidpp
         user[254] = (byte)c;
         Sectors[0x0101] = rom;
         Sectors[0x0001] = user;
+        Sectors[0x0000] = FakeHidpp.Hex("00010100").Concat(Enumerable.Repeat((byte)0xFF, 251)).ToArray();
     }
 
     int[] Stages { get { return GMouse.StagesOf(Sectors[0x0001]); } }
@@ -168,7 +169,11 @@ class FakeMouse : Hidpp
                     Zones[1] = new byte[] { 1, 0 }.Concat(prof.Skip(0xDC).Take(10)).ToArray();
                 }
                 if (fn == 4) r[1] = 1;
-                if (fn == 5) Sectors[u16(0)].Skip(u16(2)).Take(16).ToArray().CopyTo(r, 0);
+                if (fn == 5)
+                {
+                    if (!Sectors.ContainsKey(u16(0))) throw new HidppError(2, "HID++ error 0x02");
+                    Sectors[u16(0)].Skip(u16(2)).Take(16).ToArray().CopyTo(r, 0);
+                }
                 if (fn == 6) { writeTo = u16(0); writeLength = u16(4); pending.Clear(); }
                 if (fn == 7) pending.AddRange(p.Take(16));
                 if (fn == 8) Sectors[writeTo] = pending.Take(writeLength).ToArray();

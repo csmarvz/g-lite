@@ -217,7 +217,39 @@ static class SelfTest
         using (var logo = Logo.Draw(64))
             Check(logo.GetPixel(0, 0).A == 0 && logo.GetPixel(32, 4).A == 255 && logo.GetPixel(32, 32).A < 255, "logo is a white disc with a transparent GL");
         if (args.Length > 0) Logo.WriteIco(args[0]);
+        var spy = new Recorder(new FakeMouse());
+        var mreport = Report.Build(spy, new Found { Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, Wpid = 0x4079, Path = @"\\?\hid#vid_046d&pid_c547&mi_02&col02#7&abc&0&0001#{x}", Features = new[] { 0x2201, 0x8060, 0x8070, 0x8100 } }, "PageMouse");
+        Check(mreport.Contains("ID 4079 · USB 046D:C547") && mreport.Contains("0000=0001") && mreport.Contains("0001=" + BitConverter.ToString(spy.Inner.Sectors[1]).Replace("-", ""))
+            && mreport.Contains("0101=") && mreport.Contains("dpi list=") && mreport.Contains("zone 1 effect 3=") && !mreport.Contains("abc"), "the mouse report has its features, profiles and no device path");
+        Check(spy.Calls.Count > 20 && spy.Calls.All(c => Report.Reads.ContainsKey(c.Item1) && Report.Reads[c.Item1].Contains(c.Item2)), "the mouse report only reads");
+        var kspy = new Recorder(new FakeHidpp());
+        var kreport = Report.Build(kspy, new Found { Name = "G515 LS TKL", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, Wpid = 0x40B4, Features = new[] { 0x8040, 0x8071, 0x8101 } }, "Page515");
+        Check(kreport.Contains("0008=") && kreport.Contains("0101=") && kreport.Contains("cluster 0 effect 1=") && kspy.Calls.All(c => Report.Reads.ContainsKey(c.Item1) && Report.Reads[c.Item1].Contains(c.Item2)), "the keyboard report reads its files and effects only");
+        var hreport = Report.Build(new FakeHeadset(), new Found { Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "LIGHTSPEED", Index = 0xFF, Features = new[] { 0x8300, 0x1F20 } }, "PageHeadset");
+        Check(hreport.Contains("sidetone=1E") && hreport.Contains("auto-off=1E"), "the headset report reads sidetone and auto-off");
+        Check(!Report.Reads[0x8100].Intersect(new[] { 1, 3, 6, 7, 8, 0xC }).Any() && !Report.Reads[0x8101].Intersect(new[] { 2, 3, 6, 7 }).Any() && !Report.Reads[0x8071].Contains(1) && !Report.Reads[0x8070].Contains(3), "the report never calls a write function");
+
         Console.WriteLine("selftest ok");
         return 0;
+    }
+}
+
+class Recorder : Hidpp
+{
+    public readonly FakeMouse Inner;
+    readonly Hidpp inner;
+    readonly Dictionary<byte, int> ids = new Dictionary<byte, int>();
+    public readonly List<Tuple<int, int>> Calls = new List<Tuple<int, int>>();
+
+    public Recorder(Hidpp inner) : base(false) { this.inner = inner; Inner = inner as FakeMouse; }
+
+    public override void Dispose() { }
+
+    public override byte[] Call(byte feat, int fn, params byte[] p)
+    {
+        var r = inner.Call(feat, fn, p);
+        if (feat == 0) { if (r[0] != 0) ids[r[0]] = p[0] << 8 | p[1]; }
+        else Calls.Add(Tuple.Create(ids.ContainsKey(feat) ? ids[feat] : -1, fn));
+        return r;
     }
 }

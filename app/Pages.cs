@@ -4,6 +4,8 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -24,8 +26,9 @@ abstract class DevicePage : Control, IPage
     readonly Label sub;
     readonly Drop profiles;
     readonly Field nameField;
-    readonly Btn newBtn, delBtn;
+    readonly Btn newBtn, delBtn, reportBtn;
     readonly StatusLine status;
+    readonly ReportView report;
     bool naming;
     string readAt = "";
     public string Note;
@@ -43,6 +46,7 @@ abstract class DevicePage : Control, IPage
         sub.MouseDown += drag;
         var reread = Ui.Add(this, new Btn { Look = Look.Ghost, Icon = "refresh", AccessibleName = "Read again from the " + noun }, 536, 10, 36, 28);
         reread.Click += (s, e) => Load();
+        reportBtn = Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Report", AccessibleName = "Report of the " + noun }, 536 - 4 - 80, 10, 80, 28);
 
         Ui.Text(this, "Profile", 20, 79, () => Theme.Dim, 9.75f);
         profiles = Ui.Add(this, new Drop { AccessibleName = "Profile" }, 74, 72, 210, 32);
@@ -65,6 +69,15 @@ abstract class DevicePage : Control, IPage
         var line = Ui.Add(this, new Control(), 0, 623, 656, 1);
         Ui.Style(line, () => line.BackColor = Theme.Border);
         status = Ui.Add(this, new StatusLine(), 20, 633, 460, 36);
+        report = Ui.Add(this, new ReportView(noun, () => ReportView.TitleFor(found), Collect), 0, 72, 656, 608);
+        report.Closed += () => { reportBtn.On = false; reportBtn.Invalidate(); };
+        reportBtn.Click += (s, e) =>
+        {
+            if (report.Visible) { report.Close(); return; }
+            reportBtn.On = true;
+            reportBtn.Invalidate();
+            report.Open();
+        };
         LoadSets(null);
         ShowSub();
     }
@@ -75,6 +88,7 @@ abstract class DevicePage : Control, IPage
 
     protected Btn BackupsButton(string noun)
     {
+        reportBtn.Left = 536 - 4 - 80 - 4 - 80;
         return Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Backups", AccessibleName = "Backups of the " + noun }, 536 - 4 - 80, 10, 80, 28);
     }
 
@@ -160,7 +174,13 @@ abstract class DevicePage : Control, IPage
         return l;
     }
 
-    protected void Do(Action<Hidpp> a, Action done = null)
+    void Collect(Action<string, string> done)
+    {
+        string text = null;
+        Do(h => text = Report.Build(h, found, GetType().Name), () => done(text, null), msg => done(null, msg));
+    }
+
+    protected void Do(Action<Hidpp> a, Action done = null, Action<string> failed = null)
     {
         queue = queue.ContinueWith(_ =>
         {
@@ -173,7 +193,8 @@ abstract class DevicePage : Control, IPage
             catch (Exception ex)
             {
                 if (dev != null && !(ex is HidppError) && !(ex is Refused)) { dev.Dispose(); dev = null; Lost(); }
-                Post(ex.Message, true);
+                if (failed != null && IsHandleCreated) BeginInvoke((Action)(() => failed(ex.Message)));
+                else Post(ex.Message, true);
             }
         });
     }
@@ -299,7 +320,9 @@ class ColorRow
 class InfoPage : Control
 {
     readonly Label title, sub, head, text, link, battery, firmware, features;
-    readonly Btn again;
+    readonly Btn again, create, reportBtn;
+    readonly ReportView report;
+    Found found;
 
     public InfoPage(Found f, MouseEventHandler drag, Action rescan)
     {
@@ -314,9 +337,10 @@ class InfoPage : Control
         head = Ui.Text(state, "", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
         text = Ui.Text(state, "", 14, 38, () => Theme.Text, 9.75f);
         text.AutoSize = false;
-        text.Size = new Size(420, 54);
+        text.Size = new Size(440, 60);
         again = Ui.Add(state, new Btn { Text = "Scan again", Icon = "refresh" }, 616 - 14 - 130, 36, 130, 32);
         again.Click += (s, e) => rescan();
+        create = Ui.Add(state, new Btn { Look = Look.Primary, Text = "Create report" }, 616 - 14 - 130, 36, 130, 32);
 
         var details = Ui.Add(this, new Box(), 20, 196, 616, 196);
         Ui.Text(details, "Details", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
@@ -326,7 +350,31 @@ class InfoPage : Control
         features = Row(details, "Features", 124);
         features.AutoSize = false;
         features.Size = new Size(470, 60);
+        reportBtn = Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Report", AccessibleName = "Report of this device" }, 536 - 4 - 80, 10, 80, 28);
+        report = Ui.Add(this, new ReportView("device", () => ReportView.TitleFor(found), Collect), 0, 72, 656, 608);
+        report.Closed += () => { reportBtn.On = false; reportBtn.Invalidate(); };
+        reportBtn.Click += (s, e) => { if (report.Visible) report.Close(); else Open(); };
+        create.Click += (s, e) => Open();
         SetFound(f);
+    }
+
+    void Open()
+    {
+        reportBtn.On = true;
+        reportBtn.Invalidate();
+        report.Open();
+    }
+
+    void Collect(Action<string, string> done)
+    {
+        var f = found;
+        Task.Run(() =>
+        {
+            string t = null, err = null;
+            try { using (var h = new Hidpp(f.Path, f.Index)) t = Report.Build(h, f, "none, not supported yet"); }
+            catch (Exception ex) { err = ex.Message; }
+            if (IsHandleCreated) BeginInvoke((Action)(() => done(t, err)));
+        });
     }
 
     static Label Row(Control box, string name, int y)
@@ -337,13 +385,16 @@ class InfoPage : Control
 
     public void SetFound(Found f)
     {
+        found = f;
         title.Text = f.Short == "" ? "Logitech device" : f.Short;
         sub.Text = f.Sub;
         head.Text = f.Asleep ? "Asleep" : "Not supported yet";
         text.Text = f.Asleep
             ? "It's paired but didn't answer. Wake it with a key press or a click, and G-Lite picks it up."
-            : "G-Lite found this device but can't change its settings yet.";
+            : "G-Lite can't change this device yet. A report of what it supports helps add it. G-Lite only reads the device, and nothing is sent until you paste the report somewhere.";
         again.Visible = f.Asleep;
+        create.Visible = reportBtn.Visible = !f.Asleep;
+        if (f.Asleep && report.Visible) report.Close();
         link.Text = f.Link + (f.Index == 0xFF ? "" : " · slot " + f.Index) + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "");
         battery.Text = f.Battery < 0 ? "–" : f.BatteryText + (f.Approx ? " (estimated from the voltage)" : "");
         firmware.Text = f.Firmware == "" ? "–" : f.Firmware;
@@ -386,5 +437,125 @@ class EmptyPage : Control
         title.Text = on ? "Looking for devices…" : "No supported device found";
         text.Text = on ? "" : "G-Lite looked over USB, LIGHTSPEED, Unifying and Bolt receivers, and Bluetooth.";
         scan.Visible = report.Visible = tips.Visible = !on;
+    }
+}
+
+class ReportView : Control
+{
+    [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)] static extern int SetWindowTheme(IntPtr h, string app, string id);
+    const string Issues = "https://github.com/csmarvz/g-lite/issues/new";
+    readonly TextBox box;
+    readonly Label size;
+    readonly Btn again, issue, copy;
+    readonly StatusLine status;
+    readonly Func<string> title;
+    readonly Action<Action<string, string>> read;
+    string text = "";
+    public event Action Closed;
+
+    public ReportView(string noun, Func<string> title, Action<Action<string, string>> read)
+    {
+        this.title = title;
+        this.read = read;
+        Visible = false;
+        Ui.Style(this, () => BackColor = Theme.Bg);
+
+        var head = Ui.Add(this, new Box(), 20, 8, 616, 84);
+        Ui.Text(head, "Device report", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
+        var intro = Ui.Text(head, "What G-Lite reads from this " + noun + ". It has no serial number, no name you gave the device and no Windows path.", 14, 34, () => Theme.Text, 9.75f);
+        intro.AutoSize = false;
+        intro.Size = new Size(440, 40);
+        again = Ui.Add(head, new Btn { Text = "Read again", Icon = "refresh" }, 616 - 14 - 130, 26, 130, 32);
+        again.Click += (s, e) => Read();
+
+        var body = Ui.Add(this, new Box(), 20, 104, 616, 435);
+        Ui.Text(body, "Report", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
+        size = Ui.Text(body, "", 300, 12, () => Theme.Dim, 9f);
+        size.AutoSize = false;
+        size.Size = new Size(302, 18);
+        size.TextAlign = ContentAlignment.TopRight;
+        var inset = Ui.Add(body, new Control(), 14, 38, 588, 383);
+        Ui.Style(inset, () => inset.BackColor = Theme.Bg);
+        box = Ui.Add(inset, new TextBox { Multiline = true, ReadOnly = true, WordWrap = false, ScrollBars = ScrollBars.Both, BorderStyle = BorderStyle.None, AccessibleName = "Device report" }, 8, 6, 576, 373);
+        Ui.Font(box, 9f, "Consolas");
+        Ui.Style(box, () => { box.BackColor = Theme.Bg; box.ForeColor = Theme.Text; Dark(); });
+        box.HandleCreated += (s, e) => Dark();
+
+        var line = Ui.Add(this, new Control(), 0, 551, 656, 1);
+        Ui.Style(line, () => line.BackColor = Theme.Border);
+        status = Ui.Add(this, new StatusLine(), 20, 561, 216, 36);
+        var back = Ui.Add(this, new Btn { Text = "Back" }, 244, 564, 76, 32);
+        back.Click += (s, e) => Close();
+        issue = Ui.Add(this, new Btn { Text = "Open GitHub issue" }, 328, 564, 160, 32);
+        issue.Click += (s, e) => OpenIssue();
+        copy = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Copy report" }, 496, 564, 140, 32);
+        copy.Click += (s, e) => { if (Put(text)) status.Set("Copied to the clipboard", false, null); };
+    }
+
+    public static string TitleFor(Found f)
+    {
+        return "Device report: " + (f.Short == "" ? "Logitech device" : f.Short) + (f.Wpid != 0 ? " (" + f.Wpid.ToString("X4") + ")" : "");
+    }
+
+    public void Open()
+    {
+        Visible = true;
+        BringToFront();
+        if (text == "") Read();
+    }
+
+    public void Close()
+    {
+        Visible = false;
+        if (Closed != null) Closed();
+    }
+
+    void Dark()
+    {
+        if (box.IsHandleCreated) SetWindowTheme(box.Handle, Theme.Light ? "Explorer" : "DarkMode_Explorer", null);
+    }
+
+    void Read()
+    {
+        again.Enabled = issue.Enabled = copy.Enabled = false;
+        box.Text = "Reading the device. This takes a few seconds and changes nothing on it.";
+        size.Text = "";
+        status.Set("Reading…", false, null);
+        read((t, err) =>
+        {
+            again.Enabled = true;
+            if (t == null)
+            {
+                box.Text = text != "" ? text : "G-Lite couldn't read the device: " + err;
+                issue.Enabled = copy.Enabled = text != "";
+                status.Set(err, true, null);
+                return;
+            }
+            text = t;
+            box.Text = t;
+            size.Text = (Encoding.UTF8.GetByteCount(t) / 1024.0).ToString("0.0", CultureInfo.InvariantCulture) + " KB · " + t.TrimEnd().Split('\n').Length + " lines";
+            issue.Enabled = copy.Enabled = true;
+            status.Set("Read only. Nothing is sent.", false, null);
+        });
+    }
+
+    bool Put(string t)
+    {
+        try { Clipboard.SetText(t); return true; }
+        catch (Exception) { status.Set("The clipboard is busy. Try again.", true, null); return false; }
+    }
+
+    void OpenIssue()
+    {
+        var fenced = "```\r\n" + text + "```\r\n";
+        if (!Put(fenced)) return;
+        var url = Issues + "?title=" + Uri.EscapeDataString(title()) + "&body=";
+        bool whole = fenced.Length < 4000;
+        try
+        {
+            Process.Start(url + Uri.EscapeDataString(whole ? fenced : "Paste the report from G-Lite here. It's on your clipboard.\r\n\r\n"));
+            status.Set(whole ? "Opened a new issue with the report" : "Copied. Paste it into the new issue.", false, null);
+        }
+        catch (Exception ex) { status.Set("Couldn't open the browser: " + ex.Message, true, null); }
     }
 }
