@@ -83,7 +83,7 @@ static class Report
         Row(s, "Kind", f.Kind);
         Row(s, "Link", f.Link + (f.Index == 0xFF ? "" : " · slot " + f.Index) + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "") + Usb(f.Path));
         Row(s, "Firmware", f.Firmware == "" ? "–" : f.Firmware);
-        Row(s, "Battery", (f.Battery < 0 ? "–" : f.BatteryText) + (f.Millivolts > 0 ? " · " + f.Millivolts + " mV" : ""));
+        Row(s, "Battery", f.Battery >= 0 || !f.Has(0x1F20) ? (f.Battery < 0 ? "–" : f.BatteryText) + (f.Millivolts > 0 ? " · " + f.Millivolts + " mV" : "") : HeadsetBattery(r));
         Row(s, "Screen", screen);
 
         var ids = Features(r, f);
@@ -129,7 +129,12 @@ static class Report
             case 0x0003:
                 {
                     var c = r.Ask(0x0003, 0);
-                    for (int e = 0; c != null && e < Math.Min((int)c[0], 8); e++) r.Show("entity " + e, 0x0003, 1, (byte)e);
+                    for (int e = 0; c != null && e < Math.Min((int)c[0], 8); e++)
+                    {
+                        var x = r.Ask(0x0003, 1, (byte)e);
+                        if (x != null) for (int i = 11; i < x.Length; i++) x[i] = 0;
+                        r.S.AppendLine("entity " + e + "=" + (x == null ? r.Error : Hex(x, " ")));
+                    }
                     break;
                 }
             case 0x1B04:
@@ -179,6 +184,14 @@ static class Report
             case 0x8300: r.Show("sidetone", id, 0); break;
             case 0x8310: r.Show("bands", id, 2); break;
         }
+    }
+
+    static string HeadsetBattery(Reader r)
+    {
+        var b = r.Ask(0x1F20, 0);
+        if (b == null) return "–";
+        int mv = b[0] << 8 | b[1];
+        return "~" + Found.FromVolts(mv) + "% · " + mv + " mV" + (b[2] == 3 ? " · charging" : "");
     }
 
     static void Profiles(Reader r)
