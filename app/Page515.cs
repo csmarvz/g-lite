@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
+using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -98,17 +98,8 @@ class KeyPicture : Ctl
     }
 }
 
-interface IPage
+class Page515 : DevicePage
 {
-    void Shown();
-    void Hidden();
-    Task Queue { get; }
-}
-
-class Page515 : Control, IPage
-{
-    public const string Prefix = "profile.g515.";
-    static readonly int[] Swatches = { 0xFFFFFF, 0xFF2020, 0xFF8000, 0xFFD000, 0x30D050, 0x3080FF };
     static readonly int[] IdleSecs = { 0, 15, 30, 60, 120, 300, 600 };
     static readonly string[] IdleText = { "Never", "15 s", "30 s", "1 min", "2 min", "5 min", "10 min" };
     static readonly int[] DimPcts = { 0, 10, 25, 50, 75 };
@@ -117,70 +108,34 @@ class Page515 : Control, IPage
     static readonly string[] SleepText = { "Never", "1 min", "2 min", "5 min", "10 min", "15 min", "30 min" };
     static readonly int[] Directions = { 6, 1, 3, 8 };
     static readonly string[] DirText = { "Left", "Right", "Center out", "Center in" };
-    const string OnKeyboard = "As on the keyboard";
+    static readonly Model Board = Model.Load("g515-tkl.json");
 
     Lighting cur = new Lighting(), stored;
     int brightness = 100, storedBrightness = -1;
-    bool loading, dirty, claimed, unknownStored, naming;
-    Hidpp dev;
-    readonly FakeHidpp fake;
-    readonly bool demo;
-    Found found;
-    string readAt = "";
-    Task queue = Task.FromResult(0);
-    int previewSeq;
+    bool loading, dirty, claimed, unknownStored, broken;
+    int previewSeq, edits;
     readonly Timer debounce = new Timer { Interval = 120 };
 
-    readonly Label sub, lightHead, colorHead, dirHead, speedHead, speedValue, brightValue;
+    readonly Label lightHead, colorHead, dirHead, speedHead, speedValue, brightValue;
     readonly Seg effects, dirs;
-    readonly Swatch[] swatches = new Swatch[Swatches.Length];
-    readonly Swatch custom, more;
-    int lastCustom = -1;
+    readonly ColorRow colors;
     readonly Slider speed, bright;
-    readonly Drop profiles, idleBox, dimBox, sleepBox;
-    readonly Field nameField;
-    readonly Btn newBtn, delBtn, saveBtn;
-    readonly StatusLine status;
+    readonly Drop idleBox, dimBox, sleepBox;
+    readonly Btn saveBtn, backupsBtn;
     readonly KeyPicture picture;
-    public string Note;
+    Backups.Entry fix;
 
-    public Page515(Found found, FakeHidpp fake, MouseEventHandler drag)
+    public Page515(Found found, Hidpp fake, MouseEventHandler drag) : base(found, fake, drag, Board.Name, "keyboard", "profile.g515.")
     {
-        this.found = found;
-        this.fake = fake;
-        demo = fake != null;
-        Ui.Style(this, () => BackColor = Theme.Bg);
-        MouseDown += drag;
         debounce.Tick += (s, e) => { debounce.Stop(); Preview(); };
-        var model = Model.Load("g515-tkl.json");
+        if (found.Wpid != 0) Backups.Move(found.Wpid.ToString("X4"), BackupId);
 
-        Ui.Text(this, model.Name, 20, 14, () => Theme.Text, 13.5f, Ui.Semi).MouseDown += drag;
-        sub = Ui.Text(this, "", 21, 44, () => Theme.Dim, 9f);
-        sub.MouseDown += drag;
-        var reread = Ui.Add(this, new Btn { Look = Look.Ghost, Icon = "refresh", AccessibleName = "Read again from the keyboard" }, 656 - 12 - 108, 10, 36, 28);
-        reread.Click += (s, e) => Load();
-
-        Ui.Text(this, "Profile", 20, 79, () => Theme.Dim, 9.75f);
-        profiles = Ui.Add(this, new Drop { AccessibleName = "Profile" }, 74, 72, 210, 32);
-        profiles.Picked += PickSet;
-        nameField = Ui.Add(this, new Field { Visible = false }, 74, 72, 210, 32);
-        nameField.Box.KeyDown += (s, e) =>
-        {
-            if (e.KeyCode == Keys.Enter) { SaveSet(nameField.Box.Text.Trim()); e.SuppressKeyPress = true; }
-            if (e.KeyCode == Keys.Escape) { EndName(); e.SuppressKeyPress = true; }
-        };
-        newBtn = Ui.Add(this, new Btn { Text = "New" }, 292, 72, 68, 32);
-        newBtn.Click += (s, e) => { if (naming) SaveSet(nameField.Box.Text.Trim()); else StartName(); };
-        delBtn = Ui.Add(this, new Btn { Text = "Delete" }, 368, 72, 76, 32);
-        delBtn.Click += (s, e) =>
-        {
-            if (naming) EndName();
-            else if (profiles.Index > 0) { Settings.Remove(Prefix + profiles.Items[profiles.Index]); LoadSets(null); }
-        };
+        backupsBtn = Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Backups", AccessibleName = "Backups of the keyboard's lighting" }, 536 - 4 - 80, 10, 80, 28);
+        backupsBtn.Click += (s, e) => ShowBackups();
 
         var pic = Ui.Add(this, new Box(), 20, 118, 616, 209);
         Ui.Text(pic, "Live on the keyboard", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
-        picture = Ui.Add(pic, new KeyPicture(model), 14, 36, 588, 161);
+        picture = Ui.Add(pic, new KeyPicture(Board), 14, 36, 588, 161);
 
         var light = Ui.Add(this, new Box(), 20, 339, 380, 272);
         lightHead = Ui.Text(light, "Lighting", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
@@ -194,37 +149,30 @@ class Page515 : Control, IPage
             Changed(true);
         };
         colorHead = Ui.Text(light, "Color", 14, 98, () => Theme.Dim, 9f);
-        for (int i = 0; i < Swatches.Length; i++)
-        {
-            int c = Swatches[i];
-            swatches[i] = Ui.Add(light, new Swatch { Fill = Color.FromArgb(c | unchecked((int)0xFF000000)), AccessibleName = "Color " + c.ToString("X6") }, 10 + i * 36, 115, 34, 34);
-            swatches[i].Click += (s, e) => { cur.Color = c; Changed(true); };
-        }
-        custom = Ui.Add(light, new Swatch { AccessibleName = "Your color" }, 10 + Swatches.Length * 36, 115, 34, 34);
-        custom.Click += (s, e) => { if (lastCustom >= 0) { cur.Color = lastCustom; Changed(true); } };
-        more = Ui.Add(light, new Swatch { AccessibleName = "Pick a color" }, 10 + Swatches.Length * 36, 115, 34, 34);
-        more.Click += (s, e) => PickColor();
+        colors = new ColorRow(light, 115);
+        colors.Picked += c => { cur.Color = c; Changed(true); };
 
         dirHead = Ui.Text(light, "Direction", 14, 156, () => Theme.Dim, 9f);
         dirs = Ui.Add(light, new Seg { Items = DirText, AccessibleName = "Direction" }, 14, 174, 352, 32);
         dirs.Picked += i => { cur.Direction = Directions[i]; Changed(true); };
 
         Ui.Text(light, "Brightness", 14, 214, () => Theme.Dim, 9f);
-        brightValue = Value(light, 14, 214);
+        brightValue = Value(light, 14, 214, 172);
         bright = Ui.Add(light, new Slider { AccessibleName = "Brightness" }, 14, 234, 172, 24);
         bright.Changed += (s, e) =>
         {
             brightness = bright.Value;
             brightValue.Text = brightness + "%";
             dirty = true;
-            saveBtn.Enabled = true;
+            edits++;
+            saveBtn.Enabled = !broken;
             picture.Display(Known() ? cur : null, brightness);
             Calm();
             debounce.Stop();
             debounce.Start();
         };
         speedHead = Ui.Text(light, "Speed", 194, 214, () => Theme.Dim, 9f);
-        speedValue = Value(light, 194, 214);
+        speedValue = Value(light, 194, 214, 172);
         speed = Ui.Add(light, new Slider { AccessibleName = "Speed" }, 194, 234, 172, 24);
         speed.Changed += (s, e) =>
         {
@@ -239,38 +187,28 @@ class Page515 : Control, IPage
         dimBox = Choice(idle, "Dim to", DimText, 98, i => cur.Dim = DimPcts[i]);
         sleepBox = Choice(idle, "Turn off after", SleepText, 156, i => cur.Sleep = SleepSecs[i]);
 
-        var line = Ui.Add(this, new Control(), 0, 623, 656, 1);
-        Ui.Style(line, () => line.BackColor = Theme.Border);
-        status = Ui.Add(this, new StatusLine(), 20, 633, 460, 36);
         saveBtn = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Save to keyboard" }, 496, 635, 140, 32);
         saveBtn.Click += (s, e) => Save();
 
-        LoadSets(null);
         Sync();
-        SetFound(found);
     }
 
-    public void Restyle() { Sync(); }
+    static string BackupId { get { return "G515"; } }
 
-    public void Shown() { Load(); }
+    public override void Restyle() { Sync(); }
 
-    public void Hidden() { Release(); }
+    public override void Hidden() { Release(); }
 
-    public void SetFound(Found f)
+    protected override void Lost() { claimed = false; }
+
+    protected override string Current() { return cur.ToText(brightness); }
+
+    protected override void Use(string text)
     {
-        found = f;
-        sub.Text = f.Link + (f.Battery >= 0 ? " · " + f.BatteryText : "") + (readAt != "" ? " · read at " + readAt : "");
-    }
-
-    public Task Queue { get { return queue; } }
-
-    static Label Value(Control parent, int x, int y)
-    {
-        var l = Ui.Text(parent, "", x, y, () => Theme.Dim, 9f);
-        l.AutoSize = false;
-        l.Size = new Size(172, 18);
-        l.TextAlign = ContentAlignment.TopRight;
-        return l;
+        int b;
+        cur = Lighting.FromText(text, out b);
+        brightness = Math.Max(0, Math.Min(100, b));
+        Changed(true);
     }
 
     Drop Choice(Control parent, string label, string[] items, int y, Action<int> set)
@@ -297,19 +235,10 @@ class Page515 : Control, IPage
         var d = G515.Def(cur.Effect);
         bool known = Known();
         bool color = known && d != null && d.Color, dir = known && d != null && d.Direction, spd = known && d != null && d.Speed;
-        lightHead.Text = known ? "Lighting" : "Lighting · factory animation";
+        lightHead.Text = known ? "Lighting" : broken ? "Lighting · half written on the keyboard" : "Lighting · factory animation";
         effects.Index = known ? Array.FindIndex(G515.Effects, e => e.Id == cur.Effect) : -1;
-        bool isCustom = !Swatches.Contains(cur.Color);
-        if (isCustom) lastCustom = cur.Color;
         Shade(colorHead, color);
-        for (int i = 0; i < swatches.Length; i++) { swatches[i].Enabled = color; swatches[i].On = color && Swatches[i] == cur.Color; swatches[i].Invalidate(); }
-        custom.Visible = lastCustom >= 0;
-        custom.Fill = Color.FromArgb(lastCustom | unchecked((int)0xFF000000));
-        custom.Enabled = color;
-        custom.On = color && isCustom;
-        custom.Invalidate();
-        more.Left = custom.Left + (custom.Visible ? (int)Math.Round(36 * Ui.K) : 0);
-        more.Enabled = color;
+        colors.Sync(cur.Color, color);
         Shade(dirHead, dir);
         dirs.Enabled = dir;
         dirs.Index = dir ? Array.IndexOf(Directions, cur.Direction) : -1;
@@ -325,29 +254,25 @@ class Page515 : Control, IPage
         dimBox.Index = Near(DimPcts, cur.Dim);
         sleepBox.Index = Near(SleepSecs, cur.Sleep);
         dimBox.Enabled = cur.Idle > 0;
-        saveBtn.Enabled = dirty;
+        saveBtn.Enabled = dirty && !broken;
         picture.Display(known ? cur : null, brightness);
         loading = false;
     }
-
-    static void Shade(Label l, bool on) { l.ForeColor = on ? Theme.Dim : Ui.Mix(Theme.Card, Theme.Dim, 0.45); }
 
     void Changed(bool now)
     {
         if (loading) return;
         dirty = true;
+        edits++;
         Sync();
         Calm();
         debounce.Stop();
         if (now) Preview(); else debounce.Start();
     }
 
-    public void Say(string text, bool warn = false, Action click = null) { status.Set(text, warn, click); }
-
-    void Post(string text, bool warn) { if (IsHandleCreated) BeginInvoke((Action)(() => Say(text, warn))); }
-
-    void Calm()
+    protected override void Calm()
     {
+        if (broken) { ShowBroken(); return; }
         if (DynamicLightingOn())
             Say("Windows Dynamic Lighting is on and may override this. Click to open its settings.", true, () => Process.Start("ms-settings:personalization-lighting"));
         else Say(dirty ? "Previewing · not saved to the keyboard" : stored == null ? "" : "Matches the keyboard");
@@ -359,71 +284,64 @@ class Page515 : Control, IPage
             return k != null && Equals(k.GetValue("AmbientLightingEnabled"), 1);
     }
 
-    void PickColor()
+    static string When(Backups.Entry e) { return e.When.ToLocalTime().ToString("d MMM HH:mm", CultureInfo.InvariantCulture); }
+
+    void ShowBroken()
     {
-        using (var dlg = new ColorDialog { FullOpen = true, Color = Color.FromArgb(cur.Color | unchecked((int)0xFF000000)) })
-            if (dlg.ShowDialog(FindForm()) == DialogResult.OK) { cur.Color = dlg.Color.ToArgb() & 0xFFFFFF; Changed(true); }
-        FindForm().Activate();
+        const string half = "The lighting saved on the keyboard is half written. ";
+        var last = fix;
+        if (last != null) Say(half + "Click to restore the backup from " + When(last) + ".", true, () => Restore(last.Files, "the backup from " + When(last)));
+        else Say(half + "Click to restore the factory lighting.", true, () => Restore(new G515.Files(), "the factory lighting"));
     }
 
-    void LoadSets(string select)
+    void ShowBackups()
     {
-        profiles.Items.Clear();
-        profiles.Items.Add(OnKeyboard);
-        foreach (var k in Settings.Keys().Where(k => k.StartsWith(Prefix)).Select(k => k.Substring(Prefix.Length)).OrderBy(k => k)) profiles.Items.Add(k);
-        profiles.Index = select == null ? 0 : Math.Max(0, profiles.Items.IndexOf(select));
-        ShowSets();
-    }
-
-    void ShowSets()
-    {
-        profiles.Visible = !naming;
-        nameField.Visible = naming;
-        newBtn.Text = naming ? "Save" : "New";
-        delBtn.Text = naming ? "Cancel" : "Delete";
-        delBtn.Enabled = naming || profiles.Index > 0;
-    }
-
-    void StartName()
-    {
-        naming = true;
-        nameField.Box.Text = "";
-        ShowSets();
-        nameField.Box.Focus();
-    }
-
-    void EndName()
-    {
-        naming = false;
-        ShowSets();
-    }
-
-    void PickSet(int i)
-    {
-        ShowSets();
-        if (i == 0) { Revert(); return; }
-        try
+        var m = new ContextMenuStrip { Renderer = Ui.Menus, Font = Ui.Get(9.75f, Ui.Regular), ShowImageMargin = false };
+        m.BackColor = Theme.Card;
+        m.ForeColor = Theme.Text;
+        m.Items.Add(new ToolStripMenuItem("Restore the factory lighting", null, (s, e) => Restore(new G515.Files(), "the factory lighting")));
+        m.Items.Add(new ToolStripSeparator());
+        var list = Backups.List(BackupId);
+        m.Items.Add(new ToolStripMenuItem(list.Count == 0 ? "No backups yet. G-Lite makes one before each save." : "Restore a backup") { Enabled = false });
+        foreach (var b in list)
         {
-            int b;
-            cur = Lighting.FromText(Settings.Get(Prefix + profiles.Items[i]), out b);
-            brightness = Math.Max(0, Math.Min(100, b));
-            Changed(true);
+            var entry = b;
+            var item = new ToolStripMenuItem(When(b) + " · " + Backups.Describe(b.Files) + (b.First ? " · first backup" : ""), null, (s, e) => Restore(entry.Files, "the backup from " + When(entry)));
+            item.Enabled = G515.Good(b.Files);
+            m.Items.Add(item);
         }
-        catch (Exception) { Say("This profile couldn't be read from settings.txt", true); }
+        m.Items.Add(new ToolStripSeparator());
+        m.Items.Add(new ToolStripMenuItem("Open the backups folder", null, (s, e) =>
+        {
+            var dir = Backups.Folder(BackupId);
+            Directory.CreateDirectory(dir);
+            Process.Start(dir);
+        }));
+        m.Closed += (s, a) => BeginInvoke((Action)m.Dispose);
+        m.Show(backupsBtn, new Point(backupsBtn.Width, backupsBtn.Height + (int)(2 * Ui.K)), ToolStripDropDownDirection.BelowLeft);
     }
 
-    void SaveSet(string name)
+    void Restore(G515.Files backup, string what)
     {
-        if (name == "") { Say("Type a name for the profile first", true); nameField.Box.Focus(); return; }
-        if (name.Contains("=")) { Say("A profile name can't contain =", true); nameField.Box.Focus(); return; }
-        if (name == OnKeyboard) { Say("Pick another name for the profile", true); nameField.Box.Focus(); return; }
-        Settings.Set(Prefix + name, cur.ToText(brightness));
-        EndName();
-        LoadSets(name);
-        Say("Saved the profile " + name);
+        debounce.Stop();
+        previewSeq++;
+        saveBtn.Enabled = false;
+        Say("Restoring " + what + "…");
+        int b = storedBrightness;
+        Do(h =>
+        {
+            Backups.Save(BackupId, G515.Read(h));
+            G515.Restore(h, backup);
+            claimed = false;
+            if (b >= 0) G515.SetBrightness(h, b);
+        }, () =>
+        {
+            Note = "Restored " + what;
+            Load();
+        });
     }
 
-    void Revert()
+    protected override void Revert()
     {
         if (stored == null) return;
         cur = stored.Clone();
@@ -431,24 +349,6 @@ class Page515 : Control, IPage
         Release();
         Sync();
         Calm();
-    }
-
-    void Do(Action<Hidpp> a, Action done = null)
-    {
-        queue = queue.ContinueWith(_ =>
-        {
-            try
-            {
-                if (dev == null) dev = demo ? fake : new Hidpp(found.Path, found.Index);
-                a(dev);
-                if (done != null && IsHandleCreated) BeginInvoke(done);
-            }
-            catch (Exception ex)
-            {
-                if (dev != null && !(ex is HidppError)) { dev.Dispose(); dev = null; claimed = false; }
-                Post(ex.Message, true);
-            }
-        });
     }
 
     void Preview()
@@ -469,7 +369,13 @@ class Page515 : Control, IPage
         int b = brightness;
         saveBtn.Enabled = false;
         Say("Saving…");
-        Do(h => { G515.Store(h, l); claimed = false; }, () =>
+        Do(h =>
+        {
+            var f = G515.Snapshot(h);
+            Backups.Save(BackupId, f);
+            G515.Store(h, f, l);
+            claimed = false;
+        }, () =>
         {
             stored = l;
             storedBrightness = b;
@@ -480,41 +386,38 @@ class Page515 : Control, IPage
         });
     }
 
-    public void Load()
+    public override void Load()
     {
         dirty = false;
         debounce.Stop();
         Say("Reading the keyboard…");
+        int n = edits;
         Lighting l = null;
         int b = 100;
-        bool unknown = false;
+        bool unknown = false, half = false;
         Do(h =>
         {
-            var f = G515.Snapshot(h);
+            G515.Files f;
+            try { f = G515.Snapshot(h); }
+            catch (HalfWritten) { half = true; b = G515.Brightness(h); return; }
             l = G515.Decode(f.UserProfile ?? f.FactoryProfile);
             unknown = l == null;
             if (l == null) l = new Lighting();
             b = G515.Brightness(h);
         }, () =>
         {
-            stored = l.Clone();
-            cur = l;
-            brightness = b;
+            broken = half;
+            fix = half ? Backups.List(BackupId).FirstOrDefault(e => G515.Good(e.Files)) : null;
             storedBrightness = b;
-            unknownStored = unknown;
-            if (!naming) profiles.Index = 0;
-            ShowSets();
+            stored = half ? null : l.Clone();
+            unknownStored = half || unknown;
+            if (n == edits)
+            {
+                brightness = b;
+                if (!half) cur = l;
+            }
             Sync();
-            readAt = DateTime.Now.ToString("HH:mm");
-            SetFound(found);
-            Calm();
-            if (Note == null) return;
-            var n = Note;
-            Note = null;
-            Say(n);
-            var t = new Timer { Interval = 8000 };
-            t.Tick += (s, e) => { t.Dispose(); if (status.Shown == n) Calm(); };
-            t.Start();
+            Loaded();
         });
     }
 

@@ -12,6 +12,16 @@ class HidppError : Exception
     public HidppError(int code, string msg) : base(msg) { Code = code; }
 }
 
+class Refused : Exception
+{
+    public Refused(string msg) : base(msg) { }
+}
+
+class HalfWritten : Refused
+{
+    public HalfWritten(string msg) : base(msg) { }
+}
+
 class Hidpp : IDisposable
 {
     const byte Swid = 0x0B;
@@ -46,7 +56,7 @@ class Hidpp : IDisposable
         while (true)
         {
             var r = Read(deadline);
-            if (r == null) throw new TimeoutException("Keyboard did not answer (is it on?)");
+            if (r == null) throw new TimeoutException("The device didn't answer. Is it on?");
             if (r[1] != Idx) continue;
             if (r[2] == 0xFF && r[3] == feat && r[4] == msg[3])
                 throw new HidppError(r[5], string.Format("HID++ error 0x{0:x2} (feature {1}, fn {2})", r[5], feat, fn));
@@ -69,7 +79,7 @@ class Hidpp : IDisposable
         if (!features.TryGetValue(id, out i))
         {
             i = Call(0, 0, (byte)(id >> 8), (byte)id)[0];
-            if (i == 0) throw new NotSupportedException(string.Format("Keyboard lacks feature {0:x4}", id));
+            if (i == 0) throw new NotSupportedException(string.Format("The device lacks feature {0:x4}", id));
             features[id] = i;
         }
         return i;
@@ -212,7 +222,7 @@ static class G515
 
     static readonly byte[] DirHeader = { 0x01, 0x01, 0x81, 0x01, 0x40, 0x63 };
 
-    static bool ValidProfile(byte[] p) { return p != null && p.Length == 99 && p[0] == 1 && p[1] == 1; }
+    public static bool ValidProfile(byte[] p) { return p != null && p.Length == 99 && p[0] == 1 && p[1] == 1; }
 
     static bool ValidDir(byte[] d)
     {
@@ -250,20 +260,38 @@ static class G515
 
     public class Files { public byte[] FactoryProfile, FactoryDir, UserProfile, UserDir; }
 
-    public static Files Snapshot(Hidpp h)
+    public static Files Read(Hidpp h)
     {
-        var f = new Files
+        return new Files
         {
             FactoryProfile = ReadFile(h, 0x0101, 99),
             FactoryDir = ReadFile(h, 0x0100, 16),
             UserProfile = ReadFile(h, 0x0008, 99),
             UserDir = ReadFile(h, 0x0000, 16),
         };
-        if (!ValidProfile(f.FactoryProfile) || !ValidDir(f.FactoryDir)) throw new IOException("Unknown onboard profile layout, not touching it");
-        if ((f.UserProfile == null) != (f.UserDir == null)) throw new IOException("User profile is half written, not touching it");
-        if (f.UserProfile != null && (!ValidProfile(f.UserProfile) || !ValidDir(f.UserDir) || f.UserDir[14] != 8
-            || Crc32(f.UserProfile) != (uint)(f.UserDir[10] << 24 | f.UserDir[11] << 16 | f.UserDir[12] << 8 | f.UserDir[13])))
-            throw new IOException("User profile doesn't match its directory entry, not touching it");
+    }
+
+    public static void Check(Files f)
+    {
+        if (!ValidProfile(f.FactoryProfile) || !ValidDir(f.FactoryDir)) throw new Refused("Unknown onboard profile layout, not touching it");
+        if (f.UserProfile == null && f.UserDir == null) return;
+        bool ours = f.UserDir == null || (ValidDir(f.UserDir) && f.UserDir[14] == 8);
+        if (ours && (f.UserProfile == null || f.UserDir == null)) throw new HalfWritten("User profile is half written, not touching it");
+        if (!ours || !ValidProfile(f.UserProfile))
+            throw new Refused("The profiles saved on the keyboard aren't laid out the way G-Lite writes them, not touching them");
+        if (Crc32(f.UserProfile) != (uint)(f.UserDir[10] << 24 | f.UserDir[11] << 16 | f.UserDir[12] << 8 | f.UserDir[13]))
+            throw new HalfWritten("User profile doesn't match its directory entry, not touching it");
+    }
+
+    public static bool Good(Files f)
+    {
+        try { Check(f); return true; } catch (Refused) { return false; }
+    }
+
+    public static Files Snapshot(Hidpp h)
+    {
+        var f = Read(h);
+        Check(f);
         return f;
     }
 
@@ -292,13 +320,34 @@ static class G515
         h.Call(rgb, 1, new byte[] { 0, (byte)index }.Concat(Encode(l, 100)).Concat(new byte[] { 0x01 }).ToArray());
     }
 
-    public static void Store(Hidpp h, Lighting l)
+    public static void Store(Hidpp h, Lighting l) { Store(h, Snapshot(h), l); }
+
+    public static void Store(Hidpp h, Files f, Lighting l)
     {
-        var f = Snapshot(h);
         var p = BuildProfile(f.UserProfile ?? f.FactoryProfile, l);
-        var d = BuildDirectory(f.FactoryDir, p);
-        if (f.UserProfile == null || !p.SequenceEqual(f.UserProfile)) SaveFile(h, 0x0008, p, Crc32(p));
-        if (f.UserDir == null || !d.SequenceEqual(f.UserDir)) SaveFile(h, 0x0000, d, Crc32(d.Skip(4).ToArray()));
+        Put(h, f, p, BuildDirectory(f.FactoryDir, p));
+    }
+
+    public static void Restore(Hidpp h, Files backup)
+    {
+        var now = Read(h);
+        if (!ValidProfile(now.FactoryProfile) || !ValidDir(now.FactoryDir)) throw new Refused("Unknown onboard profile layout, not touching it");
+        if (backup.FactoryProfile != null && (!backup.FactoryProfile.SequenceEqual(now.FactoryProfile) || !backup.FactoryDir.SequenceEqual(now.FactoryDir)))
+            throw new Refused("This backup is from a different keyboard, not restoring it");
+        if (backup.UserProfile == null)
+        {
+            var p = (byte[])now.FactoryProfile.Clone();
+            Put(h, now, p, BuildDirectory(now.FactoryDir, p));
+            return;
+        }
+        Check(new Files { FactoryProfile = now.FactoryProfile, FactoryDir = now.FactoryDir, UserProfile = backup.UserProfile, UserDir = backup.UserDir });
+        Put(h, now, backup.UserProfile, backup.UserDir);
+    }
+
+    static void Put(Hidpp h, Files now, byte[] p, byte[] d)
+    {
+        if (now.UserProfile == null || !p.SequenceEqual(now.UserProfile)) SaveFile(h, 0x0008, p, Crc32(p));
+        if (now.UserDir == null || !d.SequenceEqual(now.UserDir)) SaveFile(h, 0x0000, d, Crc32(d.Skip(4).ToArray()));
         Activate(h, p);
     }
 

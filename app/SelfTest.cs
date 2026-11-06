@@ -42,6 +42,79 @@ static class SelfTest
         Check(G515.Decode(G515.Snapshot(fake).UserProfile).Same(blue), "store then read back");
         G515.Store(fake, white);
         Check(G515.Decode(G515.Snapshot(fake).UserProfile).Same(white), "second store overwrites");
+
+        Backups.Root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "glite-selftest-" + Guid.NewGuid().ToString("N"));
+        var kb = new FakeHidpp();
+        G515.Store(kb, blue);
+        Backups.Save("T", G515.Read(kb));
+        Backups.Save("T", G515.Read(kb));
+        var saved = Backups.List("T");
+        Check(saved.Count == 1 && saved[0].First && Backups.Describe(saved[0].Files) == "Breathe", "first backup, and no copy of an unchanged keyboard");
+        G515.Store(kb, white);
+        G515.Restore(kb, saved[0].Files);
+        Check(G515.Decode(G515.Snapshot(kb).UserProfile).Same(blue), "restoring a backup brings its lighting back");
+        G515.Restore(kb, new G515.Files());
+        Check(G515.Decode(G515.Snapshot(kb).UserProfile) == null, "restoring the factory lighting brings the factory animation back");
+        kb.Flash[0x0008] = G515.BuildProfile(kb.Flash[0x0008], white);
+        bool half = false;
+        try { G515.Snapshot(kb); } catch (HalfWritten) { half = true; }
+        Check(half && !G515.Good(G515.Read(kb)), "a directory that doesn't match its profile is caught");
+        G515.Restore(kb, saved[0].Files);
+        Check(G515.Decode(G515.Snapshot(kb).UserProfile).Same(blue), "a backup repairs a half written keyboard");
+        var stranger = new G515.Files { FactoryProfile = saved[0].Files.FactoryProfile, FactoryDir = (byte[])saved[0].Files.FactoryDir.Clone(), UserProfile = saved[0].Files.UserProfile, UserDir = saved[0].Files.UserDir };
+        stranger.FactoryDir[11] ^= 1;
+        bool refused = false;
+        try { G515.Restore(kb, stranger); } catch (Refused) { refused = true; }
+        Check(refused, "a backup from another keyboard is refused");
+        var foreign = G515.Read(kb);
+        foreign.UserDir = (byte[])foreign.UserDir.Clone();
+        foreign.UserDir[15] = 0x00;
+        bool other = false, offered = false;
+        try { G515.Check(foreign); } catch (HalfWritten) { offered = true; } catch (Refused) { other = true; }
+        Check(other && !offered, "profiles G-Lite didn't write are refused, not offered for restore");
+        System.IO.File.WriteAllLines(System.IO.Path.Combine(Backups.Folder("T"), "20250101-120000-000.txt"), System.IO.File.ReadAllLines(saved[0].File));
+        Check(Backups.List("T").Any(e => e.When == new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Local).ToUniversalTime()), "backups named in local time still read");
+        System.IO.File.Delete(System.IO.Path.Combine(Backups.Folder("T"), "20250101-120000-000.txt"));
+        for (int i = 0; i < Backups.Keep + 3; i++)
+        {
+            G515.Store(kb, new Lighting { Effect = 0x01, Color = i + 1 });
+            Backups.Save("T", G515.Read(kb));
+        }
+        saved = Backups.List("T");
+        Check(saved.Count == Backups.Keep + 1 && saved.Count(e => e.First) == 1 && saved.Last().First, "the first backup stays, with the last ten");
+        System.IO.Directory.Delete(Backups.Root, true);
+
+        var dpis = GMouse.DpiList(Hex("000064e0326400"));
+        Check(dpis.Length == 511 && dpis[0] == 100 && dpis[1] == 150 && dpis.Last() == 25600, "DPI range with a step");
+        Check(GMouse.RateList(0x8B).SequenceEqual(new[] { 125, 250, 500, 1000 }), "report rates from their bits");
+        foreach (var d in GMouse.Effects)
+        {
+            var l = new MouseLight { Effect = d.Id, Color = 0x3080FF, Period = 4000, Bright = 50 };
+            var back = GMouse.Decode(new[] { d.Id }.Concat(GMouse.Encode(l)).ToArray());
+            Check(back != null && back.Effect == d.Id, d.Name + " mouse effect");
+            if (d.Id != 0) Check(back.Bright == 50, d.Name + " mouse brightness");
+            if (d.Color) Check(back.Color == 0x3080FF, d.Name + " mouse color");
+            if (d.Speed) Check(back.Period == 4000, d.Name + " mouse period");
+        }
+        var mouse = new FakeMouse();
+        var ms = GMouse.Read(mouse);
+        Check(ms.Dpi == 1600 && ms.Stage == 2 && ms.Stages.SequenceEqual(new[] { 400, 800, 1600, 3200, 6400 }) && ms.Onboard && ms.Rate == 1000
+            && ms.Light != null && ms.Light.Effect == 0x03 && ms.Light.Period == 8000 && ms.Zones.Count == 2, "mouse state read from its onboard profile");
+        GMouse.SetStage(mouse, 3);
+        GMouse.SetLight(mouse, ms, new MouseLight { Effect = 0x0A, Color = 0xFF0000, Period = 3000, Bright = 80 });
+        Check(mouse.Dpi == 3200 && mouse.Zones[1][1] == 3 && mouse.Zones[1][2] == 0xFF && mouse.Zones[1][8] == 80, "mouse stage and lighting are set");
+        var mset = MouseSet.FromText(new MouseSet { Dpi = 1200, Light = new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 3000, Bright = 70 } }.ToText());
+        Check(mset.Dpi == 1200 && mset.Light.Same(new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 3000, Bright = 70 }), "a mouse profile round-trips through text");
+
+        var headset = new FakeHeadset();
+        var hs = GHeadset.Read(headset, true);
+        Check(hs.HasSidetone && hs.HasOff && hs.Set.Sidetone == 30 && hs.Set.Off == 30 && hs.Millivolts == 3926 && !hs.Charging, "headset sidetone, auto-off and battery are read");
+        GHeadset.SetSidetone(headset, 55);
+        GHeadset.SetOff(headset, 10);
+        Check(headset.Sidetone == 55 && headset.Off == 10, "headset sidetone and auto-off are set");
+        var hset = HeadSet.FromText(new HeadSet { Sidetone = 20, Off = 15 }.ToText());
+        Check(hset.Sidetone == 20 && hset.Off == 15, "a headset profile round-trips through text");
+        Check(new Found { Name = "G Pro Wireless Gaming Mouse" }.Slug == "gprowireless", "profile names for a device");
         var m = Model.Load("g515-tkl.json");
         Check(m.Name == "G515 LIGHTSPEED TKL" && m.Rows.Length == 7 && m.Rows[6].EndsWith("→"), "keyboard model loads");
         var game = new Blocks();

@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- A mouse screen: DPI, DPI stages, logo lighting and profiles, with a live picture of the mouse. Changes apply right away and aren't saved on the mouse. The report rate shows, but changing it waits for saving to the mouse.
+- A headset screen: sidetone, how long it waits before turning off, the battery and profiles.
+- G-Lite backs up the keyboard's lighting before each save, keeping the first backup and the last ten. Backups, next to the refresh button, restores one of them or the factory lighting.
+- When the lighting saved on the keyboard is half written, G-Lite offers to restore the last good backup instead of only refusing.
+
+### Changed
+
+- A change made while G-Lite is still reading a device is no longer undone when the reading finishes.
+
 ## [0.0.4-alpha] - 2026-11-05
 
 ### Added

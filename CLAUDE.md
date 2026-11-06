@@ -26,16 +26,25 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `Found`: what the scan learned about a device
   - `Probe`: the scan's HID++ calls. HID++ 1.0 errors come back on the receiver's short collection.
   - Names of devices seen awake are kept as `seen.<wireless id>` in `settings.txt`, for when they're asleep.
+- `app/Pages.cs`:
+  - `DevicePage`: what every device screen shares: the title, the profile row, the device work queue and the status line. Profiles are stored as `profile.<device>.<name>`.
+  - `ColorRow`: the colour swatches
+  - `InfoPage` for G devices G-Lite can't change yet or that are asleep, and `EmptyPage`
 - `app/Page515.cs`:
-  - `Page515`: the G515 screen, the device work queue, the preview debounce and the profiles, stored as `profile.g515.<name>`
+  - `Page515`: the G515 screen, the preview debounce, the backups menu and the offer to restore when the saved lighting is half written. Profiles are `profile.g515.<name>`.
   - `KeyPicture`: the live key picture
-- `app/Pages.cs`: `InfoPage` for G devices G-Lite can't change yet or that are asleep, and `EmptyPage`
+- `app/PageMouse.cs`: `PageMouse`, the mouse screen, and `MousePicture`
+- `app/PageHeadset.cs`: `PageHeadset`, the headset screen, and `HeadsetPicture`
+- `app/Backup.cs`: `Backups`, a copy of the G515's four onboard files taken before every save or restore, in `%LOCALAPPDATA%\GLite\backups\<wireless id>\`. It keeps the first one and the last ten.
+- `app/Mouse.cs`: `GMouse`, which reads and sets DPI (0x2201), the DPI stage and the onboard profile (0x8100), the report rate (0x8060) and the lighting (0x8070)
+- `app/Headset.cs`: `GHeadset`, which reads and sets sidetone (0x8300) and the auto-off time (0x1F20 fn 1 and fn 2, in minutes, 0 is never). 0x1F20 fn 0 is the battery voltage, and byte 2 is 3 while charging.
 - `app/Ui.cs`:
   - `Theme`: dark, light or system, from `theme=` in `settings.txt`
   - The owner-drawn controls. They read `Theme` when they paint. Labels and containers register their colours with `Ui.Style`, so a theme change restyles them.
 - `app/Fake.cs`:
   - `Model`: loads `models/*.json`, which are embedded resources
   - `FakeHidpp`: an in-memory G515
+  - `FakeMouse` and `FakeHeadset`: in-memory devices for `--demo` and the self-tests
   - `KeyboardView`: the demo window
 - `app/Game.cs`: Blocks, played on the 15x5 grid over the main key block, and Snake and Mines (`KeyGame`), played on the keys of that block
 - `app/Update.cs`: `Updater`, which checks GitHub releases, verifies the download against `checksums.txt`, swaps the exe and restarts. If the exe's folder isn't writable, it runs the new exe elevated with `--swap <path>` to do the swap, then restarts unelevated.
@@ -54,6 +63,8 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - Features: 0x8071 for RGB effects, 0x8040 for brightness (0–100), 0x8101 for profiles. The code looks up their indexes at runtime.
 - Never write the factory profile (0x0101) or the factory directory (0x0100). The user profile is 0x0008 and the user directory is 0x0000.
 - Windows Dynamic Lighting can fight with the app. The panel warns when Dynamic Lighting is on.
+- Mouse and headset settings are sent live and aren't written to flash. On the G Pro Wireless in onboard mode, DPI, the DPI stage (0x8100 fn 0x0C) and lighting (0x8070 fn 3) can be set, but the report rate is refused. The lighting and DPI stages shown come from the active onboard profile, read with 0x8100 fn 5: stages at bytes 3–12 (little endian), LED records of 11 bytes from 0xD0.
+- The PRO X Wireless dongle (PID 0ABA) answers HID++ itself at index 0xFF. Its sidetone only plays while an app uses the microphone. It stores an equalizer (0x8310: fn 2 reads one signed byte per band, fn 3 writes a 0x02 followed by them) but doesn't apply it, so G-Lite doesn't show it. G HUB applies EQ on the PC.
 
 ## Rules
 

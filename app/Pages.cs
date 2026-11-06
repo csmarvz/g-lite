@@ -2,7 +2,260 @@ using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+
+interface IPage
+{
+    void Shown();
+    void Hidden();
+    Task Queue { get; }
+}
+
+abstract class DevicePage : Control, IPage
+{
+    protected Found found;
+    readonly Hidpp fake;
+    Hidpp dev;
+    Task queue = Task.FromResult(0);
+    readonly string prefix, onDevice;
+    readonly Label sub;
+    readonly Drop profiles;
+    readonly Field nameField;
+    readonly Btn newBtn, delBtn;
+    readonly StatusLine status;
+    bool naming;
+    string readAt = "";
+    public string Note;
+
+    protected DevicePage(Found f, Hidpp fake, MouseEventHandler drag, string title, string noun, string prefix)
+    {
+        found = f;
+        this.fake = fake;
+        this.prefix = prefix;
+        onDevice = "As on the " + noun;
+        Ui.Style(this, () => BackColor = Theme.Bg);
+        MouseDown += drag;
+        Ui.Text(this, title, 20, 14, () => Theme.Text, 13.5f, Ui.Semi).MouseDown += drag;
+        sub = Ui.Text(this, "", 21, 44, () => Theme.Dim, 9f);
+        sub.MouseDown += drag;
+        var reread = Ui.Add(this, new Btn { Look = Look.Ghost, Icon = "refresh", AccessibleName = "Read again from the " + noun }, 536, 10, 36, 28);
+        reread.Click += (s, e) => Load();
+
+        Ui.Text(this, "Profile", 20, 79, () => Theme.Dim, 9.75f);
+        profiles = Ui.Add(this, new Drop { AccessibleName = "Profile" }, 74, 72, 210, 32);
+        profiles.Picked += PickSet;
+        nameField = Ui.Add(this, new Field { Visible = false }, 74, 72, 210, 32);
+        nameField.Box.KeyDown += (s, e) =>
+        {
+            if (e.KeyCode == Keys.Enter) { SaveSet(nameField.Box.Text.Trim()); e.SuppressKeyPress = true; }
+            if (e.KeyCode == Keys.Escape) { EndName(); e.SuppressKeyPress = true; }
+        };
+        newBtn = Ui.Add(this, new Btn { Text = "New" }, 292, 72, 68, 32);
+        newBtn.Click += (s, e) => { if (naming) SaveSet(nameField.Box.Text.Trim()); else StartName(); };
+        delBtn = Ui.Add(this, new Btn { Text = "Delete" }, 368, 72, 76, 32);
+        delBtn.Click += (s, e) =>
+        {
+            if (naming) EndName();
+            else if (profiles.Index > 0) { Settings.Remove(prefix + profiles.Items[profiles.Index]); LoadSets(null); }
+        };
+
+        var line = Ui.Add(this, new Control(), 0, 623, 656, 1);
+        Ui.Style(line, () => line.BackColor = Theme.Border);
+        status = Ui.Add(this, new StatusLine(), 20, 633, 460, 36);
+        LoadSets(null);
+        ShowSub();
+    }
+
+    public Task Queue { get { return queue; } }
+
+    protected bool Demo { get { return fake != null; } }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) queue = queue.ContinueWith(_ => { if (dev != null) dev.Dispose(); dev = null; });
+        base.Dispose(disposing);
+    }
+
+    public virtual void Shown() { Load(); }
+
+    public virtual void Hidden() { }
+
+    public virtual void Restyle() { }
+
+    public abstract void Load();
+
+    protected abstract string Current();
+
+    protected abstract void Use(string text);
+
+    protected abstract void Revert();
+
+    protected virtual void Calm() { Say(""); }
+
+    protected virtual void Lost() { }
+
+    public void SetFound(Found f)
+    {
+        found = f;
+        ShowSub();
+    }
+
+    void ShowSub()
+    {
+        sub.Text = found.Link + (found.Battery >= 0 ? " · " + found.BatteryText : "") + (readAt != "" ? " · read at " + readAt : "");
+    }
+
+    public void Say(string text, bool warn = false, Action click = null) { status.Set(text, warn, click); }
+
+    protected void Post(string text, bool warn) { if (IsHandleCreated) BeginInvoke((Action)(() => Say(text, warn))); }
+
+    protected static void Shade(Label l, bool on) { l.ForeColor = on ? Theme.Dim : Ui.Mix(Theme.Card, Theme.Dim, 0.45); }
+
+    protected static Label Value(Control parent, int x, int y, int w)
+    {
+        var l = Ui.Text(parent, "", x, y, () => Theme.Dim, 9f);
+        l.AutoSize = false;
+        l.Size = new Size(w, 18);
+        l.TextAlign = ContentAlignment.TopRight;
+        return l;
+    }
+
+    protected void Do(Action<Hidpp> a, Action done = null)
+    {
+        queue = queue.ContinueWith(_ =>
+        {
+            try
+            {
+                if (dev == null) dev = fake ?? new Hidpp(found.Path, found.Index);
+                a(dev);
+                if (done != null && IsHandleCreated) BeginInvoke(done);
+            }
+            catch (Exception ex)
+            {
+                if (dev != null && !(ex is HidppError) && !(ex is Refused)) { dev.Dispose(); dev = null; Lost(); }
+                Post(ex.Message, true);
+            }
+        });
+    }
+
+    protected void Loaded()
+    {
+        readAt = DateTime.Now.ToString("HH:mm");
+        if (!naming) profiles.Index = 0;
+        ShowSets();
+        ShowSub();
+        Calm();
+        if (Note == null) return;
+        var n = Note;
+        Note = null;
+        Say(n);
+        var t = new Timer { Interval = 8000 };
+        t.Tick += (s, e) => { t.Dispose(); if (status.Shown == n) Calm(); };
+        t.Start();
+    }
+
+    void LoadSets(string select)
+    {
+        profiles.Items.Clear();
+        profiles.Items.Add(onDevice);
+        foreach (var k in Settings.Keys().Where(k => k.StartsWith(prefix)).Select(k => k.Substring(prefix.Length)).OrderBy(k => k)) profiles.Items.Add(k);
+        profiles.Index = select == null ? 0 : Math.Max(0, profiles.Items.IndexOf(select));
+        ShowSets();
+    }
+
+    void ShowSets()
+    {
+        profiles.Visible = !naming;
+        nameField.Visible = naming;
+        newBtn.Text = naming ? "Save" : "New";
+        delBtn.Text = naming ? "Cancel" : "Delete";
+        delBtn.Enabled = naming || profiles.Index > 0;
+    }
+
+    void StartName()
+    {
+        naming = true;
+        nameField.Box.Text = "";
+        ShowSets();
+        nameField.Box.Focus();
+    }
+
+    void EndName()
+    {
+        naming = false;
+        ShowSets();
+    }
+
+    void PickSet(int i)
+    {
+        ShowSets();
+        if (i == 0) { Revert(); return; }
+        try { Use(Settings.Get(prefix + profiles.Items[i])); }
+        catch (Exception) { Say("This profile couldn't be read from settings.txt", true); }
+    }
+
+    void SaveSet(string name)
+    {
+        if (name == "") { Say("Type a name for the profile first", true); nameField.Box.Focus(); return; }
+        if (name.Contains("=")) { Say("A profile name can't contain =", true); nameField.Box.Focus(); return; }
+        if (name == onDevice) { Say("Pick another name for the profile", true); nameField.Box.Focus(); return; }
+        Settings.Set(prefix + name, Current());
+        EndName();
+        LoadSets(name);
+        Say("Saved the profile " + name);
+    }
+}
+
+class ColorRow
+{
+    public static readonly int[] Swatches = { 0xFFFFFF, 0xFF2020, 0xFF8000, 0xFFD000, 0x30D050, 0x3080FF };
+    readonly Swatch[] swatches = new Swatch[Swatches.Length];
+    readonly Swatch custom, more;
+    readonly Control parent;
+    int lastCustom = -1, color;
+    public event Action<int> Picked;
+
+    public ColorRow(Control parent, int y)
+    {
+        this.parent = parent;
+        for (int i = 0; i < Swatches.Length; i++)
+        {
+            int c = Swatches[i];
+            swatches[i] = Ui.Add(parent, new Swatch { Fill = Color.FromArgb(c | unchecked((int)0xFF000000)), AccessibleName = "Color " + c.ToString("X6") }, 10 + i * 36, y, 34, 34);
+            swatches[i].Click += (s, e) => Pick(c);
+        }
+        custom = Ui.Add(parent, new Swatch { AccessibleName = "Your color" }, 10 + Swatches.Length * 36, y, 34, 34);
+        custom.Click += (s, e) => { if (lastCustom >= 0) Pick(lastCustom); };
+        more = Ui.Add(parent, new Swatch { AccessibleName = "Pick a color" }, 10 + Swatches.Length * 36, y, 34, 34);
+        more.Click += (s, e) => Choose();
+    }
+
+    void Pick(int c) { if (Picked != null) Picked(c); }
+
+    void Choose()
+    {
+        var form = parent.FindForm();
+        using (var dlg = new ColorDialog { FullOpen = true, Color = Color.FromArgb(color | unchecked((int)0xFF000000)) })
+            if (dlg.ShowDialog(form) == DialogResult.OK) Pick(dlg.Color.ToArgb() & 0xFFFFFF);
+        form.Activate();
+    }
+
+    public void Sync(int c, bool on)
+    {
+        color = c;
+        bool isCustom = !Swatches.Contains(c);
+        if (isCustom) lastCustom = c;
+        for (int i = 0; i < swatches.Length; i++) { swatches[i].Enabled = on; swatches[i].On = on && Swatches[i] == c; swatches[i].Invalidate(); }
+        custom.Visible = lastCustom >= 0;
+        custom.Fill = Color.FromArgb(lastCustom | unchecked((int)0xFF000000));
+        custom.Enabled = on;
+        custom.On = on && isCustom;
+        custom.Invalidate();
+        more.Left = custom.Left + (custom.Visible ? (int)Math.Round(36 * Ui.K) : 0);
+        more.Enabled = on;
+    }
+}
 
 class InfoPage : Control
 {
@@ -50,7 +303,7 @@ class InfoPage : Control
         head.Text = f.Asleep ? "Asleep" : "Not supported yet";
         text.Text = f.Asleep
             ? "It's paired but didn't answer. Wake it with a key press or a click, and G-Lite picks it up."
-            : "G-Lite found this device but can't change its settings yet. Mice and headsets come next.";
+            : "G-Lite found this device but can't change its settings yet.";
         again.Visible = f.Asleep;
         link.Text = f.Link + (f.Index == 0xFF ? "" : " · slot " + f.Index) + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "");
         battery.Text = f.Battery < 0 ? "–" : f.BatteryText + (f.Approx ? " (estimated from the voltage)" : "");

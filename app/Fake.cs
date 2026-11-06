@@ -30,7 +30,7 @@ class FakeHidpp : Hidpp
 
     public static byte[] Hex(string s) { return Enumerable.Range(0, s.Length / 2).Select(i => Convert.ToByte(s.Substring(i * 2, 2), 16)).ToArray(); }
 
-    Dictionary<int, byte[]> files = new Dictionary<int, byte[]>
+    public Dictionary<int, byte[]> Flash = new Dictionary<int, byte[]>
     {
         { 0x0101, Hex("0101003c012cffffffffffffffffffffffffffffffffffffffffffffffff18ff008180aaff00006400000000000000000000000019ff008180aaff0000640000000000000000000000000300000000000000000010000104000200ffffffffffffffff") },
         { 0x0100, Hex("5e380925010181014063996dec0101ff") },
@@ -48,7 +48,7 @@ class FakeHidpp : Hidpp
         var live = Live;
         if (mode == 0 && live[1] < EffectIds.Length && live.Length == 12) { id = EffectIds[live[1]]; prm = live.Skip(2).ToArray(); return; }
         byte[] p;
-        if (!files.TryGetValue(0x0008, out p)) p = files[0x0101];
+        if (!Flash.TryGetValue(0x0008, out p)) p = Flash[0x0101];
         int rec = 30 + ((p[74] & 1) != 0 ? 0 : 11);
         id = p[rec];
         prm = p.Skip(rec + 1).Take(10).ToArray();
@@ -83,13 +83,94 @@ class FakeHidpp : Hidpp
                 case 2: buffer.Clear(); break;
                 case 3: buffer.AddRange(p.Take(16)); break;
                 case 6: if ((p[0] & 1) != 0) mode = p[0] >> 1 & 1; r[0] = (byte)mode; r[2] = 1; break;
-                case 7: files[u16(0)] = buffer.Take(u16(2)).ToArray(); break;
+                case 7: Flash[u16(0)] = buffer.Take(u16(2)).ToArray(); break;
                 case 8:
-                    if (!files.ContainsKey(u16(0))) throw new HidppError(4, "HID++ error 0x04");
-                    buffer = files[u16(0)].ToList();
+                    if (!Flash.ContainsKey(u16(0))) throw new HidppError(4, "HID++ error 0x04");
+                    buffer = Flash[u16(0)].ToList();
                     break;
                 case 0xC: buffer.Skip(u16(0)).Take(16).ToArray().CopyTo(r, 0); break;
             }
+        }
+        return r;
+    }
+}
+
+class FakeMouse : Hidpp
+{
+    public int Dpi = 1600, Stage = 2;
+    public readonly byte[][] Zones = { new byte[12], new byte[12] };
+    readonly byte[] sector = Enumerable.Repeat((byte)0xFF, 255).ToArray();
+    static readonly int[] Stages = { 400, 800, 1600, 3200, 6400 };
+    static readonly byte[] Ids = { 0x00, 0x01, 0x03, 0x0A };
+
+    public FakeMouse() : base(false)
+    {
+        sector[0] = 1; sector[1] = 2; sector[2] = 2;
+        for (int i = 0; i < 5; i++) { sector[3 + 2 * i] = (byte)Stages[i]; sector[4 + 2 * i] = (byte)(Stages[i] >> 8); }
+        var cycle = FakeHidpp.Hex("0300000000001f40000000");
+        cycle.CopyTo(sector, 0xD0);
+        cycle.CopyTo(sector, 0xDB);
+    }
+
+    public override void Dispose() { }
+
+    public override byte[] Call(byte feat, int fn, params byte[] p)
+    {
+        Thread.Sleep(5);
+        var r = new byte[16];
+        switch (feat)
+        {
+            case 0:
+                int id = p[0] << 8 | p[1];
+                r[0] = (byte)(id == 0x2201 ? 1 : id == 0x8060 ? 2 : id == 0x8070 ? 3 : id == 0x8100 ? 4 : 0);
+                break;
+            case 1:
+                if (fn == 1) FakeHidpp.Hex("000064e0326400").CopyTo(r, 0);
+                if (fn == 2) { r[1] = (byte)(Dpi >> 8); r[2] = (byte)Dpi; r[3] = 0x03; r[4] = 0x20; }
+                if (fn == 3) { Dpi = p[1] << 8 | p[2]; Stage = Array.IndexOf(Stages, Dpi); }
+                break;
+            case 2:
+                if (fn == 0) r[0] = 0x8B;
+                if (fn == 1) r[0] = 1;
+                if (fn == 2) throw new HidppError(5, "HID++ error 0x05");
+                break;
+            case 3:
+                if (fn == 0) r[0] = 2;
+                if (fn == 1) { r[0] = p[0]; r[2] = (byte)(p[0] + 1); r[3] = 4; }
+                if (fn == 2) { if (p[1] >= Ids.Length) throw new HidppError(2, "invalid argument"); r[0] = p[0]; r[1] = p[1]; r[3] = Ids[p[1]]; }
+                if (fn == 3) Zones[p[0]] = p.Take(12).ToArray();
+                break;
+            case 4:
+                if (fn == 2) r[0] = 1;
+                if (fn == 4) r[1] = 1;
+                if (fn == 5) sector.Skip(p[2] << 8 | p[3]).Take(16).ToArray().CopyTo(r, 0);
+                if (fn == 0xB) r[0] = (byte)Math.Max(0, Stage);
+                if (fn == 0xC) { Stage = p[0]; Dpi = Stages[Stage]; }
+                break;
+        }
+        return r;
+    }
+}
+
+class FakeHeadset : Hidpp
+{
+    public int Sidetone = 30, Off = 30;
+
+    public FakeHeadset() : base(false) { }
+
+    public override void Dispose() { }
+
+    public override byte[] Call(byte feat, int fn, params byte[] p)
+    {
+        Thread.Sleep(5);
+        var r = new byte[16];
+        if (feat == 0) { int id = p[0] << 8 | p[1]; r[0] = (byte)(id == 0x8300 ? 1 : id == 0x1F20 ? 2 : 0); }
+        else if (feat == 1) { if (fn == 0) r[0] = (byte)Sidetone; if (fn == 1) Sidetone = p[0]; }
+        else if (feat == 2)
+        {
+            if (fn == 0) { r[0] = 0x0F; r[1] = 0x56; r[2] = 1; }
+            if (fn == 1) r[0] = (byte)Off;
+            if (fn == 2) Off = p[0];
         }
         return r;
     }

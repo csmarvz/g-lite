@@ -12,12 +12,17 @@ class Found
 {
     public string Key, Path, Name = "", Kind = "device", Link = "", Firmware = "";
     public byte Index;
-    public int Wpid, Battery = -1;
+    public int Wpid, Battery = -1, Millivolts;
     public bool Approx, Asleep;
     public int[] Features = new int[0];
 
     public bool Has(int f) { return Features.Contains(f); }
     public bool IsG515 { get { return Name.ToUpper().Contains("G515") && Has(0x8071) && Has(0x8040) && Has(0x8101); } }
+    public bool IsMouse { get { return Kind == "mouse" && Has(0x2201); } }
+    public bool IsHeadset { get { return Kind == "headset" && Has(0x8300); } }
+    public bool HasAutoOff { get { return Path != null && Regex.IsMatch(Path, @"PID_(0AAA|0ABA|0AFB|0AFC)", RegexOptions.IgnoreCase) && Has(0x1F20); } }
+
+    public string Slug { get { return new string(Short.ToLower().Where(char.IsLetterOrDigit).ToArray()); } }
 
     public string Short { get { return Regex.Replace(Regex.Replace(Name, @"\s+Gaming\s+(Mouse|Headset|Keyboard)$", "", RegexOptions.IgnoreCase), @"\s+LIGHTSPEED\b", "", RegexOptions.IgnoreCase); } }
 
@@ -120,7 +125,9 @@ static class Devices
         {
             if (pr.Ping(0xFF, 800) >= 2)
             {
-                r.Add(Describe(pr, p, 0xFF, p.Id.Contains("{00001812") ? "Bluetooth" : "USB"));
+                var f = Describe(pr, p, 0xFF, p.Id.Contains("{00001812") ? "Bluetooth" : "USB");
+                if (f.Link == "USB" && f.Kind == "headset" && f.Battery >= 0) f.Link = "LIGHTSPEED";
+                r.Add(f);
                 return r;
             }
             if (p.Short == null) return r;
@@ -196,8 +203,12 @@ static class Devices
         byte[] r;
         if ((i = pr.Feature(f.Index, 0x1004)) != 0 && (r = pr.Call(f.Index, i, 1)) != null) { f.Battery = r[0]; return; }
         if ((i = pr.Feature(f.Index, 0x1000)) != 0 && (r = pr.Call(f.Index, i, 0)) != null) { f.Battery = r[0]; return; }
-        if ((i = pr.Feature(f.Index, 0x1001)) != 0 && (r = pr.Call(f.Index, i, 0)) != null) { f.Battery = Found.FromVolts(r[0] << 8 | r[1]); f.Approx = true; return; }
-        if ((i = pr.Feature(f.Index, 0x1F20)) != 0 && (r = pr.Call(f.Index, i, 0)) != null) { f.Battery = Found.FromVolts(r[0] << 8 | r[1]); f.Approx = true; }
+        if (((i = pr.Feature(f.Index, 0x1001)) != 0 || (i = pr.Feature(f.Index, 0x1F20)) != 0) && (r = pr.Call(f.Index, i, 0)) != null)
+        {
+            f.Millivolts = r[0] << 8 | r[1];
+            f.Battery = Found.FromVolts(f.Millivolts);
+            f.Approx = true;
+        }
     }
 }
 

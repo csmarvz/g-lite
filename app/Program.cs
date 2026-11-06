@@ -25,6 +25,7 @@ class MainWindow : Form
     readonly FakeHidpp fake;
     readonly Dictionary<string, Control> pages = new Dictionary<string, Control>();
     readonly Dictionary<string, DevItem> items = new Dictionary<string, DevItem>();
+    readonly Dictionary<string, Hidpp> demoDevs = new Dictionary<string, Hidpp>();
     List<Found> found = new List<Found>();
     string selected, note;
     Control shown;
@@ -162,7 +163,7 @@ class MainWindow : Form
     void Restyle()
     {
         Ui.Restyle();
-        foreach (var p in pages.Values.OfType<Page515>()) p.Restyle();
+        foreach (var p in pages.Values.OfType<DevicePage>()) p.Restyle();
         Win.Border(this, Theme.Border);
         ShowThemeHint();
         Invalidate(true);
@@ -250,18 +251,18 @@ class MainWindow : Form
         int y = 78;
         foreach (var f in list)
         {
-            bool g515 = f.IsG515 && !f.Asleep;
+            var type = PageFor(f);
             Control page;
-            if (pages.TryGetValue(f.Key, out page) && (page is Page515) != g515) { Remove(f.Key); page = null; }
+            if (pages.TryGetValue(f.Key, out page) && page.GetType() != type) { Remove(f.Key); page = null; }
             if (page == null)
             {
-                page = g515 ? (Control)new Page515(f, demo ? fake : null, Drag) : new InfoPage(f, Drag, Rescan);
+                page = Make(f, type);
                 Place(this, page, SideW, 0, W - SideW, H);
                 page.Visible = false;
                 pages[f.Key] = page;
                 if (page is Page515 && note != null) { ((Page515)page).Note = note; note = null; }
             }
-            else if (page is Page515) ((Page515)page).SetFound(f);
+            else if (page is DevicePage) ((DevicePage)page).SetFound(f);
             else ((InfoPage)page).SetFound(f);
             DevItem item;
             if (!items.TryGetValue(f.Key, out item))
@@ -287,6 +288,26 @@ class MainWindow : Form
         if (!settingsPage.Visible) Pick(selected);
     }
 
+    static Type PageFor(Found f)
+    {
+        if (f.Asleep) return typeof(InfoPage);
+        if (f.IsG515) return typeof(Page515);
+        if (f.IsMouse) return typeof(PageMouse);
+        if (f.IsHeadset) return typeof(PageHeadset);
+        return typeof(InfoPage);
+    }
+
+    Control Make(Found f, Type type)
+    {
+        Hidpp dev = null;
+        if (demo && !demoDevs.TryGetValue(f.Key, out dev))
+            demoDevs[f.Key] = dev = f.Kind == "keyboard" ? fake : f.Kind == "mouse" ? new FakeMouse() : (Hidpp)new FakeHeadset();
+        if (type == typeof(Page515)) return new Page515(f, dev, Drag);
+        if (type == typeof(PageMouse)) return new PageMouse(f, dev, Drag);
+        if (type == typeof(PageHeadset)) return new PageHeadset(f, dev, Drag);
+        return new InfoPage(f, Drag, Rescan);
+    }
+
     void Remove(string key)
     {
         var page = pages[key];
@@ -304,9 +325,9 @@ class MainWindow : Form
         Thread.Sleep(400);
         return new List<Found>
         {
-            new Found { Key = "demo|keyboard", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Link = "Demo", Battery = 82, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x8040, 0x8071, 0x8101 } },
-            new Found { Key = "demo|mouse", Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, Wpid = 0x4079, Battery = 48, Approx = true, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
-            new Found { Key = "demo|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "USB", Index = 0xFF, Battery = 48, Approx = true, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300, 0x8310 } },
+            new Found { Key = "demo|keyboard", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Link = "Demo", Wpid = 0x40B4, Battery = 82, Firmware = "MPK 25.02 · build 0016", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x8040, 0x8071, 0x8101 } },
+            new Found { Key = "demo|mouse", Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "Demo", Index = 1, Wpid = 0x4079, Battery = 54, Approx = true, Millivolts = 3824, Firmware = "MPM 15.02 · build 0017", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
+            new Found { Key = "demo|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "Demo", Index = 0xFF, Battery = 71, Approx = true, Millivolts = 3926, Firmware = "U1 12.01 · build 0203", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300 } },
         };
     }
 
@@ -472,6 +493,7 @@ class MainWindow : Form
             Settings.Init();
             Theme.Apply();
             Application.EnableVisualStyles();
+            if (demo) Backups.Root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "GLite demo backups");
             var fake = demo ? new FakeHidpp() : null;
             var panel = new MainWindow(fake);
             var tray = new NotifyIcon { Text = "G-Lite " + Application.ProductVersion + (demo ? " (demo)" : ""), Visible = true };
