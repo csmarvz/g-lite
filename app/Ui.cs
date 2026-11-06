@@ -168,11 +168,16 @@ static class Icons
                 case "chevron": g.DrawLines(p, new[] { new PointF(7, 10), new PointF(12, 15), new PointF(17, 10) }); break;
                 case "check": g.DrawLines(p, new[] { new PointF(5, 12.5f), new PointF(10, 17.5f), new PointF(19, 7) }); break;
                 case "gear":
-                    g.DrawEllipse(p, 9, 9, 6, 6);
-                    for (int i = 0; i < 8; i++)
                     {
-                        double a = i * Math.PI / 4;
-                        g.DrawLine(p, 12 + (float)Math.Cos(a) * 6.5f, 12 + (float)Math.Sin(a) * 6.5f, 12 + (float)Math.Cos(a) * 9.5f, 12 + (float)Math.Sin(a) * 9.5f);
+                        var cog = new List<PointF>();
+                        for (int i = 0; i < 8; i++)
+                            foreach (var t in new[] { new[] { 7f, -15f }, new[] { 9.8f, -9f }, new[] { 9.8f, 9f }, new[] { 7f, 15f } })
+                            {
+                                double a = (i * 45 + t[1]) * Math.PI / 180;
+                                cog.Add(new PointF(12 + (float)Math.Cos(a) * t[0], 12 + (float)Math.Sin(a) * t[0]));
+                            }
+                        g.DrawPolygon(p, cog.ToArray());
+                        g.DrawEllipse(p, 9, 9, 6, 6);
                     }
                     break;
                 case "mouse":
@@ -273,7 +278,7 @@ class Btn : Ctl
             return;
         }
         float tw = TextRenderer.MeasureText(g, Text, font, Size.Empty, TextFormatFlags.NoPadding).Width;
-        float x = Look == Look.Ghost ? 10 * K : (Width - tw - (Icon != null ? icon + 8 * K : 0)) / 2;
+        float x = Look == Look.Ghost && Icon != null ? 10 * K : (Width - tw - (Icon != null ? icon + 8 * K : 0)) / 2;
         if (Icon != null) { Icons.Draw(g, Icon, new RectangleF(x, (Height - icon) / 2, icon, icon), fore); x += icon + 8 * K; }
         Ui.Draw(g, Text, font, new RectangleF(x, 0, Width - x - 4 * K, Height), fore, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
     }
