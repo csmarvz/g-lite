@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Report, at the top of every device screen, and Create report on a device G-Lite doesn't support yet. It reads what the device supports, without changing anything on it, and shows it as text. Copy report puts it on the clipboard, and Open GitHub issue starts a new issue with it. It holds no serial number, no name you gave the device and no Windows path.
+
+### Fixed
+
+- On the G515, previewing the lighting saved on the keyboard, or leaving the screen after a preview, now shows the saved lighting right away instead of up to a minute later.
+
 ## [0.0.5-alpha] - 2026-11-06
 
 ### Added

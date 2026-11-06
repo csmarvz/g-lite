@@ -336,7 +336,7 @@ class Page515 : DevicePage
         {
             if (seq != previewSeq) return;
             if (b != G515.Brightness(h)) G515.SetBrightness(h, b);
-            if (!l.Same(stored)) { if (!claimed) { G515.Claim(h); claimed = true; } G515.Preview(h, l); }
+            if (claimed || !l.Same(stored)) { if (!claimed) { G515.Claim(h); claimed = true; } G515.Preview(h, l); }
         }, () => { if (seq == previewSeq) Calm(); });
     }
 
@@ -404,11 +404,15 @@ class Page515 : DevicePage
         if (!dirty) return;
         dirty = false;
         int b = storedBrightness;
+        var back = unknownStored || stored == null ? null : stored.Clone();
         previewSeq++;
         Do(h =>
         {
             if (b >= 0) G515.SetBrightness(h, b);
-            if (claimed) { G515.Release(h); claimed = false; }
+            if (!claimed) return;
+            if (back != null) G515.Preview(h, back);
+            G515.Release(h);
+            claimed = false;
         });
     }
 }
