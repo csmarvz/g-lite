@@ -126,7 +126,7 @@ static class Devices
             if (pr.Ping(0xFF, 800) >= 2)
             {
                 var f = Describe(pr, p, 0xFF, p.Id.Contains("{00001812") ? "Bluetooth" : "USB");
-                if (f.Link == "USB" && f.Kind == "headset" && f.Battery >= 0) f.Link = "LIGHTSPEED";
+                if (f.Link == "USB" && f.Kind == "headset" && (f.Has(0x1F20) || f.Has(0x1004) || f.Has(0x1000) || f.Has(0x1001))) f.Link = "LIGHTSPEED";
                 r.Add(f);
                 return r;
             }

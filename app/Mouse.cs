@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 
 class MouseLight
@@ -17,15 +18,15 @@ class MouseLight
 
 class MouseSet
 {
-    public int Dpi = 800;
+    public int Dpi = 800, Rate, Stage = -1;
     public MouseLight Light;
 
-    public MouseSet Clone() { return new MouseSet { Dpi = Dpi, Light = Light == null ? null : Light.Clone() }; }
+    public MouseSet Clone() { return new MouseSet { Dpi = Dpi, Rate = Rate, Stage = Stage, Light = Light == null ? null : Light.Clone() }; }
 
     public string ToText()
     {
         var l = Light ?? new MouseLight();
-        return string.Join(",", Dpi, l.Effect, l.Color.ToString("X6"), l.Period, l.Bright);
+        return string.Join(",", Dpi, l.Effect, l.Color.ToString("X6"), l.Period, l.Bright, Rate);
     }
 
     public static MouseSet FromText(string text)
@@ -35,6 +36,7 @@ class MouseSet
         {
             Dpi = int.Parse(v[0]),
             Light = new MouseLight { Effect = byte.Parse(v[1]), Color = int.Parse(v[2], NumberStyles.HexNumber), Period = int.Parse(v[3]), Bright = int.Parse(v[4]) },
+            Rate = v.Length > 5 ? int.Parse(v[5]) : 0,
         };
     }
 }
@@ -55,9 +57,120 @@ static class GMouse
     {
         public int Dpi, Stage = -1, Rate;
         public int[] Dpis = new int[0], Stages = new int[0], Rates = new int[0];
-        public bool Onboard;
+        public bool Onboard, ProfileOk;
         public MouseLight Light;
         public Dictionary<int, Dictionary<int, int>> Zones = new Dictionary<int, Dictionary<int, int>>();
+        public int Sector = -1, SectorSize, Format;
+        public byte[] Current, Profile;
+
+        public bool Writable { get { return Onboard && Format == 3 && SectorSize >= 0xF0 && Sector > 0 && Sector < 0x100; } }
+        public bool Savable { get { return Writable && ProfileOk; } }
+        public string Key { get { return Sector.ToString("X4"); } }
+    }
+
+    public const int RomSector = 0x0101;
+
+    public static ushort Crc(byte[] d, int n)
+    {
+        int c = 0xFFFF;
+        for (int i = 0; i < n; i++)
+        {
+            c ^= d[i] << 8;
+            for (int k = 0; k < 8; k++) c = (c & 0x8000) != 0 ? (c << 1 ^ 0x1021) & 0xFFFF : c << 1 & 0xFFFF;
+        }
+        return (ushort)c;
+    }
+
+    public static bool Valid(byte[] p)
+    {
+        return p != null && p.Length >= 0xF0 && Crc(p, p.Length - 2) == U16(p, p.Length - 2);
+    }
+
+    static void Seal(byte[] p)
+    {
+        int c = Crc(p, p.Length - 2);
+        p[p.Length - 2] = (byte)(c >> 8);
+        p[p.Length - 1] = (byte)c;
+    }
+
+    public static int[] StagesOf(byte[] p)
+    {
+        return Enumerable.Range(0, 5).Select(i => p[3 + 2 * i] | p[4 + 2 * i] << 8).TakeWhile(x => x != 0 && x != 0xFFFF).ToArray();
+    }
+
+    public static string Describe(byte[] p)
+    {
+        if (!Valid(p)) return "damaged, can't be restored";
+        var stages = StagesOf(p);
+        var l = Decode(p.Skip(0xDB).Take(11).ToArray());
+        return (p[1] < stages.Length ? stages[p[1]] + " DPI" : "DPI stages") + " · " + (l == null ? "lighting" : Def(l.Effect).Name) + " · " + (p[0] > 0 ? 1000 / p[0] + " Hz" : "");
+    }
+
+    public static byte[] Build(byte[] old, MouseSet want, int zones)
+    {
+        var p = (byte[])old.Clone();
+        var stages = StagesOf(p);
+        if (stages.Length == 0) throw new Refused("The profile on the mouse has no DPI stages, not touching it");
+        int i = want.Stage >= 0 && want.Stage < stages.Length ? want.Stage : Array.IndexOf(stages, want.Dpi);
+        if (i < 0) i = Math.Min((int)p[1], stages.Length - 1);
+        p[3 + 2 * i] = (byte)want.Dpi;
+        p[4 + 2 * i] = (byte)(want.Dpi >> 8);
+        p[1] = (byte)i;
+        if (want.Rate > 0) p[0] = (byte)(1000 / want.Rate);
+        if (want.Light != null)
+            for (int z = 0; z < Math.Min(zones, 2); z++)
+            {
+                p[0xD0 + 11 * z] = want.Light.Effect;
+                Encode(want.Light).CopyTo(p, 0xD1 + 11 * z);
+            }
+        Seal(p);
+        return p;
+    }
+
+    public static byte[] Factory(byte[] rom, byte[] current)
+    {
+        if (rom[0] == 0 || rom[0] > 8 || StagesOf(rom).Length == 0) throw new Refused("Couldn't read the mouse's factory profile, not restoring it");
+        var p = (byte[])rom.Clone();
+        if (Valid(current)) Array.Copy(current, 0xA0, p, 0xA0, 0x30);
+        Seal(p);
+        return p;
+    }
+
+    public static byte[] ReadSector(Hidpp h, int sector, int size)
+    {
+        byte o = h.F(0x8100);
+        var p = new byte[size];
+        for (int off = 0; off < size; off += 16)
+        {
+            int at = Math.Min(off, size - 16);
+            var r = Memory(h, o, sector, at);
+            Array.Copy(r, off - at, p, off, Math.Min(16, size - off));
+        }
+        return p;
+    }
+
+    public static void WriteSector(Hidpp h, int sector, byte[] p)
+    {
+        if (sector <= 0 || sector >= 0x100) throw new Refused("Refusing to write that part of the mouse's memory");
+        if (!Valid(p)) throw new Refused("Refusing to write a profile with a bad checksum");
+        byte o = h.F(0x8100);
+        h.Call(o, 6, (byte)(sector >> 8), (byte)sector, 0, 0, (byte)(p.Length >> 8), (byte)p.Length);
+        for (int i = 0; i < p.Length; i += 16)
+        {
+            var chunk = new byte[16];
+            Array.Copy(p, i, chunk, 0, Math.Min(16, p.Length - i));
+            h.Call(o, 7, chunk);
+        }
+        h.Call(o, 8);
+        if (!ReadSector(h, sector, p.Length).SequenceEqual(p)) throw new IOException("The profile on the mouse didn't read back the same after saving");
+    }
+
+    public static void Store(Hidpp h, State s, byte[] p)
+    {
+        if (!s.Writable || p.Length != s.SectorSize) throw new Refused("Saving isn't supported on this mouse");
+        WriteSector(h, s.Sector, p);
+        try { h.Call(h.F(0x8100), 3, s.Current); }
+        catch (HidppError) { }
     }
 
     static int U16(byte[] b, int o) { return b[o] << 8 | b[o + 1]; }
@@ -167,16 +280,21 @@ static class GMouse
             s.Onboard = h.Call(o, 2)[0] == 1;
             if (s.Onboard)
             {
-                int sector = U16(h.Call(o, 4), 0);
-                var head = Memory(h, o, sector, 0);
-                s.Stages = Enumerable.Range(0, 5).Select(i => head[3 + 2 * i] | head[4 + 2 * i] << 8).TakeWhile(x => x != 0 && x != 0xFFFF).ToArray();
+                var desc = h.Call(o, 0);
+                s.Format = desc[1];
+                s.SectorSize = U16(desc, 7);
+                var cp = h.Call(o, 4);
+                s.Current = new[] { cp[0], cp[1] };
+                s.Sector = U16(cp, 0);
+                if (s.SectorSize >= 0xF0 && s.SectorSize <= 0x1000)
+                {
+                    s.Profile = ReadSector(h, s.Sector, s.SectorSize);
+                    s.ProfileOk = Valid(s.Profile) || s.Sector >= 0x100;
+                    s.Stages = StagesOf(s.Profile);
+                    if (logo >= 0 && logo < 2) s.Light = Decode(s.Profile.Skip(0xD0 + 11 * logo).Take(11).ToArray());
+                }
                 s.Stage = h.Call(o, 0xB)[0];
                 if (s.Stage >= s.Stages.Length) s.Stage = -1;
-                if (logo >= 0 && logo < 2)
-                {
-                    var leds = Memory(h, o, sector, 0xD0).Concat(Memory(h, o, sector, 0xE0)).ToArray();
-                    s.Light = Decode(leds.Skip(11 * logo).Take(11).ToArray());
-                }
             }
         }
         catch (NotSupportedException) { }

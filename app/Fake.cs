@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -97,20 +98,32 @@ class FakeHidpp : Hidpp
 
 class FakeMouse : Hidpp
 {
-    public int Dpi = 1600, Stage = 2;
+    public int Dpi = 1600, Stage = 2, Reloads, Rate = 1;
     public readonly byte[][] Zones = { new byte[12], new byte[12] };
-    readonly byte[] sector = Enumerable.Repeat((byte)0xFF, 255).ToArray();
-    static readonly int[] Stages = { 400, 800, 1600, 3200, 6400 };
+    public readonly Dictionary<int, byte[]> Sectors = new Dictionary<int, byte[]>();
     static readonly byte[] Ids = { 0x00, 0x01, 0x03, 0x0A };
+    List<byte> pending = new List<byte>();
+    int writeTo, writeLength;
 
     public FakeMouse() : base(false)
     {
-        sector[0] = 1; sector[1] = 2; sector[2] = 2;
-        for (int i = 0; i < 5; i++) { sector[3 + 2 * i] = (byte)Stages[i]; sector[4 + 2 * i] = (byte)(Stages[i] >> 8); }
+        var rom = Enumerable.Repeat((byte)0xFF, 255).ToArray();
+        rom[0] = 1; rom[1] = 2; rom[2] = 2;
+        var stages = new[] { 400, 800, 1600, 3200, 6400 };
+        for (int i = 0; i < 5; i++) { rom[3 + 2 * i] = (byte)stages[i]; rom[4 + 2 * i] = (byte)(stages[i] >> 8); }
         var cycle = FakeHidpp.Hex("0300000000001f40000000");
-        cycle.CopyTo(sector, 0xD0);
-        cycle.CopyTo(sector, 0xDB);
+        cycle.CopyTo(rom, 0xD0);
+        cycle.CopyTo(rom, 0xDB);
+        var user = (byte[])rom.Clone();
+        Encoding.Unicode.GetBytes("Default").CopyTo(user, 0xA0);
+        int c = GMouse.Crc(user, 253);
+        user[253] = (byte)(c >> 8);
+        user[254] = (byte)c;
+        Sectors[0x0101] = rom;
+        Sectors[0x0001] = user;
     }
+
+    int[] Stages { get { return GMouse.StagesOf(Sectors[0x0001]); } }
 
     public override void Dispose() { }
 
@@ -118,20 +131,21 @@ class FakeMouse : Hidpp
     {
         Thread.Sleep(5);
         var r = new byte[16];
+        Func<int, int> u16 = o => p[o] << 8 | p[o + 1];
         switch (feat)
         {
             case 0:
-                int id = p[0] << 8 | p[1];
+                int id = u16(0);
                 r[0] = (byte)(id == 0x2201 ? 1 : id == 0x8060 ? 2 : id == 0x8070 ? 3 : id == 0x8100 ? 4 : 0);
                 break;
             case 1:
                 if (fn == 1) FakeHidpp.Hex("000064e0326400").CopyTo(r, 0);
                 if (fn == 2) { r[1] = (byte)(Dpi >> 8); r[2] = (byte)Dpi; r[3] = 0x03; r[4] = 0x20; }
-                if (fn == 3) { Dpi = p[1] << 8 | p[2]; Stage = Array.IndexOf(Stages, Dpi); }
+                if (fn == 3) { Dpi = u16(1); Stage = Array.IndexOf(Stages, Dpi); }
                 break;
             case 2:
                 if (fn == 0) r[0] = 0x8B;
-                if (fn == 1) r[0] = 1;
+                if (fn == 1) r[0] = (byte)Rate;
                 if (fn == 2) throw new HidppError(5, "HID++ error 0x05");
                 break;
             case 3:
@@ -141,9 +155,23 @@ class FakeMouse : Hidpp
                 if (fn == 3) Zones[p[0]] = p.Take(12).ToArray();
                 break;
             case 4:
+                if (fn == 0) FakeHidpp.Hex("0103010501081000ff0a04").CopyTo(r, 0);
                 if (fn == 2) r[0] = 1;
+                if (fn == 3)
+                {
+                    var prof = Sectors[u16(0)];
+                    Reloads++;
+                    Rate = prof[0];
+                    Stage = prof[1];
+                    Dpi = Stages[Stage];
+                    Zones[0] = new byte[] { 0, 0 }.Concat(prof.Skip(0xD1).Take(10)).ToArray();
+                    Zones[1] = new byte[] { 1, 0 }.Concat(prof.Skip(0xDC).Take(10)).ToArray();
+                }
                 if (fn == 4) r[1] = 1;
-                if (fn == 5) sector.Skip(p[2] << 8 | p[3]).Take(16).ToArray().CopyTo(r, 0);
+                if (fn == 5) Sectors[u16(0)].Skip(u16(2)).Take(16).ToArray().CopyTo(r, 0);
+                if (fn == 6) { writeTo = u16(0); writeLength = u16(4); pending.Clear(); }
+                if (fn == 7) pending.AddRange(p.Take(16));
+                if (fn == 8) Sectors[writeTo] = pending.Take(writeLength).ToArray();
                 if (fn == 0xB) r[0] = (byte)Math.Max(0, Stage);
                 if (fn == 0xC) { Stage = p[0]; Dpi = Stages[Stage]; }
                 break;

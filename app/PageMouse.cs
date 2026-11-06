@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -111,10 +112,14 @@ class PageMouse : DevicePage
     readonly ColorRow colors;
     readonly Slider speed, bright, dpi;
     readonly MousePicture picture;
+    readonly Btn saveBtn, backupsBtn;
+    Backups.Entry fix;
 
     public PageMouse(Found found, Hidpp fake, MouseEventHandler drag) : base(found, fake, drag, found.Short, "mouse", "profile." + found.Slug + ".")
     {
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };
+        backupsBtn = BackupsButton("mouse's profile");
+        backupsBtn.Click += (s, e) => ShowBackups();
 
         var pic = Ui.Add(this, new Box(), 20, 118, 616, 209);
         Ui.Text(pic, "Live on the mouse", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
@@ -155,17 +160,25 @@ class PageMouse : DevicePage
         Ui.Text(sens, "Sensitivity", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
         stageHead = Ui.Text(sens, "DPI stage", 14, 40, () => Theme.Dim, 9f);
         stages = Ui.Add(sens, new Seg { AccessibleName = "DPI stage" }, 14, 58, 196, 32);
-        stages.Picked += i => { cur.Dpi = state.Stages[i]; Changed(true); };
+        stages.Picked += i => { cur.Stage = i; cur.Dpi = state.Stages[i]; Changed(true); };
         Ui.Text(sens, "DPI", 14, 98, () => Theme.Dim, 9f);
         dpiValue = Value(sens, 14, 98, 196);
-        dpi = Ui.Add(sens, new Slider { AccessibleName = "DPI" }, 14, 118, 196, 24);
+        dpi = Ui.Add(sens, new Slider { AccessibleName = "DPI", Step = 1 }, 14, 118, 196, 24);
         dpi.Changed += (s, e) => { if (state != null && state.Dpis.Length > 0) { cur.Dpi = state.Dpis[dpi.Value]; Changed(false); } };
         rateHead = Ui.Text(sens, "Report rate", 14, 156, () => Theme.Dim, 9f);
         rates = Ui.Add(sens, new Seg { AccessibleName = "Report rate" }, 14, 174, 196, 32);
-        rates.Picked += i => SendRate(state.Rates[i]);
+        rates.Picked += i =>
+        {
+            if (!state.Onboard) { SendRate(state.Rates[i]); return; }
+            cur.Rate = state.Rates[i];
+            Changed(true);
+        };
         rateHint = Ui.Text(sens, "", 14, 212, () => Theme.Dim, 9f);
         rateHint.AutoSize = false;
         rateHint.Size = new Size(196, 48);
+
+        saveBtn = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Save to mouse" }, 496, 635, 140, 32);
+        saveBtn.Click += (s, e) => Save();
 
         Sync();
     }
@@ -184,6 +197,7 @@ class PageMouse : DevicePage
     {
         var s = MouseSet.FromText(text);
         if (state != null && state.Dpis.Length > 0) s.Dpi = state.Dpis[Near(state.Dpis, s.Dpi)];
+        s.Stage = state != null && Array.IndexOf(state.Stages, s.Dpi) >= 0 ? Array.IndexOf(state.Stages, s.Dpi) : cur.Stage;
         cur = s;
         Changed(true);
     }
@@ -228,9 +242,11 @@ class PageMouse : DevicePage
         speedValue.Text = spd ? speed.Value + "%" : "";
         speed.Invalidate();
 
-        int stage = ready ? Array.IndexOf(state.Stages, cur.Dpi) : -1;
         bool hasStages = ready && state.Stages.Length > 0;
-        stages.Items = hasStages ? state.Stages.Select(x => x.ToString()).ToArray() : new[] { "–" };
+        int stage = hasStages && cur.Stage >= 0 && cur.Stage < state.Stages.Length ? cur.Stage : -1;
+        var view = hasStages ? (int[])state.Stages.Clone() : new int[0];
+        if (stage >= 0) view[stage] = cur.Dpi;
+        stages.Items = hasStages ? view.Select(x => x.ToString()).ToArray() : new[] { "–" };
         stages.Enabled = hasStages;
         stages.Index = stage;
         Shade(stageHead, hasStages);
@@ -239,18 +255,23 @@ class PageMouse : DevicePage
         dpi.Value = ready && state.Dpis.Length > 0 ? Near(state.Dpis, cur.Dpi) : 0;
         dpi.Invalidate();
         dpiValue.Text = ready ? cur.Dpi.ToString() : "";
-        bool rateOn = ready && !state.Onboard && state.Rates.Length > 0;
+        bool rateOn = ready && state.Rates.Length > 0 && (!state.Onboard || state.Savable);
+        int rate = ready ? (cur.Rate > 0 ? cur.Rate : state.Rate) : 0;
         rates.Items = ready && state.Rates.Length > 0 ? state.Rates.Select(x => x.ToString()).ToArray() : new[] { "–" };
-        rates.Index = ready ? Array.IndexOf(state.Rates, state.Rate) : -1;
+        rates.Index = ready ? Array.IndexOf(state.Rates, rate) : -1;
         rates.Enabled = rateOn;
         rates.Invalidate();
         Shade(rateHead, rateOn);
         rateHead.Text = "Report rate" + (ready && state.Rates.Length > 0 ? " · Hz" : "");
-        rateHint.Text = ready && state.Onboard ? "Set by the profile saved on the mouse. The DPI button switches between the saved stages." : "";
+        rateHint.Text = !ready || !state.Onboard ? "" : state.Savable
+            ? "Changes when you save to the mouse. The DPI button switches between the saved stages."
+            : "Set by the profile saved on the mouse. The DPI button switches between the saved stages.";
+        saveBtn.Enabled = ready && state.Savable && dirty;
+        saveBtn.Visible = !ready || state.Writable;
 
         picture.Display(lit ? l : new MouseLight { Effect = 0 }, ready ? cur.Dpi : 0,
-            !ready ? "" : stage >= 0 ? "Stage " + (stage + 1) + " of " + state.Stages.Length : hasStages ? "Between stages" : "",
-            ready && state.Rate > 0 ? state.Rate + " Hz report rate" : "");
+            !ready ? "" : stage >= 0 ? "Stage " + (stage + 1) + " of " + state.Stages.Length + (cur.Dpi != state.Stages[stage] ? " · was " + state.Stages[stage] : "") : "",
+            rate > 0 ? rate + " Hz report rate" + (ready && rate != state.Rate ? " after saving" : "") : "");
         loading = false;
     }
 
@@ -267,7 +288,75 @@ class PageMouse : DevicePage
 
     protected override void Calm()
     {
-        Say(state == null ? "" : dirty ? "Applied to the mouse · not saved on it" : "Matches the mouse");
+        if (state == null) { Say(""); return; }
+        if (!state.ProfileOk) { ShowBroken(); return; }
+        Say(!dirty ? "Matches the mouse" : state.Savable ? "Applied to the mouse · not saved on it yet" : "Applied to the mouse · not saved on it");
+    }
+
+    string BackupId { get { return found.Slug; } }
+
+    byte[] Usable(Backups.Entry e)
+    {
+        var d = state == null ? null : e.Get(state.Key);
+        return d != null && state.Writable && d.Length == state.SectorSize && GMouse.Valid(d) ? d : null;
+    }
+
+    void ShowBroken()
+    {
+        const string bad = "The profile saved on the mouse is damaged. ";
+        if (fix != null) Say(bad + "Click to restore the backup from " + When(fix) + ".", true, () => Restore(Usable(fix), "the backup from " + When(fix)));
+        else if (state.Writable) Say(bad + "Click to restore the factory profile.", true, () => Restore(null, "the factory profile"));
+        else Say(bad + "G-Lite can't repair it on this mouse.", true);
+    }
+
+    void ShowBackups()
+    {
+        bool can = state != null && state.Writable;
+        BackupMenu(backupsBtn, BackupId, can ? "Restore the factory profile" : null, () => Restore(null, "the factory profile"),
+            e => { var d = e.Get(state == null ? "" : state.Key); return d == null ? "another profile" : GMouse.Describe(d); },
+            e => Usable(e) != null, e => Restore(Usable(e), "the backup from " + When(e)));
+    }
+
+    void Save()
+    {
+        var want = cur.Clone();
+        var s = state;
+        debounce.Stop();
+        saveBtn.Enabled = false;
+        Say("Saving to the mouse…");
+        Do(h =>
+        {
+            var now = GMouse.ReadSector(h, s.Sector, s.SectorSize);
+            if (!GMouse.Valid(now)) throw new Refused("The profile on the mouse is damaged, not touching it");
+            Backups.Save(BackupId, new Dictionary<string, byte[]> { { s.Key, now } });
+            GMouse.Store(h, s, GMouse.Build(now, want, s.Zones.Count));
+        }, () =>
+        {
+            lightSet = false;
+            Note = "Saved to the mouse";
+            Load();
+        });
+    }
+
+    void Restore(byte[] data, string what)
+    {
+        var s = state;
+        if (s == null || !s.Writable) return;
+        debounce.Stop();
+        seq++;
+        saveBtn.Enabled = false;
+        Say("Restoring " + what + "…");
+        Do(h =>
+        {
+            var now = GMouse.ReadSector(h, s.Sector, s.SectorSize);
+            Backups.Save(BackupId, new Dictionary<string, byte[]> { { s.Key, now } });
+            GMouse.Store(h, s, data ?? GMouse.Factory(GMouse.ReadSector(h, GMouse.RomSector, s.SectorSize), now));
+        }, () =>
+        {
+            lightSet = false;
+            Note = "Restored " + what;
+            Load();
+        });
     }
 
     void Send()
@@ -278,10 +367,10 @@ class PageMouse : DevicePage
         Do(h =>
         {
             if (n != seq) return;
-            if (sent == null || want.Dpi != sent.Dpi)
+            if (sent == null || want.Dpi != sent.Dpi || want.Stage != sent.Stage)
             {
-                int i = Array.IndexOf(s.Stages, want.Dpi);
-                if (s.Onboard && i >= 0) GMouse.SetStage(h, i); else GMouse.SetDpi(h, want.Dpi);
+                bool saved = s.Onboard && want.Stage >= 0 && want.Stage < s.Stages.Length && s.Stages[want.Stage] == want.Dpi;
+                if (saved) GMouse.SetStage(h, want.Stage); else GMouse.SetDpi(h, want.Dpi);
             }
             if (want.Light != null && s.Zones.Count > 0 && (sent == null || !want.Light.Same(sent.Light)))
             {
@@ -306,13 +395,17 @@ class PageMouse : DevicePage
         Do(h => s = GMouse.Read(h), () =>
         {
             state = s;
-            stored = new MouseSet { Dpi = s.Dpi, Light = s.Light };
+            fix = s.ProfileOk ? null : Backups.List(BackupId).FirstOrDefault(e => Usable(e) != null);
+            int start = s.Stage >= 0 ? s.Stage : s.Profile != null && s.Stages.Length > 0 ? Math.Min((int)s.Profile[1], s.Stages.Length - 1) : -1;
+            stored = new MouseSet { Dpi = s.Dpi, Light = s.Light, Stage = start };
             if (n == seq)
             {
                 cur.Dpi = s.Dpi;
+                cur.Rate = 0;
+                cur.Stage = start;
                 if (!lightSet || cur.Light == null) cur.Light = s.Light == null ? null : s.Light.Clone();
                 if (!lightSet) dirty = false;
-                sent = new MouseSet { Dpi = s.Dpi, Light = lightSet && cur.Light != null ? cur.Light.Clone() : s.Light };
+                sent = new MouseSet { Dpi = s.Dpi, Stage = start, Light = lightSet && cur.Light != null ? cur.Light.Clone() : s.Light };
             }
             Sync();
             Loaded();

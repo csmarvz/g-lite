@@ -130,7 +130,7 @@ class Page515 : DevicePage
         debounce.Tick += (s, e) => { debounce.Stop(); Preview(); };
         if (found.Wpid != 0) Backups.Move(found.Wpid.ToString("X4"), BackupId);
 
-        backupsBtn = Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Backups", AccessibleName = "Backups of the keyboard's lighting" }, 536 - 4 - 80, 10, 80, 28);
+        backupsBtn = BackupsButton("keyboard's lighting");
         backupsBtn.Click += (s, e) => ShowBackups();
 
         var pic = Ui.Add(this, new Box(), 20, 118, 616, 209);
@@ -284,8 +284,6 @@ class Page515 : DevicePage
             return k != null && Equals(k.GetValue("AmbientLightingEnabled"), 1);
     }
 
-    static string When(Backups.Entry e) { return e.When.ToLocalTime().ToString("d MMM HH:mm", CultureInfo.InvariantCulture); }
-
     void ShowBroken()
     {
         const string half = "The lighting saved on the keyboard is half written. ";
@@ -296,29 +294,8 @@ class Page515 : DevicePage
 
     void ShowBackups()
     {
-        var m = new ContextMenuStrip { Renderer = Ui.Menus, Font = Ui.Get(9.75f, Ui.Regular), ShowImageMargin = false };
-        m.BackColor = Theme.Card;
-        m.ForeColor = Theme.Text;
-        m.Items.Add(new ToolStripMenuItem("Restore the factory lighting", null, (s, e) => Restore(new G515.Files(), "the factory lighting")));
-        m.Items.Add(new ToolStripSeparator());
-        var list = Backups.List(BackupId);
-        m.Items.Add(new ToolStripMenuItem(list.Count == 0 ? "No backups yet. G-Lite makes one before each save." : "Restore a backup") { Enabled = false });
-        foreach (var b in list)
-        {
-            var entry = b;
-            var item = new ToolStripMenuItem(When(b) + " · " + Backups.Describe(b.Files) + (b.First ? " · first backup" : ""), null, (s, e) => Restore(entry.Files, "the backup from " + When(entry)));
-            item.Enabled = G515.Good(b.Files);
-            m.Items.Add(item);
-        }
-        m.Items.Add(new ToolStripSeparator());
-        m.Items.Add(new ToolStripMenuItem("Open the backups folder", null, (s, e) =>
-        {
-            var dir = Backups.Folder(BackupId);
-            Directory.CreateDirectory(dir);
-            Process.Start(dir);
-        }));
-        m.Closed += (s, a) => BeginInvoke((Action)m.Dispose);
-        m.Show(backupsBtn, new Point(backupsBtn.Width, backupsBtn.Height + (int)(2 * Ui.K)), ToolStripDropDownDirection.BelowLeft);
+        BackupMenu(backupsBtn, BackupId, "Restore the factory lighting", () => Restore(new G515.Files(), "the factory lighting"),
+            e => Backups.Describe(e.Files), e => G515.Good(e.Files), e => Restore(e.Files, "the backup from " + When(e)));
     }
 
     void Restore(G515.Files backup, string what)

@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -70,6 +72,43 @@ abstract class DevicePage : Control, IPage
     public Task Queue { get { return queue; } }
 
     protected bool Demo { get { return fake != null; } }
+
+    protected Btn BackupsButton(string noun)
+    {
+        return Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Backups", AccessibleName = "Backups of the " + noun }, 536 - 4 - 80, 10, 80, 28);
+    }
+
+    public static string When(Backups.Entry e) { return e.When.ToLocalTime().ToString("d MMM HH:mm", CultureInfo.InvariantCulture); }
+
+    protected void BackupMenu(Btn anchor, string device, string factory, Action restoreFactory, Func<Backups.Entry, string> describe, Func<Backups.Entry, bool> good, Action<Backups.Entry> restore)
+    {
+        var m = new ContextMenuStrip { Renderer = Ui.Menus, Font = Ui.Get(9.75f, Ui.Regular), ShowImageMargin = false };
+        m.BackColor = Theme.Card;
+        m.ForeColor = Theme.Text;
+        if (factory != null)
+        {
+            m.Items.Add(new ToolStripMenuItem(factory, null, (s, e) => restoreFactory()));
+            m.Items.Add(new ToolStripSeparator());
+        }
+        var list = Backups.List(device);
+        m.Items.Add(new ToolStripMenuItem(list.Count == 0 ? "No backups yet. G-Lite makes one before each save." : "Restore a backup") { Enabled = false });
+        foreach (var b in list)
+        {
+            var entry = b;
+            var item = new ToolStripMenuItem(When(b) + " · " + describe(b) + (b.First ? " · first backup" : ""), null, (s, e) => restore(entry));
+            item.Enabled = good(b);
+            m.Items.Add(item);
+        }
+        m.Items.Add(new ToolStripSeparator());
+        m.Items.Add(new ToolStripMenuItem("Open the backups folder", null, (s, e) =>
+        {
+            var dir = Backups.Folder(device);
+            Directory.CreateDirectory(dir);
+            Process.Start(dir);
+        }));
+        m.Closed += (s, a) => BeginInvoke((Action)m.Dispose);
+        m.Show(anchor, new Point(anchor.Width, anchor.Height + (int)(2 * Ui.K)), ToolStripDropDownDirection.BelowLeft);
+    }
 
     protected override void Dispose(bool disposing)
     {

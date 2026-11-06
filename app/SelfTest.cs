@@ -105,6 +105,32 @@ static class SelfTest
         Check(mouse.Dpi == 3200 && mouse.Zones[1][1] == 3 && mouse.Zones[1][2] == 0xFF && mouse.Zones[1][8] == 80, "mouse stage and lighting are set");
         var mset = MouseSet.FromText(new MouseSet { Dpi = 1200, Light = new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 3000, Bright = 70 } }.ToText());
         Check(mset.Dpi == 1200 && mset.Light.Same(new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 3000, Bright = 70 }), "a mouse profile round-trips through text");
+        var real = Hex("01020290012003d007800c0019ffffffff00ffffffffffffffffffffffffffff8001000180010002800100048001000880010010900500008001000880010010ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff8001000180010002800100048001000880010010900500008001000880010010ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff440065006600610075006c0074000000000000000000000000000000000000000000000000000000000000000000000001ffffff0000000000000001ffffff00000000000000ffffffffffffffffffffffffffffffffffffffffffff00bfdd");
+        Check(GMouse.Valid(real) && GMouse.Crc(real, 253) == 0xBFDD, "the profile checksum matches the real mouse");
+        var mouseLight = new MouseLight { Effect = 0x0A, Color = 0xFF0000, Period = 3000, Bright = 80 };
+        var built = GMouse.Build(real, new MouseSet { Dpi = 1200, Rate = 500, Light = mouseLight, Stage = 2 }, 2);
+        var allowed = new HashSet<int>(new[] { 0, 1, 253, 254 }.Concat(Enumerable.Range(3, 10)).Concat(Enumerable.Range(0xD0, 22)));
+        Check(GMouse.Valid(built) && built[0] == 2 && built[1] == 2 && GMouse.StagesOf(built).SequenceEqual(new[] { 400, 800, 1200, 3200, 6400 })
+            && built[0xD0] == 0x0A && built[0xDB] == 0x0A && Enumerable.Range(0, 255).All(i => allowed.Contains(i) || built[i] == real[i]), "a saved mouse profile changes only DPI, report rate and lighting");
+        var picked = GMouse.Build(real, new MouseSet { Dpi = 800, Stage = 1 }, 2);
+        Check(picked[1] == 1 && GMouse.StagesOf(picked).SequenceEqual(GMouse.StagesOf(real)) && picked[0] == real[0], "saving a DPI stage only makes it the default");
+        var moved = GMouse.Build(real, new MouseSet { Dpi = 800, Stage = 2 }, 2);
+        Check(moved[1] == 2 && GMouse.StagesOf(moved).SequenceEqual(new[] { 400, 800, 800, 3200, 6400 }), "a stage dragged to another stage's value keeps its place");
+        var m2 = new FakeMouse();
+        var st = GMouse.Read(m2);
+        Check(st.Savable && st.Sector == 1 && st.SectorSize == 255 && st.Format == 3, "the fake mouse can be saved to");
+        GMouse.Store(m2, st, GMouse.Build(st.Profile, new MouseSet { Dpi = 3200, Rate = 500, Stage = 3, Light = new MouseLight { Effect = 0x01, Color = 0xFF2020, Bright = 100 } }, 2));
+        var st2 = GMouse.Read(m2);
+        Check(st2.Dpi == 3200 && st2.Rate == 500 && st2.Light != null && st2.Light.Effect == 0x01 && st2.Light.Color == 0xFF2020 && m2.Reloads == 1 && st2.ProfileOk, "saving to the mouse sticks and reloads the profile");
+        GMouse.Store(m2, st2, GMouse.Factory(GMouse.ReadSector(m2, GMouse.RomSector, 255), st2.Profile));
+        var st3 = GMouse.Read(m2);
+        Check(st3.Dpi == 1600 && st3.Light.Effect == 0x03 && st3.ProfileOk && System.Text.Encoding.Unicode.GetString(st3.Profile, 0xA0, 14) == "Default", "the factory profile comes back with the profile's name");
+        int refusals = 0;
+        foreach (var sec in new[] { 0x0000, 0x0101 }) { try { GMouse.WriteSector(m2, sec, st3.Profile); } catch (Refused) { refusals++; } }
+        var broken = (byte[])st3.Profile.Clone();
+        broken[5] ^= 1;
+        try { GMouse.WriteSector(m2, 1, broken); } catch (Refused) { refusals++; }
+        Check(refusals == 3 && GMouse.Valid(m2.Sectors[1]) && GMouse.Valid(m2.Sectors[0x0101]) == false, "the directory, the factory profile and bad checksums are never written");
 
         var headset = new FakeHeadset();
         var hs = GHeadset.Read(headset, true);

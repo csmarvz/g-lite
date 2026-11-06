@@ -457,8 +457,26 @@ class Field : Ctl
 
 class Slider : Ctl
 {
-    public int Max = 100, Value;
+    public int Max = 100, Value, Step = 5;
     public event EventHandler Changed;
+    int wheel;
+
+    protected override void OnMouseWheel(MouseEventArgs e)
+    {
+        base.OnMouseWheel(e);
+        var handled = e as HandledMouseEventArgs;
+        if (handled != null) handled.Handled = true;
+        if (!Enabled) return;
+        wheel += e.Delta;
+        int notches = wheel / 120;
+        if (notches == 0) return;
+        wheel -= notches * 120;
+        int v = Math.Max(0, Math.Min(Max, Value + notches * Step));
+        if (v == Value) return;
+        Value = v;
+        Invalidate();
+        if (Changed != null) Changed(this, EventArgs.Empty);
+    }
 
     float X(int v) { return 7 * K + (float)((long)v * (Width - 14 * K) / Max); }
 

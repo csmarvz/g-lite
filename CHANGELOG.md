@@ -1,17 +1,20 @@
 # Changelog
 
-## [Unreleased]
+## [0.0.5-alpha] - 2026-11-06
 
 ### Added
 
-- A mouse screen: DPI, DPI stages, logo lighting and profiles, with a live picture of the mouse. Changes apply right away and aren't saved on the mouse. The report rate shows, but changing it waits for saving to the mouse.
-- A headset screen: sidetone, how long it waits before turning off, the battery and profiles.
+- A mouse screen: DPI, DPI stages, logo lighting, report rate and profiles, with a live picture of the mouse. Changes apply right away, and Save to mouse keeps them in the mouse's profile. Moving the DPI slider changes the stage you're on, and saving makes it the stage the mouse starts on.
+- G-Lite backs up the mouse's profile before each save. Backups restores one of them or the factory profile, and a damaged profile offers to restore the last good backup.
+- A headset screen: sidetone, how long it waits before turning off, the battery and profiles. Test sidetone turns the microphone on for 30 seconds so you can hear yourself.
 - G-Lite backs up the keyboard's lighting before each save, keeping the first backup and the last ten. Backups, next to the refresh button, restores one of them or the factory lighting.
 - When the lighting saved on the keyboard is half written, G-Lite offers to restore the last good backup instead of only refusing.
 
 ### Changed
 
 - A change made while G-Lite is still reading a device is no longer undone when the reading finishes.
+- The mouse wheel moves the slider under the pointer: 5% a notch, or one DPI step (50 on the G Pro Wireless).
+- A headset with its own wireless receiver shows as LIGHTSPEED, not USB.
 
 ## [0.0.4-alpha] - 2026-11-05
 

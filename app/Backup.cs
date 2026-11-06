@@ -15,7 +15,14 @@ static class Backups
         public string File;
         public DateTime When;
         public bool First;
-        public G515.Files Files;
+        public Dictionary<string, byte[]> Data;
+
+        public byte[] Get(string key) { byte[] b; return Data.TryGetValue(key, out b) ? b : null; }
+
+        public G515.Files Files
+        {
+            get { return new G515.Files { FactoryProfile = Get("0101"), FactoryDir = Get("0100"), UserProfile = Get("0008"), UserDir = Get("0000") }; }
+        }
     }
 
     public static string Folder(string device) { return Path.Combine(Root, device); }
@@ -26,29 +33,33 @@ static class Backups
 
     static bool Same(byte[] a, byte[] b) { return a == null ? b == null : b != null && a.SequenceEqual(b); }
 
-    public static bool Same(G515.Files a, G515.Files b)
+    static bool Same(Dictionary<string, byte[]> a, Dictionary<string, byte[]> b)
     {
-        return Same(a.FactoryProfile, b.FactoryProfile) && Same(a.FactoryDir, b.FactoryDir) && Same(a.UserProfile, b.UserProfile) && Same(a.UserDir, b.UserDir);
+        return a.Count == b.Count && a.All(p => b.ContainsKey(p.Key) && Same(p.Value, b[p.Key]));
     }
 
-    public static void Save(string device, G515.Files f)
+    public static Dictionary<string, byte[]> Of(G515.Files f)
+    {
+        return new Dictionary<string, byte[]> { { "0101", f.FactoryProfile }, { "0100", f.FactoryDir }, { "0008", f.UserProfile }, { "0000", f.UserDir } };
+    }
+
+    public static void Save(string device, G515.Files f) { Save(device, Of(f)); }
+
+    public static void Save(string device, Dictionary<string, byte[]> data)
     {
         try
         {
             var list = List(device);
-            if (list.Count > 0 && Same(list[0].Files, f)) return;
+            if (list.Count > 0 && Same(list[0].Data, data)) return;
             var dir = Folder(device);
             Directory.CreateDirectory(dir);
             var name = (list.Count == 0 ? "first-" : "") + DateTime.UtcNow.ToString(Utc, CultureInfo.InvariantCulture) + ".txt";
-            File.WriteAllLines(Path.Combine(dir, name), new[]
-            {
-                "0101=" + Hex(f.FactoryProfile), "0100=" + Hex(f.FactoryDir), "0008=" + Hex(f.UserProfile), "0000=" + Hex(f.UserDir),
-            });
+            File.WriteAllLines(Path.Combine(dir, name), data.Select(p => p.Key + "=" + Hex(p.Value)));
             foreach (var old in List(device).Where(e => !e.First).Skip(Keep)) File.Delete(old.File);
         }
         catch (Exception ex)
         {
-            if (ex is IOException || ex is UnauthorizedAccessException) throw new Refused("Couldn't back up the keyboard, so nothing was written: " + ex.Message);
+            if (ex is IOException || ex is UnauthorizedAccessException) throw new Refused("Couldn't make a backup, so nothing was written: " + ex.Message);
             throw;
         }
     }
@@ -69,12 +80,8 @@ static class Backups
                 && !DateTime.TryParseExact(name, Stamp, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal | DateTimeStyles.AdjustToUniversal, out when)) continue;
             try
             {
-                var v = File.ReadAllLines(file).Where(l => l.Length > 4 && l[4] == '=').ToDictionary(l => l.Substring(0, 4), l => l.Substring(5).Trim());
-                r.Add(new Entry
-                {
-                    File = file, When = when, First = first,
-                    Files = new G515.Files { FactoryProfile = Bytes(v["0101"]), FactoryDir = Bytes(v["0100"]), UserProfile = Bytes(v["0008"]), UserDir = Bytes(v["0000"]) },
-                });
+                var data = File.ReadAllLines(file).Where(l => l.Length > 4 && l[4] == '=').ToDictionary(l => l.Substring(0, 4), l => Bytes(l.Substring(5).Trim()));
+                r.Add(new Entry { File = file, When = when, First = first, Data = data });
             }
             catch (Exception) { }
         }

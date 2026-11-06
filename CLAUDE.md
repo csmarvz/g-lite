@@ -27,16 +27,16 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `Probe`: the scan's HID++ calls. HID++ 1.0 errors come back on the receiver's short collection.
   - Names of devices seen awake are kept as `seen.<wireless id>` in `settings.txt`, for when they're asleep.
 - `app/Pages.cs`:
-  - `DevicePage`: what every device screen shares: the title, the profile row, the device work queue and the status line. Profiles are stored as `profile.<device>.<name>`.
+  - `DevicePage`: what every device screen shares: the title, the profile row, the device work queue, the status line and the Backups menu. Profiles are stored as `profile.<device>.<name>`.
   - `ColorRow`: the colour swatches
   - `InfoPage` for G devices G-Lite can't change yet or that are asleep, and `EmptyPage`
 - `app/Page515.cs`:
   - `Page515`: the G515 screen, the preview debounce, the backups menu and the offer to restore when the saved lighting is half written. Profiles are `profile.g515.<name>`.
   - `KeyPicture`: the live key picture
-- `app/PageMouse.cs`: `PageMouse`, the mouse screen, and `MousePicture`
+- `app/PageMouse.cs`: `PageMouse`, the mouse screen with Save to mouse, its backups and the offer to restore a damaged profile, and `MousePicture`
 - `app/PageHeadset.cs`: `PageHeadset`, the headset screen, and `HeadsetPicture`
-- `app/Backup.cs`: `Backups`, a copy of the G515's four onboard files taken before every save or restore, in `%LOCALAPPDATA%\GLite\backups\<wireless id>\`. It keeps the first one and the last ten.
-- `app/Mouse.cs`: `GMouse`, which reads and sets DPI (0x2201), the DPI stage and the onboard profile (0x8100), the report rate (0x8060) and the lighting (0x8070)
+- `app/Backup.cs`: `Backups`, a copy of what's on a device taken before every save or restore, in `%LOCALAPPDATA%\GLite\backups\<device>\`: `G515` for the keyboard's four onboard files, the device name (like `gprowireless`) for a mouse's profile sector. Each line is `<4 hex digits>=<bytes>`. It keeps the first backup and the last ten.
+- `app/Mouse.cs`: `GMouse`, which reads and sets DPI (0x2201), the DPI stage (0x8100), the report rate (0x8060) and the lighting (0x8070), and reads, builds and writes the active onboard profile (0x8100)
 - `app/Headset.cs`: `GHeadset`, which reads and sets sidetone (0x8300) and the auto-off time (0x1F20 fn 1 and fn 2, in minutes, 0 is never). 0x1F20 fn 0 is the battery voltage, and byte 2 is 3 while charging.
 - `app/Ui.cs`:
   - `Theme`: dark, light or system, from `theme=` in `settings.txt`
@@ -63,7 +63,11 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - Features: 0x8071 for RGB effects, 0x8040 for brightness (0–100), 0x8101 for profiles. The code looks up their indexes at runtime.
 - Never write the factory profile (0x0101) or the factory directory (0x0100). The user profile is 0x0008 and the user directory is 0x0000.
 - Windows Dynamic Lighting can fight with the app. The panel warns when Dynamic Lighting is on.
-- Mouse and headset settings are sent live and aren't written to flash. On the G Pro Wireless in onboard mode, DPI, the DPI stage (0x8100 fn 0x0C) and lighting (0x8070 fn 3) can be set, but the report rate is refused. The lighting and DPI stages shown come from the active onboard profile, read with 0x8100 fn 5: stages at bytes 3–12 (little endian), LED records of 11 bytes from 0xD0.
+- Mouse changes are sent live, and Save to mouse writes them into the active onboard profile. On the G Pro Wireless in onboard mode, DPI, the DPI stage (0x8100 fn 0x0C) and lighting (0x8070 fn 3) can be set live, but the report rate is refused, so it only changes on save.
+- Mouse onboard profiles (0x8100, profile format 3 only): fn 0 gives the sector size at bytes 7–8 (255 on the G Pro Wireless), fn 4 the active profile's sector, fn 5 reads 16 bytes at a sector and offset.
+  - Layout: byte 0 is the report interval in ms, byte 1 the default DPI stage, bytes 3–12 the five stages (little endian), 0xA0 the name (UTF-16), LED records of 11 bytes from 0xD0 (effect id, then the 0x8070 parameters). The last two bytes are a CRC-16 (CCITT, start 0xFFFF, big endian) over the rest.
+  - Writing: fn 6 with sector, offset 0 and length, fn 7 for each 16 bytes, fn 8 to finish, then read back. fn 3 with the active profile reloads it.
+  - Never write sector 0x0000 (the profile directory) or 0x0100 and up (the factory profiles). The factory profile at 0x0101 has no checksum.
 - The PRO X Wireless dongle (PID 0ABA) answers HID++ itself at index 0xFF. Its sidetone only plays while an app uses the microphone. It stores an equalizer (0x8310: fn 2 reads one signed byte per band, fn 3 writes a 0x02 followed by them) but doesn't apply it, so G-Lite doesn't show it. G HUB applies EQ on the PC.
 
 ## Rules
