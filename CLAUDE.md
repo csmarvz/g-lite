@@ -18,6 +18,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `Hidpp`: HID++ 2.0 over the receiver
   - `Lighting`: the lighting settings
   - `G515`: the effect table, profile encode and decode, CRC32, onboard file read and write, preview
+  - `G915`: live lighting on the G915 and G915 TKL (0x8071 keys and logo clusters, the older effect ids). No saving yet. See `docs/G915.md`.
 - `app/Program.cs`:
   - `MainWindow`: the device sidebar, one page per found device, rescans on plug and unplug, the Settings and Logs screens, updates and run on startup
   - `Main`: the tray icon, the single-instance mutex and `--demo`
@@ -33,6 +34,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `InfoPage` for G devices G-Lite can't change yet or that are asleep, and `EmptyPage`
 - `app/Page515.cs`:
   - `Page515`: the G515 screen, the preview debounce, the backups menu and the offer to restore when the saved lighting is half written. Profiles are `profile.g515.<name>`.
+  - On a G915 the same screen has no Save, Backups or idle settings. It keeps the lighting as `lighting.<device>` in `settings.txt` and sets it again on each load. Profiles are `profile.g915.<name>`.
   - `KeyPicture`: the live key picture
 - `app/PageMouse.cs`: `PageMouse`, the mouse screen with Save to mouse, its backups and the offer to restore a damaged profile, and `MousePicture`
 - `app/PageHeadset.cs`: `PageHeadset`, the headset screen, and `HeadsetPicture`
@@ -47,7 +49,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/Fake.cs`:
   - `Model`: loads `models/*.json`, which are embedded resources
   - `FakeHidpp`: an in-memory G515
-  - `FakeMouse` and `FakeHeadset`: in-memory devices for `--demo` and the self-tests
+  - `FakeG915`, `FakeMouse` and `FakeHeadset`: in-memory devices for `--demo` and the self-tests
   - `KeyboardView`: the demo window
 - `app/Game.cs`: Blocks, played on the 15x5 grid over the main key block, and Snake and Mines (`KeyGame`), played on the keys of that block
 - `app/Update.cs`: `Updater`, which checks GitHub releases, verifies the download against `checksums.txt`, swaps the exe and restarts. If the exe's folder isn't writable, it runs the new exe elevated with `--swap <path>` to do the swap, then restarts unelevated.
@@ -55,7 +57,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/Win.cs`: per-monitor DPI awareness, the scale of a screen, pixel fonts, rounded corners. Windows are laid out at 100% and scaled with `Scale()`; `WM_DPICHANGED` rescales them.
 - `app/Logo.cs`: draws the GL logo at any size and writes the multi-size ico.
 - `app/SelfTest.cs`: self-checks with golden bytes from the real keyboard. Add a check here whenever the encoding or rules change.
-- `app/models/g515-tkl.json`: the key layout
+- `app/models/g515-tkl.json`, `g915-tkl.json`, `g915.json`: the key layouts
   - A row is written `Label:width|...`.
   - `_n` is a gap of n units.
   - A row made only of gaps adds vertical space.

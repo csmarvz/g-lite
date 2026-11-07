@@ -379,3 +379,91 @@ static class G515
         if ((m[0] & 1) == 0 || m[1] != 0 || m[2] != 1) throw new IOException(string.Format("Unexpected state {0:x2} {1:x2} {2:x2} after activating", m[0], m[1], m[2]));
     }
 }
+
+static class G915
+{
+    static readonly Dictionary<byte, byte[]> Alike = new Dictionary<byte, byte[]>
+    {
+        { 0x00, new byte[] { 0x00 } },
+        { 0x01, new byte[] { 0x01 } },
+        { 0x0A, new byte[] { 0x0A } },
+        { 0x15, new byte[] { 0x15, 0x03 } },
+        { 0x16, new byte[] { 0x16, 0x04 } },
+        { 0x17, new byte[] { 0x17, 0x0B } },
+    };
+
+    static readonly Dictionary<byte, byte> Instead = new Dictionary<byte, byte> { { 0x16, 0x15 }, { 0x17, 0x01 } };
+
+    public static List<byte[]> Clusters(Hidpp h)
+    {
+        byte f = h.F(0x8071);
+        var all = new List<byte[]>();
+        for (int c = 0; c < 8; c++)
+        {
+            var ids = new List<byte>();
+            for (int e = 0; e < 32; e++)
+            {
+                try { ids.Add(h.Call(f, 0, (byte)c, (byte)e, 0)[3]); }
+                catch (HidppError) { break; }
+            }
+            if (ids.Count == 0) break;
+            all.Add(ids.ToArray());
+        }
+        if (all.Count == 0) throw new NotSupportedException("The keyboard lists no lighting effects");
+        return all;
+    }
+
+    public static int Keys(List<byte[]> clusters)
+    {
+        int k = 0;
+        for (int c = 1; c < clusters.Count; c++) if (clusters[c].Length > clusters[k].Length) k = c;
+        return k;
+    }
+
+    public static int Pick(byte want, byte[] has, bool loose)
+    {
+        while (true)
+        {
+            byte[] ids;
+            if (Alike.TryGetValue(want, out ids))
+                foreach (var id in ids)
+                {
+                    int i = Array.IndexOf(has, id);
+                    if (i >= 0) return i;
+                }
+            if (!loose || !Instead.TryGetValue(want, out want)) return -1;
+        }
+    }
+
+    public static byte[] Encode(byte id, Lighting l)
+    {
+        var b = new byte[10];
+        int c = l.Color;
+        switch (id)
+        {
+            case 0x03: b[5] = (byte)(l.Period >> 8); b[6] = (byte)l.Period; b[7] = 100; return b;
+            case 0x04: b[6] = (byte)l.Period; b[7] = (byte)l.Direction; b[8] = 100; b[9] = (byte)(l.Period >> 8); return b;
+            case 0x0B: b[0] = (byte)(c >> 16); b[1] = (byte)(c >> 8); b[2] = (byte)c; b[4] = (byte)(l.Period >> 8); b[5] = (byte)l.Period; return b;
+        }
+        var s = l.Clone();
+        s.Effect = id;
+        return G515.Encode(s, 100);
+    }
+
+    public static void Claim(Hidpp h) { h.Call(h.F(0x8071), 5, 0x01, 0x03, 0x04); }
+
+    public static void Release(Hidpp h) { h.Call(h.F(0x8071), 5, 0x01, 0x00, 0x00); }
+
+    public static void Preview(Hidpp h, List<byte[]> clusters, Lighting l)
+    {
+        byte f = h.F(0x8071);
+        int keys = Keys(clusters);
+        if (Pick(l.Effect, clusters[keys], false) < 0) throw new Refused("This keyboard doesn't have that effect");
+        for (int c = 0; c < clusters.Count; c++)
+        {
+            int i = Pick(l.Effect, clusters[c], c != keys);
+            if (i < 0) continue;
+            h.Call(f, 1, new byte[] { (byte)c, (byte)i }.Concat(Encode(clusters[c][i], l)).Concat(new byte[] { 0x01 }).ToArray());
+        }
+    }
+}

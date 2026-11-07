@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- The G915 and G915 TKL, untested: effects, colour, speed, direction, brightness and profiles, on the same screen as the G515, with a picture of each keyboard. The logo follows the keys. G-Lite can't save to these keyboards yet, so it remembers your lighting and sets it again when G-Lite starts and when you open the keyboard. As on the keyboard gives the keyboard its own lighting back.
+
 ## [0.0.7-alpha] - 2026-11-07
 
 ### Added

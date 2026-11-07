@@ -204,6 +204,30 @@ static class SelfTest
         Check(new Found { Name = "G Pro Wireless Gaming Mouse" }.Short == "G Pro Wireless" && new Found { Name = "G515 LIGHTSPEED TKL" }.Short == "G515 TKL", "short device names");
         Check(Found.FromVolts(4200) == 100 && Found.FromVolts(3300) == 0 && Found.FromVolts(3800) == 50, "battery estimate from the voltage");
         Check(new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071, 0x8040, 0x8101 } }.IsG515 && !new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071 } }.IsG515, "the G515 needs its three features");
+        Check(new Found { Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Features = new[] { 0x8071, 0x8040, 0x8100 } }.IsG915
+            && !new Found { Name = "G915 X LIGHTSPEED", Features = new[] { 0x8071, 0x8040, 0x8100 } }.IsG915
+            && new Found { Name = "G915 WIRELESS RGB MECHANICAL GAMING KEYBOARD" }.Short == "G915"
+            && new Found { Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard" }.Short == "G915 TKL", "the G915 is found, and the G915 X isn't");
+        Check(new[] { "g515-tkl.json", "g915-tkl.json", "g915.json" }.All(x => Model.Load(x).Rows.Length > 5), "the key layouts load");
+        var g9 = new FakeG915();
+        var cl = G915.Clusters(g9);
+        Check(cl.Count == 2 && G915.Keys(cl) == 1, "the G915's keys are the cluster with the most effects");
+        G915.Claim(g9);
+        G915.Preview(g9, cl, new Lighting { Effect = 0x15, Period = 3000 });
+        Check(g9.Claimed == 3 && g9.Live[1][1] == 3 && g9.Live[1][7] == 0x0B && g9.Live[1][8] == 0xB8 && g9.Live[1][9] == 100 && g9.Live[1][12] == 1, "cycle on the G915 uses effect 0x03, with its period at byte 5");
+        Check(g9.Live[0][1] == 2 && g9.Live[0][7] == 0x0B, "the logo cycles too");
+        G915.Preview(g9, cl, new Lighting { Effect = 0x16, Period = 4000, Direction = 1 });
+        Check(g9.Live[1][1] == 4 && g9.Live[1][8] == 0xA0 && g9.Live[1][9] == 1 && g9.Live[1][10] == 100 && g9.Live[1][11] == 0x0F, "wave on the G915 uses effect 0x04");
+        Check(g9.Live[0][1] == 2, "the logo cycles when the keys wave");
+        G915.Preview(g9, cl, new Lighting { Effect = 0x17, Color = 0x3080FF, Period = 20 });
+        Check(g9.Live[1][1] == 5 && g9.Live[1][2] == 0x30 && g9.Live[1][7] == 20 && g9.Live[0][1] == 1 && g9.Live[0][4] == 0xFF, "ripple on the keys, the ripple's colour on the logo");
+        G915.Preview(g9, cl, new Lighting { Effect = 0x0A, Color = 0xFF0000, Period = 5000 });
+        Check(g9.Live[1][1] == 2 && g9.Live[0][1] == 3 && g9.Live[1][5] == 0x13 && g9.Live[1][6] == 0x88, "breathe on keys and logo");
+        bool lacks = false;
+        try { G915.Preview(g9, cl, new Lighting { Effect = 0x02 }); } catch (Refused) { lacks = true; }
+        Check(lacks && g9.Live[1][1] == 2, "an effect the G915 lacks is refused without sending anything");
+        G915.Release(g9);
+        Check(g9.Claimed == 0, "release gives the lighting back to the G915");
         Check(Settings.Get("theme") == "system" && Theme.Mode == "system", "theme starts on system");
         Theme.Mode = "light";
         Check(Theme.Light && Settings.Get("theme") == "light", "light theme is saved and applied");

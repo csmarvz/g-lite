@@ -18,13 +18,14 @@ class Found
 
     public bool Has(int f) { return Features.Contains(f); }
     public bool IsG515 { get { return Name.ToUpper().Contains("G515") && Has(0x8071) && Has(0x8040) && Has(0x8101); } }
+    public bool IsG915 { get { var n = Name.ToUpper(); return n.Contains("G915") && !n.Contains("G915 X") && Has(0x8071) && Has(0x8040) && Has(0x8100) && !Has(0x8101); } }
     public bool IsMouse { get { return Kind == "mouse" && Has(0x2201); } }
     public bool IsHeadset { get { return Kind == "headset" && Has(0x8300); } }
     public bool HasAutoOff { get { return Path != null && Regex.IsMatch(Path, @"PID_(0AAA|0ABA|0AFB|0AFC)", RegexOptions.IgnoreCase) && Has(0x1F20); } }
 
     public string Slug { get { return new string(Short.ToLower().Where(char.IsLetterOrDigit).ToArray()); } }
 
-    public string Short { get { return Regex.Replace(Regex.Replace(Name, @"\s+Gaming\s+(Mouse|Headset|Keyboard)$", "", RegexOptions.IgnoreCase), @"\s+LIGHTSPEED\b", "", RegexOptions.IgnoreCase); } }
+    public string Short { get { return Regex.Replace(Regex.Replace(Name, @"(\s+Wireless\s+RGB\s+Mechanical)?\s+Gaming\s+(Mouse|Headset|Keyboard)$", "", RegexOptions.IgnoreCase), @"\s+LIGHTSPEED\b", "", RegexOptions.IgnoreCase); } }
 
     public string BatteryText { get { return Battery < 0 ? "" : (Approx ? "~" : "") + Battery + "%"; } }
 

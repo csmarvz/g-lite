@@ -328,7 +328,7 @@ class MainWindow : Form
     static Type PageFor(Found f)
     {
         if (f.Asleep) return typeof(InfoPage);
-        if (f.IsG515) return typeof(Page515);
+        if (f.IsG515 || f.IsG915) return typeof(Page515);
         if (f.IsMouse) return typeof(PageMouse);
         if (f.IsHeadset) return typeof(PageHeadset);
         return typeof(InfoPage);
@@ -338,7 +338,7 @@ class MainWindow : Form
     {
         Hidpp dev = null;
         if (demo && !demoDevs.TryGetValue(f.Key, out dev))
-            demoDevs[f.Key] = dev = f.Kind == "keyboard" ? fake : f.Kind == "mouse" ? new FakeMouse() : (Hidpp)new FakeHeadset();
+            demoDevs[f.Key] = dev = f.IsG915 ? new FakeG915() : f.Kind == "keyboard" ? fake : f.Kind == "mouse" ? new FakeMouse() : (Hidpp)new FakeHeadset();
         if (type == typeof(Page515)) return new Page515(f, dev, Drag);
         if (type == typeof(PageMouse)) return new PageMouse(f, dev, Drag);
         if (type == typeof(PageHeadset)) return new PageHeadset(f, dev, Drag);
@@ -363,6 +363,7 @@ class MainWindow : Form
         return new List<Found>
         {
             new Found { Key = "demo|keyboard", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Link = "Demo", Wpid = 0x40B4, Battery = 82, Firmware = "MPK 25.02 · build 0016", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x8040, 0x8071, 0x8101 } },
+            new Found { Key = "demo|g915", Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "Demo", Index = 1, Wpid = 0x408E, Battery = 70, Approx = true, Millivolts = 3923, Firmware = "MPK 14.01 · build 0021", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 } },
             new Found { Key = "demo|mouse", Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "Demo", Index = 1, Wpid = 0x4079, Battery = 54, Approx = true, Millivolts = 3824, Firmware = "MPM 15.02 · build 0017", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
             new Found { Key = "demo|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "Demo", Index = 0xFF, Battery = 71, Approx = true, Millivolts = 3926, Firmware = "U1 12.01 · build 0203", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300 } },
         };

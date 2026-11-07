@@ -28,6 +28,7 @@ If Windows says it protected your PC, click **More info**, then **Run anyway**. 
 | G515 LIGHTSPEED TKL | LIGHTSPEED receiver | Lighting effects, colour, speed, direction, brightness, idle dimming and turn-off, profiles, saving to the keyboard, backups and restoring them, factory lighting |
 | G Pro Wireless | LIGHTSPEED receiver | DPI and DPI stage, logo lighting, report rate, profiles, saving to the mouse, backups and restoring them, factory profile |
 | PRO X Wireless | Its own LIGHTSPEED receiver | Sidetone, turning off when idle, battery, profiles |
+| G915 and G915 TKL | LIGHTSPEED receiver or USB | Untested. Lighting effects, colour, speed, direction, brightness and profiles, live only. G-Lite sets your lighting again when it starts and when you open the keyboard, but can't save it to the keyboard yet. |
 
 Other G mice and headsets with the same features get the same screens, but they haven't been tested. Other Logitech G devices show up in the sidebar with their connection, battery and firmware, but G-Lite can't change their settings yet. Devices that could come next are listed in [#11](https://github.com/csmarvz/g-lite/issues/11). To help add yours, open it in G-Lite, click **Report** and send the report in a new issue.
 
@@ -36,4 +37,5 @@ Other G mice and headsets with the same features get the same screens, but they 
 - [logirgb](https://github.com/mevdschee/logirgb) by Maurits van der Schee. The G515 feature set the app copies, and the protocol notes and hardware logs in its `research` folder, including copies of Logitech's HID++ 2.0 feature documents (0x8040, 0x8070, 0x8071).
 - [logirgb: Logitech G515 and G502 RGB on Linux](https://www.tqdev.com/2026-logirgb-logitech-g515-g502-rgb-linux/), the article introducing logirgb.
 - [logitech-g515-onboard](https://github.com/federico-duppa/logitech-g515-onboard) by Federico De Malmayne Duppa. The onboard profile and file layout (0x8100/0x8101) used to make the lighting persist on the keyboard.
+- [Solaar](https://github.com/pwr-Solaar/Solaar), [OpenRGB](https://github.com/CalcProgrammer1/OpenRGB) and [libratbag](https://github.com/libratbag/libratbag). Facts about the G915: its ids, features, lighting clusters and effect parameters. No code is taken from them. See [docs/G915.md](docs/G915.md).
 - [G-Helper](https://github.com/seerge/g-helper), the model for the look and feel of the tray panel.

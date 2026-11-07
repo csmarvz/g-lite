@@ -109,7 +109,13 @@ class Page515 : DevicePage
     static readonly string[] SleepText = { "Never", "1 min", "2 min", "5 min", "10 min", "15 min", "30 min" };
     static readonly int[] Directions = { 6, 1, 3, 8 };
     static readonly string[] DirText = { "Left", "Right", "Center out", "Center in" };
-    static readonly Model Board = Model.Load("g515-tkl.json");
+    static readonly Model G515Board = Model.Load("g515-tkl.json"), G915Tkl = Model.Load("g915-tkl.json"), G915Full = Model.Load("g915.json");
+    string Remembered { get { return "lighting." + found.Slug; } }
+
+    static Model BoardFor(Found f) { return !f.IsG915 ? G515Board : f.Name.ToUpper().Contains("TKL") ? G915Tkl : G915Full; }
+
+    readonly bool g915;
+    List<byte[]> clusters;
 
     Lighting cur = new Lighting(), stored;
     int brightness = 100, storedBrightness = -1;
@@ -126,17 +132,21 @@ class Page515 : DevicePage
     readonly KeyPicture picture;
     Backups.Entry fix;
 
-    public Page515(Found found, Hidpp fake, MouseEventHandler drag) : base(found, fake, drag, Board.Name, "keyboard", "profile.g515.")
+    public Page515(Found found, Hidpp fake, MouseEventHandler drag) : base(found, fake, drag, BoardFor(found).Name, "keyboard", found.IsG915 ? "profile.g915." : "profile.g515.")
     {
+        g915 = found.IsG915;
         debounce.Tick += (s, e) => { debounce.Stop(); Preview(); };
-        if (found.Wpid != 0) Backups.Move(found.Wpid.ToString("X4"), BackupId);
+        if (!g915 && found.Wpid != 0) Backups.Move(found.Wpid.ToString("X4"), BackupId);
 
-        backupsBtn = BackupsButton("keyboard's lighting");
-        backupsBtn.Click += (s, e) => ShowBackups();
+        if (!g915)
+        {
+            backupsBtn = BackupsButton("keyboard's lighting");
+            backupsBtn.Click += (s, e) => ShowBackups();
+        }
 
         var pic = Ui.Add(this, new Box(), 20, 118, 616, 209);
         Ui.Text(pic, "Live on the keyboard", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
-        picture = Ui.Add(pic, new KeyPicture(Board), 14, 36, 588, 161);
+        picture = Ui.Add(pic, new KeyPicture(BoardFor(found)), 14, 36, 588, 161);
 
         var light = Ui.Add(this, new Box(), 20, 339, 380, 272);
         lightHead = Ui.Text(light, "Lighting", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
@@ -183,24 +193,30 @@ class Page515 : DevicePage
         };
 
         var idle = Ui.Add(this, new Box(), 412, 339, 224, 272);
-        Ui.Text(idle, "When idle", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
+        Ui.Text(idle, g915 ? "Saving" : "When idle", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
+        var note = Ui.Text(idle, "G-Lite can't save to this keyboard yet. It keeps your lighting and sets it again when G-Lite starts and when you open this screen. As on the keyboard gives the keyboard its own lighting back.", 14, 40, () => Theme.Dim, 9f);
+        note.AutoSize = false;
+        note.Size = new Size(196, 200);
+        note.Visible = g915;
         idleBox = Choice(idle, "Dim after", IdleText, 40, i => cur.Idle = IdleSecs[i]);
         dimBox = Choice(idle, "Dim to", DimText, 98, i => cur.Dim = DimPcts[i]);
         sleepBox = Choice(idle, "Turn off after", SleepText, 156, i => cur.Sleep = SleepSecs[i]);
+        if (g915) foreach (Control c in idle.Controls) if (c != note && c.Top > 30) c.Visible = false;
 
-        saveBtn = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Save to keyboard" }, 496, 635, 140, 32);
+        saveBtn = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Save to keyboard", Visible = !g915 }, 496, 635, 140, 32);
         saveBtn.Click += (s, e) => Save();
 
         Sync();
+        if (g915) Load();
     }
 
     static string BackupId { get { return "G515"; } }
 
     public override void Restyle() { Sync(); }
 
-    public override void Hidden() { Release(); }
+    public override void Hidden() { if (!g915) Release(); }
 
-    protected override void Lost() { claimed = false; }
+    protected override void Lost() { claimed = false; clusters = null; }
 
     protected override string Current() { return cur.ToText(brightness); }
 
@@ -221,7 +237,7 @@ class Page515 : DevicePage
         return d;
     }
 
-    bool Known() { return !(unknownStored && !dirty); }
+    bool Known() { return g915 ? !unknownStored : !(unknownStored && !dirty); }
 
     static int Near(int[] values, int v)
     {
@@ -236,7 +252,7 @@ class Page515 : DevicePage
         var d = G515.Def(cur.Effect);
         bool known = Known();
         bool color = known && d != null && d.Color, dir = known && d != null && d.Direction, spd = known && d != null && d.Speed;
-        lightHead.Text = known ? "Lighting" : broken ? "Lighting · half written on the keyboard" : "Lighting · factory animation";
+        lightHead.Text = known ? "Lighting" : broken ? "Lighting · half written on the keyboard" : g915 ? "Lighting · as on the keyboard" : "Lighting · factory animation";
         effects.Index = known ? Array.FindIndex(G515.Effects, e => e.Id == cur.Effect) : -1;
         Shade(colorHead, color);
         colors.Sync(cur.Color, color);
@@ -263,6 +279,7 @@ class Page515 : DevicePage
     void Changed(bool now)
     {
         if (loading) return;
+        if (g915) unknownStored = false;
         dirty = true;
         edits++;
         Sync();
@@ -276,6 +293,7 @@ class Page515 : DevicePage
         if (broken) { ShowBroken(); return; }
         if (DynamicLightingOn())
             Say("Windows Dynamic Lighting is on and may override this.", true, () => Process.Start("ms-settings:personalization-lighting"), "Open Windows settings");
+        else if (g915) Say(Known() ? "Set by G-Lite · not saved to the keyboard" : "");
         else Say(dirty ? "Previewing · not saved to the keyboard" : stored == null ? "" : "Matches the keyboard");
     }
 
@@ -322,6 +340,7 @@ class Page515 : DevicePage
 
     protected override void Revert()
     {
+        if (g915) { Forget(); return; }
         if (stored == null) return;
         cur = stored.Clone();
         brightness = storedBrightness;
@@ -334,6 +353,7 @@ class Page515 : DevicePage
     {
         var l = cur.Clone();
         int b = brightness, seq = ++previewSeq;
+        if (g915) { Apply(l, b, seq); return; }
         Do(h =>
         {
             if (seq != previewSeq) return;
@@ -366,8 +386,81 @@ class Page515 : DevicePage
         });
     }
 
+    void Apply(Lighting l, int b, int seq)
+    {
+        bool known = !unknownStored, sent = false;
+        Do(h =>
+        {
+            if (seq != previewSeq) return;
+            if (clusters == null) clusters = G915.Clusters(h);
+            if (b != G515.Brightness(h)) G515.SetBrightness(h, b);
+            if (!known) return;
+            G915.Claim(h);
+            G915.Preview(h, clusters, l);
+            sent = true;
+        }, () =>
+        {
+            if (sent && seq == previewSeq) Settings.Set(Remembered, l.ToText(b));
+            if (seq == previewSeq) Calm();
+        });
+    }
+
+    void Forget()
+    {
+        Settings.Remove(Remembered);
+        unknownStored = true;
+        dirty = false;
+        edits++;
+        int seq = ++previewSeq;
+        debounce.Stop();
+        Sync();
+        Calm();
+        int b = -1;
+        Do(h => { G915.Release(h); b = G515.Brightness(h); }, () => { if (seq == previewSeq && b >= 0) { brightness = b; Sync(); } });
+    }
+
+    void LoadG915()
+    {
+        dirty = false;
+        debounce.Stop();
+        Say("Reading the keyboard…");
+        int n = edits, seq = previewSeq;
+        int b = 100;
+        string kept = Settings.Get(Remembered);
+        Lighting l = null;
+        int kb = -1;
+        if (kept != null) try { l = Lighting.FromText(kept, out kb); } catch (Exception) { l = null; }
+        bool dropped = false;
+        Do(h =>
+        {
+            clusters = G915.Clusters(h);
+            if (l != null && seq == previewSeq)
+            {
+                if (kb >= 0 && kb <= 100 && kb != G515.Brightness(h)) G515.SetBrightness(h, kb);
+                G915.Claim(h);
+                try { G915.Preview(h, clusters, l); }
+                catch (Refused) { G915.Release(h); dropped = true; }
+            }
+            b = G515.Brightness(h);
+        }, () =>
+        {
+            if (dropped) { Settings.Remove(Remembered); l = null; }
+            storedBrightness = b;
+            if (n == edits)
+            {
+                stored = l == null ? null : l.Clone();
+                unknownStored = l == null;
+                brightness = b;
+                if (l != null) cur = l;
+            }
+            Sync();
+            Loaded();
+        });
+    }
+
     public override void Load()
     {
+        if (g915) { LoadG915(); return; }
         dirty = false;
         debounce.Stop();
         Say("Reading the keyboard…");
