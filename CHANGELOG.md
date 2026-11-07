@@ -1,10 +1,14 @@
 # Changelog
 
-## [Unreleased]
+## [0.0.6-alpha] - 2026-11-07
 
 ### Added
 
 - Report, at the top of every device screen, and Create report on a device G-Lite doesn't support yet. It reads what the device supports, without changing anything on it, and shows it as text. Copy report puts it on the clipboard, and Open GitHub issue starts a new issue with it. It holds no serial number, no name you gave the device and no Windows path.
+
+### Changed
+
+- The Settings button shows a gear, and the Report and Backups labels are centred like the other buttons.
 
 ### Fixed
 
