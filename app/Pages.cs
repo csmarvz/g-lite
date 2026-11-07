@@ -180,18 +180,27 @@ abstract class DevicePage : Control, IPage
         Do(h => text = Report.Build(h, found, GetType().Name), () => done(text, null), msg => done(null, msg));
     }
 
+    protected string Who { get { return found.Short == "" ? found.Name : found.Short; } }
+
+    protected void Did(string what) { Log.Add(Who, "you", what); }
+
     protected void Do(Action<Hidpp> a, Action done = null, Action<string> failed = null)
     {
         queue = queue.ContinueWith(_ =>
         {
             try
             {
-                if (dev == null) dev = fake ?? new Hidpp(found.Path, found.Index);
+                if (dev == null)
+                {
+                    dev = fake ?? new Hidpp(found.Path, found.Index);
+                    dev.Who = Who;
+                }
                 a(dev);
                 if (done != null && IsHandleCreated) BeginInvoke(done);
             }
             catch (Exception ex)
             {
+                Log.Add(Who, "error", ex.Message);
                 if (dev != null && !(ex is HidppError) && !(ex is Refused)) { dev.Dispose(); dev = null; Lost(); }
                 if (failed != null && IsHandleCreated) BeginInvoke((Action)(() => failed(ex.Message)));
                 else Post(ex.Message, true);
@@ -557,5 +566,127 @@ class ReportView : Control
             status.Set(whole ? "Opened a new issue with the report" : "Copied. Paste it into the new issue.", false, null);
         }
         catch (Exception ex) { status.Set("Couldn't open the browser: " + ex.Message, true, null); }
+    }
+}
+
+class LogsPage : Control
+{
+    [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)] static extern int SetWindowTheme(IntPtr h, string app, string id);
+    [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, IntPtr l);
+    readonly RichTextBox box;
+    readonly Label count;
+    readonly StatusLine status;
+    readonly Timer timer = new Timer { Interval = 1000 };
+    System.Collections.Generic.List<Log.Line> shown = new System.Collections.Generic.List<Log.Line>();
+    int version = -1;
+
+    public LogsPage(MouseEventHandler drag)
+    {
+        Visible = false;
+        Ui.Style(this, () => BackColor = Theme.Bg);
+        MouseDown += drag;
+        Ui.Text(this, "Logs", 20, 14, () => Theme.Text, 13.5f, Ui.Semi).MouseDown += drag;
+
+        var body = Ui.Add(this, new Box(), 20, 56, 616, 555);
+        Ui.Text(body, "log.txt, newest last", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
+        count = Ui.Text(body, "", 300, 12, () => Theme.Dim, 9f);
+        count.AutoSize = false;
+        count.Size = new Size(302, 18);
+        count.TextAlign = ContentAlignment.TopRight;
+        var inset = Ui.Add(body, new Control(), 14, 38, 588, 503);
+        Ui.Style(inset, () => inset.BackColor = Theme.Bg);
+        box = Ui.Add(inset, new RichTextBox { ReadOnly = true, WordWrap = false, ScrollBars = RichTextBoxScrollBars.Both, BorderStyle = BorderStyle.None, DetectUrls = false, AccessibleName = "Log" }, 8, 6, 576, 493);
+        Ui.Font(box, 9f, "Consolas");
+        Ui.Style(box, () => { box.BackColor = Theme.Bg; Dark(); if (Visible) Render(); });
+        box.HandleCreated += (s, e) => Dark();
+
+        var line = Ui.Add(this, new Control(), 0, 623, 656, 1);
+        Ui.Style(line, () => line.BackColor = Theme.Border);
+        status = Ui.Add(this, new StatusLine(), 20, 633, 280, 36);
+        var clear = Ui.Add(this, new Btn { Text = "Clear" }, 314, 636, 76, 32);
+        clear.Click += (s, e) => { Log.Clear(); Render(); status.Set("Log cleared", false, null); };
+        var folder = Ui.Add(this, new Btn { Text = "Open folder" }, 398, 636, 130, 32);
+        folder.Click += (s, e) => OpenFolder();
+        var copy = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Copy" }, 536, 636, 100, 32);
+        copy.Click += (s, e) => Copy();
+        timer.Tick += (s, e) => { if (Visible && Log.Version != version) Render(); };
+    }
+
+    public void Open()
+    {
+        status.Set("", false, null);
+        Visible = true;
+        timer.Start();
+        Render();
+    }
+
+    public void Close()
+    {
+        Visible = false;
+        timer.Stop();
+    }
+
+    void Dark()
+    {
+        if (box.IsHandleCreated) SetWindowTheme(box.Handle, Theme.Light ? "Explorer" : "DarkMode_Explorer", null);
+    }
+
+    void Render()
+    {
+        version = Log.Version;
+        var lines = Log.Read();
+        shown = Log.Fold(lines);
+        count.Text = lines.Count + " lines · " + (Log.Size() / 1024.0).ToString("0.0", CultureInfo.InvariantCulture) + " KB";
+        var rtf = new StringBuilder(@"{\rtf1\ansi\deff0{\fonttbl{\f0 Consolas;}}{\colortbl;" + Rgb(Theme.Text) + Rgb(Theme.Dim) + Rgb(Theme.Accent) + Rgb(Theme.Warn) + "}");
+        foreach (var l in shown)
+        {
+            var t = Log.Format(l);
+            int split = Math.Min(t.Length, l.Time.Length + 2 + 15);
+            int c = l.Bad ? 4 : l.Kind == "you" ? 3 : l.Kind == "sent" ? 2 : 1;
+            rtf.Append(@"\cf2 ").Append(Esc(t.Substring(0, split))).Append(@"\cf" + c + " ").Append(Esc(t.Substring(split))).Append(@"\par ");
+        }
+        if (shown.Count == 0) rtf.Append(@"\cf2 Nothing logged yet.");
+        rtf.Append("}");
+        box.Rtf = rtf.ToString();
+        box.SelectAll();
+        box.SelectionFont = box.Font;
+        box.Select(box.TextLength, 0);
+        box.ScrollToCaret();
+        SendMessage(box.Handle, 0x114, (IntPtr)6, IntPtr.Zero);
+    }
+
+    static string Rgb(Color c) { return @"\red" + c.R + @"\green" + c.G + @"\blue" + c.B + ";"; }
+
+    static string Esc(string s)
+    {
+        var o = new StringBuilder();
+        foreach (var ch in s)
+        {
+            if (ch == '\\' || ch == '{' || ch == '}') o.Append('\\').Append(ch);
+            else if (ch > 127) o.Append(@"\u").Append((int)(short)ch).Append('?');
+            else o.Append(ch);
+        }
+        return o.ToString();
+    }
+
+    void Copy()
+    {
+        if (shown.Count == 0) { status.Set("Nothing to copy", false, null); return; }
+        try
+        {
+            Clipboard.SetText(string.Join("\r\n", shown.Select(Log.Format)) + "\r\n");
+            status.Set("Copied " + shown.Count + " lines", false, null);
+        }
+        catch (Exception) { status.Set("The clipboard is busy. Try again.", true, null); }
+    }
+
+    void OpenFolder()
+    {
+        try
+        {
+            if (File.Exists(Log.File)) Process.Start("explorer.exe", "/select,\"" + Log.File + "\"");
+            else Process.Start(Path.GetDirectoryName(Log.File));
+        }
+        catch (Exception ex) { status.Set("Couldn't open the folder: " + ex.Message, true, null); }
     }
 }

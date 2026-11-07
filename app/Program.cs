@@ -33,7 +33,8 @@ class MainWindow : Form
     readonly EmptyPage empty;
     readonly Label noneText;
     readonly Control side, settingsPage;
-    readonly Btn settingsBtn, scanBtn, minimize, close;
+    readonly Btn settingsBtn, logsBtn, scanBtn, minimize, close;
+    readonly LogsPage logsPage;
     readonly System.Windows.Forms.Timer rescanSoon = new System.Windows.Forms.Timer { Interval = 1500 }, sleepers = new System.Windows.Forms.Timer { Interval = 15000 };
     readonly Box updBox;
     readonly Label updText, checkText, themeHint;
@@ -79,6 +80,9 @@ class MainWindow : Form
         settingsBtn = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "gear", Text = "Settings" }, 10, bottom, SideIn, 36);
         settingsBtn.Click += (s, e) => ShowSettings();
         bottom -= 40;
+        logsBtn = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "lines", Text = "Logs" }, 10, bottom, SideIn, 36);
+        logsBtn.Click += (s, e) => ShowLogs();
+        bottom -= 40;
         scanBtn = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "refresh", Text = "Scan for devices" }, 10, bottom, SideIn, 36);
         scanBtn.Click += (s, e) => Rescan();
         if (demo)
@@ -106,6 +110,7 @@ class MainWindow : Form
         Ui.Style(settingsPage, () => settingsPage.BackColor = Theme.Bg);
         settingsPage.MouseDown += Drag;
         var sp = settingsPage;
+        logsPage = Ui.Add(this, new LogsPage(Drag), SideW, 0, W - SideW, H);
         Ui.Text(sp, "Settings", 20, 14, () => Theme.Text, 13.5f, Ui.Semi).MouseDown += Drag;
 
         Ui.Text(sp, "Appearance", 20, 64, () => Theme.Dim, 9f, Ui.Semi);
@@ -189,6 +194,9 @@ class MainWindow : Form
         settingsPage.Visible = false;
         settingsBtn.On = false;
         settingsBtn.Invalidate();
+        logsPage.Close();
+        logsBtn.On = false;
+        logsBtn.Invalidate();
         foreach (var p in pages) p.Value.Visible = p.Key == key;
         empty.Visible = key == null;
         foreach (var i in items) { i.Value.On = i.Key == key; i.Value.Invalidate(); }
@@ -211,11 +219,29 @@ class MainWindow : Form
         ShowThemeHint();
         foreach (var p in pages.Values) p.Visible = false;
         empty.Visible = false;
+        logsPage.Close();
+        logsBtn.On = false;
+        logsBtn.Invalidate();
         settingsPage.Visible = true;
         foreach (var i in items.Values) { i.On = false; i.Invalidate(); }
         settingsBtn.On = true;
         settingsBtn.Invalidate();
     }
+
+    void ShowLogs()
+    {
+        foreach (var p in pages.Values) p.Visible = false;
+        empty.Visible = false;
+        settingsPage.Visible = false;
+        settingsBtn.On = false;
+        settingsBtn.Invalidate();
+        foreach (var i in items.Values) { i.On = false; i.Invalidate(); }
+        logsPage.Open();
+        logsBtn.On = true;
+        logsBtn.Invalidate();
+    }
+
+    static string Who(Found f) { return f.Short == "" ? f.Name : f.Short; }
 
     T Place<T>(Control parent, T c, int x, int y, int w, int h) where T : Control
     {
@@ -245,8 +271,12 @@ class MainWindow : Form
         scanBtn.Text = "Scan for devices";
         scanBtn.Enabled = true;
         empty.Searching(false);
-        found = list;
         var keys = new HashSet<string>(list.Select(f => f.Key));
+        var before = new HashSet<string>(found.Select(f => f.Key));
+        foreach (var f in list.Where(f => !before.Contains(f.Key)))
+            Log.Add(Who(f), "found", f.Link + (f.Index != 0xFF ? " · slot " + f.Index : "") + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "") + (f.Asleep ? " · asleep" : ""));
+        foreach (var f in found.Where(f => !keys.Contains(f.Key))) Log.Add(Who(f), "lost", f.Link);
+        found = list;
         foreach (var k in pages.Keys.Where(k => !keys.Contains(k)).ToList()) Remove(k);
         int y = 78;
         foreach (var f in list)
@@ -285,7 +315,7 @@ class MainWindow : Form
         minimize.BringToFront();
         close.BringToFront();
         sleepers.Enabled = list.Any(f => f.Asleep);
-        if (!settingsPage.Visible) Pick(selected);
+        if (!settingsPage.Visible && !logsPage.Visible) Pick(selected);
     }
 
     static Type PageFor(Found f)
@@ -494,6 +524,8 @@ class MainWindow : Form
             Theme.Apply();
             Application.EnableVisualStyles();
             if (demo) Backups.Root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "GLite demo backups");
+            if (demo) Log.File = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "GLite demo log.txt");
+            Log.Add("", "start", "G-Lite " + Application.ProductVersion + (demo ? " demo" : "") + " · " + Report.Windows());
             var fake = demo ? new FakeHidpp() : null;
             var panel = new MainWindow(fake);
             var tray = new NotifyIcon { Text = "G-Lite " + Application.ProductVersion + (demo ? " (demo)" : ""), Visible = true };

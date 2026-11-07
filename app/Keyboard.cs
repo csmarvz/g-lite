@@ -30,6 +30,7 @@ class Hidpp : IDisposable
     byte[] rbuf = new byte[20];
     Task<int> pending;
     Dictionary<int, byte> features = new Dictionary<int, byte>();
+    public string Who;
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr sec, uint disp, uint flags, IntPtr tmpl);
@@ -46,7 +47,22 @@ class Hidpp : IDisposable
 
     public virtual void Dispose() { fs.Dispose(); }
 
-    public virtual byte[] Call(byte feat, int fn, params byte[] p)
+    public byte[] Call(byte feat, int fn, params byte[] p)
+    {
+        if (Who == null || feat == 0) return Send(feat, fn, p);
+        int id = features.Where(x => x.Value == feat).Select(x => x.Key).FirstOrDefault();
+        bool read = Log.Reads(id, fn);
+        try
+        {
+            var r = Send(feat, fn, p);
+            if (!read) Log.Sent(Who, id, fn, p, "ok");
+            return r;
+        }
+        catch (HidppError e) { if (!read) Log.Sent(Who, id, fn, p, "error " + e.Code.ToString("X2")); throw; }
+        catch (TimeoutException) { Log.Sent(Who, id, fn, p, "no answer"); throw; }
+    }
+
+    protected virtual byte[] Send(byte feat, int fn, byte[] p)
     {
         var msg = new byte[20];
         msg[0] = 0x11; msg[1] = Idx; msg[2] = feat; msg[3] = (byte)(fn << 4 | Swid);

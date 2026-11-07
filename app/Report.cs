@@ -261,7 +261,7 @@ static class Report
         return a == null ? "?" : a.InformationalVersion;
     }
 
-    static string Windows()
+    public static string Windows()
     {
         try
         {

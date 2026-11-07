@@ -57,7 +57,7 @@ class FakeHidpp : Hidpp
 
     public override void Dispose() { }
 
-    public override byte[] Call(byte feat, int fn, params byte[] p)
+    protected override byte[] Send(byte feat, int fn, byte[] p)
     {
         Thread.Sleep(5);
         var r = new byte[16];
@@ -128,7 +128,7 @@ class FakeMouse : Hidpp
 
     public override void Dispose() { }
 
-    public override byte[] Call(byte feat, int fn, params byte[] p)
+    protected override byte[] Send(byte feat, int fn, byte[] p)
     {
         Thread.Sleep(5);
         var r = new byte[16];
@@ -193,7 +193,7 @@ class FakeHeadset : Hidpp
 
     public override void Dispose() { }
 
-    public override byte[] Call(byte feat, int fn, params byte[] p)
+    protected override byte[] Send(byte feat, int fn, byte[] p)
     {
         Thread.Sleep(5);
         var r = new byte[16];

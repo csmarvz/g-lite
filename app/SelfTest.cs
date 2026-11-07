@@ -217,6 +217,18 @@ static class SelfTest
         using (var logo = Logo.Draw(64))
             Check(logo.GetPixel(0, 0).A == 0 && logo.GetPixel(32, 4).A == 255 && logo.GetPixel(32, 32).A < 255, "logo is a white disc with a transparent GL");
         if (args.Length > 0) Logo.WriteIco(args[0]);
+        Log.File = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "glite-selftest-log.txt");
+        Log.Clear();
+        var lm = new FakeMouse { Who = "M" };
+        lm.Call(lm.F(0x2201), 2, 0);
+        GMouse.SetDpi(lm, 1600);
+        var logged = Log.Read();
+        Check(logged.Count == 1 && logged[0].Who == "M" && logged[0].Text == "2201 fn3  00 06 40" && logged[0].Result == "ok", "the log keeps commands and leaves out reads");
+        Log.Sent("M", 0x8100, 7, new byte[] { 1 }, "ok");
+        Log.Sent("M", 0x8100, 7, new byte[] { 2 }, "ok");
+        var folded = Log.Fold(Log.Read());
+        Check(folded.Count == 2 && folded[1].Times == 2 && Log.Format(folded[1]).Contains("8100 fn7  ok ×2       01"), "the log folds calls in a row to the same function");
+        Log.Clear();
         var spy = new Recorder(new FakeMouse());
         var mreport = Report.Build(spy, new Found { Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, Wpid = 0x4079, Path = @"\\?\hid#vid_046d&pid_c547&mi_02&col02#7&abc&0&0001#{x}", Features = new[] { 0x2201, 0x8060, 0x8070, 0x8100 } }, "PageMouse");
         Check(mreport.Contains("ID 4079 · USB 046D:C547") && mreport.Contains("0000=0001") && mreport.Contains("0001=" + BitConverter.ToString(spy.Inner.Sectors[1]).Replace("-", ""))
@@ -245,7 +257,7 @@ class Recorder : Hidpp
 
     public override void Dispose() { }
 
-    public override byte[] Call(byte feat, int fn, params byte[] p)
+    protected override byte[] Send(byte feat, int fn, byte[] p)
     {
         var r = inner.Call(feat, fn, p);
         if (feat == 0) { if (r[0] != 0) ids[r[0]] = p[0] << 8 | p[1]; }

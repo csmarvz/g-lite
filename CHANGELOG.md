@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Logs, in the sidebar. G-Lite keeps a log of when it starts, the devices it finds and loses, your saves and restores, its backups, every command that changes a device, with the device's answer, and errors. Logs shows it, with calls in a row to the same function on one line. Copy copies the lines shown, Open folder shows `log.txt`, and Clear empties it. At 512 KB the log moves to `log.old.txt`.
+
 ## [0.0.6-alpha] - 2026-11-07
 
 ### Added

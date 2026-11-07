@@ -43,9 +43,9 @@ static class Backups
         return new Dictionary<string, byte[]> { { "0101", f.FactoryProfile }, { "0100", f.FactoryDir }, { "0008", f.UserProfile }, { "0000", f.UserDir } };
     }
 
-    public static void Save(string device, G515.Files f) { Save(device, Of(f)); }
+    public static void Save(string device, G515.Files f, string who = null) { Save(device, Of(f), who); }
 
-    public static void Save(string device, Dictionary<string, byte[]> data)
+    public static void Save(string device, Dictionary<string, byte[]> data, string who = null)
     {
         try
         {
@@ -55,6 +55,7 @@ static class Backups
             Directory.CreateDirectory(dir);
             var name = (list.Count == 0 ? "first-" : "") + DateTime.UtcNow.ToString(Utc, CultureInfo.InvariantCulture) + ".txt";
             File.WriteAllLines(Path.Combine(dir, name), data.Select(p => p.Key + "=" + Hex(p.Value)));
+            if (who != null) Log.Add(who, "backup", data.Count == 1 ? "sector " + data.Keys.First() : data.Count + " files");
             foreach (var old in List(device).Where(e => !e.First).Skip(Keep)) File.Delete(old.File);
         }
         catch (Exception ex)

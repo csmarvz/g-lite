@@ -304,10 +304,11 @@ class Page515 : DevicePage
         previewSeq++;
         saveBtn.Enabled = false;
         Say("Restoring " + what + "…");
+        Did("Restore " + what);
         int b = storedBrightness;
         Do(h =>
         {
-            Backups.Save(BackupId, G515.Read(h));
+            Backups.Save(BackupId, G515.Read(h), Who);
             G515.Restore(h, backup);
             claimed = false;
             if (b >= 0) G515.SetBrightness(h, b);
@@ -346,10 +347,11 @@ class Page515 : DevicePage
         int b = brightness;
         saveBtn.Enabled = false;
         Say("Saving…");
+        Did("Save to keyboard");
         Do(h =>
         {
             var f = G515.Snapshot(h);
-            Backups.Save(BackupId, f);
+            Backups.Save(BackupId, f, Who);
             G515.Store(h, f, l);
             claimed = false;
         }, () =>

@@ -19,7 +19,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `Lighting`: the lighting settings
   - `G515`: the effect table, profile encode and decode, CRC32, onboard file read and write, preview
 - `app/Program.cs`:
-  - `MainWindow`: the device sidebar, one page per found device, rescans on plug and unplug, the Settings screen, updates and run on startup
+  - `MainWindow`: the device sidebar, one page per found device, rescans on plug and unplug, the Settings and Logs screens, updates and run on startup
   - `Main`: the tray icon, the single-instance mutex and `--demo`
 - `app/Devices.cs`:
   - `Devices.Scan`: finds every Logitech HID++ interface. Direct devices answer at index 0xFF. Receivers list their paired slots (register 0xB5), and each slot is pinged. It returns G devices only.
@@ -36,6 +36,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `KeyPicture`: the live key picture
 - `app/PageMouse.cs`: `PageMouse`, the mouse screen with Save to mouse, its backups and the offer to restore a damaged profile, and `MousePicture`
 - `app/PageHeadset.cs`: `PageHeadset`, the headset screen, and `HeadsetPicture`
+- `app/Log.cs`: `Log`, `log.txt` next to `settings.txt` (in the temp folder with `--demo`), one tab-separated line per event: time, device, kind (`start`, `found`, `lost`, `you`, `backup`, `sent`, `error`), text, result. `Hidpp.Call` logs every call that isn't in `Report.Reads`, and reads only when they time out. At 512 KB it moves to `log.old.txt`. `LogsPage` in `app/Pages.cs` shows it.
 - `app/Report.cs`: `Report.Build`, a text report of a device for an issue. It calls only the functions listed in `Report.Reads`. Add a function there only when it's known to only read. It leaves out the unit ID (0x0003 fn 0), the friendly name (0x0007) and the device path.
 - `app/Backup.cs`: `Backups`, a copy of what's on a device taken before every save or restore, in `%LOCALAPPDATA%\GLite\backups\<device>\`: `G515` for the keyboard's four onboard files, the device name (like `gprowireless`) for a mouse's profile sector. Each line is `<4 hex digits>=<bytes>`. It keeps the first backup and the last ten.
 - `app/Mouse.cs`: `GMouse`, which reads and sets DPI (0x2201), the DPI stage (0x8100), the report rate (0x8060) and the lighting (0x8070), and reads, builds and writes the active onboard profile (0x8100)

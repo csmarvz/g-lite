@@ -324,11 +324,12 @@ class PageMouse : DevicePage
         debounce.Stop();
         saveBtn.Enabled = false;
         Say("Saving to the mouse…");
+        Did("Save to mouse");
         Do(h =>
         {
             var now = GMouse.ReadSector(h, s.Sector, s.SectorSize);
             if (!GMouse.Valid(now)) throw new Refused("The profile on the mouse is damaged, not touching it");
-            Backups.Save(BackupId, new Dictionary<string, byte[]> { { s.Key, now } });
+            Backups.Save(BackupId, new Dictionary<string, byte[]> { { s.Key, now } }, Who);
             GMouse.Store(h, s, GMouse.Build(now, want, s.Zones.Count));
         }, () =>
         {
@@ -346,10 +347,11 @@ class PageMouse : DevicePage
         seq++;
         saveBtn.Enabled = false;
         Say("Restoring " + what + "…");
+        Did("Restore " + what);
         Do(h =>
         {
             var now = GMouse.ReadSector(h, s.Sector, s.SectorSize);
-            Backups.Save(BackupId, new Dictionary<string, byte[]> { { s.Key, now } });
+            Backups.Save(BackupId, new Dictionary<string, byte[]> { { s.Key, now } }, Who);
             GMouse.Store(h, s, data ?? GMouse.Factory(GMouse.ReadSector(h, GMouse.RomSector, s.SectorSize), now));
         }, () =>
         {

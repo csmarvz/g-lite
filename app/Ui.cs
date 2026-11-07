@@ -162,6 +162,7 @@ static class Icons
                     g.DrawLines(p, new[] { new PointF(20, 4), new PointF(20, 10.5f), new PointF(13.5f, 10.5f) });
                     break;
                 case "minus": g.DrawLine(p, 6, 12, 18, 12); break;
+                case "lines": g.DrawLine(p, 5, 7, 19, 7); g.DrawLine(p, 5, 12, 19, 12); g.DrawLine(p, 5, 17, 13, 17); break;
                 case "power": g.DrawArc(p, 5, 5.5f, 14, 14, -60, 300); g.DrawLine(p, 12, 3.5f, 12, 11); break;
                 case "close": g.DrawLine(p, 6.5f, 6.5f, 17.5f, 17.5f); g.DrawLine(p, 17.5f, 6.5f, 6.5f, 17.5f); break;
                 case "plus": g.DrawLine(p, 12, 5, 12, 19); g.DrawLine(p, 5, 12, 19, 12); break;
