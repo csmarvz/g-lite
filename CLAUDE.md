@@ -29,7 +29,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/Pages.cs`:
   - `DevicePage`: what every device screen shares: the title, the profile row, the device work queue, the status line and the Backups menu. Profiles are stored as `profile.<device>.<name>`.
   - `ColorRow`: the colour swatches
-  - `ReportView`: the report screen that Report opens on every device screen, with Copy report and Open GitHub issue
+  - `ReportView`: the report screen that Report opens on every device screen, with Copy and Open GitHub issue
   - `InfoPage` for G devices G-Lite can't change yet or that are asleep, and `EmptyPage`
 - `app/Page515.cs`:
   - `Page515`: the G515 screen, the preview debounce, the backups menu and the offer to restore when the saved lighting is half written. Profiles are `profile.g515.<name>`.

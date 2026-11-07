@@ -7,7 +7,7 @@ using Microsoft.Win32;
 
 static class Theme
 {
-    public static Color Bg, Side, Card, Btn, BtnHover, Border, Text, Dim, Accent, AccentBg, OnAccent, Warn, KeyOff, Bed, Track;
+    public static Color Bg, Side, Card, Btn, BtnHover, BtnDown, Border, Text, Dim, Accent, AccentBg, OnAccent, Warn, KeyOff, Bed, Track;
     public static bool Light;
     public static event Action Changed;
     public static readonly string[] Modes = { "system", "dark", "light" };
@@ -46,13 +46,13 @@ static class Theme
         Light = light;
         if (light)
         {
-            Bg = C(0xF7F7F7); Side = C(0xEDEDED); Card = C(0xFFFFFF); Btn = C(0xECECEC); BtnHover = C(0xE0E0E0); Border = C(0xD4D4D4);
+            Bg = C(0xF7F7F7); Side = C(0xEDEDED); Card = C(0xFFFFFF); Btn = C(0xECECEC); BtnHover = C(0xE0E0E0); BtnDown = C(0xDADADA); Border = C(0xD4D4D4);
             Text = C(0x1A1A1A); Dim = C(0x5A5A5A); Accent = C(0x1D7A60); AccentBg = C(0xD9EDE6); OnAccent = C(0xFFFFFF);
             Warn = C(0x9A5B00); KeyOff = C(0xD6D6D6); Bed = C(0xBDBDBD); Track = C(0xC8C8C8);
         }
         else
         {
-            Bg = C(0x1C1C1C); Side = C(0x161616); Card = C(0x232323); Btn = C(0x2B2B2B); BtnHover = C(0x353535); Border = C(0x3A3A3A);
+            Bg = C(0x1C1C1C); Side = C(0x161616); Card = C(0x232323); Btn = C(0x2B2B2B); BtnHover = C(0x353535); BtnDown = C(0x242424); Border = C(0x3A3A3A);
             Text = C(0xE8E8E8); Dim = C(0xA3A3A3); Accent = C(0x3FA98A); AccentBg = C(0x26302D); OnAccent = C(0x0C1A15);
             Warn = C(0xE0A458); KeyOff = C(0x2E2E2E); Bed = C(0x151515); Track = C(0x444444);
         }
@@ -106,6 +106,8 @@ static class Ui
     public static T Add<T>(Control parent, T c, int x, int y, int w, int h) where T : Control
     {
         c.Bounds = new Rectangle(x, y, w, h);
+        c.TabIndex = parent.Controls.Count;
+        if (!(c is Ctl) && !(c is TextBoxBase)) c.TabStop = false;
         parent.Controls.Add(c);
         c.BringToFront();
         return c;
@@ -208,13 +210,103 @@ static class Icons
 
 class Ctl : Control
 {
-    protected bool hover;
+    protected bool hover, down, key;
+    Timer anim;
+    float from, to, now;
+    DateTime start;
+    int length;
 
     public Ctl()
     {
         SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
         Cursor = Cursors.Hand;
-        TabStop = false;
+    }
+
+    protected bool Pressed { get { return (down && hover || key) && Enabled; } }
+    protected virtual bool Clicks { get { return true; } }
+    protected float Now { get { return now; } }
+
+    protected void Jump(float v)
+    {
+        from = to = now = v;
+        if (anim != null) anim.Stop();
+        Invalidate();
+    }
+
+    protected void Glide(float v, int ms)
+    {
+        if (!Win.Animations || !Visible || !IsHandleCreated) { Jump(v); return; }
+        from = now;
+        to = v;
+        length = ms;
+        start = DateTime.UtcNow;
+        if (anim == null)
+        {
+            anim = new Timer { Interval = 15 };
+            anim.Tick += (s, e) => Step();
+        }
+        anim.Start();
+    }
+
+    void Step()
+    {
+        double t = Math.Min(1, (DateTime.UtcNow - start).TotalMilliseconds / length);
+        now = (float)(from + (to - from) * (1 - Math.Pow(1 - t, 3)));
+        if (t >= 1) anim.Stop();
+        Invalidate();
+    }
+
+    protected void Ring(Graphics g, float rad, Color c)
+    {
+        if (!Focused || !ShowFocusCues || !Enabled) return;
+        using (var p = new Pen(c, 1.5f * K))
+        using (var path = Ui.Round(new RectangleF(K, K, Width - 2 * K - 1, Height - 2 * K - 1), rad))
+            g.DrawPath(p, path);
+    }
+
+    protected void Ring(Graphics g, float rad) { Ring(g, rad, Theme.Text); }
+
+    protected override void OnMouseDown(MouseEventArgs e) { if (e.Button == MouseButtons.Left) { down = true; Invalidate(); } base.OnMouseDown(e); }
+    protected override void OnMouseUp(MouseEventArgs e) { if (down) { down = false; Invalidate(); } base.OnMouseUp(e); }
+    protected override void OnMouseCaptureChanged(EventArgs e) { if (down) { down = false; Invalidate(); } base.OnMouseCaptureChanged(e); }
+
+    protected override void OnMouseMove(MouseEventArgs e)
+    {
+        bool h = ClientRectangle.Contains(e.Location);
+        if (h != hover) { hover = h; Invalidate(); }
+        base.OnMouseMove(e);
+    }
+
+    protected override void OnGotFocus(EventArgs e) { Invalidate(); base.OnGotFocus(e); }
+    protected override void OnLostFocus(EventArgs e) { key = false; Invalidate(); base.OnLostFocus(e); }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (!Clicks || !Enabled || (e.KeyCode != Keys.Space && e.KeyCode != Keys.Enter)) return;
+        e.Handled = true;
+        if (!key) { key = true; Invalidate(); }
+    }
+
+    protected override void OnKeyUp(KeyEventArgs e)
+    {
+        base.OnKeyUp(e);
+        if (!key || (e.KeyCode != Keys.Space && e.KeyCode != Keys.Enter)) return;
+        key = false;
+        Invalidate();
+        if (Enabled) OnClick(EventArgs.Empty);
+    }
+
+    protected override bool IsInputKey(Keys k)
+    {
+        if (!Clicks && (k == Keys.Left || k == Keys.Right || k == Keys.Up || k == Keys.Down)) return true;
+        return base.IsInputKey(k);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && anim != null) anim.Dispose();
+        base.Dispose(disposing);
     }
 
     protected static float K { get { return Ui.K; } }
@@ -266,11 +358,12 @@ class Btn : Ctl
         var g = Begin(e);
         Color fill, edge, fore;
         bool lit = Enabled && hover;
-        if (Look == Look.Primary) { fill = edge = lit ? Ui.Mix(Theme.Accent, Theme.Text, 0.12) : Theme.Accent; fore = Theme.OnAccent; }
-        else if (Look == Look.Ghost) { fill = edge = On ? Theme.AccentBg : lit ? Theme.Btn : Under; fore = On || lit ? Theme.Text : Theme.Dim; }
-        else { fill = lit ? Theme.BtnHover : Theme.Btn; edge = Theme.Border; fore = Theme.Text; }
+        if (Look == Look.Primary) { fill = edge = Pressed ? Ui.Mix(Theme.Accent, Color.Black, 0.18) : lit ? Ui.Mix(Theme.Accent, Theme.Text, 0.12) : Theme.Accent; fore = Theme.OnAccent; }
+        else if (Look == Look.Ghost) { fill = edge = Pressed ? Theme.BtnDown : On ? Theme.AccentBg : lit ? Theme.Btn : Under; fore = On || lit ? Theme.Text : Theme.Dim; }
+        else { fill = Pressed ? Theme.BtnDown : lit ? Theme.BtnHover : Theme.Btn; edge = Theme.Border; fore = Theme.Text; }
         if (!Enabled) { fill = Ui.Mix(Under, fill, 0.5); edge = Ui.Mix(Under, edge, 0.5); fore = Ui.Mix(Under, fore, 0.45); }
         Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * K, fill, edge);
+        Ring(g, 6 * K);
         var font = Ui.Get(9.75f, Look == Look.Primary ? Ui.Semi : Ui.Regular);
         float icon = 16 * K;
         if (Text == "")
@@ -291,14 +384,51 @@ class Seg : Ctl
     public event Action<int> Picked;
     int index = -1, hot = -1;
 
-    public Seg() { AccessibleRole = AccessibleRole.PageTabList; }
 
-    public int Index { get { return index; } set { index = value; Invalidate(); } }
+    readonly Timer later = new Timer { Interval = 250 };
 
-    RectangleF Cell(int i)
+    public Seg()
+    {
+        AccessibleRole = AccessibleRole.PageTabList;
+        later.Tick += (s, e) => { later.Stop(); if (Picked != null) Picked(index); };
+    }
+
+    public int Index { get { return index; } set { if (value == index) return; index = value; Jump(value); } }
+
+    protected override bool Clicks { get { return false; } }
+
+    RectangleF Cell(float i)
     {
         float pad = 2 * K, w = (Width - 2 * pad - (Items.Length - 1) * pad) / Items.Length;
         return new RectangleF(pad + i * (w + pad), pad, w, Height - 2 * pad);
+    }
+
+    void Slide(int i)
+    {
+        if (i == index) return;
+        bool had = index >= 0;
+        index = i;
+        if (had) Glide(i, 160); else Jump(i);
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (!Enabled || Items.Length == 0) return;
+        int d = e.KeyCode == Keys.Left || e.KeyCode == Keys.Up ? -1 : e.KeyCode == Keys.Right || e.KeyCode == Keys.Down ? 1 : 0;
+        if (d == 0) return;
+        e.Handled = true;
+        int to = Math.Max(0, Math.Min(Items.Length - 1, index < 0 ? 0 : index + d));
+        if (to == index) return;
+        Slide(to);
+        later.Stop();
+        later.Start();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) later.Dispose();
+        base.Dispose(disposing);
     }
 
     int Hit(Point p)
@@ -315,8 +445,8 @@ class Seg : Ctl
         base.OnMouseDown(e);
         int h = Hit(e.Location);
         if (!Enabled || e.Button != MouseButtons.Left || h < 0) return;
-        index = h;
-        Invalidate();
+        later.Stop();
+        Slide(h);
         if (Picked != null) Picked(h);
     }
 
@@ -324,19 +454,20 @@ class Seg : Ctl
     {
         var g = Begin(e);
         Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * K, Theme.Btn, Theme.Border);
+        if (hot >= 0 && hot != index && Enabled) Ui.Fill(g, Cell(hot), 4 * K, Theme.BtnHover, Theme.BtnHover);
+        if (index >= 0 && index < Items.Length)
+        {
+            var fill = Enabled ? Theme.Accent : Ui.Mix(Theme.Btn, Theme.Accent, 0.35);
+            Ui.Fill(g, Cell(Now), 4 * K, fill, fill);
+        }
+        Ring(g, 6 * K);
         for (int i = 0; i < Items.Length; i++)
         {
             var r = Cell(i);
-            Color fore = Theme.Text;
-            if (i == index)
-            {
-                var fill = Enabled ? Theme.Accent : Ui.Mix(Theme.Btn, Theme.Accent, 0.35);
-                Ui.Fill(g, r, 4 * K, fill, fill);
-                fore = Theme.OnAccent;
-            }
-            else if (i == hot && Enabled) Ui.Fill(g, r, 4 * K, Theme.BtnHover, Theme.BtnHover);
-            if (!Enabled) fore = Ui.Mix(i == index ? Theme.Accent : Theme.Btn, fore, 0.45);
-            Ui.Draw(g, Items[i], Ui.Get(9.4f, i == index ? Ui.Semi : Ui.Regular), r, fore,
+            bool lit = Math.Abs(Now - i) < 0.5f && index >= 0;
+            Color fore = lit ? Theme.OnAccent : Theme.Text;
+            if (!Enabled) fore = Ui.Mix(lit ? Theme.Accent : Theme.Btn, fore, 0.45);
+            Ui.Draw(g, Items[i], Ui.Get(9.4f, lit ? Ui.Semi : Ui.Regular), r, fore,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
         }
     }
@@ -354,9 +485,11 @@ class Swatch : Ctl
         var g = Begin(e);
         double fade = Enabled ? 1 : 0.35;
         if (On) using (var path = Ui.Round(new RectangleF(K, K, Width - 2 * K, Height - 2 * K), 7 * K)) using (var p = new Pen(Ui.Mix(Under, Theme.Text, fade), 2 * K)) g.DrawPath(p, path);
-        var r = new RectangleF(4 * K, 4 * K, Width - 8 * K - 1, Height - 8 * K - 1);
-        var fill = Fill ?? (hover && Enabled ? Theme.BtnHover : Theme.Btn);
-        Ui.Fill(g, r, 4 * K, Ui.Mix(Under, fill, fade), Ui.Mix(Under, Theme.Border, fade));
+        float inset = Pressed ? 5 * K : 4 * K;
+        var r = new RectangleF(inset, inset, Width - 2 * inset - 1, Height - 2 * inset - 1);
+        var fill = Fill ?? (Pressed ? Theme.BtnDown : hover && Enabled ? Theme.BtnHover : Theme.Btn);
+        bool ring = Focused && ShowFocusCues && Enabled;
+        Ui.Fill(g, r, 4 * K, Ui.Mix(Under, fill, fade), ring ? Theme.Text : Ui.Mix(Under, Theme.Border, fade));
         if (Fill == null) Icons.Draw(g, "plus", new RectangleF(Width / 2f - 7 * K, Height / 2f - 7 * K, 14 * K, 14 * K), Ui.Mix(Under, Theme.Dim, fade));
     }
 }
@@ -368,12 +501,13 @@ class Toggle : Ctl
 
     public Toggle() { AccessibleRole = AccessibleRole.CheckButton; }
 
-    public bool Checked { get { return on; } set { on = value; Invalidate(); } }
+    public bool Checked { get { return on; } set { on = value; Jump(value ? 1 : 0); } }
 
     protected override void OnClick(EventArgs e)
     {
         base.OnClick(e);
-        Checked = !on;
+        on = !on;
+        Glide(on ? 1 : 0, 140);
         if (Changed != null) Changed();
     }
 
@@ -381,10 +515,14 @@ class Toggle : Ctl
     {
         var g = Begin(e);
         var r = new RectangleF(0.5f, 0.5f, Width - 1, Height - 1);
-        Ui.Fill(g, r, r.Height / 2, on ? Theme.Accent : Theme.Btn, on ? Theme.Accent : Theme.Border);
+        float t = Now;
+        Ui.Fill(g, r, r.Height / 2, Ui.Mix(Theme.Btn, Theme.Accent, t), Ui.Mix(Theme.Border, Theme.Accent, t));
+        Ring(g, r.Height / 2);
         float d = Height - 8 * K;
-        using (var b = new SolidBrush(on ? Theme.OnAccent : Theme.Dim))
-            g.FillEllipse(b, on ? Width - 4 * K - d : 4 * K, 4 * K, d, d);
+        float stretch = Pressed ? 4 * K : 0;
+        using (var b = new SolidBrush(Ui.Mix(Theme.Dim, Theme.OnAccent, t)))
+        using (var path = Ui.Round(new RectangleF(4 * K + t * (Width - 8 * K - d - stretch), 4 * K, d + stretch, d), d / 2))
+            g.FillPath(b, path);
     }
 }
 
@@ -425,7 +563,8 @@ class Drop : Ctl
     {
         var g = Begin(e);
         Color fore = Enabled ? Theme.Text : Ui.Mix(Theme.Btn, Theme.Text, 0.45);
-        Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * K, Enabled && hover ? Theme.BtnHover : Theme.Btn, Theme.Border);
+        Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * K, Pressed ? Theme.BtnDown : Enabled && hover ? Theme.BtnHover : Theme.Btn, Theme.Border);
+        Ring(g, 6 * K);
         Ui.Draw(g, Text, Ui.Get(9.75f, Ui.Regular), new RectangleF(10 * K, 0, Width - 38 * K, Height), fore, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
         Icons.Draw(g, "chevron", new RectangleF(Width - 26 * K, (Height - 16 * K) / 2, 16 * K, 16 * K), Enabled ? Theme.Dim : fore);
     }
@@ -438,6 +577,7 @@ class Field : Ctl
     public Field()
     {
         Cursor = Cursors.IBeam;
+        TabStop = false;
         Controls.Add(Box);
         Ui.Style(Box, () => { Box.BackColor = Theme.Btn; Box.ForeColor = Theme.Text; });
         Box.GotFocus += (s, e) => Invalidate();
@@ -465,7 +605,33 @@ class Slider : Ctl
 {
     public int Max = 100, Value, Step = 5;
     public event EventHandler Changed;
-    int wheel;
+    int wheel, grab;
+
+    protected override bool Clicks { get { return false; } }
+
+    protected override bool IsInputKey(Keys k)
+    {
+        return k == Keys.PageUp || k == Keys.PageDown || k == Keys.Home || k == Keys.End || base.IsInputKey(k);
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (!Enabled) return;
+        int v;
+        switch (e.KeyCode)
+        {
+            case Keys.Left: case Keys.Down: v = Value - 1; break;
+            case Keys.Right: case Keys.Up: v = Value + 1; break;
+            case Keys.PageDown: v = Value - 10; break;
+            case Keys.PageUp: v = Value + 10; break;
+            case Keys.Home: v = 0; break;
+            case Keys.End: v = Max; break;
+            default: return;
+        }
+        e.Handled = true;
+        Put(v);
+    }
 
     protected override void OnMouseWheel(MouseEventArgs e)
     {
@@ -477,7 +643,12 @@ class Slider : Ctl
         int notches = wheel / 120;
         if (notches == 0) return;
         wheel -= notches * 120;
-        int v = Math.Max(0, Math.Min(Max, Value + notches * Step));
+        Put(Value + notches * Step);
+    }
+
+    void Put(int v)
+    {
+        v = Math.Max(0, Math.Min(Max, v));
         if (v == Value) return;
         Value = v;
         Invalidate();
@@ -497,18 +668,24 @@ class Slider : Ctl
             g.FillRectangle(b, 7 * K, mid - 2 * K, X(Value) - 7 * K, 4 * K);
             g.FillEllipse(b, X(Value) - 7 * K, mid - 7 * K, 14 * K, 14 * K);
         }
+        if (Focused && ShowFocusCues && Enabled)
+            using (var p = new Pen(Theme.Text, 2 * K)) g.DrawEllipse(p, X(Value) - 6 * K, mid - 6 * K, 12 * K, 12 * K);
     }
 
-    protected override void OnMouseDown(MouseEventArgs e) { base.OnMouseDown(e); Set(e.X); }
-    protected override void OnMouseMove(MouseEventArgs e) { base.OnMouseMove(e); if (e.Button == MouseButtons.Left) Set(e.X); }
+    protected override void OnMouseDown(MouseEventArgs e)
+    {
+        base.OnMouseDown(e);
+        if (e.Button != MouseButtons.Left) return;
+        float at = X(Value);
+        grab = Math.Abs(e.X - at) <= 9 * K ? (int)(e.X - at) : 0;
+        Set(e.X - grab);
+    }
+
+    protected override void OnMouseMove(MouseEventArgs e) { base.OnMouseMove(e); if (e.Button == MouseButtons.Left) Set(e.X - grab); }
 
     void Set(int px)
     {
-        int v = Math.Max(0, Math.Min(Max, (int)Math.Round((px - 7 * K) * Max / (Width - 14 * K))));
-        if (v == Value) return;
-        Value = v;
-        Invalidate();
-        if (Changed != null) Changed(this, EventArgs.Empty);
+        if (Max > 0) Put((int)Math.Round((px - 7 * K) * Max / (Width - 14 * K)));
     }
 }
 
@@ -518,7 +695,7 @@ class StatusLine : Ctl
     bool warn;
     Action click;
 
-    public StatusLine() { Cursor = Cursors.Default; }
+    public StatusLine() { Cursor = Cursors.Default; TabStop = false; }
 
     public string Shown { get { return text; } }
 
@@ -556,7 +733,8 @@ class DevItem : Ctl
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = Begin(e);
-        if (On || hover) Ui.Fill(g, new RectangleF(0, 0, Width, Height), 6 * K, On ? Theme.AccentBg : Theme.Btn, On ? Theme.AccentBg : Theme.Btn);
+        if (On || hover) { var c = On ? Theme.AccentBg : Pressed ? Theme.BtnDown : Theme.Btn; Ui.Fill(g, new RectangleF(0, 0, Width, Height), 6 * K, c, c); }
+        Ring(g, 6 * K);
         float s = 32 * K, y = (Height - s) / 2;
         Ui.Fill(g, new RectangleF(8 * K, y, s, s), 6 * K, Theme.Btn, Theme.Btn);
         Icons.Draw(g, Icon, new RectangleF(8 * K + 7 * K, y + 7 * K, 18 * K, 18 * K), On ? Theme.Accent : Theme.Dim);
@@ -570,7 +748,7 @@ class Brand : Ctl
 {
     public string Tag2 = "";
 
-    public Brand() { Cursor = Cursors.Default; }
+    public Brand() { Cursor = Cursors.Default; TabStop = false; }
 
     protected override void OnPaint(PaintEventArgs e)
     {

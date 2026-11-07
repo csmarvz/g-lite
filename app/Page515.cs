@@ -24,6 +24,7 @@ class KeyPicture : Ctl
     public KeyPicture(Model m)
     {
         Cursor = Cursors.Default;
+        TabStop = false;
         AccessibleRole = AccessibleRole.Graphic;
         AccessibleName = m.Name + " lighting";
         foreach (var row in m.Rows)
@@ -274,7 +275,7 @@ class Page515 : DevicePage
     {
         if (broken) { ShowBroken(); return; }
         if (DynamicLightingOn())
-            Say("Windows Dynamic Lighting is on and may override this. Click to open its settings.", true, () => Process.Start("ms-settings:personalization-lighting"));
+            Say("Windows Dynamic Lighting is on and may override this.", true, () => Process.Start("ms-settings:personalization-lighting"), "Open Windows settings");
         else Say(dirty ? "Previewing · not saved to the keyboard" : stored == null ? "" : "Matches the keyboard");
     }
 
@@ -286,10 +287,10 @@ class Page515 : DevicePage
 
     void ShowBroken()
     {
-        const string half = "The lighting saved on the keyboard is half written. ";
+        const string half = "The lighting saved on the keyboard is half written.";
         var last = fix;
-        if (last != null) Say(half + "Click to restore the backup from " + When(last) + ".", true, () => Restore(last.Files, "the backup from " + When(last)));
-        else Say(half + "Click to restore the factory lighting.", true, () => Restore(new G515.Files(), "the factory lighting"));
+        if (last != null) Say(half + " Last backup: " + When(last) + ".", true, () => Restore(last.Files, "the backup from " + When(last)), "Restore backup");
+        else Say(half, true, () => Restore(new G515.Files(), "the factory lighting"), "Restore factory lighting");
     }
 
     void ShowBackups()

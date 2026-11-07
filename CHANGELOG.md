@@ -6,6 +6,17 @@
 
 - Logs, in the sidebar. G-Lite keeps a log of when it starts, the devices it finds and loses, your saves and restores, its backups, every command that changes a device, with the device's answer, and errors. Logs shows it, with calls in a row to the same function on one line. Copy copies the lines shown, Open folder shows `log.txt`, and Clear empties it. At 512 KB the log moves to `log.old.txt`.
 
+### Changed
+
+- Buttons, swatches, toggles, menus and the device list show when they're pressed, not only on hover.
+- Every control can be reached with Tab. Space or Enter presses a button, the arrow keys move a choice or a slider, and Page Up and Page Down move a slider by 10. Esc closes a report. A focus ring shows when you use the keyboard.
+- The picked option slides to its place and toggles slide. Neither moves when Windows animations are off.
+- A problem in the status line, like a half-written save on the keyboard, comes with its own button, such as Restore backup or Open settings, instead of text you click.
+- The screen of a device G-Lite doesn't support yet names what the device has instead of listing feature codes. The codes are in the report.
+- Grabbing a slider's thumb keeps it under the pointer instead of jumping.
+- The mouse's report rate is marked "on save" instead of explained in a paragraph.
+- The report's Copy report button is now just Copy, like in Logs.
+
 ## [0.0.6-alpha] - 2026-11-07
 
 ### Added

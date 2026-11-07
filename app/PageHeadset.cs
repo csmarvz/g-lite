@@ -14,6 +14,7 @@ class HeadsetPicture : Ctl
     public HeadsetPicture()
     {
         Cursor = Cursors.Default;
+        TabStop = false;
         AccessibleRole = AccessibleRole.Graphic;
         AccessibleName = "Headset";
     }

@@ -76,15 +76,19 @@ class MainWindow : Form
         int bottom = H - 14 - 36;
         var quit = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "power", Text = "Quit" }, 10, bottom, SideIn, 36);
         quit.Click += (s, e) => { HidePanel(); WaitAll(); Application.Exit(); };
+        quit.TabIndex = 103;
         bottom -= 40;
         settingsBtn = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "gear", Text = "Settings" }, 10, bottom, SideIn, 36);
         settingsBtn.Click += (s, e) => ShowSettings();
+        settingsBtn.TabIndex = 102;
         bottom -= 40;
         logsBtn = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "lines", Text = "Logs" }, 10, bottom, SideIn, 36);
         logsBtn.Click += (s, e) => ShowLogs();
+        logsBtn.TabIndex = 101;
         bottom -= 40;
         scanBtn = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "refresh", Text = "Scan for devices" }, 10, bottom, SideIn, 36);
         scanBtn.Click += (s, e) => Rescan();
+        scanBtn.TabIndex = 100;
         if (demo)
         {
             bottom -= 40;
@@ -144,8 +148,10 @@ class MainWindow : Form
 
         minimize = Ui.Add(this, new Btn { Look = Look.Ghost, Icon = "minus", AccessibleName = "Minimize" }, W - 12 - 72, 10, 36, 28);
         minimize.Click += (s, e) => WindowState = FormWindowState.Minimized;
+        minimize.TabIndex = 1000;
         close = Ui.Add(this, new Btn { Look = Look.Ghost, Icon = "close", AccessibleName = "Close to tray" }, W - 12 - 36, 10, 36, 28);
         close.Click += (s, e) => ToTray();
+        close.TabIndex = 1001;
 
         Theme.Changed += Restyle;
         ShowThemeHint();
@@ -302,6 +308,7 @@ class MainWindow : Form
                 item.Click += (s, e) => Pick(key);
                 items[key] = item;
             }
+            item.TabIndex = list.IndexOf(f);
             item.Title = f.Short;
             item.Sub = f.Sub;
             item.Icon = f.Kind == "keyboard" || f.Kind == "mouse" || f.Kind == "headset" ? f.Kind : "device";

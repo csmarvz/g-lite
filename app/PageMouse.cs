@@ -17,6 +17,7 @@ class MousePicture : Ctl
     public MousePicture()
     {
         Cursor = Cursors.Default;
+        TabStop = false;
         AccessibleRole = AccessibleRole.Graphic;
         AccessibleName = "Mouse";
         timer.Tick += (s, e) => { if (Visible) Invalidate(); };
@@ -262,10 +263,8 @@ class PageMouse : DevicePage
         rates.Enabled = rateOn;
         rates.Invalidate();
         Shade(rateHead, rateOn);
-        rateHead.Text = "Report rate" + (ready && state.Rates.Length > 0 ? " · Hz" : "");
-        rateHint.Text = !ready || !state.Onboard ? "" : state.Savable
-            ? "Changes when you save to the mouse. The DPI button switches between the saved stages."
-            : "Set by the profile saved on the mouse. The DPI button switches between the saved stages.";
+        rateHead.Text = "Report rate" + (ready && state.Rates.Length > 0 ? " (Hz)" : "") + (ready && state.Onboard && state.Savable ? " · on save" : "");
+        rateHint.Text = !ready || !state.Onboard || state.Savable ? "" : "Set by the profile saved on the mouse.";
         saveBtn.Enabled = ready && state.Savable && dirty;
         saveBtn.Visible = !ready || state.Writable;
 
@@ -303,10 +302,10 @@ class PageMouse : DevicePage
 
     void ShowBroken()
     {
-        const string bad = "The profile saved on the mouse is damaged. ";
-        if (fix != null) Say(bad + "Click to restore the backup from " + When(fix) + ".", true, () => Restore(Usable(fix), "the backup from " + When(fix)));
-        else if (state.Writable) Say(bad + "Click to restore the factory profile.", true, () => Restore(null, "the factory profile"));
-        else Say(bad + "G-Lite can't repair it on this mouse.", true);
+        const string bad = "The profile saved on the mouse is damaged.";
+        if (fix != null) Say(bad + " Last good backup: " + When(fix) + ".", true, () => Restore(Usable(fix), "the backup from " + When(fix)), "Restore backup");
+        else if (state.Writable) Say(bad, true, () => Restore(null, "the factory profile"), "Restore factory profile");
+        else Say(bad + " G-Lite can't repair it on this mouse.", true);
     }
 
     void ShowBackups()

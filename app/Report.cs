@@ -243,7 +243,7 @@ static class Report
         r.S.AppendLine(addr.ToString("X4") + "=" + Hex(o.Take(size).ToArray(), ""));
     }
 
-    static string Name(int id) { string n; return Names.TryGetValue(id, out n) ? n : ""; }
+    public static string Name(int id) { string n; return Names.TryGetValue(id, out n) ? n : ""; }
 
     static void Row(StringBuilder s, string name, string value) { s.AppendLine(name.PadRight(10) + value); }
 

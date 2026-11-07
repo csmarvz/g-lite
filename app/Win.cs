@@ -8,6 +8,18 @@ static class Win
     public const int DpiChanged = 0x02E0;
     public static bool Rounded;
 
+    [DllImport("user32.dll")] static extern bool SystemParametersInfo(int action, int param, ref bool value, int ini);
+
+    public static bool Animations
+    {
+        get
+        {
+            bool on = true;
+            try { SystemParametersInfo(0x1042, 0, ref on, 0); } catch (EntryPointNotFoundException) { }
+            return on;
+        }
+    }
+
     [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int value, int size);
     [DllImport("user32.dll")] static extern bool SetProcessDpiAwarenessContext(IntPtr context);
     [DllImport("user32.dll")] static extern bool SetProcessDPIAware();

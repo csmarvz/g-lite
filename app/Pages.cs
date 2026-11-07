@@ -28,6 +28,8 @@ abstract class DevicePage : Control, IPage
     readonly Field nameField;
     readonly Btn newBtn, delBtn, reportBtn;
     readonly StatusLine status;
+    readonly Btn act;
+    Action actDo;
     readonly ReportView report;
     bool naming;
     string readAt = "";
@@ -69,8 +71,11 @@ abstract class DevicePage : Control, IPage
         var line = Ui.Add(this, new Control(), 0, 623, 656, 1);
         Ui.Style(line, () => line.BackColor = Theme.Border);
         status = Ui.Add(this, new StatusLine(), 20, 633, 460, 36);
+        act = Ui.Add(this, new Btn { Visible = false }, 328, 635, 160, 32);
+        act.TabIndex = 1000;
+        act.Click += (s, e) => { if (actDo != null) actDo(); };
         report = Ui.Add(this, new ReportView(noun, () => ReportView.TitleFor(found), Collect), 0, 72, 656, 608);
-        report.Closed += () => { reportBtn.On = false; reportBtn.Invalidate(); };
+        report.Closed += () => { reportBtn.On = false; reportBtn.Invalidate(); reportBtn.Focus(); };
         reportBtn.Click += (s, e) =>
         {
             if (report.Visible) { report.Close(); return; }
@@ -159,7 +164,20 @@ abstract class DevicePage : Control, IPage
         sub.Text = found.Link + (found.Battery >= 0 ? " · " + found.BatteryText : "") + (readAt != "" ? " · read at " + readAt : "");
     }
 
-    public void Say(string text, bool warn = false, Action click = null) { status.Set(text, warn, click); }
+    public void Say(string text, bool warn = false, Action click = null, string action = null)
+    {
+        actDo = action != null ? click : null;
+        act.Visible = action != null;
+        status.Set(text, warn, action != null ? null : click);
+        if (action == null) { status.Width = (int)(460 * Ui.K); return; }
+        var main = Controls.OfType<Btn>().FirstOrDefault(b => b != act && b.Look == Look.Primary && b.Visible && b.Top >= act.Top - 4);
+        act.Look = main == null || !main.Enabled ? Look.Primary : Look.Normal;
+        act.Text = action;
+        int w = TextRenderer.MeasureText(action, Ui.Get(9.75f, act.Look == Look.Primary ? Ui.Semi : Ui.Regular)).Width + (int)(28 * Ui.K);
+        int right = main != null ? main.Left - (int)(8 * Ui.K) : (int)(636 * Ui.K);
+        act.Bounds = new Rectangle(right - w, act.Top, w, act.Height);
+        status.Width = act.Left - status.Left - (int)(12 * Ui.K);
+    }
 
     protected void Post(string text, bool warn) { if (IsHandleCreated) BeginInvoke((Action)(() => Say(text, warn))); }
 
@@ -356,12 +374,12 @@ class InfoPage : Control
         link = Row(details, "Connection", 40);
         battery = Row(details, "Battery", 68);
         firmware = Row(details, "Firmware", 96);
-        features = Row(details, "Features", 124);
+        features = Row(details, "Supports", 124);
         features.AutoSize = false;
         features.Size = new Size(470, 60);
         reportBtn = Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Report", AccessibleName = "Report of this device" }, 536 - 4 - 80, 10, 80, 28);
         report = Ui.Add(this, new ReportView("device", () => ReportView.TitleFor(found), Collect), 0, 72, 656, 608);
-        report.Closed += () => { reportBtn.On = false; reportBtn.Invalidate(); };
+        report.Closed += () => { reportBtn.On = false; reportBtn.Invalidate(); reportBtn.Focus(); };
         reportBtn.Click += (s, e) => { if (report.Visible) report.Close(); else Open(); };
         create.Click += (s, e) => Open();
         SetFound(f);
@@ -407,7 +425,10 @@ class InfoPage : Control
         link.Text = f.Link + (f.Index == 0xFF ? "" : " · slot " + f.Index) + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "");
         battery.Text = f.Battery < 0 ? "–" : f.BatteryText + (f.Approx ? " (estimated from the voltage)" : "");
         firmware.Text = f.Firmware == "" ? "–" : f.Firmware;
-        features.Text = f.Features.Length == 0 ? "–" : string.Join("  ", f.Features.Select(x => x.ToString("X4")));
+        var known = f.Features.Where(x => x >= 0x0100 && x != 0x1D4B && (x < 0x1000 || x > 0x1004) && Report.Name(x) != "").ToList();
+        var named = known.Select(x => Report.Name(x)).Select(n => char.ToUpper(n[0]) + n.Substring(1)).Distinct().ToList();
+        int rest = f.Features.Length - known.Count;
+        features.Text = f.Features.Length == 0 ? "–" : string.Join(", ", named) + (rest > 0 ? (named.Count > 0 ? ", and " : "") + rest + " more in the report" : "");
     }
 }
 
@@ -460,7 +481,23 @@ class ReportView : Control
     readonly Func<string> title;
     readonly Action<Action<string, string>> read;
     string text = "";
+    System.Collections.Generic.List<Control> covered = new System.Collections.Generic.List<Control>();
     public event Action Closed;
+
+    protected override bool ProcessCmdKey(ref Message m, Keys k)
+    {
+        if (k == Keys.Escape && Visible) { Close(); return true; }
+        return base.ProcessCmdKey(ref m, k);
+    }
+
+    void Cover(bool on)
+    {
+        foreach (var c in covered) c.TabStop = true;
+        covered.Clear();
+        if (!on || Parent == null) return;
+        covered.AddRange(Parent.Controls.Cast<Control>().Where(c => c != this && c.Bottom > Top && c.TabStop));
+        foreach (var c in covered) c.TabStop = false;
+    }
 
     public ReportView(string noun, Func<string> title, Action<Action<string, string>> read)
     {
@@ -492,12 +529,12 @@ class ReportView : Control
 
         var line = Ui.Add(this, new Control(), 0, 551, 656, 1);
         Ui.Style(line, () => line.BackColor = Theme.Border);
-        status = Ui.Add(this, new StatusLine(), 20, 561, 216, 36);
-        var back = Ui.Add(this, new Btn { Text = "Back" }, 244, 564, 76, 32);
+        status = Ui.Add(this, new StatusLine(), 20, 561, 256, 36);
+        var back = Ui.Add(this, new Btn { Text = "Back" }, 284, 564, 76, 32);
         back.Click += (s, e) => Close();
-        issue = Ui.Add(this, new Btn { Text = "Open GitHub issue" }, 328, 564, 160, 32);
+        issue = Ui.Add(this, new Btn { Text = "Open GitHub issue" }, 368, 564, 160, 32);
         issue.Click += (s, e) => OpenIssue();
-        copy = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Copy report" }, 496, 564, 140, 32);
+        copy = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Copy" }, 536, 564, 100, 32);
         copy.Click += (s, e) => { if (Put(text)) status.Set("Copied to the clipboard", false, null); };
     }
 
@@ -510,11 +547,14 @@ class ReportView : Control
     {
         Visible = true;
         BringToFront();
+        Cover(true);
+        copy.Focus();
         if (text == "") Read();
     }
 
     public void Close()
     {
+        Cover(false);
         Visible = false;
         if (Closed != null) Closed();
     }
