@@ -32,7 +32,7 @@ If Windows says it protected your PC, click **More info**, then **Run anyway**. 
 
 Other G mice and headsets with the same features get the same screens, but they haven't been tested. Other Logitech G devices show up in the sidebar with their connection, battery and firmware, but G-Lite can't change their settings yet. Devices that could come next are listed in [#11](https://github.com/csmarvz/g-lite/issues/11). To help add yours, open it in G-Lite, click **Report** and send the report in a new issue.
 
-## Sources
+## References
 
 - [logirgb](https://github.com/mevdschee/logirgb) by Maurits van der Schee. The G515 feature set the app copies, and the protocol notes and hardware logs in its `research` folder, including copies of Logitech's HID++ 2.0 feature documents (0x8040, 0x8070, 0x8071).
 - [logirgb: Logitech G515 and G502 RGB on Linux](https://www.tqdev.com/2026-logirgb-logitech-g515-g502-rgb-linux/), the article introducing logirgb.
