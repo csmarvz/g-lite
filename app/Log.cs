@@ -32,6 +32,11 @@ static class Log
         Write(who, "sent", "register " + reg.ToString("X2") + (p.Length > 0 ? "  " + BitConverter.ToString(p).Replace("-", " ") : ""), result);
     }
 
+    public static void Upload(string who, int subId, int sequence, string result)
+    {
+        Write(who, "sent", "upload " + subId.ToString("X2") + "  " + sequence.ToString("X2"), result);
+    }
+
     public static bool Reads(int id, int fn)
     {
         int[] ok;

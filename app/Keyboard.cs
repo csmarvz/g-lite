@@ -90,6 +90,40 @@ class Hidpp : IDisposable
         }
     }
 
+    public void Upload(byte subId, byte sequence, byte[] data)
+    {
+        try
+        {
+            SendUpload(subId, sequence, data);
+            if (Who != null) Log.Upload(Who, subId, sequence, "ok");
+        }
+        catch (HidppError e) { if (Who != null) Log.Upload(Who, subId, sequence, "error " + e.Code.ToString("X2")); throw; }
+        catch (TimeoutException) { if (Who != null) Log.Upload(Who, subId, sequence, "no answer"); throw; }
+    }
+
+    protected virtual void SendUpload(byte subId, byte sequence, byte[] data)
+    {
+        if (shortStream == null) throw new NotSupportedException("The device has no HID++ 1.0 channel");
+        var message = new byte[20];
+        message[0] = 0x11;
+        message[1] = Idx;
+        message[2] = subId;
+        message[3] = sequence;
+        Array.Copy(data, 0, message, 4, Math.Min(data.Length, 16));
+        fs.Write(message, 0, message.Length);
+        var deadline = DateTime.UtcNow.AddSeconds(3);
+        while (true)
+        {
+            var reply = ReadBoth(deadline);
+            if (reply == null) throw new TimeoutException("The mouse didn't take the upload");
+            if (reply[1] != Idx) continue;
+            if (reply[2] == 0x8F && reply[3] == subId) throw new HidppError(reply[5], string.Format("HID++ 1.0 error 0x{0:x2} (upload)", reply[5]));
+            if (reply[2] != 0x50 || reply[4] != sequence) continue;
+            if (reply[3] != 0x01) throw new HidppError(reply[3], string.Format("The mouse refused the upload (0x{0:x2})", reply[3]));
+            return;
+        }
+    }
+
     byte[] ReadBoth(DateTime deadline)
     {
         if (pending == null) pending = fs.ReadAsync(rbuf, 0, 20);

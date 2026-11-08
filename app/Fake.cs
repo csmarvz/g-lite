@@ -234,6 +234,7 @@ class FakeG9x : Hidpp
         Registers[0x64] = FakeHidpp.Hex("020000");
         Registers[0x63] = FakeHidpp.Hex("22002200800100000000000000000000");
         Registers[0xF1] = FakeHidpp.Hex("015802");
+        Pages[0] = new byte[512];
         Pages[1] = Page("020001030003040007");
         Pages[2] = Page("FF00008000110011221100220022221200440044222200880088122200000000122101011010028101008102008104008108008110008F0000830100830200830400830800");
         Pages[3] = Page("00FF00800009000922110022002222120055005522220000000012220000000012210101101001");
@@ -244,19 +245,46 @@ class FakeG9x : Hidpp
     {
         var page = Enumerable.Repeat((byte)0xFF, 512).ToArray();
         FakeHidpp.Hex(start).CopyTo(page, 0);
-        int crc = GMouse.Crc(page, 510);
-        page[510] = (byte)(crc >> 8);
-        page[511] = (byte)crc;
+        GMouse.Seal(page);
         return page;
     }
+
+    public readonly List<string> Writes = new List<string>();
+    int nextSequence = -1, uploadPage, uploadOffset, uploadLeft;
 
     public override void Dispose() { }
 
     protected override byte[] Send(byte feat, int fn, byte[] p) { throw new HidppError(1, "HID++ 1.0 only"); }
 
+    protected override void SendUpload(byte subId, byte sequence, byte[] data)
+    {
+        if (sequence != nextSequence || (subId == 0x92) != (sequence == 0)) throw new HidppError(0x05, "out of sequence");
+        nextSequence++;
+        int start = 0;
+        if (subId == 0x92)
+        {
+            uploadPage = data[1];
+            uploadOffset = data[2] * 2;
+            uploadLeft = data[5] << 8 | data[6];
+            start = 9;
+        }
+        if (uploadPage != 0) throw new HidppError(0x07, "uploads go to RAM");
+        for (int i = start; i < 16 && uploadLeft > 0; i++, uploadLeft--) Pages[0][uploadOffset++] = data[i];
+    }
+
     protected override byte[] SendRegister(byte subId, byte register, byte[] parameters)
     {
         var reply = new byte[16];
+        if (subId == 0x80 && register == 0xA1) { nextSequence = 0; return reply; }
+        if (subId == 0x82 && register == 0xA0)
+        {
+            int target = parameters[6], wordOffset = parameters[7], length = parameters[10] << 8 | parameters[11];
+            if (target < 2) throw new HidppError(0x07, "protected page");
+            Writes.Add((parameters[0] == 0x02 ? "erase " : "copy ") + target + ":" + wordOffset);
+            if (parameters[0] == 0x02) Pages[target] = Enumerable.Repeat((byte)0xFF, 512).ToArray();
+            else for (int i = 0; i < length; i++) Pages[target][wordOffset * 2 + i] &= Pages[parameters[2]][parameters[3] * 2 + i];
+            return reply;
+        }
         if (subId == 0x83 && register == 0xA2)
         {
             byte[] page;

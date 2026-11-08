@@ -221,6 +221,21 @@ static class SelfTest
         G9x.SetLight(g9xMouse, new MouseLight { Effect = 0x00 });
         Check(g9xMouse.Registers[0x57].SequenceEqual(new byte[3]) && G9x.Read(g9xMouse).Light.Effect == 0x00, "the G9x light turns off");
         Check(G9x.StagesOf(g9xMouse.Pages[3]).SequenceEqual(new[] { 200, 800, 2000 }) && new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04" }.IsG9x && !new Found { Path = @"\\?\hid#vid_046d&pid_c066" }.IsG9x, "G9x profile 2 and detection");
+        var g9xSaver = new FakeG9x();
+        var g9xBefore = G9x.Read(g9xSaver);
+        var g9xOtherPage = (byte[])g9xSaver.Pages[3].Clone();
+        var g9xPage = G9x.Build(g9xSaver.Pages[2], new MouseSet { Dpi = 1200, Stage = 2, Light = new MouseLight { Effect = 0x01, Color = 0x00FF00, Bright = 100 } }, 1000);
+        G9x.Store(g9xSaver, g9xBefore, g9xPage);
+        var g9xAfter = G9x.Read(g9xSaver);
+        Check(g9xBefore.Writable && g9xSaver.Pages[2].SequenceEqual(g9xPage) && g9xAfter.ProfileOk && g9xAfter.Stages.SequenceEqual(new[] { 400, 800, 1200, 3200 })
+            && g9xPage[16] == 0 && g9xPage[17] == 51 && g9xPage[18] == 0 && g9xPage[19] == 51 && g9xPage[0x23] == 2 && g9xPage[0x26] == 1 && g9xPage.Take(3).SequenceEqual(FakeHidpp.Hex("00FF00"))
+            && g9xSaver.Pages[3].SequenceEqual(g9xOtherPage) && g9xSaver.Writes.SequenceEqual(new[] { "erase 2:0", "copy 2:0", "copy 2:128" })
+            && g9xSaver.Registers[0x0F][0] == 0x00 && g9xSaver.Registers[0x0F][1] == 0x00, "the G9x saves a profile page through RAM, erase and copy, and loads it again");
+        var g9xDirectory = G9x.Read(new FakeG9x());
+        g9xDirectory.Sector = 1;
+        bool g9xRefused = false;
+        try { G9x.Store(g9xSaver, g9xDirectory, g9xPage); } catch (Refused) { g9xRefused = true; }
+        Check(g9xRefused && !g9xDirectory.Writable && g9xSaver.Writes.Count == 3, "the G9x never writes the directory page");
         var g9xReport = Report.Registers(new FakeG9x(), new Found { Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Hidpp10 = true }, "PageMouse");
         Check(g9xReport.Contains("long 63=22 00 22 00 80 01") && g9xReport.Contains("page 02 · current") && g9xReport.Contains("page 04"), "the G9x report has its registers and profile pages");
         Check(new[] { "g515-tkl.json", "g915-tkl.json", "g915.json" }.All(x => Model.Load(x).Rows.Length > 5), "the key layouts load");

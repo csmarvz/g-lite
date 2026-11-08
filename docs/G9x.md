@@ -2,7 +2,7 @@
 
 How to add the G9x Laser Mouse, and with it other HID++ 1.0 mice. Facts come from libratbag (MIT, cloned at `C:\Users\csmar\dev\libratbag`, commit `8235b5b`): `src/hidpp10.c`, `src/hidpp10.h`, `data/devices/logitech-g9x-Original.device`. Each one marked "checked" was read from a real G9x (USB 046D:C066, firmware 58.02 build 0018), with reads only.
 
-Status: live support is built. G-Lite shows the G9x on the mouse screen: colour and brightness (or off), DPI, the stages of the active profile, and the report rate, all set live through registers, not saved. The report lists the registers and the profile pages. Saving is not built. See also [lgs.md](lgs.md) for what LGS knows about the G9x.
+Status: live support is built. G-Lite shows the G9x on the mouse screen: colour and brightness (or off), DPI, the stages of the active profile, and the report rate, all set live through registers. Save to mouse writes them into the active profile page, after a backup. The report lists the registers and the profile pages. See also [lgs.md](lgs.md) for what LGS knows about the G9x.
 
 ## The device
 
@@ -142,10 +142,10 @@ The G700 is wireless behind its own receiver, so it isn't at index 0x00. Leave i
 |---|---|
 | `app/Devices.cs` | Done: the scan finds HID++ 1.0 devices at index 0x00 (`Found.Hidpp10`, `Found.ShortPath`). `Found.IsG9x`: Hidpp10, PID C066 or C249. |
 | `app/Keyboard.cs` | Done: `Hidpp.Register(subId, register, parameters)` sends HID++ 1.0 register calls on the short collection (long sets on the long one) and reads replies from both. Sets are logged as `register XX`. |
-| `app/Mouse.cs` | Done: `G9x` reads the colour, DPI, rate and the active profile's stages, and sets colour, DPI and rate live. Later: write a page. |
-| `app/PageMouse.cs` | Done: the mouse screen, with the G9x's effects (Off, Static), no Save or Backups. |
-| `app/Fake.cs` | Done: `FakeG9x` with registers and pages, for `--demo` and the self-tests. |
-| `app/SelfTest.cs` | Done: DPI conversion, reading, setting and the report. |
+| `app/Mouse.cs` | Done: `G9x` reads the colour, DPI, rate and the active profile's stages, and sets colour, DPI and rate live. `G9x.Build` puts the DPI (in the chosen stage, made the default), the rate and the colour into the page; `G9x.Store` writes it as above and reads it back. It refuses any page the directory doesn't point to as the active profile, and pages 0 and 1. |
+| `app/PageMouse.cs` | Done: the mouse screen, with the G9x's effects (Off, Static), Save to mouse and Backups. No factory restore: the G9x has no factory profile page to copy. |
+| `app/Fake.cs` | Done: `FakeG9x` with registers and pages, uploads to RAM, erase and copy, for `--demo` and the self-tests. |
+| `app/SelfTest.cs` | Done: DPI conversion, reading, setting, saving (the exact erase and copy calls, other pages untouched) and the report. |
 | `app/Report.cs` | Done: `Report.Registers` lists the registers, the directory and each profile page. |
 
 ## Order
@@ -153,4 +153,4 @@ The G700 is wireless behind its own receiver, so it isn't at index 0x00. Leave i
 1. Done: the DPI unit is 400/17 dpi, linear from 200 to 5700, shown rounded to the nearest 50 as LGS does.
 2. Done: the report has the directory and profile pages.
 3. Done. Checked on the real mouse: report rate (125 and 500 Hz), DPI (400 to 5700, and the stages), colour (white and red), Off (`00 00 00` turns the LED off) and dimmed colours.
-4. Saving, with a backup, once live works.
+4. Built. Checked on the real mouse: 0xA1 then the 0x92/0x93 upload of 256 bytes to RAM page 0, 17 reports, each acked with status 01; RAM read back the same, flash untouched. Then a full save from G-Lite on 2026-11-08: backup, 0x0F `FF`, erase and copy of page 2 in two halves, 0x0F `00 00`, read back matched, and the mouse kept the settings after a replug.

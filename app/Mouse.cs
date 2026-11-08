@@ -57,14 +57,21 @@ static class GMouse
     {
         public int Dpi, Stage = -1, Rate;
         public int[] Dpis = new int[0], Stages = new int[0], Rates = new int[0];
-        public bool Onboard, ProfileOk;
+        public bool Onboard, ProfileOk, Flash;
         public MouseLight Light;
         public EffectDef[] Effects = GMouse.Effects;
         public Dictionary<int, Dictionary<int, int>> Zones = new Dictionary<int, Dictionary<int, int>>();
         public int Sector = -1, SectorSize, Format;
         public byte[] Current, Profile;
 
-        public bool Writable { get { return Onboard && Format == 3 && SectorSize >= 0xF0 && Sector > 0 && Sector < 0x100; } }
+        public bool Writable
+        {
+            get
+            {
+                if (Flash) return Sector >= 2 && Sector < 32 && SectorSize == 512 && Current != null;
+                return Onboard && Format == 3 && SectorSize >= 0xF0 && Sector > 0 && Sector < 0x100;
+            }
+        }
         public bool Savable { get { return Writable && ProfileOk; } }
         public string Key { get { return Sector.ToString("X4"); } }
     }
@@ -87,7 +94,7 @@ static class GMouse
         return p != null && p.Length >= 0xF0 && Crc(p, p.Length - 2) == U16(p, p.Length - 2);
     }
 
-    static void Seal(byte[] p)
+    public static void Seal(byte[] p)
     {
         int c = Crc(p, p.Length - 2);
         p[p.Length - 2] = (byte)(c >> 8);
@@ -332,7 +339,7 @@ static class G9x
 
     public static int[] Dpis() { return Enumerable.Range(0, 111).Select(step => 200 + 50 * step).ToArray(); }
 
-    public static bool Valid(byte[] page) { return page.Length == 512 && GMouse.Crc(page, 510) == (page[510] << 8 | page[511]); }
+    public static bool Valid(byte[] page) { return page.Length == 512 && GMouse.Valid(page); }
 
     public static byte[] ReadPage(Hidpp device, int pageNumber)
     {
@@ -361,7 +368,7 @@ static class G9x
 
     public static GMouse.State Read(Hidpp device)
     {
-        var state = new GMouse.State { ProfileOk = true, Effects = Effects, Rates = Rates, Dpis = Dpis() };
+        var state = new GMouse.State { ProfileOk = true, Flash = true, Effects = Effects, Rates = Rates, Dpis = Dpis() };
         var resolution = device.Register(0x83, 0x63);
         state.Dpi = Dpi(resolution[0] | resolution[1] << 8);
         int interval = device.Register(0x81, 0x64)[0];
@@ -374,7 +381,15 @@ static class G9x
             var directory = current[0] == 0x00 && current[1] < 16 ? ReadPage(device, 1) : null;
             int pageNumber = directory != null && Valid(directory) ? directory[current[1] * 3] : 0xFF;
             var profile = pageNumber >= 2 && pageNumber < 32 ? ReadPage(device, pageNumber) : null;
-            if (profile != null && Valid(profile)) state.Stages = StagesOf(profile);
+            if (profile != null)
+            {
+                state.Sector = pageNumber;
+                state.SectorSize = 512;
+                state.Current = new[] { current[1] };
+                state.Profile = profile;
+                state.ProfileOk = Valid(profile);
+                if (state.ProfileOk) state.Stages = StagesOf(profile);
+            }
         }
         catch (HidppError) { }
         state.Stage = Array.IndexOf(state.Stages, state.Dpi);
@@ -392,6 +407,77 @@ static class G9x
     }
 
     public static void SetRate(Hidpp device, int hz) { device.Register(0x80, 0x64, (byte)(1000 / hz)); }
+
+    public static string Describe(byte[] page)
+    {
+        if (!Valid(page)) return "damaged, can't be restored";
+        var stages = StagesOf(page);
+        var dpi = page[0x23] < stages.Length ? stages[page[0x23]] + " DPI" : "DPI stages";
+        return page[0x26] > 0 ? dpi + " · " + 1000 / page[0x26] + " Hz" : dpi;
+    }
+
+    public static byte[] Build(byte[] old, MouseSet want, int hz)
+    {
+        var page = (byte[])old.Clone();
+        var stages = StagesOf(page);
+        if (stages.Length == 0) throw new Refused("The profile on the mouse has no DPI stages, not touching it");
+        int stage = want.Stage >= 0 && want.Stage < stages.Length ? want.Stage : Array.IndexOf(stages, want.Dpi);
+        if (stage < 0) stage = Math.Min((int)page[0x23], stages.Length - 1);
+        int raw = Raw(Math.Max(200, Math.Min(5700, want.Dpi)));
+        page[4 + 6 * stage] = page[6 + 6 * stage] = (byte)(raw >> 8);
+        page[5 + 6 * stage] = page[7 + 6 * stage] = (byte)raw;
+        page[0x23] = (byte)stage;
+        if (hz > 0) page[0x26] = (byte)(1000 / hz);
+        if (want.Light != null)
+        {
+            var color = want.Light.Effect == 0x01 ? GMouse.Encode(want.Light) : new byte[3];
+            Array.Copy(color, page, 3);
+        }
+        GMouse.Seal(page);
+        return page;
+    }
+
+    public static void Store(Hidpp device, GMouse.State state, byte[] page)
+    {
+        if (!state.Flash || !state.Writable) throw new Refused("Saving isn't supported on this mouse");
+        if (page.Length != 512 || !Valid(page)) throw new Refused("Refusing to write a profile with a bad checksum");
+        byte pageNumber = (byte)state.Sector;
+        device.Register(0x80, 0x0F, 0xFF);
+        try
+        {
+            for (int half = 0; half < 2; half++)
+            {
+                var data = new byte[256];
+                Array.Copy(page, 256 * half, data, 0, 256);
+                Upload(device, data);
+                if (half == 0) device.Register(0x82, 0xA0, 0x02, 0, 0, 0, 0, 0, pageNumber, 0, 0, 0, 0x01, 0x00);
+                device.Register(0x82, 0xA0, 0x03, 0, 0, 0, 0, 0, pageNumber, (byte)(0x80 * half), 0, 0, 0x01, 0x00);
+            }
+        }
+        catch
+        {
+            try { device.Register(0x80, 0x0F, 0x00, state.Current[0]); }
+            catch (Exception) { }
+            throw;
+        }
+        device.Register(0x80, 0x0F, 0x00, state.Current[0]);
+        if (!ReadPage(device, pageNumber).SequenceEqual(page)) throw new IOException("The profile on the mouse didn't read back the same after saving");
+    }
+
+    static void Upload(Hidpp device, byte[] data)
+    {
+        device.Register(0x80, 0xA1, 0x01);
+        var first = new byte[16];
+        new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, (byte)(data.Length >> 8), (byte)data.Length, 0x00, 0x00 }.CopyTo(first, 0);
+        Array.Copy(data, 0, first, 9, 7);
+        device.Upload(0x92, 0, first);
+        for (int offset = 7, sequence = 1; offset < data.Length; offset += 16, sequence++)
+        {
+            var chunk = Enumerable.Repeat((byte)0xFF, 16).ToArray();
+            Array.Copy(data, offset, chunk, 0, Math.Min(16, data.Length - offset));
+            device.Upload(0x93, (byte)sequence, chunk);
+        }
+    }
 
     public static void SetLight(Hidpp device, MouseLight light)
     {
