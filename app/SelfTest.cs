@@ -208,6 +208,8 @@ static class SelfTest
             && !new Found { Name = "G915 X LIGHTSPEED", Features = new[] { 0x8071, 0x8040, 0x8100 } }.IsG915
             && new Found { Name = "G915 WIRELESS RGB MECHANICAL GAMING KEYBOARD" }.Short == "G915"
             && new Found { Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard" }.Short == "G915 TKL", "the G915 is found, and the G915 X isn't");
+        Check(new Found { Index = 0, Hidpp10 = true }.Slot == "" && new Found { Index = 0xFF }.Slot == "" && new Found { Index = 2 }.Slot == " · slot 2"
+            && Found.LooksG("G9x Laser Mouse") && !new Found { Name = "G9x Laser Mouse", Kind = "mouse", Hidpp10 = true }.IsMouse, "an old HID++ 1.0 mouse gets the info page");
         Check(new[] { "g515-tkl.json", "g915-tkl.json", "g915.json" }.All(x => Model.Load(x).Rows.Length > 5), "the key layouts load");
         var g9 = new FakeG915();
         var cl = G915.Clusters(g9);

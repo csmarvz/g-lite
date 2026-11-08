@@ -398,7 +398,11 @@ class InfoPage : Control
         Task.Run(() =>
         {
             string t = null, err = null;
-            try { using (var h = new Hidpp(f.Path, f.Index)) t = Report.Build(h, f, "none, not supported yet"); }
+            try
+            {
+                if (f.Hidpp10) t = Report.Registers(f, "none, not supported yet");
+                else using (var h = new Hidpp(f.Path, f.Index)) t = Report.Build(h, f, "none, not supported yet");
+            }
             catch (Exception ex) { err = ex.Message; }
             if (IsHandleCreated) BeginInvoke((Action)(() => done(t, err)));
         });
@@ -422,7 +426,7 @@ class InfoPage : Control
         again.Visible = f.Asleep;
         create.Visible = reportBtn.Visible = !f.Asleep;
         if (f.Asleep && report.Visible) report.Close();
-        link.Text = f.Link + (f.Index == 0xFF ? "" : " · slot " + f.Index) + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "");
+        link.Text = f.Link + f.Slot + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "");
         battery.Text = f.Battery < 0 ? "–" : f.BatteryText + (f.Approx ? " (estimated from the voltage)" : "");
         firmware.Text = f.Firmware == "" ? "–" : f.Firmware;
         var known = f.Features.Where(x => x >= 0x0100 && x != 0x1D4B && (x < 0x1000 || x > 0x1004) && Report.Name(x) != "").ToList();

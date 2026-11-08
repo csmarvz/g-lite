@@ -76,15 +76,7 @@ static class Report
     {
         var r = new Reader { H = h };
         var s = r.S;
-        s.AppendLine("G-Lite device report");
-        s.AppendLine("G-Lite " + Version() + " · " + Windows());
-        s.AppendLine();
-        Row(s, "Device", f.Name == "" ? "–" : f.Name);
-        Row(s, "Kind", f.Kind);
-        Row(s, "Link", f.Link + (f.Index == 0xFF ? "" : " · slot " + f.Index) + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "") + Usb(f.Path));
-        Row(s, "Firmware", f.Firmware == "" ? "–" : f.Firmware);
-        Row(s, "Battery", f.Battery >= 0 || !f.Has(0x1F20) ? (f.Battery < 0 ? "–" : f.BatteryText) + (f.Millivolts > 0 ? " · " + f.Millivolts + " mV" : "") : HeadsetBattery(r));
-        Row(s, "Screen", screen);
+        Head(s, f, screen, () => f.Battery >= 0 || !f.Has(0x1F20) ? (f.Battery < 0 ? "–" : f.BatteryText) + (f.Millivolts > 0 ? " · " + f.Millivolts + " mV" : "") : HeadsetBattery(r));
 
         var ids = Features(r, f);
         foreach (var id in ids.Where(Reads.ContainsKey).Where(x => x != 0x0001))
@@ -94,6 +86,36 @@ static class Report
             Section(r, f, id);
         }
         return s.ToString();
+    }
+
+    public static string Registers(Found f, string screen)
+    {
+        var s = new StringBuilder();
+        Head(s, f, screen, () => "–");
+        s.AppendLine();
+        s.AppendLine("HID++ 1.0 registers");
+        using (var pr = new Probe(f.Path, f.ShortPath))
+            for (int a = 0; a < 0x100; a++)
+            {
+                var x = pr.Register(f.Index, 0x81, (byte)a, 0);
+                if (x != null) s.AppendLine("short " + a.ToString("X2") + "=" + Hex(x.Take(3).ToArray(), " "));
+                var y = pr.Register(f.Index, 0x83, (byte)a, 0);
+                if (y != null) s.AppendLine("long " + a.ToString("X2") + "=" + Hex(y.Take(16).ToArray(), " "));
+            }
+        return s.ToString();
+    }
+
+    static void Head(StringBuilder s, Found f, string screen, Func<string> battery)
+    {
+        s.AppendLine("G-Lite device report");
+        s.AppendLine("G-Lite " + Version() + " · " + Windows());
+        s.AppendLine();
+        Row(s, "Device", f.Name == "" ? "–" : f.Name);
+        Row(s, "Kind", f.Kind);
+        Row(s, "Link", f.Link + f.Slot + (f.Hidpp10 ? " · HID++ 1.0" : "") + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "") + Usb(f.Path));
+        Row(s, "Firmware", f.Firmware == "" ? "–" : f.Firmware);
+        Row(s, "Battery", battery());
+        Row(s, "Screen", screen);
     }
 
     static List<int> Features(Reader r, Found f)

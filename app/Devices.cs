@@ -10,13 +10,14 @@ using Microsoft.Win32.SafeHandles;
 
 class Found
 {
-    public string Key, Path, Name = "", Kind = "device", Link = "", Firmware = "";
+    public string Key, Path, ShortPath, Name = "", Kind = "device", Link = "", Firmware = "";
     public byte Index;
     public int Wpid, Battery = -1, Millivolts;
-    public bool Approx, Asleep;
+    public bool Approx, Asleep, Hidpp10;
     public int[] Features = new int[0];
 
     public bool Has(int f) { return Features.Contains(f); }
+    public string Slot { get { return Index == 0xFF || Hidpp10 ? "" : " · slot " + Index; } }
     public bool IsG515 { get { return Name.ToUpper().Contains("G515") && Has(0x8071) && Has(0x8040) && Has(0x8101); } }
     public bool IsG915 { get { var n = Name.ToUpper(); return n.Contains("G915") && !n.Contains("G915 X") && Has(0x8071) && Has(0x8040) && Has(0x8100) && !Has(0x8101); } }
     public bool IsMouse { get { return Kind == "mouse" && Has(0x2201); } }
@@ -56,6 +57,7 @@ static class Devices
     [DllImport("hid.dll")] static extern bool HidD_GetPreparsedData(SafeFileHandle h, out IntPtr p);
     [DllImport("hid.dll")] static extern bool HidD_FreePreparsedData(IntPtr p);
     [DllImport("hid.dll")] static extern int HidP_GetCaps(IntPtr p, short[] caps);
+    [DllImport("hid.dll", CharSet = CharSet.Unicode)] static extern bool HidD_GetProductString(SafeFileHandle h, System.Text.StringBuilder b, int len);
 
     public static string PathOf(string id) { return @"\\?\" + id.Replace('\\', '#') + HidClass; }
 
@@ -135,7 +137,7 @@ static class Devices
             var link = LinkOf(p.Id);
             for (byte n = 1; n <= 6; n++)
             {
-                var pair = pr.Register(0xB5, (byte)(0x20 + n - 1));
+                var pair = pr.Register(0xFF, 0x83, 0xB5, (byte)(0x20 + n - 1));
                 if (pair == null) continue;
                 int wpid = pair[3] << 8 | pair[4];
                 int kind = pair[7];
@@ -152,8 +154,36 @@ static class Devices
                 f.Key = p.Long + "|" + n;
                 r.Add(f);
             }
+            if (r.Count == 0)
+            {
+                var v = pr.Register(0x00, 0x81, 0xF1, 0x01);
+                var o = v == null ? null : Old(pr, p, v);
+                if (o != null && o.Kind != "device") r.Add(o);
+            }
         }
         return r;
+    }
+
+    static Found Old(Probe pr, Port p, byte[] v)
+    {
+        var b = pr.Register(0x00, 0x81, 0xF1, 0x02);
+        var name = Product(p.Long);
+        var low = name.ToLower();
+        return new Found
+        {
+            Path = p.Long, ShortPath = p.Short, Index = 0, Key = p.Long + "|0", Link = "USB", Hidpp10 = true, Name = name,
+            Kind = low.Contains("mouse") ? "mouse" : low.Contains("keyboard") ? "keyboard" : low.Contains("headset") ? "headset" : "device",
+            Firmware = v[1].ToString("X2") + "." + v[2].ToString("X2") + (b != null ? " · build " + b[1].ToString("X2") + b[2].ToString("X2") : "")
+        };
+    }
+
+    static string Product(string path)
+    {
+        using (var h = Open(path))
+        {
+            var sb = new System.Text.StringBuilder(128);
+            return !h.IsInvalid && HidD_GetProductString(h, sb, 256) ? sb.ToString().Trim() : "";
+        }
     }
 
     static Found Describe(Probe pr, Port p, byte idx, string link)
@@ -279,19 +309,19 @@ class Probe : IDisposable
         }
     }
 
-    public byte[] Register(byte addr, byte param)
+    public byte[] Register(byte idx, byte sub, byte addr, byte param)
     {
         if (sht == null) return null;
-        var m = new byte[] { 0x10, 0xFF, 0x83, addr, param, 0, 0 };
+        var m = new byte[] { 0x10, idx, sub, addr, param, 0, 0 };
         sht.Write(m, 0, 7);
         var end = DateTime.UtcNow.AddMilliseconds(1000);
         while (true)
         {
             var r = Next(end);
             if (r == null) return null;
-            if (r[1] != 0xFF) continue;
-            if (r[2] == 0x8F && r[3] == 0x83) return null;
-            if (r[2] == 0x83 && r[3] == addr) return r.Skip(4).ToArray();
+            if (r[1] != idx) continue;
+            if (r[2] == 0x8F && r[3] == sub) return null;
+            if (r[2] == sub && r[3] == addr) return r.Skip(4).ToArray();
         }
     }
 }

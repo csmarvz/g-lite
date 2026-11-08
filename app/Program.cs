@@ -280,7 +280,7 @@ class MainWindow : Form
         var keys = new HashSet<string>(list.Select(f => f.Key));
         var before = new HashSet<string>(found.Select(f => f.Key));
         foreach (var f in list.Where(f => !before.Contains(f.Key)))
-            Log.Add(Who(f), "found", f.Link + (f.Index != 0xFF ? " · slot " + f.Index : "") + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "") + (f.Asleep ? " · asleep" : ""));
+            Log.Add(Who(f), "found", f.Link + f.Slot + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "") + (f.Asleep ? " · asleep" : ""));
         foreach (var f in found.Where(f => !keys.Contains(f.Key))) Log.Add(Who(f), "lost", f.Link);
         found = list;
         foreach (var k in pages.Keys.Where(k => !keys.Contains(k)).ToList()) Remove(k);
