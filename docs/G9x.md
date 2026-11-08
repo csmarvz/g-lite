@@ -147,5 +147,5 @@ The G700 is wireless behind its own receiver, so it isn't at index 0x00. Leave i
 
 1. Done: the DPI unit is 400/17 dpi, linear from 200 to 5700, shown rounded to the nearest 50 as LGS does.
 2. Done: the report has the directory and profile pages.
-3. Done. Checked on the real mouse: report rate (125 and 500 Hz), DPI (400 to 5700, and the stages), colour (white and red). Not checked yet: Off (`00 00 00`) and dimmed colours.
+3. Done. Checked on the real mouse: report rate (125 and 500 Hz), DPI (400 to 5700, and the stages), colour (white and red), Off (`00 00 00` turns the LED off) and dimmed colours.
 4. Saving, with a backup, once live works.
