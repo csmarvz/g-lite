@@ -26,9 +26,9 @@ class Hidpp : IDisposable
 {
     const byte Swid = 0x0B;
     readonly byte Idx = 1;
-    FileStream fs;
-    byte[] rbuf = new byte[20];
-    Task<int> pending;
+    FileStream fs, shortStream;
+    byte[] rbuf = new byte[20], shortBuffer = new byte[7];
+    Task<int> pending, shortPending;
     Dictionary<int, byte> features = new Dictionary<int, byte>();
     public string Who;
 
@@ -45,7 +45,67 @@ class Hidpp : IDisposable
         fs = new FileStream(h, FileAccess.ReadWrite, 1, true);
     }
 
-    public virtual void Dispose() { fs.Dispose(); }
+    public Hidpp(string path, byte index, string shortPath) : this(path, index)
+    {
+        if (shortPath == null) return;
+        var handle = CreateFile(shortPath, 0xC0000000, 3, IntPtr.Zero, 3, 0x40000000, IntPtr.Zero);
+        if (!handle.IsInvalid) shortStream = new FileStream(handle, FileAccess.ReadWrite, 1, true);
+    }
+
+    public virtual void Dispose() { fs.Dispose(); if (shortStream != null) shortStream.Dispose(); }
+
+    public byte[] Register(byte subId, byte register, params byte[] parameters)
+    {
+        bool isSet = subId == 0x80 || subId == 0x82;
+        try
+        {
+            var reply = SendRegister(subId, register, parameters);
+            if (isSet && Who != null) Log.Register(Who, register, parameters, "ok");
+            return reply;
+        }
+        catch (HidppError e) { if (isSet && Who != null) Log.Register(Who, register, parameters, "error " + e.Code.ToString("X2")); throw; }
+        catch (TimeoutException) { if (Who != null) Log.Register(Who, register, parameters, "no answer"); throw; }
+    }
+
+    protected virtual byte[] SendRegister(byte subId, byte register, byte[] parameters)
+    {
+        if (shortStream == null) throw new NotSupportedException("The device has no HID++ 1.0 channel");
+        bool isLong = subId == 0x82;
+        var message = new byte[isLong ? 20 : 7];
+        message[0] = isLong ? (byte)0x11 : (byte)0x10;
+        message[1] = Idx;
+        message[2] = subId;
+        message[3] = register;
+        Array.Copy(parameters, 0, message, 4, Math.Min(parameters.Length, message.Length - 4));
+        (isLong ? fs : shortStream).Write(message, 0, message.Length);
+        var deadline = DateTime.UtcNow.AddSeconds(3);
+        while (true)
+        {
+            var reply = ReadBoth(deadline);
+            if (reply == null) throw new TimeoutException("The device didn't answer. Is it on?");
+            if (reply[1] != Idx) continue;
+            if (reply[2] == 0x8F && reply[3] == subId && reply[4] == register)
+                throw new HidppError(reply[5], string.Format("HID++ 1.0 error 0x{0:x2} (register {1:x2})", reply[5], register));
+            if (reply[2] == subId && reply[3] == register) return reply.Skip(4).ToArray();
+        }
+    }
+
+    byte[] ReadBoth(DateTime deadline)
+    {
+        if (pending == null) pending = fs.ReadAsync(rbuf, 0, 20);
+        if (shortPending == null) shortPending = shortStream.ReadAsync(shortBuffer, 0, 7);
+        var ms = (int)(deadline - DateTime.UtcNow).TotalMilliseconds;
+        if (ms <= 0) return null;
+        int which = Task.WaitAny(new Task[] { pending, shortPending }, ms);
+        if (which < 0) return null;
+        var done = which == 0 ? pending : shortPending;
+        if (which == 0) pending = null; else shortPending = null;
+        if (done.IsFaulted || done.IsCanceled) throw new IOException("The device stopped answering. Was it unplugged?");
+        if (which == 0) return (byte[])rbuf.Clone();
+        var reply = new byte[20];
+        Array.Copy(shortBuffer, reply, 7);
+        return reply;
+    }
 
     public byte[] Call(byte feat, int fn, params byte[] p)
     {

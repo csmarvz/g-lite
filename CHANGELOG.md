@@ -5,7 +5,8 @@
 ### Added
 
 - The G915 and G915 TKL, untested: effects, colour, speed, direction, brightness and profiles, on the same screen as the G515, with a picture of each keyboard. The logo follows the keys. G-Lite can't save to these keyboards yet, so it remembers your lighting and sets it again when G-Lite starts and when you open the keyboard. As on the keyboard gives the keyboard its own lighting back.
-- Older G devices plugged in with USB that speak HID++ 1.0, like the G9x Laser Mouse, now show up. G-Lite can't change them yet, and their report lists what their registers hold, to help add them.
+- Older G devices plugged in with USB that speak HID++ 1.0 now show up, and their report lists their registers and profile pages.
+- The G9x Laser Mouse: colour and brightness, DPI, the DPI stages of the active profile and the report rate, set live. Unplugging the mouse brings back its saved profile; saving to the mouse comes later.
 
 ## [0.0.7-alpha] - 2026-11-07
 

@@ -15,7 +15,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 ## Files
 
 - `app/Keyboard.cs`:
-  - `Hidpp`: HID++ 2.0 over the receiver
+  - `Hidpp`: HID++ 2.0 over the receiver, and `Register` for HID++ 1.0 registers when it's given the short collection
   - `Lighting`: the lighting settings
   - `G515`: the effect table, profile encode and decode, CRC32, onboard file read and write, preview
   - `G915`: live lighting on the G915 and G915 TKL (0x8071 keys and logo clusters, the older effect ids). No saving yet. See `docs/G915.md`.
@@ -23,7 +23,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `MainWindow`: the device sidebar, one page per found device, rescans on plug and unplug, the Settings and Logs screens, updates and run on startup
   - `Main`: the tray icon, the single-instance mutex and `--demo`
 - `app/Devices.cs`:
-  - `Devices.Scan`: finds every Logitech HID++ interface. Direct devices answer at index 0xFF. Receivers list their paired slots (register 0xB5), and each slot is pinged. A port with neither is tried as an old HID++ 1.0 USB device at index 0x00 (register 0xF1, firmware), like the G9x Laser Mouse: its name comes from the USB product string and it gets the info page (`Found.Hidpp10`). It returns G devices only.
+  - `Devices.Scan`: finds every Logitech HID++ interface. Direct devices answer at index 0xFF. Receivers list their paired slots (register 0xB5), and each slot is pinged. A port with neither is tried as an old HID++ 1.0 USB device at index 0x00 (register 0xF1, firmware), like the G9x Laser Mouse: its name comes from the USB product string (`Found.Hidpp10`, `Found.ShortPath`). The G9x gets the mouse screen, others the info page. It returns G devices only.
   - `Found`: what the scan learned about a device
   - `Probe`: the scan's HID++ calls. HID++ 1.0 errors come back on the receiver's short collection.
   - Names of devices seen awake are kept as `seen.<wireless id>` in `settings.txt`, for when they're asleep.
@@ -36,12 +36,12 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `Page515`: the G515 screen, the preview debounce, the backups menu and the offer to restore when the saved lighting is half written. Profiles are `profile.g515.<name>`.
   - On a G915 the same screen has no Save, Backups or idle settings. It keeps the lighting as `lighting.<device>` in `settings.txt` and sets it again on each load. Profiles are `profile.g915.<name>`.
   - `KeyPicture`: the live key picture
-- `app/PageMouse.cs`: `PageMouse`, the mouse screen with Save to mouse, its backups and the offer to restore a damaged profile, and `MousePicture`
+- `app/PageMouse.cs`: `PageMouse`, the mouse screen with Save to mouse, its backups and the offer to restore a damaged profile, and `MousePicture`. On the G9x it has no Save or Backups, and only Off and Static.
 - `app/PageHeadset.cs`: `PageHeadset`, the headset screen, and `HeadsetPicture`
 - `app/Log.cs`: `Log`, `log.txt` next to `settings.txt` (in the temp folder with `--demo`), one tab-separated line per event: time, device, kind (`start`, `found`, `lost`, `you`, `backup`, `sent`, `error`), text, result. `Hidpp.Call` logs every call that isn't in `Report.Reads`, and reads only when they time out. At 512 KB it moves to `log.old.txt`. `LogsPage` in `app/Pages.cs` shows it.
-- `app/Report.cs`: `Report.Build`, a text report of a device for an issue. It calls only the functions listed in `Report.Reads`. Add a function there only when it's known to only read. It leaves out the unit ID (0x0003 fn 0), the friendly name (0x0007) and the device path. `Report.Registers` is the report for HID++ 1.0 devices: it reads every short (0x81) and long (0x83) register, which only read.
+- `app/Report.cs`: `Report.Build`, a text report of a device for an issue. It calls only the functions listed in `Report.Reads`. Add a function there only when it's known to only read. It leaves out the unit ID (0x0003 fn 0), the friendly name (0x0007) and the device path. `Report.Registers` is the report for HID++ 1.0 devices: it reads every short (0x81) and long (0x83) register, which only read, then the profile directory (page 1) and each profile page it lists (0xA2). It stops after two timeouts in a row.
 - `app/Backup.cs`: `Backups`, a copy of what's on a device taken before every save or restore, in `%LOCALAPPDATA%\GLite\backups\<device>\`: `G515` for the keyboard's four onboard files, the device name (like `gprowireless`) for a mouse's profile sector. Each line is `<4 hex digits>=<bytes>`. It keeps the first backup and the last ten.
-- `app/Mouse.cs`: `GMouse`, which reads and sets DPI (0x2201), the DPI stage (0x8100), the report rate (0x8060) and the lighting (0x8070), and reads, builds and writes the active onboard profile (0x8100)
+- `app/Mouse.cs`: `GMouse`, which reads and sets DPI (0x2201), the DPI stage (0x8100), the report rate (0x8060) and the lighting (0x8070), and reads, builds and writes the active onboard profile (0x8100). `G9x`: the G9x Laser Mouse over HID++ 1.0 registers (0x57 colour, 0x63 DPI in units of 400/17, 0x64 report interval, 0x0F and 0xA2 for the active profile's stages), live only. `PageMouse` shows it. See `docs/G9x.md`.
 - `app/Headset.cs`: `GHeadset`, which reads and sets sidetone (0x8300) and the auto-off time (0x1F20 fn 1 and fn 2, in minutes, 0 is never). 0x1F20 fn 0 is the battery voltage, and byte 2 is 3 while charging.
 - `app/Ui.cs`:
   - `Theme`: dark, light or system, from `theme=` in `settings.txt`
@@ -49,7 +49,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/Fake.cs`:
   - `Model`: loads `models/*.json`, which are embedded resources
   - `FakeHidpp`: an in-memory G515
-  - `FakeG915`, `FakeMouse` and `FakeHeadset`: in-memory devices for `--demo` and the self-tests
+  - `FakeG915`, `FakeMouse`, `FakeG9x` and `FakeHeadset`: in-memory devices for `--demo` and the self-tests
   - `KeyboardView`: the demo window
 - `app/Game.cs`: Blocks, played on the 15x5 grid over the main key block, and Snake and Mines (`KeyGame`), played on the keys of that block
 - `app/Update.cs`: `Updater`, which checks GitHub releases, verifies the download against `checksums.txt`, swaps the exe and restarts. If the exe's folder isn't writable, it runs the new exe elevated with `--swap <path>` to do the swap, then restarts unelevated.
@@ -68,6 +68,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - Features: 0x8071 for RGB effects, 0x8040 for brightness (0–100), 0x8101 for profiles. The code looks up their indexes at runtime.
 - Never write the factory profile (0x0101) or the factory directory (0x0100). The user profile is 0x0008 and the user directory is 0x0000.
 - Windows Dynamic Lighting can fight with the app. The panel warns when Dynamic Lighting is on.
+- HID++ 1.0 (G9x): short reports `10 <idx> <sub> <register> p0 p1 p2`, sub-id 0x81 reads and 0x80 sets a short register, 0x83 reads and 0x82 sets a long one, 0x8F is an error. The G9x answers at index 0x00. G-Lite doesn't write its flash yet. Saving would upload to RAM (0x92, 0x93) and erase and copy (0xA0); never do that without a backup, and never to pages 0 (RAM) or 1 (the directory).
 - Mouse changes are sent live, and Save to mouse writes them into the active onboard profile. On the G Pro Wireless in onboard mode, DPI, the DPI stage (0x8100 fn 0x0C) and lighting (0x8070 fn 3) can be set live, but the report rate is refused, so it only changes on save.
 - Mouse onboard profiles (0x8100, profile format 3 only): fn 0 gives the sector size at bytes 7–8 (255 on the G Pro Wireless), fn 4 the active profile's sector, fn 5 reads 16 bytes at a sector and offset.
   - Layout: byte 0 is the report interval in ms, byte 1 the default DPI stage, bytes 3–12 the five stages (little endian), 0xA0 the name (UTF-16), LED records of 11 bytes from 0xD0 (effect id, then the 0x8070 parameters). The last two bytes are a CRC-16 (CCITT, start 0xFFFF, big endian) over the rest.

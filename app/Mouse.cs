@@ -59,6 +59,7 @@ static class GMouse
         public int[] Dpis = new int[0], Stages = new int[0], Rates = new int[0];
         public bool Onboard, ProfileOk;
         public MouseLight Light;
+        public EffectDef[] Effects = GMouse.Effects;
         public Dictionary<int, Dictionary<int, int>> Zones = new Dictionary<int, Dictionary<int, int>>();
         public int Sector = -1, SectorSize, Format;
         public byte[] Current, Profile;
@@ -317,5 +318,84 @@ static class GMouse
             if (!z.Value.TryGetValue(l.Effect, out e)) continue;
             h.Call(f, 3, new byte[] { (byte)z.Key, (byte)e }.Concat(Encode(l)).ToArray());
         }
+    }
+}
+
+static class G9x
+{
+    public static readonly EffectDef[] Effects = GMouse.Effects.Where(effect => effect.Id <= 0x01).ToArray();
+    public static readonly int[] Rates = { 125, 200, 250, 333, 500, 1000 };
+
+    public static int Dpi(int raw) { return (int)Math.Round(raw * 400 / 17.0 / 50) * 50; }
+
+    public static int Raw(int dpi) { return (int)Math.Round(dpi * 17 / 400.0); }
+
+    public static int[] Dpis() { return Enumerable.Range(0, 111).Select(step => 200 + 50 * step).ToArray(); }
+
+    public static bool Valid(byte[] page) { return page.Length == 512 && GMouse.Crc(page, 510) == (page[510] << 8 | page[511]); }
+
+    public static byte[] ReadPage(Hidpp device, int pageNumber)
+    {
+        var page = new byte[512];
+        for (int offset = 0; offset < 512; offset += 16)
+            Array.Copy(device.Register(0x83, 0xA2, (byte)pageNumber, (byte)(offset / 2)), 0, page, offset, 16);
+        return page;
+    }
+
+    public static int[] StagesOf(byte[] page)
+    {
+        return Enumerable.Range(0, 5).Select(stage => page[4 + 6 * stage] << 8 | page[5 + 6 * stage]).TakeWhile(raw => raw != 0 && raw != 0xFFFF).Select(Dpi).ToArray();
+    }
+
+    public static MouseLight Light(byte[] color)
+    {
+        int brightest = Math.Max(color[0], Math.Max(color[1], color[2]));
+        if (brightest == 0) return new MouseLight { Effect = 0x00 };
+        return new MouseLight
+        {
+            Effect = 0x01,
+            Color = (color[0] * 255 / brightest) << 16 | (color[1] * 255 / brightest) << 8 | color[2] * 255 / brightest,
+            Bright = Math.Max(1, (brightest * 100 + 127) / 255)
+        };
+    }
+
+    public static GMouse.State Read(Hidpp device)
+    {
+        var state = new GMouse.State { ProfileOk = true, Effects = Effects, Rates = Rates, Dpis = Dpis() };
+        var resolution = device.Register(0x83, 0x63);
+        state.Dpi = Dpi(resolution[0] | resolution[1] << 8);
+        int interval = device.Register(0x81, 0x64)[0];
+        state.Rate = interval > 0 ? 1000 / interval : 0;
+        state.Light = Light(device.Register(0x81, 0x57));
+        state.Zones[0] = new Dictionary<int, int> { { 0x00, 0 }, { 0x01, 1 } };
+        try
+        {
+            var current = device.Register(0x81, 0x0F);
+            var directory = current[0] == 0x00 && current[1] < 16 ? ReadPage(device, 1) : null;
+            int pageNumber = directory != null && Valid(directory) ? directory[current[1] * 3] : 0xFF;
+            var profile = pageNumber >= 2 && pageNumber < 32 ? ReadPage(device, pageNumber) : null;
+            if (profile != null && Valid(profile)) state.Stages = StagesOf(profile);
+        }
+        catch (HidppError) { }
+        state.Stage = Array.IndexOf(state.Stages, state.Dpi);
+        return state;
+    }
+
+    public static void SetDpi(Hidpp device, int dpi)
+    {
+        int raw = Raw(Math.Max(200, Math.Min(5700, dpi)));
+        var resolution = new byte[16];
+        Array.Copy(device.Register(0x83, 0x63), resolution, 6);
+        resolution[0] = resolution[2] = (byte)raw;
+        resolution[1] = resolution[3] = (byte)(raw >> 8);
+        device.Register(0x82, 0x63, resolution);
+    }
+
+    public static void SetRate(Hidpp device, int hz) { device.Register(0x80, 0x64, (byte)(1000 / hz)); }
+
+    public static void SetLight(Hidpp device, MouseLight light)
+    {
+        var color = light.Effect == 0x01 ? GMouse.Encode(light) : new byte[3];
+        device.Register(0x80, 0x57, color[0], color[1], color[2]);
     }
 }

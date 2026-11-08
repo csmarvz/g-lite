@@ -121,6 +121,7 @@ class PageMouse : DevicePage
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };
         backupsBtn = BackupsButton("mouse's profile");
         backupsBtn.Click += (s, e) => ShowBackups();
+        backupsBtn.Visible = !found.Hidpp10;
 
         var pic = Ui.Add(this, new Box(), 20, 118, 616, 209);
         Ui.Text(pic, "Live on the mouse", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
@@ -132,7 +133,7 @@ class PageMouse : DevicePage
         effects = Ui.Add(light, new Seg { Items = GMouse.Effects.Select(d => d.Name).ToArray(), AccessibleName = "Effect" }, 14, 58, 352, 32);
         effects.Picked += i =>
         {
-            var d = GMouse.Effects[i];
+            var d = Fx[i];
             var l = Light();
             l.Effect = d.Id;
             if (d.Speed && (l.Period < d.MinP || l.Period > d.MaxP)) l.Period = d.DefP;
@@ -184,6 +185,8 @@ class PageMouse : DevicePage
         Sync();
     }
 
+    EffectDef[] Fx { get { return state != null ? state.Effects : found.Hidpp10 ? G9x.Effects : GMouse.Effects; } }
+
     MouseLight Light()
     {
         if (cur.Light == null) cur.Light = new MouseLight();
@@ -224,12 +227,13 @@ class PageMouse : DevicePage
         loading = true;
         bool ready = state != null;
         var l = cur.Light;
-        var d = l == null ? null : GMouse.Def(l.Effect);
+        var d = l == null ? null : Fx.FirstOrDefault(e => e.Id == l.Effect);
         bool lit = ready && state.Zones.Count > 0, known = lit && d != null;
         bool color = known && d.Color, spd = known && d.Speed, br = known && l.Effect != 0x00;
         lightHead.Text = !ready || lit ? (l == null && lit ? "Lighting · as saved on the mouse" : "Lighting") : "Lighting · not supported on this mouse";
+        effects.Items = Fx.Select(e => e.Name).ToArray();
         effects.Enabled = lit;
-        effects.Index = known ? Array.FindIndex(GMouse.Effects, e => e.Id == l.Effect) : -1;
+        effects.Index = known ? Array.FindIndex(Fx, e => e.Id == l.Effect) : -1;
         Shade(colorHead, color);
         colors.Sync(l == null ? 0xFFFFFF : l.Color, color);
         Shade(brightHead, br);
@@ -266,7 +270,7 @@ class PageMouse : DevicePage
         rateHead.Text = "Report rate" + (ready && state.Rates.Length > 0 ? " (Hz)" : "") + (ready && state.Onboard && state.Savable ? " · on save" : "");
         rateHint.Text = !ready || !state.Onboard || state.Savable ? "" : "Set by the profile saved on the mouse.";
         saveBtn.Enabled = ready && state.Savable && dirty;
-        saveBtn.Visible = !ready || state.Writable;
+        saveBtn.Visible = !found.Hidpp10 && (!ready || state.Writable);
 
         picture.Display(lit ? l : new MouseLight { Effect = 0 }, ready ? cur.Dpi : 0,
             !ready ? "" : stage >= 0 ? "Stage " + (stage + 1) + " of " + state.Stages.Length + (cur.Dpi != state.Stages[stage] ? " · was " + state.Stages[stage] : "") : "",
@@ -368,6 +372,13 @@ class PageMouse : DevicePage
         Do(h =>
         {
             if (n != seq) return;
+            if (found.Hidpp10)
+            {
+                if (sent == null || want.Dpi != sent.Dpi) G9x.SetDpi(h, want.Dpi);
+                if (want.Light != null && (sent == null || !want.Light.Same(sent.Light))) { G9x.SetLight(h, want.Light); lightSet = !want.Light.Same(s.Light); }
+                sent = want;
+                return;
+            }
             if (sent == null || want.Dpi != sent.Dpi || want.Stage != sent.Stage)
             {
                 bool saved = s.Onboard && want.Stage >= 0 && want.Stage < s.Stages.Length && s.Stages[want.Stage] == want.Dpi;
@@ -384,7 +395,7 @@ class PageMouse : DevicePage
 
     void SendRate(int hz)
     {
-        Do(h => GMouse.SetRate(h, hz), () => Load());
+        Do(h => { if (found.Hidpp10) G9x.SetRate(h, hz); else GMouse.SetRate(h, hz); }, () => Load());
     }
 
     public override void Load()
@@ -393,7 +404,7 @@ class PageMouse : DevicePage
         Say("Reading the mouse…");
         GMouse.State s = null;
         int n = seq;
-        Do(h => s = GMouse.Read(h), () =>
+        Do(h => s = found.Hidpp10 ? G9x.Read(h) : GMouse.Read(h), () =>
         {
             state = s;
             fix = s.ProfileOk ? null : Backups.List(BackupId).FirstOrDefault(e => Usable(e) != null);

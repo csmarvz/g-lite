@@ -209,7 +209,20 @@ static class SelfTest
             && new Found { Name = "G915 WIRELESS RGB MECHANICAL GAMING KEYBOARD" }.Short == "G915"
             && new Found { Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard" }.Short == "G915 TKL", "the G915 is found, and the G915 X isn't");
         Check(new Found { Index = 0, Hidpp10 = true }.Slot == "" && new Found { Index = 0xFF }.Slot == "" && new Found { Index = 2 }.Slot == " · slot 2"
-            && Found.LooksG("G9x Laser Mouse") && !new Found { Name = "G9x Laser Mouse", Kind = "mouse", Hidpp10 = true }.IsMouse, "an old HID++ 1.0 mouse gets the info page");
+            && Found.LooksG("G9x Laser Mouse") && !new Found { Name = "G9x Laser Mouse", Kind = "mouse", Hidpp10 = true }.IsMouse, "an old HID++ 1.0 device has no slot and isn't taken for a HID++ 2.0 mouse");
+        Check(G9x.Dpi(17) == 400 && G9x.Dpi(136) == 3200 && G9x.Dpi(242) == 5700 && G9x.Dpi(9) == 200 && G9x.Dpi(85) == 2000 && G9x.Raw(5700) == 242 && G9x.Raw(800) == 34, "G9x DPI matches what LGS shows");
+        var g9xMouse = new FakeG9x();
+        var g9xState = G9x.Read(g9xMouse);
+        Check(g9xState.Dpi == 800 && g9xState.Stage == 1 && g9xState.Stages.SequenceEqual(new[] { 400, 800, 1600, 3200 }) && g9xState.Rate == 500 && g9xState.Light.Effect == 0x01 && g9xState.Light.Color == 0xFF0000 && g9xState.Light.Bright == 100, "the G9x reads its DPI, stages, rate and colour");
+        G9x.SetDpi(g9xMouse, 5700);
+        G9x.SetRate(g9xMouse, 1000);
+        G9x.SetLight(g9xMouse, new MouseLight { Effect = 0x01, Color = 0x0000FF, Bright = 50 });
+        Check(g9xMouse.Registers[0x63].Take(6).SequenceEqual(FakeHidpp.Hex("F200F2008001")) && g9xMouse.Registers[0x64][0] == 1 && g9xMouse.Registers[0x57].SequenceEqual(FakeHidpp.Hex("00007F")), "the G9x sets DPI, rate and colour through its registers");
+        G9x.SetLight(g9xMouse, new MouseLight { Effect = 0x00 });
+        Check(g9xMouse.Registers[0x57].SequenceEqual(new byte[3]) && G9x.Read(g9xMouse).Light.Effect == 0x00, "the G9x light turns off");
+        Check(G9x.StagesOf(g9xMouse.Pages[3]).SequenceEqual(new[] { 200, 800, 2000 }) && new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04" }.IsG9x && !new Found { Path = @"\\?\hid#vid_046d&pid_c066" }.IsG9x, "G9x profile 2 and detection");
+        var g9xReport = Report.Registers(new FakeG9x(), new Found { Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Hidpp10 = true }, "PageMouse");
+        Check(g9xReport.Contains("long 63=22 00 22 00 80 01") && g9xReport.Contains("page 02 · current") && g9xReport.Contains("page 04"), "the G9x report has its registers and profile pages");
         Check(new[] { "g515-tkl.json", "g915-tkl.json", "g915.json" }.All(x => Model.Load(x).Rows.Length > 5), "the key layouts load");
         var g9 = new FakeG915();
         var cl = G915.Clusters(g9);

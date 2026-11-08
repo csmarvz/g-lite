@@ -221,6 +221,64 @@ class FakeMouse : Hidpp
     }
 }
 
+class FakeG9x : Hidpp
+{
+    public readonly Dictionary<int, byte[]> Registers = new Dictionary<int, byte[]>();
+    public readonly Dictionary<int, byte[]> Pages = new Dictionary<int, byte[]>();
+
+    public FakeG9x() : base(false)
+    {
+        Registers[0x0F] = new byte[3];
+        Registers[0x51] = FakeHidpp.Hex("221200");
+        Registers[0x57] = FakeHidpp.Hex("FF0000");
+        Registers[0x64] = FakeHidpp.Hex("020000");
+        Registers[0x63] = FakeHidpp.Hex("22002200800100000000000000000000");
+        Registers[0xF1] = FakeHidpp.Hex("015802");
+        Pages[1] = Page("020001030003040007");
+        Pages[2] = Page("FF00008000110011221100220022221200440044222200880088122200000000122101011010028101008102008104008108008110008F0000830100830200830400830800");
+        Pages[3] = Page("00FF00800009000922110022002222120055005522220000000012220000000012210101101001");
+        Pages[4] = Page("0000FF800011001122110022002222120044004422220000000012220000000012210101101002");
+    }
+
+    public static byte[] Page(string start)
+    {
+        var page = Enumerable.Repeat((byte)0xFF, 512).ToArray();
+        FakeHidpp.Hex(start).CopyTo(page, 0);
+        int crc = GMouse.Crc(page, 510);
+        page[510] = (byte)(crc >> 8);
+        page[511] = (byte)crc;
+        return page;
+    }
+
+    public override void Dispose() { }
+
+    protected override byte[] Send(byte feat, int fn, byte[] p) { throw new HidppError(1, "HID++ 1.0 only"); }
+
+    protected override byte[] SendRegister(byte subId, byte register, byte[] parameters)
+    {
+        var reply = new byte[16];
+        if (subId == 0x83 && register == 0xA2)
+        {
+            byte[] page;
+            int pageNumber = parameters.Length > 0 ? parameters[0] : 0, offset = parameters.Length > 1 ? parameters[1] * 2 : 0;
+            if (!Pages.TryGetValue(pageNumber, out page)) throw new HidppError(3, "no such page");
+            Array.Copy(page, offset, reply, 0, 16);
+            return reply;
+        }
+        byte[] value;
+        if (!Registers.TryGetValue(register, out value)) throw new HidppError(2, "no such register");
+        if (subId == 0x80 || subId == 0x82)
+        {
+            var stored = new byte[value.Length];
+            Array.Copy(parameters, stored, Math.Min(parameters.Length, stored.Length));
+            Registers[register] = stored;
+            return reply;
+        }
+        Array.Copy(value, reply, value.Length);
+        return reply;
+    }
+}
+
 class FakeHeadset : Hidpp
 {
     public int Sidetone = 30, Off = 30;

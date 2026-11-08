@@ -88,21 +88,55 @@ static class Report
         return s.ToString();
     }
 
-    public static string Registers(Found f, string screen)
+    public static string Registers(Hidpp device, Found found, string screen)
     {
-        var s = new StringBuilder();
-        Head(s, f, screen, () => "–");
-        s.AppendLine();
-        s.AppendLine("HID++ 1.0 registers");
-        using (var pr = new Probe(f.Path, f.ShortPath))
-            for (int a = 0; a < 0x100; a++)
+        var text = new StringBuilder();
+        Head(text, found, screen, () => "–");
+        text.AppendLine();
+        text.AppendLine("HID++ 1.0 registers");
+        int misses = 0;
+        for (int register = 0; register < 0x100 && misses < 2; register++)
+            foreach (byte subId in new byte[] { 0x81, 0x83 })
             {
-                var x = pr.Register(f.Index, 0x81, (byte)a, 0);
-                if (x != null) s.AppendLine("short " + a.ToString("X2") + "=" + Hex(x.Take(3).ToArray(), " "));
-                var y = pr.Register(f.Index, 0x83, (byte)a, 0);
-                if (y != null) s.AppendLine("long " + a.ToString("X2") + "=" + Hex(y.Take(16).ToArray(), " "));
+                var value = ReadRegister(device, subId, (byte)register, ref misses);
+                if (value != null) text.AppendLine((subId == 0x81 ? "short " : "long ") + register.ToString("X2") + "=" + Hex(value.Take(subId == 0x81 ? 3 : 16).ToArray(), " "));
             }
-        return s.ToString();
+        var current = ReadRegister(device, 0x81, 0x0F, ref misses);
+        var directory = misses < 2 ? ReadPage(device, 1) : null;
+        if (directory == null) return text.ToString();
+        var pageNumbers = new List<int> { 1 };
+        for (int entry = 0; entry + 2 < 510 && directory[entry] != 0xFF && pageNumbers.Count < 17; entry += 3)
+            if (directory[entry] >= 2 && directory[entry] < 32) pageNumbers.Add(directory[entry]);
+        int currentPage = current != null && current[0] == 0 && current[1] < 16 ? directory[current[1] * 3] : -1;
+        foreach (var pageNumber in pageNumbers)
+        {
+            var page = pageNumber == 1 ? directory : ReadPage(device, pageNumber);
+            if (page == null) break;
+            text.AppendLine();
+            text.AppendLine("page " + pageNumber.ToString("X2") + (G9x.Valid(page) ? "" : " · bad checksum") + (pageNumber == currentPage ? " · current" : ""));
+            for (int offset = 0; offset < 512; offset += 16)
+            {
+                var row = page.Skip(offset).Take(16).ToArray();
+                if (offset > 0 && offset < 496 && (row.All(b => b == 0xFF) || row.All(b => b == 0))) continue;
+                text.AppendLine(offset.ToString("X3") + "=" + Hex(row, " "));
+            }
+        }
+        return text.ToString();
+    }
+
+    static byte[] ReadRegister(Hidpp device, byte subId, byte register, ref int misses)
+    {
+        try { var value = device.Register(subId, register); misses = 0; return value; }
+        catch (HidppError) { misses = 0; return null; }
+        catch (NotSupportedException) { misses = 2; return null; }
+        catch (TimeoutException) { misses++; return null; }
+    }
+
+    static byte[] ReadPage(Hidpp device, int pageNumber)
+    {
+        try { return G9x.ReadPage(device, pageNumber); }
+        catch (HidppError) { return null; }
+        catch (TimeoutException) { return null; }
     }
 
     static void Head(StringBuilder s, Found f, string screen, Func<string> battery)

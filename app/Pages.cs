@@ -195,7 +195,7 @@ abstract class DevicePage : Control, IPage
     void Collect(Action<string, string> done)
     {
         string text = null;
-        Do(h => text = Report.Build(h, found, GetType().Name), () => done(text, null), msg => done(null, msg));
+        Do(h => text = found.Hidpp10 ? Report.Registers(h, found, GetType().Name) : Report.Build(h, found, GetType().Name), () => done(text, null), msg => done(null, msg));
     }
 
     protected string Who { get { return found.Short == "" ? found.Name : found.Short; } }
@@ -210,7 +210,7 @@ abstract class DevicePage : Control, IPage
             {
                 if (dev == null)
                 {
-                    dev = fake ?? new Hidpp(found.Path, found.Index);
+                    dev = fake ?? new Hidpp(found.Path, found.Index, found.ShortPath);
                     dev.Who = Who;
                 }
                 a(dev);
@@ -400,8 +400,8 @@ class InfoPage : Control
             string t = null, err = null;
             try
             {
-                if (f.Hidpp10) t = Report.Registers(f, "none, not supported yet");
-                else using (var h = new Hidpp(f.Path, f.Index)) t = Report.Build(h, f, "none, not supported yet");
+                using (var h = new Hidpp(f.Path, f.Index, f.ShortPath))
+                    t = f.Hidpp10 ? Report.Registers(h, f, "none, not supported yet") : Report.Build(h, f, "none, not supported yet");
             }
             catch (Exception ex) { err = ex.Message; }
             if (IsHandleCreated) BeginInvoke((Action)(() => done(t, err)));

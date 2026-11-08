@@ -27,6 +27,11 @@ static class Log
         Write(who, "sent", id.ToString("X4") + " fn" + fn.ToString("X") + (p.Length > 0 ? "  " + BitConverter.ToString(p).Replace("-", " ") : ""), result);
     }
 
+    public static void Register(string who, int reg, byte[] p, string result)
+    {
+        Write(who, "sent", "register " + reg.ToString("X2") + (p.Length > 0 ? "  " + BitConverter.ToString(p).Replace("-", " ") : ""), result);
+    }
+
     public static bool Reads(int id, int fn)
     {
         int[] ok;
