@@ -1,10 +1,10 @@
 # Report rate 0x8061
 
-Newer G mice that go above 1000 Hz have 0x8061 (extended report rate) instead of 0x8060. G-Lite only knows 0x8060, so on those mice it shows no report rate. From OpenLogi (see [openlogi.md](openlogi.md)), which takes it from Logi Options+ 2.8. No recording of a G mouse with 0x8061 yet.
+Newer G mice can expose 0x8061 (extended report rate). G-Lite only knows 0x8060, so it cannot show rates through 0x8061. The function description below comes from OpenLogi (see [openlogi.md](openlogi.md)), which takes it from Logi Options+ 2.8. Research on 2026-11-08 also found [Solaar captures](research/solaar-feature-evidence.md) of PRO X 2 (WPID 40A9, USB C09B) and PRO X 2 Superstrike (WPID 40BD, USB C0A8) with 0x8061 and 0x2202. See [newer mouse research](research/mice.md) for profile-format and per-connection rate evidence.
 
 ## Which mice
 
-Not confirmed from a report yet. Likely the mice sold with 2k, 4k or 8k Hz: PRO X SUPERLIGHT 2, PRO 2 LIGHTSPEED, G502 X PLUS and LIGHTSPEED, and later. Check `Features` in their reports.
+The two captures above establish 0x8061 on those units. Do not assign it to the entire G502 X family: the recorded G502 X C099 and G502 X PLUS 4099 have 0x8060. PRO 2 LIGHTSPEED and other revisions need their own feature reports. Check `Features`, firmware and connection rather than infer capabilities from the product name.
 
 Some may have both 0x8060 and 0x8061. Prefer 0x8061 when it's there.
 
@@ -42,7 +42,7 @@ fn 1 answers for the connection in use without asking which one it is. For fn 2,
 On the G Pro Wireless in onboard mode, 0x8060 fn 2 is refused, and the rate only changes on Save to mouse, through byte 0 of the profile (the interval in ms). With 0x8061:
 
 - It's not known whether fn 3 is refused in onboard mode too. Try it, and fall back to saving as with 0x8060.
-- Byte 0 of the profile holds whole milliseconds, so it can't hold 2000 Hz or more. Where those mice keep the rate in the profile is unknown. Their profile format may differ too. Until a report shows the sector, offer rates above 1000 Hz as live only, and save 1000 Hz or less as now.
+- Byte 0 of the older format supported by G-Lite holds whole milliseconds, so it can't hold 2000 Hz or more. Newer numeric formats can have separate wireless/wired rate indexes instead; see [profile research and its caveats](research/mice.md). Do not write an unfamiliar format using the old layout. Even a live setter can be refused in onboard mode, so do not promise live-only high rates until that device has been tested.
 
 ## Code
 

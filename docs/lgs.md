@@ -1,5 +1,7 @@
 # Logitech Gaming Software
 
+Research update, 2026-11-08: Logitech's [support notice](https://support.logi.com/hc/en-au/articles/43643050172055-Logitech-G-HUB) says official LGS downloads/documentation were scheduled for removal on 2026-10-31. The historical direct download below was not downloaded or revalidated in this pass. A broader [local manifest inventory](research/lgs-manifest-inventory.md) and [vendor-software references](research/vendor-software.md) preserve the factual device information.
+
 What LGS 9.04.49 (the last version, May 2022) tells us. Read from its install files, without copying them. Facts about what LGS shows or writes on the G9x (DPI values, Restore Defaults) come from running it and are in [G9x.md](G9x.md). LGS is Logitech's: take facts only, no files, images or code.
 
 - Install: `C:\Program Files\Logitech Gaming Software`. The Windows download on Logitech's support page is the 32-bit build, which refuses to run on 64-bit Windows. The 64-bit one is `https://download01.logi.com/web/ftp/pub/techsupport/gaming/LGS_9.04.49_x64_Logitech.exe`.

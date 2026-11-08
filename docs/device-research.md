@@ -1,5 +1,7 @@
 # Device research
 
+Expanded research gathered on 2026-11-08 is indexed in [research/README.md](research/README.md), with a [device map](research/device-map.md), exact upstream inventories, source links and [corrections to earlier assumptions](research/next-captures.md). The older findings below remain as historical notes; the expanded research distinguishes captured facts from implementation claims and unresolved leads.
+
 Notes for adding more Logitech G devices (issues #3 and #11). Gathered on 2026-11-06 from Solaar dumps, the OpenRGB, Solaar and libratbag source code, and Logitech's manuals. Nothing here has been checked on a real G915 or G815 yet.
 
 OpenRGB and Solaar are GPL, so G-Lite only takes facts from them, never code. libratbag is MIT.
