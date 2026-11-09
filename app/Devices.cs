@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Management;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -73,6 +72,25 @@ static class Devices
     [DllImport("hid.dll")] static extern int HidP_GetCaps(IntPtr p, short[] caps);
     [DllImport("hid.dll", CharSet = CharSet.Unicode)] static extern bool HidD_GetProductString(SafeFileHandle h, System.Text.StringBuilder b, int len);
 
+    [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)] static extern int CM_Get_Device_Interface_List_Size(out int length, ref Guid interfaceClass, string deviceId, int flags);
+    [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)] static extern int CM_Get_Device_Interface_List(ref Guid interfaceClass, string deviceId, char[] buffer, int length, int flags);
+
+    static string[] HidIds()
+    {
+        var hid = new Guid(HidClass.Substring(2, 36));
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            int length;
+            if (CM_Get_Device_Interface_List_Size(out length, ref hid, null, 0) != 0) break;
+            var buffer = new char[length];
+            if (CM_Get_Device_Interface_List(ref hid, null, buffer, length, 0) != 0) continue;
+            return new string(buffer).Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries)
+                .Where(path => path.StartsWith(@"\\?\HID#", StringComparison.OrdinalIgnoreCase) && path.IndexOf("046D", StringComparison.OrdinalIgnoreCase) >= 0 && path.LastIndexOf("#{") > 4)
+                .Select(path => path.Substring(4, path.LastIndexOf("#{") - 4).Replace('#', '\\').ToUpperInvariant()).ToArray();
+        }
+        return new string[0];
+    }
+
     public static string PathOf(string id) { return @"\\?\" + id.Replace('\\', '#') + HidClass; }
 
     public static SafeFileHandle Open(string path) { return CreateFile(path, 0xC0000000, 3, IntPtr.Zero, 3, 0x40000000, IntPtr.Zero); }
@@ -98,10 +116,8 @@ static class Devices
     static List<Port> Ports()
     {
         var groups = new Dictionary<string, Port>();
-        using (var s = new ManagementObjectSearcher("SELECT DeviceID FROM Win32_PnPEntity WHERE DeviceID LIKE 'HID%046D%'"))
-            foreach (ManagementObject o in s.Get())
+        foreach (var id in HidIds())
             {
-                var id = (string)o["DeviceID"];
                 int col = id.IndexOf("&COL", StringComparison.OrdinalIgnoreCase), slash = id.LastIndexOf('\\'), amp = id.LastIndexOf('&');
                 if (col < 0 || slash < 0 || amp < slash) continue;
                 var group = id.Substring(0, col) + "|" + id.Substring(slash, amp - slash);

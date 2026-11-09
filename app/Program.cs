@@ -524,6 +524,7 @@ class MainWindow : Form
         Hide();
         if (shown is IPage) ((IPage)shown).Hidden();
         shown = null;
+        BeginInvoke((Action)Win.Trim);
     }
 
     [STAThread]
@@ -561,7 +562,7 @@ class MainWindow : Form
                 double percent = (cpu - lastCpu).TotalMilliseconds / Math.Max(1, (now - lastAt).TotalMilliseconds) / Environment.ProcessorCount * 100;
                 lastCpu = cpu;
                 lastAt = now;
-                usage.Text = "CPU " + percent.ToString("0.0") + "% · RAM " + (self.WorkingSet64 >> 20) + " MB";
+                usage.Text = "CPU " + percent.ToString("0.0") + "% · RAM " + (Win.PrivateMemory() >> 20) + " MB";
             };
             var live = new System.Windows.Forms.Timer { Interval = 1000 };
             live.Tick += (s, e) => measure();
@@ -598,6 +599,12 @@ class MainWindow : Form
                 if (run != null && !run.Contains("--tray")) k.SetValue("GLite", run + " --tray");
             }
             if (!args.Contains("--tray")) panel.ShowPanel();
+            else
+            {
+                var settle = new System.Windows.Forms.Timer { Interval = 15000 };
+                settle.Tick += (s, e) => { settle.Dispose(); if (!panel.Visible) Win.Trim(); };
+                settle.Start();
+            }
             if (Updater.Check) panel.CheckUpdates(false);
             Application.Run();
             tray.Visible = false;

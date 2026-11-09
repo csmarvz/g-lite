@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- G-Lite uses less memory: it lists devices without WMI and reads the key layouts without the JSON serializer, so it loads 19 fewer DLLs. It hands unused memory back to Windows when its window is hidden. The tray menu shows the memory Task Manager shows, not the shared Windows and .NET DLLs.
+
 ## [0.0.8-alpha] - 2026-11-09
 
 ### Added

@@ -8,6 +8,25 @@ static class Win
     public const int DpiChanged = 0x02E0;
     public static bool Rounded;
 
+    struct MemoryCounters { public int Size, PageFaults; public IntPtr PeakWorkingSet, WorkingSet, PeakPagedPool, PagedPool, PeakNonPagedPool, NonPagedPool, Pagefile, PeakPagefile, Private, PrivateWorkingSet; public long SharedCommit; }
+    [DllImport("psapi.dll")] static extern bool GetProcessMemoryInfo(IntPtr process, ref MemoryCounters counters, int size);
+    [DllImport("psapi.dll")] static extern bool EmptyWorkingSet(IntPtr process);
+    [DllImport("kernel32.dll")] static extern IntPtr GetCurrentProcess();
+
+    public static long PrivateMemory()
+    {
+        var counters = new MemoryCounters { Size = Marshal.SizeOf(typeof(MemoryCounters)) };
+        if (GetProcessMemoryInfo(GetCurrentProcess(), ref counters, counters.Size) && counters.PrivateWorkingSet != IntPtr.Zero) return counters.PrivateWorkingSet.ToInt64();
+        return System.Diagnostics.Process.GetCurrentProcess().WorkingSet64;
+    }
+
+    public static void Trim()
+    {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        EmptyWorkingSet(GetCurrentProcess());
+    }
+
     [DllImport("user32.dll")] static extern bool SystemParametersInfo(int action, int param, ref bool value, int ini);
 
     public static bool Animations

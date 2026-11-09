@@ -7,15 +7,13 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Json;
+using System.Text.RegularExpressions;
 
-[DataContract]
 class Model
 {
-    [DataMember(Name = "name")] public string Name { get; set; }
-    [DataMember(Name = "rows")] public string[] Rows { get; set; }
-    [DataMember(Name = "ids")] public string[] Ids { get; set; }
+    public string Name { get; set; }
+    public string[] Rows { get; set; }
+    public string[] Ids { get; set; }
 
     public List<int> KeyIds()
     {
@@ -36,8 +34,18 @@ class Model
 
     public static Model Load(string file)
     {
-        using (var s = typeof(Model).Assembly.GetManifestResourceStream(file))
-            return (Model)new DataContractJsonSerializer(typeof(Model)).ReadObject(s);
+        string text;
+        using (var stream = typeof(Model).Assembly.GetManifestResourceStream(file))
+        using (var reader = new System.IO.StreamReader(stream)) text = reader.ReadToEnd();
+        return new Model { Name = Strings(text, "name")[0], Rows = Strings(text, "rows"), Ids = Strings(text, "ids") };
+    }
+
+    static string[] Strings(string text, string key)
+    {
+        const string quoted = @"""(?:[^""\\]|\\.)*""";
+        var match = Regex.Match(text, @"""" + key + @"""\s*:\s*(" + quoted + @"|\[(?:\s*" + quoted + @"\s*,?)*\s*\])");
+        if (!match.Success) return null;
+        return Regex.Matches(match.Groups[1].Value, quoted).Cast<Match>().Select(found => Regex.Unescape(found.Value.Substring(1, found.Value.Length - 2))).ToArray();
     }
 }
 

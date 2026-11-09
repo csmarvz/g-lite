@@ -23,7 +23,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `MainWindow`: the device sidebar, one page per found device, rescans on plug and unplug, the Settings and Logs screens, updates and run on startup
   - `Main`: the tray icon and its menu (CPU and memory use, the devices, Open, Quit), the single-instance mutex and `--demo`
 - `app/Devices.cs`:
-  - `Devices.Scan`: finds every Logitech HID++ interface. Direct devices answer at index 0xFF. Receivers list their paired slots (register 0xB5), and each slot is pinged. A port with neither is tried as an old HID++ 1.0 USB device at index 0x00 (register 0xF1, firmware), like the G9x Laser Mouse: its name comes from the USB product string (`Found.Hidpp10`, `Found.ShortPath`). The G9x gets the mouse screen, others the info page. It returns G devices only.
+  - `Devices.Scan`: finds every Logitech HID++ interface. Direct devices answer at index 0xFF. Receivers list their paired slots (register 0xB5), and each slot is pinged. Ports come from cfgmgr32 (`CM_Get_Device_Interface_List`), not WMI. A port with neither is tried as an old HID++ 1.0 USB device at index 0x00 (register 0xF1, firmware), like the G9x Laser Mouse: its name comes from the USB product string (`Found.Hidpp10`, `Found.ShortPath`). The G9x gets the mouse screen, others the info page. It returns G devices only.
   - `Found`: what the scan learned about a device. `Models` holds its product IDs per connection, decoded from 0x0003 fn 0 (bytes 5–6 the connection bits: 0x01/0x02 Bluetooth, 0x04 LIGHTSPEED, 0x08 USB; bytes 7–12 one ID per set bit, in bit order), or from the USB path for HID++ 1.0 devices. Retail model numbers aren't on the device.
   - `Probe`: the scan's HID++ calls. HID++ 1.0 errors come back on the receiver's short collection.
   - Names of devices seen awake are kept as `seen.<wireless id>` in `settings.txt`, for when they're asleep.
@@ -55,7 +55,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/Game.cs`: Blocks, played on the 15x5 grid over the main key block, and Snake and Mines (`KeyGame`), played on the keys of that block
 - `app/Update.cs`: `Updater`, which checks GitHub releases, verifies the download against `checksums.txt`, swaps the exe and restarts. If the exe's folder isn't writable, it runs the new exe elevated with `--swap <path>` to do the swap, then restarts unelevated.
 - `app/Settings.cs`: `settings.txt` with `key=value` lines, next to the exe, or in `%LOCALAPPDATA%\GLite` if that folder isn't writable. Run on startup stays in the Windows `Run` key.
-- `app/Win.cs`: per-monitor DPI awareness, the scale of a screen, pixel fonts, rounded corners. Windows are laid out at 100% and scaled with `Scale()`; `WM_DPICHANGED` rescales them.
+- `app/Win.cs`: per-monitor DPI awareness, the scale of a screen, pixel fonts, rounded corners. Windows are laid out at 100% and scaled with `Scale()`; `WM_DPICHANGED` rescales them. `PrivateMemory` is the memory Task Manager shows, and `Trim` hands unused memory back to Windows when the window hides.
 - `app/Logo.cs`: draws the GL logo at any size and writes the multi-size ico.
 - `app/SelfTest.cs`: self-checks with golden bytes from the real keyboard. Add a check here whenever the encoding or rules change.
 - `app/models/g515-tkl.json`, `g515-tkl-iso.json`, `g915-tkl.json`, `g915.json`: the key layouts. The G515 page picks ISO when 0x4540 reports a layout above 2.
