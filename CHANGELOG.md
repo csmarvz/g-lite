@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Moving or using the window no longer stutters while the Screen effect runs: the screen is read on a background thread.
+
 ## [0.0.9-alpha] - 2026-11-09
 
 ### Changed

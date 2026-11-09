@@ -5,6 +5,8 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using Timer = System.Windows.Forms.Timer;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -224,7 +226,7 @@ class Page515 : DevicePage
     List<byte[]> clusters;
     ScreenSetup setup;
     readonly Timer screenTimer = new Timer { Interval = 100 }, snapTimer = new Timer { Interval = 1000 };
-    volatile bool sending, failing, statusDirty, layoutDirty;
+    volatile bool sending, failing, statusDirty, layoutDirty, capturing, snapping;
     volatile string problem;
     bool released, force, iso;
     int battery = -1, layoutCode = -1, selectedZone = 1;
@@ -570,8 +572,30 @@ class Page515 : DevicePage
             return;
         }
         if (released) { released = false; force = true; Calm(); }
+        if (capturing) return;
+        capturing = true;
         var monitor = ScreenCapture.Find(setup.Monitor).Bounds;
-        var sampled = ScreenCapture.Sample(monitor, setup.Zones);
+        var zones = setup.Zones.ToList();
+        var ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
+        ThreadPool.QueueUserWorkItem(state =>
+        {
+            int[] sampled = null;
+            try { sampled = ScreenCapture.Sample(monitor, zones); } catch (Exception) { }
+            try
+            {
+                ui.Post(posted =>
+                {
+                    capturing = false;
+                    if (sampled != null && !IsDisposed && Screening && !sending && sampled.Length == setup.Zones.Count) Sampled(sampled, readBattery);
+                    else if (readBattery) nextBattery = DateTime.UtcNow;
+                }, null);
+            }
+            catch (Exception) { }
+        });
+    }
+
+    void Sampled(int[] sampled, bool readBattery)
+    {
         bool fresh = shown == null || shown.Length != sampled.Length;
         if (fresh) shown = new int[sampled.Length];
         bool refresh = DateTime.UtcNow >= nextRefresh;
@@ -638,14 +662,31 @@ class Page515 : DevicePage
 
     void Snap()
     {
-        if (!Screening || !Visible) return;
+        if (!Screening || !Visible || snapping) return;
+        snapping = true;
         var monitor = ScreenCapture.Find(setup.Monitor).Bounds;
         int w = preview.Width, h = Math.Max(1, w * monitor.Height / Math.Max(1, monitor.Width));
-        var old = preview.Image;
-        preview.Monitor = monitor.Size;
-        preview.Image = ScreenCapture.Shrink(monitor, w, h);
-        preview.Invalidate();
-        if (old != null) old.Dispose();
+        var ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
+        ThreadPool.QueueUserWorkItem(state =>
+        {
+            Bitmap image = null;
+            try { image = ScreenCapture.Shrink(monitor, w, h); } catch (Exception) { }
+            try
+            {
+                ui.Post(posted =>
+                {
+                    snapping = false;
+                    if (image == null) return;
+                    if (IsDisposed || ScreenCapture.Find(setup.Monitor).Bounds != monitor) { image.Dispose(); if (!IsDisposed) Snap(); return; }
+                    var old = preview.Image;
+                    preview.Monitor = monitor.Size;
+                    preview.Image = image;
+                    preview.Invalidate();
+                    if (old != null) old.Dispose();
+                }, null);
+            }
+            catch (Exception) { if (image != null) image.Dispose(); }
+        });
     }
 
     void SyncScreen()
