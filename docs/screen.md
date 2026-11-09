@@ -28,6 +28,10 @@ The G515 reports 96 ids: 00–4F, 61–6F and FE. Checked by lighting them:
 
 The G915 ids in `g915.json` and `g915-tkl.json` follow the same rule and are untested. Its logo, media keys and G keys are `--`.
 
+## Adding a keyboard
+
+A report of the keyboard lists its layout (0x4540) and its lit ids (`lit ids=` under 0x8081). With a photo of the keyboard, that gives most of its layout file: letters, digits, F keys and modifiers follow the rule above. Extra keys (G keys, media keys, logo) need a test that lights one id at a time.
+
 ## Timing and cost
 
 - A full update (8 fn 6 calls and fn 7) took 30–39 ms over LIGHTSPEED while streaming 10 times a second, 90–195 ms when idle in between. Changing the effect through 0x8071 fn 1 instead took 223 ms.

@@ -8,6 +8,7 @@
 - Older G devices plugged in with USB that speak HID++ 1.0 now show up, and their report lists their registers and profile pages.
 - Screen, a lighting effect that follows your monitor, on keyboards with per-key lighting (G515, G915, untested on the G915). Each zone on the screen gives its average colour to its keys. Pick the monitor, move and resize the zones on a picture of the screen, add up to five, and click or drag across keys to give them to a zone. Color boost, brightness, update rate (100 to 1000 ms) and smooth changes. It pauses, giving the keyboard its own lighting back, on battery below 20% and while the screen is off or locked. It runs only while G-Lite does, isn't saved to the keyboard, and comes back when G-Lite starts. Profiles keep it with its zones.
 - The G515's picture follows its layout: ISO keyboards get the <> key, the key next to Enter and the tall Enter.
+- The report lists the per-key lighting ids a keyboard has (0x8081), with its layout, so the Screen effect can be added to more keyboards.
 - The report lists the device's product IDs, read from the device (like USB C088 · LIGHTSPEED 4079).
 - The G9x Laser Mouse: colour and brightness, DPI, the DPI stages of the active profile and the report rate, set live. Save to mouse writes them into the active profile, after a backup, and Backups restores one.
 

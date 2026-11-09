@@ -22,6 +22,7 @@ static class Report
         { 0x8060, new[] { 0, 1 } },
         { 0x8070, new[] { 0, 1, 2 } },
         { 0x8071, new[] { 0 } },
+        { 0x8081, new[] { 0 } },
         { 0x8100, new[] { 0, 2, 4, 5, 0xB } },
         { 0x8101, new[] { 8, 0xC } },
         { 0x8300, new[] { 0 } },
@@ -231,6 +232,19 @@ static class Report
                     if (n == 0) break;
                 }
                 break;
+            case 0x8081:
+                {
+                    var lit = new List<int>();
+                    for (int page = 0; page < 3; page++)
+                    {
+                        var x = r.Show("page " + page, id, 0, 0, (byte)page, 0);
+                        for (int i = 0; x != null && i < 14; i++)
+                            for (int bit = 0; bit < 8; bit++)
+                                if ((x[2 + i] >> bit & 1) != 0) lit.Add(page * 112 + i * 8 + bit);
+                    }
+                    r.S.AppendLine("lit ids=" + string.Join(" ", lit.Select(n => n.ToString("X2"))));
+                    break;
+                }
             case 0x8100: Profiles(r); break;
             case 0x8101:
                 {
