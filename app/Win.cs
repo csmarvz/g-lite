@@ -13,6 +13,16 @@ static class Win
     [DllImport("psapi.dll")] static extern bool EmptyWorkingSet(IntPtr process);
     [DllImport("kernel32.dll")] static extern IntPtr GetCurrentProcess();
 
+    struct LastInput { public int Size, Time; }
+    [DllImport("user32.dll")] static extern bool GetLastInputInfo(ref LastInput info);
+
+    public static int IdleSeconds()
+    {
+        var info = new LastInput { Size = 8 };
+        if (!GetLastInputInfo(ref info)) return 0;
+        return (int)(((uint)Environment.TickCount - (uint)info.Time) / 1000);
+    }
+
     public static long PrivateMemory()
     {
         var counters = new MemoryCounters { Size = Marshal.SizeOf(typeof(MemoryCounters)) };

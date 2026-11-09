@@ -55,6 +55,7 @@ class FakeHidpp : Hidpp
     static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8071, 9 }, { 0x8040, 14 }, { 0x8101, 15 }, { 0x8081, 16 }, { 0x4540, 17 }, { 0x1004, 18 } };
     static readonly byte[] EffectIds = { 0x00, 0x01, 0x0A, 0x15, 0x16, 0x17 };
     public readonly Dictionary<int, int> Keys = new Dictionary<int, int>();
+    readonly byte[] control = new byte[2];
     public int Frames, Battery = 82;
     public bool Charging;
 
@@ -105,6 +106,8 @@ class FakeHidpp : Hidpp
                 r[1] = p[1]; r[3] = EffectIds[p[1]];
             }
             if (fn == 1) Live = p.Take(12).ToArray();
+            if (fn == 5 && p[0] == 1) { control[0] = p[1]; control[1] = p[2]; }
+            if (fn == 5) { r[1] = control[0]; r[2] = control[1]; }
         }
         else if (feat == Index[0x8081])
         {

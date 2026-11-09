@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Lighting you change on the G515 without saving now stays while G-Lite runs, also when you minimize it or open another device. The keyboard gets its saved lighting back when G-Lite quits, with As on the keyboard, and while the screen is off or locked, so it can dim and sleep on its own. The unsaved lighting comes back when the screen does. While it shows, G-Lite follows its Dim after, Dim to and Turn off after settings itself, counting from your last key press or mouse move on the PC, since the keyboard doesn't dim or turn off on its own while G-Lite controls its lighting.
+
+### Fixed
+
+- Clicking the tray icon while G-Lite was minimized hid it, and the next click left it off screen. It now brings the window back.
+- After the keyboard was turned off and on, changing its lighting failed with HID++ error 0x05. G-Lite now takes control of the lighting again, and checks every 3 seconds while unsaved lighting is shown, so it comes back by itself after the keyboard is turned off and on.
+
 ## [0.0.10-alpha] - 2026-11-09
 
 ### Fixed

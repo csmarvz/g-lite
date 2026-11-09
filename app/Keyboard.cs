@@ -422,14 +422,16 @@ static class G515
         h.Call(h.F(0x8101), 6, 0x03);
     }
 
-    public static void Preview(Hidpp h, Lighting l)
+    public static void Preview(Hidpp h, Lighting l) { Preview(h, l, 100); }
+
+    public static void Preview(Hidpp h, Lighting l, int level)
     {
         byte rgb = h.F(0x8071);
         int index = -1;
         for (int e = 0; e < 16 && index < 0; e++)
             if (h.Call(rgb, 0, 0, (byte)e, 0)[3] == l.Effect) index = e;
         if (index < 0) throw new NotSupportedException("Effect not supported by this keyboard");
-        h.Call(rgb, 1, new byte[] { 0, (byte)index }.Concat(Encode(l, 100)).Concat(new byte[] { 0x01 }).ToArray());
+        h.Call(rgb, 1, new byte[] { 0, (byte)index }.Concat(Encode(l, level)).Concat(new byte[] { 0x01 }).ToArray());
     }
 
     public static void Store(Hidpp h, Lighting l) { Store(h, Snapshot(h), l); }

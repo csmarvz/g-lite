@@ -500,10 +500,10 @@ class MainWindow : Form
 
     public void ShowPanel()
     {
+        if (WindowState == FormWindowState.Minimized) { Show(); WindowState = FormWindowState.Normal; }
         var wa = Screen.FromPoint(Cursor.Position).WorkingArea;
         Rescale(Win.At(moved ? Location : Cursor.Position));
         if (!moved) Location = new Point(Math.Max(wa.Left, wa.Right - Width - S(12)), Math.Max(wa.Top, wa.Bottom - Height - S(12)));
-        if (WindowState == FormWindowState.Minimized) WindowState = FormWindowState.Normal;
         Show();
         if (view != null && wantView) ShowView();
         Activate();
@@ -584,7 +584,7 @@ class MainWindow : Form
             fill();
             menu.Opening += (s, e) => { fill(); live.Start(); e.Cancel = false; };
             menu.Closed += (s, e) => live.Stop();
-            tray.MouseClick += (s, e) => { if (e.Button == MouseButtons.Left) { if (panel.Visible) panel.HidePanel(); else panel.ShowPanel(); } };
+            tray.MouseClick += (s, e) => { if (e.Button == MouseButtons.Left) { if (panel.Visible && panel.WindowState != FormWindowState.Minimized) panel.HidePanel(); else panel.ShowPanel(); } };
             panel.CreateControl();
             panel.Handle.ToString();
             panel.Tray = tray;

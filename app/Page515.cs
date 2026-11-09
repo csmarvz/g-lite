@@ -225,10 +225,12 @@ class Page515 : DevicePage
     readonly bool g915, canScreen;
     List<byte[]> clusters;
     ScreenSetup setup;
-    readonly Timer screenTimer = new Timer { Interval = 100 }, snapTimer = new Timer { Interval = 1000 };
-    volatile bool sending, failing, statusDirty, layoutDirty, capturing, snapping;
+    readonly Timer screenTimer = new Timer { Interval = 100 }, snapTimer = new Timer { Interval = 1000 }, watchTimer = new Timer { Interval = 500 };
+    volatile bool sending, failing, statusDirty, layoutDirty, capturing, snapping, watching, claimed;
     volatile string problem;
-    bool released, force, iso;
+    bool released, force, iso, away;
+    volatile int idleLevel;
+    int watchTicks;
     int battery = -1, layoutCode = -1, selectedZone = 1;
     bool charging;
     DateTime nextBattery, nextTry, nextRefresh;
@@ -248,7 +250,7 @@ class Page515 : DevicePage
 
     Lighting cur = new Lighting(), stored;
     int brightness = 100, storedBrightness = -1;
-    bool loading, dirty, claimed, unknownStored, broken;
+    bool loading, dirty, unknownStored, broken;
     int previewSeq, edits;
     readonly Timer debounce = new Timer { Interval = 120 };
 
@@ -397,7 +399,9 @@ class Page515 : DevicePage
 
         screenTimer.Tick += (s, e) => Tick();
         snapTimer.Tick += (s, e) => Snap();
-        presenceChanged = () => { if (IsHandleCreated) BeginInvoke((Action)(() => { if (Screening) { Tick(); Calm(); } })); };
+        watchTimer.Tick += (s, e) => Watch();
+        watchTimer.Start();
+        presenceChanged = () => { if (IsHandleCreated) BeginInvoke((Action)PresenceChanged); };
         Presence.Changed += presenceChanged;
         exiting = (s, e) => Exiting();
         Application.ApplicationExit += exiting;
@@ -725,8 +729,13 @@ class Page515 : DevicePage
 
     void Exiting()
     {
-        if (!Screening || !claimed) return;
-        Do(h => { if (g915) G915.Release(h); else G515.Release(h); claimed = false; });
+        if (Screening)
+        {
+            if (!claimed) return;
+            Do(h => { if (g915) G915.Release(h); else G515.Release(h); claimed = false; });
+        }
+        else if (g915 || !dirty) return;
+        else Release();
         Queue.Wait(2000);
     }
 
@@ -735,6 +744,7 @@ class Page515 : DevicePage
         if (disposing)
         {
             screenTimer.Dispose();
+            watchTimer.Dispose();
             snapTimer.Dispose();
             Presence.Changed -= presenceChanged;
             Application.ApplicationExit -= exiting;
@@ -746,8 +756,6 @@ class Page515 : DevicePage
     static string BackupId { get { return "G515"; } }
 
     public override void Restyle() { Sync(); }
-
-    public override void Hidden() { if (!g915 && !Screening) Release(); }
 
     protected override void Lost() { claimed = false; clusters = null; present = null; }
 
@@ -896,6 +904,7 @@ class Page515 : DevicePage
         }, () =>
         {
             Note = "Restored " + what;
+            dirty = false;
             Load();
         });
     }
@@ -925,6 +934,7 @@ class Page515 : DevicePage
             Do(h => { if (level != G515.Brightness(h)) G515.SetBrightness(h, level); }, Calm);
             return;
         }
+        idleLevel = 0;
         var l = cur.Clone();
         int b = brightness, seq = ++previewSeq;
         if (g915) { Apply(l, b, seq); return; }
@@ -932,7 +942,10 @@ class Page515 : DevicePage
         {
             if (seq != previewSeq) return;
             if (b != G515.Brightness(h)) G515.SetBrightness(h, b);
-            if (claimed || !l.Same(stored)) { if (!claimed) { G515.Claim(h); claimed = true; } G515.Preview(h, l); }
+            if (!claimed && l.Same(stored)) return;
+            if (!claimed) { G515.Claim(h); claimed = true; }
+            try { G515.Preview(h, l); }
+            catch (HidppError e) { if (e.Code != 5) throw; G515.Claim(h); G515.Preview(h, l); }
         }, () => { if (seq == previewSeq) Calm(); });
     }
 
@@ -1036,8 +1049,8 @@ class Page515 : DevicePage
     public override void Load()
     {
         if (g915) { LoadG915(); return; }
-        dirty = false;
-        debounce.Stop();
+        bool live = dirty && !Screening;
+        if (!live) { dirty = false; debounce.Stop(); }
         Say("Reading the keyboard…");
         int n = edits;
         Lighting l = null;
@@ -1061,7 +1074,7 @@ class Page515 : DevicePage
             storedBrightness = b;
             stored = half ? null : l.Clone();
             unknownStored = half || unknown;
-            if (n == edits)
+            if (n == edits && !live)
             {
                 brightness = b;
                 if (!half && !Screening) cur = l;
@@ -1072,11 +1085,75 @@ class Page515 : DevicePage
         });
     }
 
+    void PresenceChanged()
+    {
+        if (Screening) { Tick(); Calm(); return; }
+        bool now = Presence.Locked || Presence.DisplayOff;
+        if (g915 || now == away) return;
+        away = now;
+        if (!dirty) return;
+        if (away) { if (idleLevel != 2) GiveBack(); }
+        else Preview();
+    }
+
+    void Watch()
+    {
+        if (g915 || Screening || !dirty || !claimed || away) { idleLevel = 0; return; }
+        Idle();
+        if (++watchTicks % 6 != 0 || watching || idleLevel == 2) return;
+        watching = true;
+        var l = cur.Clone();
+        int b = brightness;
+        Do(h =>
+        {
+            try
+            {
+                if (!claimed || h.Quiet(h.F(0x8071), 5, 0x00)[1] != 0) return;
+                G515.Claim(h);
+                claimed = true;
+                if (b != G515.Brightness(h)) G515.SetBrightness(h, b);
+                Show(h, l, idleLevel);
+            }
+            catch (HidppError) { }
+            catch (TimeoutException) { }
+            finally { watching = false; }
+        }, null, message => { });
+    }
+
+    void Idle()
+    {
+        int idle = Win.IdleSeconds();
+        int level = cur.Sleep > 0 && idle >= cur.Sleep ? 2 : cur.Idle > 0 && idle >= cur.Idle ? 1 : 0;
+        if (level == idleLevel) return;
+        idleLevel = level;
+        var l = cur.Clone();
+        Do(h =>
+        {
+            if (!claimed) return;
+            try { Show(h, l, level); }
+            catch (HidppError) { }
+            catch (TimeoutException) { }
+        }, null, message => { });
+    }
+
+    static void Show(Hidpp h, Lighting l, int level)
+    {
+        if (level == 2) G515.Preview(h, new Lighting { Effect = 0 });
+        else G515.Preview(h, l, level == 1 ? l.Dim : 100);
+    }
+
     public void Release()
     {
         debounce.Stop();
         if (!dirty) return;
         dirty = false;
+        GiveBack();
+    }
+
+    void GiveBack()
+    {
+        debounce.Stop();
+        idleLevel = 0;
         int b = storedBrightness;
         var back = unknownStored || stored == null ? null : stored.Clone();
         previewSeq++;
@@ -1084,7 +1161,8 @@ class Page515 : DevicePage
         {
             if (b >= 0) G515.SetBrightness(h, b);
             if (!claimed) return;
-            if (back != null) G515.Preview(h, back);
+            try { if (back != null) G515.Preview(h, back); }
+            catch (HidppError e) { if (e.Code != 5) throw; }
             G515.Release(h);
             claimed = false;
         });
