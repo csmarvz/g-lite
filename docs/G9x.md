@@ -116,7 +116,7 @@ Not like the 0x8100 mice. libratbag:
 5. Uploads and copies the second 256 bytes the same way.
 6. Switches back to the profile (0x0F `00 <index>`).
 
-An LGS capture of a G700s save shows the same sequence byte for byte, and cvuchener's hidpp and g500 agree; see [more sources](research/more-sources.md#g9x-saving-hid-10-flash-write). The 0x50 ack is `10 00 50 <status> <seq>`, status 01 for OK. The second half is copied to word offset 0x80 without a second erase. The CRC is the host's job.
+An LGS capture of a G700s save shows the same sequence byte for byte, and cvuchener's hidpp and g500 agree; see [more references](research/more-references.md#g9x-saving-hid-10-flash-write). The 0x50 ack is `10 00 50 <status> <seq>`, status 01 for OK. The second half is copied to word offset 0x80 without a second erase. The CRC is the host's job.
 
 A test that writes no flash: upload a page to RAM page 0 only, then 0x0F `01 00 00` loads the profile from RAM. g500-control does this for live changes. If the G9x shows the uploaded profile, the upload works, and a replug undoes it.
 

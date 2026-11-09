@@ -1,6 +1,6 @@
 # Headset and ASTRO device map
 
-Inspected 2026-11-08. Source: HeadsetControl at the [pinned snapshot](snapshots.md), plus Solaar and OpenRGB. This is upstream implementation evidence, not testing by G-Lite. HeadsetControl is GPL-3.0: use protocol facts only under this repository's rules.
+Inspected 2026-11-08. Reference: HeadsetControl at the [pinned snapshot](snapshots.md), plus Solaar and OpenRGB. This is upstream implementation evidence, not testing by G-Lite. HeadsetControl is GPL-3.0: use protocol facts only under this repository's rules.
 
 ## Concrete device declarations
 
@@ -25,7 +25,7 @@ Rows are individual implementations. Some implementations group retail products 
 - **G930**: a separate legacy implementation over page FF00/usage 1; it cannot be routed solely by G-Lite's current headset feature predicate.
 - **Centurion PRO X 2, PID 0AF7**: 64-byte frames on FFA0/usage 1, prefix 51. HeadsetControl implements battery, sidetone, auto-off and EQ. Keep separate from 0AFB/0AFC HID++ variants.
 - **Centurion G522, PID 0B18 receiver**: prefix 50 23; dynamic feature discovery through the bridge. OpenRGB and Solaar additionally identify 0B19 wired. HeadsetControl's declaration only lists 0B18, so its capabilities are not independent proof for 0B19.
-- **ASTRO A50 Gen 5, 046D:0B1C**: report 02, 64 bytes, FF32/0074, interface 8. Not HID++ and not Centurion. Source documents battery, game/chat mix, sidetone, dock LED brightness, hardware volume, noise gate and parametric EQ as hardware-verified.
+- **ASTRO A50 Gen 5, 046D:0B1C**: report 02, 64 bytes, FF32/0074, interface 8. Not HID++ and not Centurion. The reference documents battery, game/chat mix, sidetone, dock LED brightness, hardware volume, noise gate and parametric EQ as hardware-verified.
 - **ASTRO A50 Gen 4**: PID 002C is under **ASTRO VID 9886**, not Logitech 046D; check the implementation's getVendorId. FF32/0074 interface 6. This can never pass G-Lite's current 046D-only discovery.
 
 The common word LIGHTSPEED does not establish the same control transport. Name filters that accept ASTRO/A50 are insufficient when discovery rejects the device's VID, usage page or report length.
@@ -38,7 +38,7 @@ The common word LIGHTSPEED does not establish the same control transport. Name f
 - [HeadsetControl ASTRO A50 Gen 5](https://github.com/Sapd/HeadsetControl/blob/b2b66602755314e25ac8e97e2f7edd551bd89d85/lib/devices/logitech_astro_a50.hpp): compact command dictionary plus verified selectors.
 - [HeadsetControl ASTRO extra features](https://github.com/Sapd/HeadsetControl/blob/b2b66602755314e25ac8e97e2f7edd551bd89d85/docs/ASTRO_A50_EXTRA_FEATURES.md): additional device controls and limitations.
 - [ashkitten/g933-utils](https://github.com/ashkitten/g933-utils): earlier G933 reverse engineering; HeadsetControl credits it. Inspect README and scripts for battery, lighting and button events.
-- [Solaar G733, G935 and G933 feature captures](solaar-feature-evidence.md): strongest source here for which HID++ features are actually present.
+- [Solaar G733, G935 and G933 feature captures](solaar-feature-evidence.md): strongest reference here for which HID++ features are actually present.
 - [LGSTrayEx Centurion implementation](https://github.com/strain08/LGSTrayEx/tree/d43905bd911e30bbfa1a030f6d5eb617f08874ec/LGSTrayHID/Centurion): Windows-oriented telemetry transport, useful for report handling and endpoint discovery.
 
 ## What this changes in G-Lite's map

@@ -6,7 +6,7 @@ Research date 2026-11-08. [Existing keyboard notes](../device-research.md), [G91
 
 Extracted from [g810-led's Keyboard.h](https://github.com/MatMoul/g810-led/blob/efa3c35e74f01a2ed2346320da8bad411bfe8ed8/src/classes/Keyboard.h), with [pinned snapshot](snapshots.md). g810-led is GPL-3.0; facts only.
 
-| Product | USB PID | Useful source route |
+| Product | USB PID | Useful reference route |
 |---|---|---|
 | G213 Prodigy | C336 | 8070 zone effects; five regions, not per-key RGB |
 | G410 Atlas Spectrum | C330 | g810-led, keyleds, older per-key protocol |
@@ -34,7 +34,7 @@ The C33C alias is a concrete naming collision, not resolved by choosing one appl
 | G815 | C33F | — | — | Wired |
 | G813 | C232 | — | — | OpenRGB detector; regional-family lead |
 
-Sources: [Solaar feature captures](solaar-feature-evidence.md) and [OpenRGB detector](https://github.com/CalcProgrammer1/OpenRGB/blob/029758e2260208c6de06eefc7106cd5c462c2310/Controllers/LogitechController/LogitechControllerDetect.cpp). C547 is shared by other keyboards, including the G515. OpenRGB's detector explicitly probes the paired name and sends the G915 X family elsewhere.
+References: [Solaar feature captures](solaar-feature-evidence.md) and [OpenRGB detector](https://github.com/CalcProgrammer1/OpenRGB/blob/029758e2260208c6de06eefc7106cd5c462c2310/Controllers/LogitechController/LogitechControllerDetect.cpp). C547 is shared by other keyboards, including the G515. OpenRGB's detector explicitly probes the paired name and sends the G915 X family elsewhere.
 
 Original G915 and G815 reports have `8071`, `8081`, `8040`, `8100`, `8060`, `8010`, `8020` and `8030`; they have no listed `8101`. The original G915 TKL capture also advertises G/M/MR feature IDs, even though its physical layout differs. A feature advertisement must not create nonexistent physical controls in the UI.
 
@@ -44,18 +44,18 @@ The hardware profile format remains a capture requirement before saving. The exi
 
 ## G915 X is a separate family
 
-Two MIT-licensed focused sources were inspected:
+Two MIT-licensed focused references were inspected:
 
 - [TheMorpheus407/g915x-heatmap](https://github.com/TheMorpheus407/g915x-heatmap), especially [PROTOCOL.md](https://github.com/TheMorpheus407/g915x-heatmap/blob/50e72459d4e03f1aff7fff41b99f749545ea7b0a/PROTOCOL.md): an author-verified **C356** path, `8071` effects and `8081` per-key batches/commit, G-key/media/logo IDs, host ownership and capture extraction.
 - [joshman1019/g915x-rgb](https://github.com/joshman1019/g915x-rgb): author-tested **C359**, 118-address lighting implementation and host profile service. The README's “no existing tool supports it” claim is historical and is not used as a current support fact.
 
-These sources refer to different PIDs and have transport wording that needs care. The heatmap document says index FF for its wireless unit and 01 for wired, the reverse of the usual raw receiver convention. This may reflect the Linux virtual HID node and routing level; it must not replace a Windows receiver probe rule without a capture.
+These references refer to different PIDs and have transport wording that needs care. The heatmap document says index FF for its wireless unit and 01 for wired, the reverse of the usual raw receiver convention. This may reflect the Linux virtual HID node and routing level; it must not replace a Windows receiver probe rule without a capture.
 
 [OpenRGB #4461](https://gitlab.com/CalcProgrammer1/OpenRGB/-/issues/4461) is a capture lead cited by the heatmap author. [Solaar #3137](https://github.com/pwr-Solaar/Solaar/issues/3137) is cited for edge/media LED ownership errors. Current [OpenRGB unified HID++ controller](https://github.com/CalcProgrammer1/OpenRGB/tree/029758e2260208c6de06eefc7106cd5c462c2310/Controllers/LogitechController/LogitechHIDPP20Controller) contains G915 X handling, so old claims that only a single small project can control it have aged.
 
 [theo-antonescu/logi-ghub-linux](https://github.com/theo-antonescu/logi-ghub-linux), GPL-2.0-or-later, reports actual testing on **G915 X LIGHTSPEED TKL** and describes `1B05` full-key customization and `8101` profile management instead of original G915 `8010`/`8100`. It claims host lighting works but key remapping/onboard keyboard profiles are incomplete. This is evidence for keeping the families separate, not a complete 8101 schema.
 
-Map full-size wired, full-size LIGHTSPEED, and TKL LIGHTSPEED separately. C356/C359 here are source-reported identifiers; exact retail variant, WPID and Bluetooth association still need a real G-Lite report. Do not infer all variant IDs from one report.
+Map full-size wired, full-size LIGHTSPEED, and TKL LIGHTSPEED separately. C356/C359 here are reference-reported identifiers; exact retail variant, WPID and Bluetooth association still need a real G-Lite report. Do not infer all variant IDs from one report.
 
 ## G515 mechanical and RAPID
 
@@ -65,7 +65,7 @@ Map full-size wired, full-size LIGHTSPEED, and TKL LIGHTSPEED separately. C356/C
 | G515 TKL wired | logirgb hardware log: C358 | Separate wired product; 8101-based persistent lighting documented |
 | G515 RAPID TKL | [logirgb issue search](https://github.com/mevdschee/logirgb/issues?q=Rapid), [RGB.NET PR #447](https://github.com/DarthAffe/RGB.NET/pull/447) | New analog-switch model; do not assign the mechanical G515 file layout |
 
-MIT [logirgb](https://github.com/mevdschee/logirgb) and its [research directory](https://github.com/mevdschee/logirgb/tree/4282d82e00ffb5bd79f96088500a930ca32bc05f/research) provide actual G515 C358 and G502 C08B observations plus mirrors of Logitech feature PDFs. [logitech-g515-onboard](https://github.com/federico-duppa/logitech-g515-onboard), GPL-3.0, is the focused 8101 file-layout source already used by G-Lite. Respect the existing factory/user file separation and preserve unknown bytes.
+MIT [logirgb](https://github.com/mevdschee/logirgb) and its [research directory](https://github.com/mevdschee/logirgb/tree/4282d82e00ffb5bd79f96088500a930ca32bc05f/research) provide actual G515 C358 and G502 C08B observations plus mirrors of Logitech feature PDFs. [logitech-g515-onboard](https://github.com/federico-duppa/logitech-g515-onboard), GPL-3.0, is the focused 8101 file-layout reference already used by G-Lite. Respect the existing factory/user file separation and preserve unknown bytes.
 
 The report distinguishes `8071` **version 4** on G515 from older G915 versions. For persistence, idle and software ownership, use the existing [lighting-control notes](../lighting-control.md), but validate each operation on the actual feature version. A PC-side “Save profile” in a small RGB utility may only save its JSON file; it is not evidence of onboard persistence.
 
@@ -115,4 +115,4 @@ Do not transfer G-Lite's mechanical G515 persistent-lighting encoder wholesale i
 
 The pinned [USB ID registry](usb-id-registry.md) adds component labels C221 (G11/G15 keyboard), C223 (hub), C226/C227 (G15 refresh), C228 (G19 keyboard), C229 (G19 macro component), C22A/C22B (G110 keyboard/G-keys), C231 (G13 virtual mouse) and C2AB (G13 joystick). These are useful discovery leads, not a replacement for a full descriptor capture.
 
-It also labels **C232 “Gaming Virtual Keyboard,” conflicting with OpenRGB's G813 detector label**. Keep the G813 association as an implementation claim only until actual hardware identity establishes whether the PID is a virtual component, shared value or bad source label. The registry's C53D “G631 Keyboard” is another unresolved-name lead, not enough evidence to invent a supported G631 protocol.
+It also labels **C232 “Gaming Virtual Keyboard,” conflicting with OpenRGB's G813 detector label**. Keep the G813 association as an implementation claim only until actual hardware identity establishes whether the PID is a virtual component, shared value or bad reference label. The registry's C53D “G631 Keyboard” is another unresolved-name lead, not enough evidence to invent a supported G631 protocol.

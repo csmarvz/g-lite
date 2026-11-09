@@ -1,6 +1,6 @@
 # Device research
 
-Expanded research gathered on 2026-11-08 is indexed in [research/README.md](research/README.md), with a [device map](research/device-map.md), exact upstream inventories, source links and [corrections to earlier assumptions](research/next-captures.md). The older findings below remain as historical notes; the expanded research distinguishes captured facts from implementation claims and unresolved leads.
+Expanded research gathered on 2026-11-08 is indexed in [research/README.md](research/README.md), with a [device map](research/device-map.md), exact upstream inventories, reference links and [corrections to earlier assumptions](research/next-captures.md). The older findings below remain as historical notes; the expanded research distinguishes captured facts from implementation claims and unresolved leads.
 
 Notes for adding more Logitech G devices (issues #3 and #11). Gathered on 2026-11-06 from Solaar dumps, the OpenRGB, Solaar and libratbag source code, and Logitech's manuals. Nothing here has been checked on a real G915 or G815 yet.
 
@@ -24,7 +24,7 @@ Different from the G515:
 
 ## Key layouts
 
-None of these keyboards has a QMK, VIA or keyboard-layout-editor layout. Logitech's firmware is closed. The useful source is OpenRGB's `Controllers/LogitechController`, which maps each key to the LED id the keyboard uses.
+None of these keyboards has a QMK, VIA or keyboard-layout-editor layout. Logitech's firmware is closed. The useful reference is OpenRGB's `Controllers/LogitechController`, which maps each key to the LED id the keyboard uses.
 
 ### LED ids
 
@@ -33,7 +33,7 @@ None of these keyboards has a QMK, VIA or keyboard-layout-editor layout. Logitec
   - ISO keys: the non-US `#` is 47, the extra key next to left Shift is 97.
   - Extras on the G915 family: Brightness 153, Play 155, Mute 156, Next 157, Previous 158, G1 to G9 = 180 to 188, Logo 210.
   - The ids of the extras change between boards. The PRO X RAPID moved Brightness, Play and Next to 150, 152 and 154.
-  - Sources: `LogitechHIDPP20Controller/RGBController_LogitechHIDPP20.cpp`, `LogitechG915Controller/RGBController_LogitechG915.cpp`, `LogitechG815Controller/RGBController_LogitechG815.cpp`.
+  - References: `LogitechHIDPP20Controller/RGBController_LogitechHIDPP20.cpp`, `LogitechG915Controller/RGBController_LogitechG915.cpp`, `LogitechG815Controller/RGBController_LogitechG815.cpp`.
 - 0x8080 per-key (G PRO keyboard, G910, G512 and G513, G810 and G610): a key is a key type and a key id.
   - Key types: 0x01 keyboard (the id is the HID usage), 0x02 consumer, 0x04 G keys, 0x10 logo, 0x40 indicators.
   - Examples: Logo 0x1001, G1 to G9 = 0x0401 to 0x0409, Game Mode 0x4002, Caps Lock indicator 0x4003.

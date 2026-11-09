@@ -2,7 +2,7 @@
 
 Research date 2026-11-08. These are documentation findings and future evidence requests. No implementation changes or device probing were performed.
 
-## Corrections to earlier notes and common source claims
+## Corrections to earlier notes and common reference claims
 
 | Earlier / tempting assumption | Better evidence | Map treatment |
 |---|---|---|
@@ -12,14 +12,14 @@ Research date 2026-11-08. These are documentation findings and future evidence r
 | Original G915 has a second WPID 407E | Contents of the 407E-named Solaar file say 407C | Ignore the erroneous filename ID |
 | G213 C366 | Its capture contents, descriptor and OpenRGB say C336 | Use C336, retain typo only in source filename |
 | C33C uniquely identifies G513 | OpenLogi recording labels it G512 | Keep G512/G513 alias collision and firmware/name evidence |
-| G302 can be C07E | One LGS manifest probes it; other sources identify G402 C07E | Flag collision; do not auto-classify G302 from this probe |
+| G302 can be C07E | One LGS manifest probes it; other references identify G402 C07E | Flag collision; do not auto-classify G302 from this probe |
 | C092 is G305 | opengcontrol default README says so; libratbag/OpenRGB say G203 LIGHTSYNC | Reject that README mapping; use actual mouse WPID/name behind receiver |
 | opengcontrol default branch has the G502 implementation described in the blog | PR #1 remained open at inspection | Link PR/fork explicitly; don't claim merged support |
 | C22D/C22E necessarily mean G510 versus G510s | libg15 labels them audio-disabled/audio-enabled G510 modes | Keep both IDs and audio mode; do not assign retail suffix solely from PID |
 | C547 identifies one specific keyboard/mouse | OpenRGB handles several products behind it | Receiver identity separate from paired-device identity |
 | PRO X 2 headsets all use 8300/1F20 HID++ | HeadsetControl has separate 0AF7 Centurion implementation | Split by variant/transport |
 | ASTRO A50 is one Logitech HID++ class | Gen 4 uses 9886:002C; Gen 5 046D:0B1C report 02 | Different VID/protocol routes |
-| Superstrike profile “configured layout” is safe to write generically | Two focused sources disagree; one printed table overlaps name/G-shift regions | Require sanitized raw sectors + format + before/after captures |
+| Superstrike profile “configured layout” is safe to write generically | Two focused references disagree; one printed table overlaps name/G-shift regions | Require sanitized raw sectors + format + before/after captures |
 | 8101 fn9 called “commit” proves flash persistence | RigDeck's actual PRO X RAPID experiment says those writes were live and directory unchanged | Separate apply/activate/file staging/flash persistence and retest after power cycle |
 | C232 uniquely identifies a retail G813 | OpenRGB calls it G813, USB registry calls it Gaming Virtual Keyboard | Treat as contested identity until a real descriptor/report resolves it |
 | Every new app is independent evidence | Several wrappers/forks derive from Solaar/OpenRGB/g810-led | Record provenance/lineage; don't count copies as independent confirmations |
@@ -62,15 +62,15 @@ These are future requests, not instructions to an owner to run random writes. Ca
 
 ## Minimal capture record for the map
 
-Record date, retail model/revision/region, OS, firmware, USB/receiver/WPID/Bluetooth IDs, connection, HID page/usage/interface and report lengths, feature IDs/versions, profile format and size, current mode and active profile, source tool/commit, and observed result. Do not publish serial numbers, unit IDs, friendly names, device-instance paths, account data or application profiles containing private macros.
+Record date, retail model/revision/region, OS, firmware, USB/receiver/WPID/Bluetooth IDs, connection, HID page/usage/interface and report lengths, feature IDs/versions, profile format and size, current mode and active profile, reference tool/commit, and observed result. Do not publish serial numbers, unit IDs, friendly names, device-instance paths, account data or application profiles containing private macros.
 
 For persistence questions record three separate observations: immediate visible behavior, reconnect behavior and full power-cycle behavior. A successful HID acknowledgment or byte-for-byte readback establishes neither audible EQ application nor nonvolatile persistence by itself.
 
 ## Unresolved protocol questions
 
 - Which precise models/firmwares use 8100 numeric formats 4–8, and which fields vary by layout or link?
-- Does the 8100 directory flag mean enabled for all implementations? One OpenMouse paragraph infers active; other sources disagree.
-- Are lift-off encodings and stage-enable bytes consistent across actual Superstrike revisions? Read the source's later corrections before using its older summary tables.
+- Does the 8100 directory flag mean enabled for all implementations? One OpenMouse paragraph infers active; other references disagree.
+- Are lift-off encodings and stage-enable bytes consistent across actual Superstrike revisions? Read the reference's later corrections before using its older summary tables.
 - Which G915 X PIDs correspond to wired/full-size/TKL/LIGHTSPEED and which virtual node produced the unconventional index observations?
 - Which 8071 ownership mode allows firmware idle behavior while host colors are visible on each keyboard? Treat logirgb's results as its tested-device observations, not a global answer.
 - Which newer 8101 writes are temporary file application, which activate stored files, and which actually modify user flash?
@@ -80,4 +80,4 @@ For persistence questions record three separate observations: immediate visible 
 
 ## Scope left open
 
-Unknown IDs remain for several modern keyboard/entry-level audio/flight variants. G HUB device depots were documented as a source route but not available locally to enumerate. The [secondary source queue](additional-source-leads.md) is intentionally retained for future work; its entries have not all been audited. This is a substantial research pass, not a claim of exhaustive reverse engineering.
+Unknown IDs remain for several modern keyboard/entry-level audio/flight variants. G HUB device depots were documented as a reference route but not available locally to enumerate. The [secondary reference queue](additional-reference-leads.md) is intentionally retained for future work; its entries have not all been audited. This is a substantial research pass, not a claim of exhaustive reverse engineering.

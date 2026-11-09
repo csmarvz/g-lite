@@ -1,6 +1,6 @@
 # GitHub search results
 
-Repos found on 2026-11-08 by searching GitHub for Logitech G model names and the topics hidpp, logitech-g, lightsync and ghub, that the other files here don't list. Licence as GitHub reports it, stars, last push. Unread unless [more-sources.md](more-sources.md) says otherwise. Two `Logitech-Onboard-Memory-Manager` repos are left out: they look like download lures.
+Repos found on 2026-11-08 by searching GitHub for Logitech G model names and the topics hidpp, logitech-g, lightsync and ghub, that the other files here don't list. Licence as GitHub reports it, stars, last push. Unread unless [more-references.md](more-references.md) says otherwise. Two `Logitech-Onboard-Memory-Manager` repos are left out: they look like download lures.
 
 | Repo | Licence | Stars | Pushed | Language | Description |
 |---|---|---|---|---|---|

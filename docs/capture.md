@@ -34,4 +34,4 @@ One action per capture, and note what was clicked, so the bytes map to one chang
 
 - libratbag's Wireshark dissector, MIT: [ratbag-toolbox `dissectors/hidpp-dissector.lua`](https://github.com/libratbag/ratbag-toolbox). It decodes HID++ 1.0 and 2.0 in Wireshark, but not the 0x50/0x9x upload reports. Useful to check the tool's output.
 - An LGS capture of a G700s save, with pcapng files: [DanForever/Open-Source-Gaming-Peripheral-Hub `research/g700s/`](https://github.com/DanForever/Open-Source-Gaming-Peripheral-Hub) (GPL-3.0, facts only). A test input for the decoder.
-- [more-sources.md](research/more-sources.md#capturing-traffic-on-windows).
+- [more-references.md](research/more-references.md#capturing-traffic-on-windows).

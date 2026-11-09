@@ -1,8 +1,8 @@
-# Additional source leads from logirgb's research index
+# Additional reference leads from logirgb's research index
 
 Discovered 2026-11-08 while reading the pinned logirgb research files. These are a **secondary discovery queue**, not independently verified implementations, tested-device claims or license approvals. The linked originating file explains the upstream author's observations. Forks and wrappers may add no independent protocol evidence.
 
-The most useful newly located sources were subsequently inspected directly: [RigDeck](https://github.com/gabriellaines/rigdeck), [openlogi-net](https://github.com/loxsmoke/openlogi-net), and [Xteom's controllers](https://github.com/Xteom/logitech_linux_controllers). Their direct findings are integrated into the keyboard, wheel/other and source notes. This file retains the rest so future work does not repeat discovery searches.
+The most useful newly located references were subsequently inspected directly: [RigDeck](https://github.com/gabriellaines/rigdeck), [openlogi-net](https://github.com/loxsmoke/openlogi-net), and [Xteom's controllers](https://github.com/Xteom/logitech_linux_controllers). Their direct findings are integrated into the keyboard, wheel/other and source notes. This file retains the rest so future work does not repeat discovery searches.
 
 ## Broader HID++ applications
 

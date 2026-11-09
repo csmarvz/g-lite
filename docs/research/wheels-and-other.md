@@ -44,7 +44,7 @@ Map configuration (range, centering, gain, damping, pedal curves, profiles, LEDs
 
 Original POWERPLAY has receiver USB **C53A** and the mat's wireless/virtual identity **405F**. [libratbag's definition](https://github.com/libratbag/libratbag/blob/8235b5bb6032dea15901ab58a8218956f4494d08/data/devices/logitech-g-powerplay.device) explicitly uses **device index 7**, while G-Lite's receiver loop probes only slots 1–6. The paired mouse and the mat are different endpoints; do not call 405F a physical USB receiver PID.
 
-[OpenRGB POWERPLAY controller](https://github.com/CalcProgrammer1/OpenRGB/blob/029758e2260208c6de06eefc7106cd5c462c2310/Controllers/LogitechController/LogitechGLightsyncController/RGBController_LogitechGPowerPlay.cpp) and [detector](https://github.com/CalcProgrammer1/OpenRGB/blob/029758e2260208c6de06eefc7106cd5c462c2310/Controllers/LogitechController/LogitechControllerDetect.cpp) are useful for logo lighting and receiver routing. In its legacy path the source marks this route Linux-only; that matters when assessing Windows access.
+[OpenRGB POWERPLAY controller](https://github.com/CalcProgrammer1/OpenRGB/blob/029758e2260208c6de06eefc7106cd5c462c2310/Controllers/LogitechController/LogitechGLightsyncController/RGBController_LogitechGPowerPlay.cpp) and [detector](https://github.com/CalcProgrammer1/OpenRGB/blob/029758e2260208c6de06eefc7106cd5c462c2310/Controllers/LogitechController/LogitechControllerDetect.cpp) are useful for logo lighting and receiver routing. In its legacy path the reference marks this route Linux-only; that matters when assessing Windows access.
 
 POWERPLAY 2 is a separate backlog product. This pass did not verify a PID or control feature set for it. Do not inherit original POWERPLAY's lighting, receiver or endpoint behavior from branding.
 
@@ -60,6 +60,6 @@ OpenRGB has an [X56 controller](https://github.com/CalcProgrammer1/OpenRGB/tree/
 
 For X52/X52 Pro, X55, X56 revisions, flight panels, pedals, yokes, F310/F510/F710 and older G940/G-series joysticks, ordinary USB input support does not prove a configurable G-Lite control path. They remain an explicitly separate research backlog. Saitek/Mad Catz/Logitech branding and VIDs can differ across revisions. Do not label all of them HID++ because Logitech now sells them.
 
-## G560 / G815 additional direct source
+## G560 / G815 additional direct reference
 
 [Xteom/logitech_linux_controllers](https://github.com/Xteom/logitech_linux_controllers) was subsequently inspected directly: `g560ctl/src/logitech_lighting/devices/g560/config.py` identifies 0A78; `g560ctl/src/logitech_lighting/devices/g815/keyboard.py` identifies C33F and dynamically resolves 8081/8071/8100/8010. Its G815 module documents claim/release and profile reload, while the root README still lists only G560. This is another example where source has more coverage than the landing page. License terms were not established from a root license file in this pass.

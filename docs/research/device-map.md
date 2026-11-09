@@ -2,7 +2,7 @@
 
 Research date **2026-11-08**. This is a research inventory, not a compatibility promise. Rows can group regional aliases or revisions; do not count aliases, receiver endpoints and compatibility modes as distinct retail products. “Unknown” means this pass did not verify the value.
 
-Evidence keys link to the exact source inventories: **[R]** libratbag implementation, **[S]** Solaar capture, **[L]** local vendor manifest, **[K]** keyboard source evidence, **[H]** headset implementation, **[W]** wheel/other source evidence. “Lead” is weaker issue/readme evidence. All IDs are hex; default VID 046D. Dashes do not prove a transport is unsupported.
+Evidence keys link to the exact reference inventories: **[R]** libratbag implementation, **[S]** Solaar capture, **[L]** local vendor manifest, **[K]** keyboard source evidence, **[H]** headset implementation, **[W]** wheel/other source evidence. “Lead” is weaker issue/readme evidence. All IDs are hex; default VID 046D. Dashes do not prove a transport is unsupported.
 
 [R]: libratbag-device-inventory.md
 [S]: solaar-feature-evidence.md
@@ -51,7 +51,7 @@ USB/WPID separation uses labeled capture IDs where available. R-only 40xx select
 | PRO X SUPERLIGHT 2 DEX | C0A0 | 40B8 | Receiver C547 in logi-cli | [Solaar #2836](https://github.com/pwr-Solaar/Solaar/issues/2836), [logi-cli](https://github.com/meech-io/logi-cli); capture + focused implementation |
 | PRO X SUPERLIGHT 2c | C09F | Unknown here | Receiver identity needs checking | [libratbag #1813](https://github.com/libratbag/libratbag/issues/1813), lead |
 | PRO X 2 SUPERSTRIKE | C0A8 | 40BD | Receiver C54D | [S], [linux-superstrike](https://github.com/mclol0/linux-superstrike); 2202/8061/1B0C, separate profile format |
-| PRO X 3 SUPERSTRIKE | C0A9, source-reported | Unknown here | Unknown here | [OpenMouse profile doc](https://github.com/OpenMouse-Project/mouse-protocol/blob/b62a1cce2b63698ac00595efdb0067ecd54e34a0/docs/logitech-onboard-profiles.md), lead only; require independent identity/capture |
+| PRO X 3 SUPERSTRIKE | C0A9, reference-reported | Unknown here | Unknown here | [OpenMouse profile doc](https://github.com/OpenMouse-Project/mouse-protocol/blob/b62a1cce2b63698ac00595efdb0067ecd54e34a0/docs/logitech-onboard-profiles.md), lead only; require independent identity/capture |
 | MX518 HERO / Legendary | C08E | — | — | [R]; separate from original MX518 |
 
 Per-product feature capabilities beyond the named captures remain unverified. Use [mouse protocol notes](mice.md), not a single “all G mice” branch.
@@ -80,7 +80,7 @@ Per-product feature capabilities beyond the named captures remain unverified. Us
 
 ## Keyboards and gameboards
 
-| Product / variant | IDs verified in the cited source | Protocol/capability route | Evidence |
+| Product / variant | IDs verified in the cited reference | Protocol/capability route | Evidence |
 |---|---|---|---|
 | G11 | USB C225 | Legacy extra keys/backlight; no LCD | [L], [K] |
 | G13 | USB C21C | Legacy gameboard, RGB, LCD and joystick | [L], [K] |
@@ -112,7 +112,7 @@ Per-product feature capabilities beyond the named captures remain unverified. Us
 | G910 Spark / Spectrum | USB C32B / C335 | Older RGB/G-key route | [L], [R], [K] |
 | G915 / regional G913 candidate | USB C33E / WPID 407C / BLE B354 | 8071, 8081, 8040, 8100 | [S], [K]; original family only; regional alias needs descriptor confirmation |
 | G915 TKL / regional G913 TKL candidate | USB C343 / WPID 408E / BLE B35F | Same discovered feature family, different layout | [S], [K] |
-| G915 X full-size variants | C356 / C359 source reports; variant mapping unresolved | 8071/8081 lighting; newer storage route must be read | [K], two focused implementations; do not collapse the two IDs |
+| G915 X full-size variants | C356 / C359 reference reports; variant mapping unresolved | 8071/8081 lighting; newer storage route must be read | [K], two focused implementations; do not collapse the two IDs |
 | G915 X LIGHTSPEED TKL | Unknown here | 8071/8081 host lighting, reported 1B05/8101 | [logi-ghub-linux](https://github.com/theo-antonescu/logi-ghub-linux), author-tested implementation claim |
 | PRO keyboard | USB C339 | Older per-key route | [R], [K] |
 | PRO X keyboard / hot-swap | Unknown here | Separate revision | Backlog |
@@ -138,7 +138,7 @@ The control endpoint may be the USB DAC or wireless dongle rather than the heads
 | G535 | 046D:0AC4 | HID++ / different collection selectors | [S], [H] |
 | G633 | 046D:0A5C | Classic HID++ headset family | [L], [H] |
 | G635 | 046D:0A89 | Classic HID++ headset family | [R], [H] |
-| G733 | 046D:0AB5 / 0AFE / 0B1F | Classic HID++ headset family | [R], [S], [H]; three source IDs |
+| G733 | 046D:0AB5 / 0AFE / 0B1F | Classic HID++ headset family | [R], [S], [H]; three reference IDs |
 | G735 | 046D:0AD8, OpenLogi-reported | Proprietary/unknown route | [OpenLogi #1675](https://github.com/AprilNEA/OpenLogi/issues/1675) + existing notes; no verified implementation here |
 | G930 | 046D:0A1F | Legacy HID++-style dedicated implementation | [L], [H] |
 | G933 | 046D:0A5B | Classic HID++ headset family | [L], [S], [H] |
@@ -150,7 +150,7 @@ The control endpoint may be the USB DAC or wireless dongle rather than the heads
 | ASTRO A50 Gen 4 implementation | **9886:002C** | ASTRO proprietary FF32, interface 6 | [H]; VID differs from Logitech |
 | ASTRO A50 Gen 5 | 046D:0B1C | Proprietary report 02 / FF32, interface 8 | [H]; not HID++, not Centurion |
 | ASTRO A20 X | 046D:0B34, issue-reported | Unknown in this pass | [HeadsetControl issue search](https://github.com/Sapd/HeadsetControl/issues?q=A20+X), lead |
-| ASTRO A50 X | Unknown here | Centurion mentioned by A50 Gen 5 source; not verified here | [H], backlog |
+| ASTRO A50 X | Unknown here | Centurion mentioned by A50 Gen 5 reference; not verified here | [H], backlog |
 | G435 / G321 / G325 / G335 / G331 / G332 / G230 / G231 / G333 | Unknown here | USB/Bluetooth/analog varies; control unknown | Backlog, not assumed HID++ |
 | ASTRO A10 / A20 / A30 / A40 / MixAmp variants | Unknown here | Analog/USB/base-station routes vary | Backlog; variant + VID/PID first |
 
@@ -180,4 +180,4 @@ The control endpoint may be the USB DAC or wireless dongle rather than the heads
 
 ## Fields to preserve when transferring this map
 
-For each row keep retail name, regional alias, hardware revision, USB PID, receiver PID, WPID, Bluetooth PID, device index, transport selector (interface/page/usage/report lengths), firmware, feature IDs **and versions**, profile format/size, live capability, onboard capability, host-service dependency, source URL/commit, evidence level and last verification date. Unknown fields should remain unknown. Existing G-Lite support status belongs in a separate field from upstream implementation evidence.
+For each row keep retail name, regional alias, hardware revision, USB PID, receiver PID, WPID, Bluetooth PID, device index, transport selector (interface/page/usage/report lengths), firmware, feature IDs **and versions**, profile format/size, live capability, onboard capability, host-service dependency, reference URL/commit, evidence level and last verification date. Unknown fields should remain unknown. Existing G-Lite support status belongs in a separate field from upstream implementation evidence.

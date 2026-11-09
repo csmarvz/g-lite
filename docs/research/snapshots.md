@@ -15,7 +15,7 @@ Inspected on 2026-11-08. Existing sibling checkouts were read without pulling or
 | [oversteer](https://github.com/berarma/oversteer) | [`74c748436a1d`](https://github.com/berarma/oversteer/tree/74c748436a1dff2e42a340b581db0d0e4e0cafb2) | `C:\Users\csmar\AppData\Local\Temp\glite-research-20261108\oversteer` |
 | [new-lg4ff](https://github.com/berarma/new-lg4ff) | [`2092db19f7b4`](https://github.com/berarma/new-lg4ff/tree/2092db19f7b40854e0427a1b2e39eda9f8d0c3cd) | `C:\Users\csmar\AppData\Local\Temp\glite-research-20261108\new-lg4ff` |
 
-## Additional inspected sources
+## Additional inspected references
 
 | Project | Commit | Local reference checkout |
 |---|---|---|
@@ -34,7 +34,7 @@ Inspected on 2026-11-08. Existing sibling checkouts were read without pulling or
 | [superstrike-sdk](https://github.com/fawhfi/superstrike-sdk) | [`e875b4bef31e`](https://github.com/fawhfi/superstrike-sdk/tree/e875b4bef31ed94a98933b0195dbc81135bea8b4) | `C:\Users\csmar\AppData\Local\Temp\glite-research-20261108\superstrike-sdk` |
 | [logi-cli](https://github.com/meech-io/logi-cli) | [`986f62cce5b4`](https://github.com/meech-io/logi-cli/tree/986f62cce5b46f08bd6eb6d561622430787fadb0) | `C:\Users\csmar\AppData\Local\Temp\glite-research-20261108\logi-cli` |
 
-## Follow-up sources found through logirgb research
+## Follow-up references found through logirgb research
 
 | Project | Commit | Local reference checkout |
 |---|---|---|

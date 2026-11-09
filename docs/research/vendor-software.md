@@ -1,6 +1,6 @@
 # G HUB, Logitech Gaming Software and Onboard Memory Manager
 
-Research date 2026-11-08. Vendor software is a source of product metadata and observable behavior, not reusable source code or assets. This pass did not install G HUB/OMM, run their services, read the user's G HUB database, or modify an installation.
+Research date 2026-11-08. Vendor software is a reference for product metadata and observable behavior, not reusable source code or assets. This pass did not install G HUB/OMM, run their services, read the user's G HUB database, or modify an installation.
 
 ## Official references and their limits
 
@@ -55,7 +55,7 @@ Important discoveries:
 - Arx and LCD emulators have pseudo-VID/PIDs; they were excluded from the physical USB inventory.
 - G510 C22D/C22E is more than a retail suffix distinction: libg15's table labels the two modes without/with audio enabled.
 
-The previous notes' host XML profiles, hardware profiles and G HUB handoff list remain separate reference sources. Nothing from `%LOCALAPPDATA%` user profiles was needed for this pass.
+The previous notes' host XML profiles, hardware profiles and G HUB handoff list remain separate references. Nothing from `%LOCALAPPDATA%` user profiles was needed for this pass.
 
 ## OMM as a reference, without relying on it at runtime
 

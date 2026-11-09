@@ -1,4 +1,4 @@
-# More sources
+# More references
 
 Found on 2026-11-08 by following the leads in this directory: GitHub searches by model and topic, then a read of the most promising repos. About 165 repos turned up that the other files don't list; the ones below have protocol content. No code was run and nothing was sent to a device.
 
@@ -27,14 +27,14 @@ Not checked on a G9x: that its firmware takes this exact sequence, and the size 
 
 More G500/G9x facts:
 
-- 0x22 angle snapping: the sources disagree (02 read as on, hidpp writes 01). 0x24 lift threshold, 16 + n for n in −15…15. 0x25 unknown, default 0x10.
+- 0x22 angle snapping: the references disagree (02 read as on, hidpp writes 01). 0x24 lift threshold, 16 + n for n in −15…15. 0x25 unknown, default 0x10.
 - Buttons: `83 <LE16>` specials: 01/02 wheel left/right, 04 DPI up, 08 DPI down, 05/09 the cycling versions, 10/20 profile next/previous, 11/21 cycling, 0x40 + (n<<8) profile n. `84` consumer usage: byte order disputed. `8F` off. Anything else is a macro address `<page> <word> 00`.
 - Directory LED bits: libratbag uses `((0b111 << index) >> 2) & 7`.
 - Register 0x51 LED nibbles: 1 off, 2 on, 3 blink, 4 heartbeat, 5 slow on, 6 slow off.
 - A0 op 4 computes a CRC; 0x0F types: 00 by index, 01 by address, FF factory.
 - libratbag reads 0x63 as LE16 X and Y at report bytes 4–7. That's payload bytes 0–3 after the 4-byte header, where G-Lite reads them. Same thing.
 
-| Source | Licence | Where |
+| Reference | Licence | Where |
 |---|---|---|
 | [cvuchener/hidpp](https://github.com/cvuchener/hidpp) | GPL-3.0 | `src/libhidpp/hidpp10/IMemory.cpp`, `ProfileFormatG500.cpp`, `hidpp/DeviceInfo.cpp` (C066 uses the G500 format) |
 | [cvuchener/g500](https://github.com/cvuchener/g500) | GPL-3.0, docs CC-BY-SA-3.0 | `doc/hidpp10.md`, `doc/memory.md`, `doc/commands/a0-memop.md`, `doc/macro.md` |
@@ -49,7 +49,7 @@ More G500/G9x facts:
 
 ## Mice (HID++ 2.0)
 
-| Source | Licence | Evidence | What's new |
+| Reference | Licence | Evidence | What's new |
 |---|---|---|---|
 | [ZhichenJin/onboard-lite](https://github.com/ZhichenJin/onboard-lite) | MIT | PRO X Superlight (format 4), wired and LIGHTSPEED | C# 4.8 built with csc, decoded from OMM. One layout for formats 1–5. 0x8071 mice keep power-save LED copies at 0xE6/0xF1 (OMM writes half intensity) and flags at 0xFC. LED blocks: 01 fixed (p3 = 02 no ramp), 03 cycle, 0A breathing. `src/Profile.cs`, `src/Lighting.cs`, `src/Device.cs` |
 | [Ahmedxsaad/g502-hub](https://github.com/Ahmedxsaad/g502-hub) | GPL-3.0 | G502 HERO C08B, format 2 | `docs/protocol.md` §3.6: format 1–5 offsets (2 shift DPI, 13–15 RGB, 16 power mode, 17 angle snap, 18–19 write counter to keep, 28–31 timeouts, 32 buttons, 96 G-shift buttons, 160 name, 208/219 LEDs, 230/241 power-save LEDs, 252 animation). §3.7 button encoding (`80 01` mouse, `80 02` key, `80 03` consumer, `90 <code>` special 00–11, `FF FF FF FF` unset). §6.2 0x2202, §5.2 0x8061. `docs/hardware-notes.md`: rewriting the active sector drops a live DPI change |
@@ -64,6 +64,11 @@ More G500/G9x facts:
 | [Roritharr/logitech-g502-led-off](https://github.com/Roritharr/logitech-g502-led-off) | MIT | Untested | Persistent off: 0x8070 fn3 per zone with persistence 1 |
 | [xrfc/gpw-battery-tray](https://github.com/xrfc/gpw-battery-tray) | MIT | G Pro Wireless on C539 | C# tray app, 0x1001 voltage curve in `source/curves.txt` |
 | [ymergame/g502-stage-mouse-macos](https://github.com/ymergame/g502-stage-mouse-macos) | MIT | — | 0x1C00 persistent remappable action, read only. Its profile code looks invented |
+| [Java-Idl/universal-omm-webhid](https://github.com/Java-Idl/universal-omm-webhid) | MIT | G502 HERO C08B capture | Decompiled OMM 2.7.4428 (.NET 4.8 WPF, HID++ in the embedded `logi_nethidppio.dll`). `BUTTON_REMAPPING_SPEC.md`: OMM's button enums and a capture of a button write. AI-written; some claims are wrong (output and input on separate collections), so check each against a device |
+| [marco-vrinssen/logitech-onboard-memory](https://github.com/marco-vrinssen/logitech-onboard-memory) | MIT | PRO X 2 DEX, LIGHTSPEED and wired | macOS app and CLI in Swift. Profile format 6 and up: buttons, a G-shift layer, LOD per DPI stage, wired and wireless report rates. Blocks writes to format 5 and older. `Sources/LogiHIDPP/ProfileDecoder.swift`, `ProfileEditor.swift` |
+| [samyrataylor/g-manager](https://github.com/samyrataylor/g-manager) | MIT | G600 | Python, a field per profile byte: `app/devices/mouse/G600.py`, `app/fields/byte/*.py` (buttons, keys, modifiers, DPI, report rate, lighting) |
+| [hwkim3330/logitech](https://github.com/hwkim3330/logitech) | none | — | WebHID onboard editor: DPI, buttons, RGB. `js/profile.js`, `js/constants.js`. Facts only |
+| [RadNotRed/open-mouse-memory](https://github.com/RadNotRed/open-mouse-memory) | GPL-3.0 | — | Onboard memory manager. Facts only, not read |
 
 ## Keyboards
 
@@ -73,7 +78,7 @@ More G500/G9x facts:
 
 ## Headsets and speakers
 
-- 0x8310 EQ: no source shows a write that's heard. On the G733 ([TheOlympusCloud/oma-logitech](https://github.com/TheOlympusCloud/oma-logitech) `docs/PROTOCOL.md`, MIT, checked on hardware) fn0 gives 10 bands ±12 dB, fn1 the frequencies, and fn3 only takes persist 2; 0 and 1 give error 02. g935-linux (PolyForm, facts only) writes persist 0 and 1 on a G935, without proof. Keeping EQ hidden is right; worth one test on the dongle: persist 0 and 1, and a power cycle after a 2.
+- 0x8310 EQ: no reference shows a write that's heard. On the G733 ([TheOlympusCloud/oma-logitech](https://github.com/TheOlympusCloud/oma-logitech) `docs/PROTOCOL.md`, MIT, checked on hardware) fn0 gives 10 bands ±12 dB, fn1 the frequencies, and fn3 only takes persist 2; 0 and 1 give error 02. g935-linux (PolyForm, facts only) writes persist 0 and 1 on a G935, without proof. Keeping EQ hidden is right; worth one test on the dongle: persist 0 and 1, and a power cycle after a 2.
 - Working hardware EQ is only on Centurion headsets (HeadsetControl, GPL-3.0): PRO X 2 0AF7 feature 0x0636 (the PC computes biquad coefficients), G522 0B18 feature 0x020D (10 bands, ±6 dB). Centurion is 64-byte frames on usage page 0xFFA0 with a bridge feature 0x0003; other ids: battery 0x0104, auto sleep 0x0108, sidetone 0x0604, lighting 0x0621. `lib/devices/protocols/logitech_centurion_protocol.hpp`.
 - Headset lighting is 0x8070 (G733 0AB5/0AFE/0B1F, G633 0A5C, G635 0A89, G933 0A5B, G935 0A87): the same fn3 G-Lite uses for mice. [felipearomani/g733-control](https://github.com/felipearomani/g733-control), MIT.
 - 0x1F20 fn0 flags: 01 discharging, 03 charging, 07 full.
@@ -114,6 +119,13 @@ The rest of what the reads found, by topic. Same licence rules as above.
 - Macros (leodbc/g502x-onboard): the 5-byte jump is `60 <page BE16> <offset BE16>`. Macro pages may have no CRC. G502 X LIGHTSPEED firmware MPM 30.00.B0014: format 3, macro format 1, 2 ROM profiles.
 - A HID++ 1.0 0x41 connection notice on COL01 carries the WPID (LE); byte 1 bit 0x40 is set while the link is down (MyHUB).
 - MyHUB's `frames.log` also has the 0x8110 button-spy bitmap for the G502 X LIGHTSPEED.
+- Button records, 4 bytes each, from OMM's enums (universal-omm-webhid), matching g502-hub §3.7:
+  - `80 01 <bits BE16>` mouse button: 1 left, 2 right, 4 middle, 8 back, 0x10 forward.
+  - `80 02 <modifiers> <key>` keyboard key: modifier bits 01 LCtrl, 02 LShift, 04 LAlt, 08 LWin, 0x10–0x80 the right ones; the key is the HID usage.
+  - `80 03 <usage BE16>` consumer key: 00B5 previous, 00B6 next, 00CD play/pause, 00E2 mute, 00E9/00EA volume up/down.
+  - `90 <function> ...` function: 01/02 tilt left/right, 03/04 next/previous DPI, 05 cycle DPI, 06 default DPI, 07 DPI shift, 08/09 next/previous profile, 0A cycle profiles, 0B G-shift, 0C battery, 0D profile n (in the last byte), 0E performance mode, 0x10/0x11 scroll down/up.
+  - `00 ...` macro, `10` stop macro, `20` stop all macros, `FF FF FF FF` off.
+- OMM supports HID++ 2.0 mice only: no keyboards, headsets or HID++ 1.0 mice. To map a setting without a capture: read the profile sector, change one thing in OMM, read again and compare.
 - dukaci keeps slots in G HUB order G1–G11 and enables only slot 1, to avoid the corrupt-slot problem.
 - 0x1C00 persistent remappable action (opengcontrol): fn1 count, fn2 `<index> FF` gives a control id, fn3 `<id BE16> FF` gives [3] action type (0 empty, 1 key, 2 mouse, 3/4 X/Y, 5/6 scroll, 7 consumer, 8 internal, 9 power), [4–5] value, [6] modifiers. Read only. Its "memory model 0, 3-page layout" with fn3/fn4 flash reads contradicts the spec: likely made up.
 
@@ -166,7 +178,7 @@ The rest of what the reads found, by topic. Same licence rules as above.
 
 ### Not useful
 
-hakangit/g512-keyboard-controller (OpenRGB client), geromet/g502-linux-control (ratbagd client), grumpybollocks/g910-control (keyledsctl wrapper), swylem/gpro-control (one constant), aubymori/LogiFadeFix (plays silence), szympik/logitech-gpro-x-battery-tray (G HUB websocket), mafik/logitech-g600-linux (evdev mapping), softmaxe/gbat (mouse battery only), pschmitt/aur-g9xled (0x57 only). AI-built but with dated hardware logs: MyHUB, gnexus, g502x-onboard.
+hakangit/g512-keyboard-controller (OpenRGB client), geromet/g502-linux-control (ratbagd client), grumpybollocks/g910-control (keyledsctl wrapper), swylem/gpro-control (one constant), aubymori/LogiFadeFix (plays silence), szympik/logitech-gpro-x-battery-tray (G HUB websocket), mafik/logitech-g600-linux (evdev mapping), softmaxe/gbat (mouse battery only), pschmitt/aur-g9xled (0x57 only), aron-w/logi-omm-wine and zzoko/Onboard-Memory-Manager-macOS-workaround (run OMM under Wine). AI-built but with dated hardware logs: MyHUB, gnexus, g502x-onboard.
 
 ## Leads not read
 

@@ -34,17 +34,17 @@ Read [OpenLogi's extended DPI feature](https://github.com/AprilNEA/OpenLogi/blob
 
 ## Onboard profile formats beyond the current implementation
 
-[OpenMouse profile research](https://github.com/OpenMouse-Project/mouse-protocol/blob/b62a1cce2b63698ac00595efdb0067ecd54e34a0/docs/logitech-onboard-profiles.md) is unusually detailed: it traces eight numeric layout cases to OMM 2.6.1749 and includes later hardware-diff observations. The source has AGPL licensing and its prose has an outdated top-level “unverified” status alongside hardware-confirmed subsections. Treat each claim by its local provenance, not the opening status alone.
+[OpenMouse profile research](https://github.com/OpenMouse-Project/mouse-protocol/blob/b62a1cce2b63698ac00595efdb0067ecd54e34a0/docs/logitech-onboard-profiles.md) is unusually detailed: it traces eight numeric layout cases to OMM 2.6.1749 and includes later hardware-diff observations. The reference has AGPL licensing and its prose has an outdated top-level “unverified” status alongside hardware-confirmed subsections. Treat each claim by its local provenance, not the opening status alone.
 
 The useful leads, **not a write specification approved for G-Lite**:
 
 - Numeric formats 1–5 share an older base; 6–8 use another base. Do not accept a new format just because an older parser returns plausible DPI values.
 - The newer base separates wireless and wired report-rate bytes at offsets `00` and `01`, represented as rate indexes rather than milliseconds.
-- Five-byte DPI stage entries contain little-endian X, little-endian Y and a lift-off byte. The source's hardware subsection places stages at `04`, `09`, `0E`, `13`, `18` and says the region extends through `1C`.
+- Five-byte DPI stage entries contain little-endian X, little-endian Y and a lift-off byte. The reference's hardware subsection places stages at `04`, `09`, `0E`, `13`, `18` and says the region extends through `1C`.
 - Default and shift stage indexes move to `02`/`03`; button tables move to `30` and `70`. This differs materially from the old profile parser.
 - It reports a real original SUPERLIGHT C094/WPID 4093 with **format 4**, whereas G-Lite supports writes only for format 3. Do not classify all format-4 devices as keyboards merely because libratbag names that format `PROFILE_TYPE_G915`.
-- CRC is CCITT-FALSE with initial FFFF, stored big-endian in the final two sector bytes. Source-specific valid-CRC examples are good verification fixtures for future work, but no code or binary fixture was copied here.
-- Some devices reject a 16-byte read that crosses a 255-byte sector boundary. The source recommends reading the final block from `size - 16`; capture firmware behavior before changing G-Lite.
+- CRC is CCITT-FALSE with initial FFFF, stored big-endian in the final two sector bytes. Reference-specific valid-CRC examples are good verification fixtures for future work, but no code or binary fixture was copied here.
+- Some devices reject a 16-byte read that crosses a 255-byte sector boundary. The reference recommends reading the final block from `size - 16`; capture firmware behavior before changing G-Lite.
 
 There are unresolved contradictions. OpenMouse interprets a directory flag as “active” in one section; libratbag/Solaar and Linux Superstrike treat it as “enabled.” OpenMouse's updated format-8 lift-off discussion also needs to be read with the older tables. Do not write a directory or profile based on those ambiguous claims.
 
@@ -54,7 +54,7 @@ There are unresolved contradictions. OpenMouse interprets a directory flag as �
 
 The report contains two alleged layouts: an older “configured” interpretation and a newer pristine factory interpretation. The former gives overlapping G-shift and name regions; the latter uses five-byte DPI stages. This is a **reason to request raw sanitized sector evidence**, not to implement heuristic writing. OpenMouse's numeric format dispatch is a useful independent cross-check.
 
-[fawhfi/superstrike-sdk](https://github.com/fawhfi/superstrike-sdk), MIT, is a complementary **Windows-tested** source for continuous `1B0C event 1` button-travel telemetry. Its README reports roughly 60 Hz on tested firmware. These are ADC/travel readings, not calibrated force, pressure or millimetres. C54D there is the receiver ID, not a wired mouse PID.
+[fawhfi/superstrike-sdk](https://github.com/fawhfi/superstrike-sdk), MIT, is a complementary **Windows-tested** reference for continuous `1B0C event 1` button-travel telemetry. Its README reports roughly 60 Hz on tested firmware. These are ADC/travel readings, not calibrated force, pressure or millimetres. C54D there is the receiver ID, not a wired mouse PID.
 
 [zeex64/openghub](https://github.com/zeex64/openghub) is another implementation lead whose protocol document covers Superstrike profiles and haptics. It was discovered through its repository/readme; its packet claims were not independently reconciled in this pass.
 
