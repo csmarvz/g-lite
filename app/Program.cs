@@ -490,6 +490,14 @@ class MainWindow : Form
 
     public void SetNote(string n) { note = n; }
 
+    public List<Found> Listed { get { return found; } }
+
+    public void Open(string key)
+    {
+        selected = key;
+        ShowPanel();
+    }
+
     public void ShowPanel()
     {
         var wa = Screen.FromPoint(Cursor.Position).WorkingArea;
@@ -540,8 +548,41 @@ class MainWindow : Form
             var panel = new MainWindow(fake);
             var tray = new NotifyIcon { Text = "G-Lite " + Application.ProductVersion + (demo ? " (demo)" : ""), Visible = true };
             tray.ContextMenuStrip = new ContextMenuStrip { Renderer = Ui.Menus, ShowImageMargin = false, BackColor = Theme.Card };
-            tray.ContextMenuStrip.Items.Add("Open", null, (s, e) => panel.ShowPanel());
-            tray.ContextMenuStrip.Items.Add("Quit", null, (s, e) => { tray.Visible = false; Application.Exit(); });
+            var menu = tray.ContextMenuStrip;
+            var usage = new ToolStripMenuItem("") { Enabled = false };
+            var self = System.Diagnostics.Process.GetCurrentProcess();
+            var lastCpu = TimeSpan.Zero;
+            var lastAt = self.StartTime.ToUniversalTime();
+            Action measure = () =>
+            {
+                self.Refresh();
+                var cpu = self.TotalProcessorTime;
+                var now = DateTime.UtcNow;
+                double percent = (cpu - lastCpu).TotalMilliseconds / Math.Max(1, (now - lastAt).TotalMilliseconds) / Environment.ProcessorCount * 100;
+                lastCpu = cpu;
+                lastAt = now;
+                usage.Text = "CPU " + percent.ToString("0.0") + "% · RAM " + (self.WorkingSet64 >> 20) + " MB";
+            };
+            var live = new System.Windows.Forms.Timer { Interval = 1000 };
+            live.Tick += (s, e) => measure();
+            Action fill = () =>
+            {
+                menu.Items.Clear();
+                measure();
+                menu.Items.Add(usage);
+                menu.Items.Add(new ToolStripSeparator());
+                foreach (var f in panel.Listed)
+                {
+                    var key = f.Key;
+                    menu.Items.Add(f.Short + (f.Asleep ? " · asleep" : f.Battery >= 0 ? " · " + f.BatteryText : ""), null, (s, e) => panel.Open(key));
+                }
+                if (panel.Listed.Count > 0) menu.Items.Add(new ToolStripSeparator());
+                menu.Items.Add("Open", null, (s, e) => panel.ShowPanel());
+                menu.Items.Add("Quit", null, (s, e) => { tray.Visible = false; Application.Exit(); });
+            };
+            fill();
+            menu.Opening += (s, e) => { fill(); live.Start(); e.Cancel = false; };
+            menu.Closed += (s, e) => live.Stop();
             tray.MouseClick += (s, e) => { if (e.Button == MouseButtons.Left) { if (panel.Visible) panel.HidePanel(); else panel.ShowPanel(); } };
             panel.CreateControl();
             panel.Handle.ToString();
