@@ -15,6 +15,24 @@ class Model
 {
     [DataMember(Name = "name")] public string Name { get; set; }
     [DataMember(Name = "rows")] public string[] Rows { get; set; }
+    [DataMember(Name = "ids")] public string[] Ids { get; set; }
+
+    public List<int> KeyIds()
+    {
+        var all = new List<int>();
+        for (int r = 0; r < Rows.Length; r++)
+        {
+            var ids = Ids != null && r < Ids.Length ? Ids[r].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries) : new string[0];
+            int n = 0;
+            foreach (var t in Rows[r].Split('|'))
+            {
+                if (t.StartsWith("_")) continue;
+                all.Add(n < ids.Length && ids[n] != "--" ? Convert.ToInt32(ids[n], 16) : -1);
+                n++;
+            }
+        }
+        return all;
+    }
 
     public static Model Load(string file)
     {
@@ -26,8 +44,11 @@ class Model
 // In-memory G515 that answers the HID++ calls the app makes, for running without the keyboard.
 class FakeHidpp : Hidpp
 {
-    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8071, 9 }, { 0x8040, 14 }, { 0x8101, 15 } };
+    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8071, 9 }, { 0x8040, 14 }, { 0x8101, 15 }, { 0x8081, 16 }, { 0x4540, 17 }, { 0x1004, 18 } };
     static readonly byte[] EffectIds = { 0x00, 0x01, 0x0A, 0x15, 0x16, 0x17 };
+    public readonly Dictionary<int, int> Keys = new Dictionary<int, int>();
+    public int Frames, Battery = 82;
+    public bool Charging;
 
     public static byte[] Hex(string s) { return Enumerable.Range(0, s.Length / 2).Select(i => Convert.ToByte(s.Substring(i * 2, 2), 16)).ToArray(); }
 
@@ -77,6 +98,27 @@ class FakeHidpp : Hidpp
             }
             if (fn == 1) Live = p.Take(12).ToArray();
         }
+        else if (feat == Index[0x8081])
+        {
+            if (fn == 0)
+            {
+                r[0] = 0; r[1] = p[1];
+                for (int id = p[1] * 112; id < p[1] * 112 + 112; id++)
+                    if (id >= 0x01 && id <= 0x4F || id >= 0x61 && id <= 0x6F) r[2 + (id - p[1] * 112) / 8] |= (byte)(1 << (id % 8));
+            }
+            if (fn == 6)
+            {
+                for (int i = 3; i < 16 && p.Length > i; i++)
+                {
+                    if (p[i] == 0 && i > 3) break;
+                    if (p[i] < 0x01 || p[i] > 0x4F && p[i] < 0x61 || p[i] > 0x6F) throw new HidppError(2, "invalid argument");
+                    Keys[p[i]] = p[0] << 16 | p[1] << 8 | p[2];
+                }
+            }
+            if (fn == 7) Frames++;
+        }
+        else if (feat == Index[0x4540]) r[0] = 0x0D;
+        else if (feat == Index[0x1004]) { r[0] = (byte)Battery; r[2] = (byte)(Charging ? 1 : 0); }
         else if (feat == Index[0x8101])
         {
             switch (fn)

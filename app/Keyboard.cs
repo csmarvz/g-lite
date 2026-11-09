@@ -156,6 +156,8 @@ class Hidpp : IDisposable
         catch (TimeoutException) { Log.Sent(Who, id, fn, p, "no answer"); throw; }
     }
 
+    public byte[] Quiet(byte feat, int fn, params byte[] p) { return Send(feat, fn, p); }
+
     protected virtual byte[] Send(byte feat, int fn, byte[] p)
     {
         var msg = new byte[20];

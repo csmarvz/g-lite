@@ -298,6 +298,44 @@ static class SelfTest
         Check(hreport.Contains("sidetone=1E") && hreport.Contains("auto-off=1E") && hreport.Contains("% · 3926 mV"), "the headset report reads sidetone, auto-off and the battery");
         Check(!Report.Reads[0x8100].Intersect(new[] { 1, 3, 6, 7, 8, 0xC }).Any() && !Report.Reads[0x8101].Intersect(new[] { 2, 3, 6, 7 }).Any() && !Report.Reads[0x8071].Contains(1) && !Report.Reads[0x8070].Contains(3), "the report never calls a write function");
 
+        foreach (var file in new[] { "g515-tkl.json", "g515-tkl-iso.json", "g915-tkl.json", "g915.json" })
+        {
+            var board = Model.Load(file);
+            int keys = board.Rows.Sum(r => r.Split('|').Count(t => !t.StartsWith("_")));
+            var keyIds = board.KeyIds();
+            Check(keyIds.Count == keys && board.Ids.Length == board.Rows.Length, file + " has one key id per key");
+            Check(keyIds.Where(i => i >= 0).All(i => i >= 0x01 && i <= 0x6F), file + " key ids are lighting ids");
+        }
+        var isoIds = Model.Load("g515-tkl-iso.json").KeyIds();
+        var ansiIds = Model.Load("g515-tkl.json").KeyIds();
+        Check(isoIds.Contains(0x61) && isoIds.Contains(0x2F) && !isoIds.Contains(0x2E) && ansiIds.Contains(0x2E) && !ansiIds.Contains(0x61), "ISO has <> and the key next to Enter, ANSI has \\");
+        Check(ansiIds.Distinct().Count() == 87 && isoIds.Distinct().Count() == 88, "the G515 has 87 keys in ANSI and 88 in ISO");
+        Check(ansiIds.Contains(0x6F) && ansiIds.Contains(0x62) && ansiIds.Contains(0x6E), "Fn, Menu and AltGr have ids");
+
+        var screen = new ScreenSetup { Monitor = @"\\.\DISPLAY2", Boost = 60, Interval = 300, Smooth = false, PauseOnBattery = false, PauseWhenLocked = false };
+        screen.Keys[0x26] = 3;
+        screen.Add();
+        screen.Zones[4].Area = new System.Drawing.RectangleF(0.1f, 0.2f, 0.3f, 0.4f);
+        var back2 = ScreenSetup.FromText(screen.ToText());
+        Check(back2.Monitor == screen.Monitor && back2.Boost == 60 && back2.Interval == 300 && !back2.Smooth && !back2.PauseOnBattery && !back2.PauseWhenLocked
+            && back2.Zones.Count == 5 && back2.Zones[4].Name == "Zone 5" && Math.Abs(back2.Zones[4].Area.Height - 0.4f) < 0.001f && back2.Keys[0x26] == 3, "screen setup round-trips through text");
+        Check(ScreenSetup.FromText("garbage;zones:x").Zones.Count == 4 && ScreenSetup.FromText("ms:5000").Interval == 1000, "bad screen setup text falls back to defaults");
+        Check(screen.Add() == -1, "at most five zones");
+        screen.Remove(3);
+        Check(screen.Zones.Count == 4 && screen.Keys[0x26] == 2, "removing a zone moves its keys to the zone before");
+        Check(screen.ZoneOf(0x01, 0.1f) == 0 && screen.ZoneOf(0x01, 0.99f) == 3 && screen.ZoneOf(0x26, 0.1f) == 2, "keys go to the zone under them unless picked");
+        Check(ScreenCapture.Boost(0x808080, 0) == 0xFFFFFF && ScreenCapture.Boost(0x050505, 50) == 0 && ScreenCapture.Boost(0x804020, 0) == 0xFF7F3F, "boost keeps the hue and brightens to full");
+        int boosted = ScreenCapture.Boost(0x806060, 100);
+        Check((boosted & 0xFF) < 0x60 * 255 / 0x80, "boost adds saturation");
+        Check(ScreenCapture.Blend(0x000000, 0xFF0000, 0.5) == 0x800000, "blend mixes halfway");
+
+        var perKey = new FakeHidpp();
+        var groups = new Dictionary<int, List<int>> { { 0xFF0000, Enumerable.Range(0x01, 20).ToList() }, { 0x0000FF, new List<int> { 0x61, 0x6F } } };
+        Check(KeyLights.Present(perKey).Count == 94, "the fake reports 94 lighting ids");
+        KeyLights.Send(perKey, groups);
+        Check(perKey.Keys.Count == 22 && perKey.Keys[0x14] == 0xFF0000 && perKey.Keys[0x6F] == 0x0000FF && perKey.Frames == 1, "per-key colours go out in groups of 13 and end with a frame");
+        Check(perKey.Call(perKey.F(0x4540), 0)[0] == 0x0D, "the fake keyboard reports a Swiss layout");
+
         Console.WriteLine("selftest ok");
         return 0;
     }

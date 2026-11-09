@@ -36,6 +36,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `Page515`: the G515 screen, the preview debounce, the backups menu and the offer to restore when the saved lighting is half written. Profiles are `profile.g515.<name>`.
   - On a G915 the same screen has no Save, Backups or idle settings. It keeps the lighting as `lighting.<device>` in `settings.txt` and sets it again on each load. Profiles are `profile.g915.<name>`.
   - `KeyPicture`: the live key picture
+- `app/Screen.cs`: the Screen effect. `ScreenSetup` (monitor, up to five zones as fractions of the screen, key id to zone, boost, update rate, smoothing, pauses; kept as `screen.<device>`, and `screen.on.<device>=1` while it runs), `ScreenCapture` (shrinks each zone with StretchBlt and averages it), `KeyLights` (0x8081: fn 0 lists the lit ids, fn 6 sets one colour on up to 13 ids, fn 7 shows the frame, sent with `Hidpp.Quiet` so frames stay out of the log), `Presence` (screen off and lock, from the main window), `ScreenPreview` and `ZoneList`. See `docs/screen.md`.
 - `app/PageMouse.cs`: `PageMouse`, the mouse screen with Save to mouse, its backups and the offer to restore a damaged profile, and `MousePicture`. On the G9x it has only Off and Static, and no factory restore.
 - `app/PageHeadset.cs`: `PageHeadset`, the headset screen, and `HeadsetPicture`
 - `app/Log.cs`: `Log`, `log.txt` next to `settings.txt` (in the temp folder with `--demo`), one tab-separated line per event: time, device, kind (`start`, `found`, `lost`, `you`, `backup`, `sent`, `error`), text, result. `Hidpp.Call` logs every call that isn't in `Report.Reads`, and reads only when they time out. At 512 KB it moves to `log.old.txt`. `LogsPage` in `app/Pages.cs` shows it.
@@ -57,10 +58,11 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/Win.cs`: per-monitor DPI awareness, the scale of a screen, pixel fonts, rounded corners. Windows are laid out at 100% and scaled with `Scale()`; `WM_DPICHANGED` rescales them.
 - `app/Logo.cs`: draws the GL logo at any size and writes the multi-size ico.
 - `app/SelfTest.cs`: self-checks with golden bytes from the real keyboard. Add a check here whenever the encoding or rules change.
-- `app/models/g515-tkl.json`, `g915-tkl.json`, `g915.json`: the key layouts
+- `app/models/g515-tkl.json`, `g515-tkl-iso.json`, `g915-tkl.json`, `g915.json`: the key layouts. The G515 page picks ISO when 0x4540 reports a layout above 2.
   - A row is written `Label:width|...`.
   - `_n` is a gap of n units.
   - A row made only of gaps adds vertical space.
+  - `ids` has one row per row: the 0x8081 lighting id of each key in hex (USB key code minus 3, modifiers 0x68–0x6F), `--` for a key with no known LED.
 
 ## Protocol essentials
 

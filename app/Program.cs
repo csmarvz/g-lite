@@ -55,7 +55,7 @@ class MainWindow : Form
         this.fake = fake;
         demo = fake != null;
         Win.Round(this);
-        HandleCreated += (s, e) => Win.Border(this, Theme.Border);
+        HandleCreated += (s, e) => { Win.Border(this, Theme.Border); Presence.Watch(Handle); };
         FormBorderStyle = FormBorderStyle.None;
         Text = "G-Lite";
         StartPosition = FormStartPosition.Manual;
@@ -362,7 +362,7 @@ class MainWindow : Form
         Thread.Sleep(400);
         return new List<Found>
         {
-            new Found { Key = "demo|keyboard", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Link = "Demo", Wpid = 0x40B4, Battery = 82, Firmware = "MPK 25.02 · build 0016", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x8040, 0x8071, 0x8101 } },
+            new Found { Key = "demo|keyboard", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Link = "Demo", Wpid = 0x40B4, Battery = 82, Firmware = "MPK 25.02 · build 0016", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
             new Found { Key = "demo|g915", Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "Demo", Index = 1, Wpid = 0x408E, Battery = 70, Approx = true, Millivolts = 3923, Firmware = "MPK 14.01 · build 0021", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 } },
             new Found { Key = "demo|mouse", Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "Demo", Index = 1, Wpid = 0x4079, Battery = 54, Approx = true, Millivolts = 3824, Firmware = "MPM 15.02 · build 0017", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
             new Found { Key = "demo|g9x", Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04", Firmware = "58.02 · build 0018" },
@@ -395,6 +395,7 @@ class MainWindow : Form
     protected override void WndProc(ref Message m)
     {
         if (m.Msg == Win.DpiChanged) Rescale(Win.FromMessage(m));
+        Presence.Power(m);
         if (m.Msg == 0x0219 && !demo) { rescanSoon.Stop(); rescanSoon.Start(); }
         base.WndProc(ref m);
     }
