@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Profiles are now presets, kept on this PC. The list holds None and your presets; None, and deleting a preset, bring back what the device has saved. Changes to a preset you leave without Update are kept until G-Lite quits, and come back when you pick it again. Once you change something, the loaded preset gets a dot; Update saves the change into it, and the … menu has Save as new preset, Rename and Delete. As on the keyboard is now Revert, next to Save: with a preset loaded it brings back the preset, with None it brings back what the device has saved. The refresh button is gone: the screen reads the device each time you open it.
+
 ## [0.0.11-alpha] - 2026-11-09
 
 ### Changed

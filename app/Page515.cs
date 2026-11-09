@@ -409,7 +409,7 @@ class Page515 : DevicePage
         var idle = Ui.Add(this, new Box(), 412, 339, 224, 272);
         idleArea = idle;
         Ui.Text(idle, g915 ? "Saving" : "When idle", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
-        var note = Ui.Text(idle, "G-Lite can't save to this keyboard yet. It keeps your lighting and sets it again when G-Lite starts and when you open this screen. As on the keyboard gives the keyboard its own lighting back.", 14, 40, () => Theme.Dim, 9f);
+        var note = Ui.Text(idle, "G-Lite can't save to this keyboard yet. It keeps your lighting and sets it again when G-Lite starts and when you open this screen. Picking None gives the keyboard its own lighting back.", 14, 40, () => Theme.Dim, 9f);
         note.AutoSize = false;
         note.Size = new Size(196, 200);
         note.Visible = g915;
@@ -759,6 +759,8 @@ class Page515 : DevicePage
 
     protected override void Lost() { claimed = false; clusters = null; present = null; }
 
+    protected override bool Unsaved { get { return cur != null && (g915 ? Known() : stored != null && (dirty || Screening)); } }
+
     protected override string Current() { return cur.ToText(brightness) + (Screening ? "|" + setup.ToText() : ""); }
 
     protected override void Use(string text)
@@ -845,6 +847,7 @@ class Page515 : DevicePage
         if (g915) unknownStored = false;
         dirty = true;
         edits++;
+        Edited();
         Sync();
         Calm();
         debounce.Stop();
@@ -864,7 +867,7 @@ class Page515 : DevicePage
             else Say("Live only.");
         }
         else if (g915) Say(Known() ? "Set by G-Lite · not saved to the keyboard" : "");
-        else Say(dirty ? "Previewing · not saved to the keyboard" : stored == null ? "" : "Matches the keyboard");
+        else Say(dirty ? "Not saved to the keyboard" : stored == null ? "" : "Matches the keyboard");
     }
 
     static bool DynamicLightingOn()
@@ -917,7 +920,7 @@ class Page515 : DevicePage
             cur = stored != null ? stored.Clone() : new Lighting();
         }
         if (g915) { Forget(); return; }
-        if (stored == null) return;
+        if (stored == null) { Sync(); Calm(); return; }
         cur = stored.Clone();
         brightness = storedBrightness;
         Release();

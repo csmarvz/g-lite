@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
@@ -22,16 +23,19 @@ abstract class DevicePage : Control, IPage
     readonly Hidpp fake;
     Hidpp dev;
     Task queue = Task.FromResult(0);
-    readonly string prefix, onDevice;
+    const string NoPreset = "None";
+    readonly string prefix;
     readonly Label sub;
     readonly Drop profiles;
     readonly Field nameField;
-    readonly Btn newBtn, delBtn, reportBtn;
+    readonly Btn updateBtn, moreBtn, undoBtn, reportBtn;
     readonly StatusLine status;
     readonly Btn act;
     Action actDo;
     readonly ReportView report;
-    bool naming;
+    bool naming, touched;
+    string baseline, renaming, loaded;
+    readonly Dictionary<string, string[]> drafts = new Dictionary<string, string[]>();
     string readAt = "";
     public string Note;
 
@@ -40,37 +44,33 @@ abstract class DevicePage : Control, IPage
         found = f;
         this.fake = fake;
         this.prefix = prefix;
-        onDevice = "As on the " + noun;
         Ui.Style(this, () => BackColor = Theme.Bg);
         MouseDown += drag;
         Ui.Text(this, title, 20, 14, () => Theme.Text, 13.5f, Ui.Semi).MouseDown += drag;
         sub = Ui.Text(this, "", 21, 44, () => Theme.Dim, 9f);
         sub.MouseDown += drag;
-        var reread = Ui.Add(this, new Btn { Look = Look.Ghost, Icon = "refresh", AccessibleName = "Read again from the " + noun }, 536, 10, 36, 28);
-        reread.Click += (s, e) => Load();
-        reportBtn = Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Report", AccessibleName = "Report of the " + noun }, 536 - 4 - 80, 10, 80, 28);
+        reportBtn = Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Report", AccessibleName = "Report of the " + noun }, 572 - 80, 10, 80, 28);
 
-        Ui.Text(this, "Profile", 20, 79, () => Theme.Dim, 9.75f);
-        profiles = Ui.Add(this, new Drop { AccessibleName = "Profile" }, 74, 72, 210, 32);
+        Ui.Text(this, "Preset", 20, 79, () => Theme.Dim, 9.75f);
+        profiles = Ui.Add(this, new Drop { AccessibleName = "Preset" }, 74, 72, 210, 32);
         profiles.Picked += PickSet;
+        profiles.Label = name => name + (drafts.ContainsKey(name) || name == loaded && Changed() ? " •" : "");
         nameField = Ui.Add(this, new Field { Visible = false }, 74, 72, 210, 32);
         nameField.Box.KeyDown += (s, e) =>
         {
             if (e.KeyCode == Keys.Enter) { SaveSet(nameField.Box.Text.Trim()); e.SuppressKeyPress = true; }
             if (e.KeyCode == Keys.Escape) { EndName(); e.SuppressKeyPress = true; }
         };
-        newBtn = Ui.Add(this, new Btn { Text = "New" }, 292, 72, 68, 32);
-        newBtn.Click += (s, e) => { if (naming) SaveSet(nameField.Box.Text.Trim()); else StartName(); };
-        delBtn = Ui.Add(this, new Btn { Text = "Delete" }, 368, 72, 76, 32);
-        delBtn.Click += (s, e) =>
-        {
-            if (naming) EndName();
-            else if (profiles.Index > 0) { Settings.Remove(prefix + profiles.Items[profiles.Index]); LoadSets(null); }
-        };
+        updateBtn = Ui.Add(this, new Btn { Text = "Update" }, 292, 72, 76, 32);
+        updateBtn.Click += (s, e) => { if (naming) SaveSet(nameField.Box.Text.Trim()); else UpdateSet(); };
+        moreBtn = Ui.Add(this, new Btn { Text = "…", AccessibleName = "More preset actions" }, 376, 72, 36, 32);
+        moreBtn.Click += (s, e) => { if (naming) EndName(); else PresetMenu(); };
 
         var line = Ui.Add(this, new Control(), 0, 623, 656, 1);
         Ui.Style(line, () => line.BackColor = Theme.Border);
         status = Ui.Add(this, new StatusLine(), 20, 633, 460, 36);
+        undoBtn = Ui.Add(this, new Btn { Text = "Revert", Enabled = false, AccessibleName = "Revert changes" }, 416, 635, 72, 32);
+        undoBtn.Click += (s, e) => Undo();
         act = Ui.Add(this, new Btn { Visible = false }, 328, 635, 160, 32);
         act.TabIndex = 1000;
         act.Click += (s, e) => { if (actDo != null) actDo(); };
@@ -93,8 +93,8 @@ abstract class DevicePage : Control, IPage
 
     protected Btn BackupsButton(string noun)
     {
-        reportBtn.Left = 536 - 4 - 80 - 4 - 80;
-        return Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Backups", AccessibleName = "Backups of the " + noun }, 536 - 4 - 80, 10, 80, 28);
+        reportBtn.Left = 572 - 80 - 4 - 80;
+        return Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Backups", AccessibleName = "Backups of the " + noun }, 572 - 80, 10, 80, 28);
     }
 
     public static string When(Backups.Entry e) { return e.When.ToLocalTime().ToString("d MMM HH:mm", CultureInfo.InvariantCulture); }
@@ -151,6 +151,10 @@ abstract class DevicePage : Control, IPage
 
     protected virtual void Calm() { Say(""); }
 
+    protected virtual bool Unsaved { get { return false; } }
+
+    protected void Edited() { touched = true; ShowSets(); }
+
     protected virtual void Lost() { }
 
     public void SetFound(Found f)
@@ -169,12 +173,13 @@ abstract class DevicePage : Control, IPage
         actDo = action != null ? click : null;
         act.Visible = action != null;
         status.Set(text, warn, action != null ? null : click);
-        if (action == null) { status.Width = (int)(460 * Ui.K); return; }
-        var main = Controls.OfType<Btn>().FirstOrDefault(b => b != act && b.Look == Look.Primary && b.Visible && b.Top >= act.Top - 4);
+        ShowSets();
+        if (action == null) { status.Width = undoBtn.Left - status.Left - (int)(12 * Ui.K); return; }
+        var main = MainButton();
         act.Look = main == null || !main.Enabled ? Look.Primary : Look.Normal;
         act.Text = action;
         int w = TextRenderer.MeasureText(action, Ui.Get(9.75f, act.Look == Look.Primary ? Ui.Semi : Ui.Regular)).Width + (int)(28 * Ui.K);
-        int right = main != null ? main.Left - (int)(8 * Ui.K) : (int)(636 * Ui.K);
+        int right = undoBtn.Left - (int)(8 * Ui.K);
         act.Bounds = new Rectangle(right - w, act.Top, w, act.Height);
         status.Width = act.Left - status.Left - (int)(12 * Ui.K);
     }
@@ -229,13 +234,17 @@ abstract class DevicePage : Control, IPage
     protected void Loaded()
     {
         readAt = DateTime.Now.ToString("HH:mm");
-        if (!naming) profiles.Index = 0;
         ShowSets();
         ShowSub();
         Calm();
         if (Note == null) return;
         var n = Note;
         Note = null;
+        Briefly(n);
+    }
+
+    void Briefly(string n)
+    {
         Say(n);
         var t = new Timer { Interval = 8000 };
         t.Tick += (s, e) => { t.Dispose(); if (status.Shown == n) Calm(); };
@@ -245,52 +254,152 @@ abstract class DevicePage : Control, IPage
     void LoadSets(string select)
     {
         profiles.Items.Clear();
-        profiles.Items.Add(onDevice);
+        profiles.Items.Add(NoPreset);
         foreach (var k in Settings.Keys().Where(k => k.StartsWith(prefix)).Select(k => k.Substring(prefix.Length)).OrderBy(k => k)) profiles.Items.Add(k);
         profiles.Index = select == null ? 0 : Math.Max(0, profiles.Items.IndexOf(select));
         ShowSets();
     }
 
+    Btn MainButton() { return Controls.OfType<Btn>().FirstOrDefault(b => b != act && b != undoBtn && b.Look == Look.Primary && b.Visible && b.Top >= act.Top - 4); }
+
     void ShowSets()
     {
         profiles.Visible = !naming;
         nameField.Visible = naming;
-        newBtn.Text = naming ? "Save" : "New";
-        delBtn.Text = naming ? "Cancel" : "Delete";
-        delBtn.Enabled = naming || profiles.Index > 0;
+        updateBtn.Text = naming ? "Save" : "Update";
+        moreBtn.Text = naming ? "Cancel" : "…";
+        bool picked = profiles.Index > 0;
+        bool changed = picked && Changed();
+        updateBtn.Enabled = naming || changed;
+        if (picked) profiles.Text = profiles.Items[profiles.Index] + (changed ? " •" : "");
+        profiles.Invalidate();
+        undoBtn.Enabled = picked ? changed : Unsaved;
+        if (!IsHandleCreated || !Visible) return;
+        moreBtn.Width = (int)((naming ? 76 : 36) * Ui.K);
+        var main = MainButton();
+        undoBtn.Left = (main != null ? main.Left - (int)(8 * Ui.K) : (int)(636 * Ui.K)) - undoBtn.Width;
     }
 
-    void StartName()
+    bool Changed() { return touched && baseline != null && Current() != baseline; }
+
+    void Undo()
+    {
+        if (profiles.Index <= 0 || baseline == null) Revert();
+        else
+        {
+            try { Use(baseline); }
+            catch (Exception) { Say("This preset couldn't be read from settings.txt", true); }
+        }
+        touched = false;
+        ShowSets();
+    }
+
+    void PresetMenu()
+    {
+        bool picked = profiles.Index > 0;
+        var name = picked ? profiles.Items[profiles.Index] : null;
+        var m = new ContextMenuStrip { Renderer = Ui.Menus, Font = Ui.Get(9.75f, Ui.Regular), ShowImageMargin = false };
+        m.BackColor = Theme.Card;
+        m.ForeColor = Theme.Text;
+        m.Items.Add(new ToolStripMenuItem("Save as new preset…", null, (s, e) => StartName(null)));
+        m.Items.Add(new ToolStripMenuItem("Rename…", null, (s, e) => StartName(name)) { Enabled = picked });
+        m.Items.Add(new ToolStripMenuItem("Delete", null, (s, e) => DeleteSet(name)) { Enabled = picked });
+        m.Closed += (s, a) => BeginInvoke((Action)m.Dispose);
+        m.Show(moreBtn, new Point(moreBtn.Width, moreBtn.Height + (int)(2 * Ui.K)), ToolStripDropDownDirection.BelowLeft);
+    }
+
+    void StartName(string old)
     {
         naming = true;
-        nameField.Box.Text = "";
+        renaming = old;
+        nameField.Box.Text = old ?? "";
         ShowSets();
         nameField.Box.Focus();
+        nameField.Box.SelectAll();
     }
 
     void EndName()
     {
         naming = false;
+        renaming = null;
         ShowSets();
     }
 
     void PickSet(int i)
     {
+        if (loaded != null)
+        {
+            if (Changed()) drafts[loaded] = new[] { baseline, Current() };
+            else drafts.Remove(loaded);
+        }
+        baseline = null;
+        loaded = null;
+        touched = false;
+        if (i == 0) Revert();
+        else
+        {
+            var name = profiles.Items[i];
+            try
+            {
+                string[] draft;
+                if (drafts.TryGetValue(name, out draft)) { Use(draft[1]); baseline = draft[0]; drafts.Remove(name); }
+                else { Use(Settings.Get(prefix + name)); baseline = Current(); }
+                loaded = name;
+                touched = draft != null;
+            }
+            catch (Exception) { Say("This preset couldn't be read from settings.txt", true); }
+        }
         ShowSets();
-        if (i == 0) { Revert(); return; }
-        try { Use(Settings.Get(prefix + profiles.Items[i])); }
-        catch (Exception) { Say("This profile couldn't be read from settings.txt", true); }
+    }
+
+    void UpdateSet()
+    {
+        if (profiles.Index <= 0) return;
+        var name = profiles.Items[profiles.Index];
+        baseline = Current();
+        touched = false;
+        Settings.Set(prefix + name, baseline);
+        ShowSets();
+        Briefly("Updated the preset " + name);
+    }
+
+    void DeleteSet(string name)
+    {
+        if (name == null) return;
+        Settings.Remove(prefix + name);
+        drafts.Remove(name);
+        baseline = null;
+        loaded = null;
+        LoadSets(null);
+        Revert();
+        ShowSets();
+        Briefly("Deleted the preset " + name);
     }
 
     void SaveSet(string name)
     {
-        if (name == "") { Say("Type a name for the profile first", true); nameField.Box.Focus(); return; }
-        if (name.Contains("=")) { Say("A profile name can't contain =", true); nameField.Box.Focus(); return; }
-        if (name == onDevice) { Say("Pick another name for the profile", true); nameField.Box.Focus(); return; }
-        Settings.Set(prefix + name, Current());
+        if (name == "") { Say("Type a name for the preset first", true); nameField.Box.Focus(); return; }
+        if (name.Contains("=")) { Say("A preset name can't contain =", true); nameField.Box.Focus(); return; }
+        if (name == renaming) { EndName(); return; }
+        if (profiles.Items.Any(item => string.Equals(item, name, StringComparison.OrdinalIgnoreCase))) { Say("There's already a preset called " + name, true); nameField.Box.Focus(); return; }
+        if (renaming != null)
+        {
+            var old = renaming;
+            Settings.Set(prefix + name, Settings.Get(prefix + old));
+            Settings.Remove(prefix + old);
+            if (loaded == old) loaded = name;
+            EndName();
+            LoadSets(name);
+            Briefly("Renamed the preset to " + name);
+            return;
+        }
+        baseline = Current();
+        touched = false;
+        loaded = name;
+        Settings.Set(prefix + name, baseline);
         EndName();
         LoadSets(name);
-        Say("Saved the profile " + name);
+        Briefly("Saved the preset " + name);
     }
 }
 

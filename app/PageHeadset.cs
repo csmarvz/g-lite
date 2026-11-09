@@ -154,6 +154,8 @@ class PageHeadset : DevicePage
 
     public override void Restyle() { Sync(); }
 
+    protected override bool Unsaved { get { return dirty; } }
+
     protected override string Current() { return cur.ToText(); }
 
     protected override void Use(string text)
@@ -203,6 +205,7 @@ class PageHeadset : DevicePage
         if (loading || state == null) return;
         dirty = true;
         seq++;
+        Edited();
         Sync();
         Calm();
         debounce.Stop();

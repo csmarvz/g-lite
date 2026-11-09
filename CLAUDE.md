@@ -28,13 +28,13 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `Probe`: the scan's HID++ calls. HID++ 1.0 errors come back on the receiver's short collection.
   - Names of devices seen awake are kept as `seen.<wireless id>` in `settings.txt`, for when they're asleep.
 - `app/Pages.cs`:
-  - `DevicePage`: what every device screen shares: the title, the profile row, the device work queue, the status line and the Backups menu. Profiles are stored as `profile.<device>.<name>`.
+  - `DevicePage`: what every device screen shares: the title, the presets row (None, which calls `Revert`, plus the presets, Update, and a … menu with Save as new, Rename and Delete; a dot marks a preset changed since it was loaded or updated), the device work queue, the status line with Revert (with a preset loaded: loads it again, enabled while it has the dot; with None: calls `Revert`, enabled while `Unsaved`) and the Backups menu. Presets are stored on the PC as `profile.<device>.<name>`.
   - `ColorRow`: the colour swatches
   - `ReportView`: the report screen that Report opens on every device screen, with Copy and Open GitHub issue
   - `InfoPage` for G devices G-Lite can't change yet or that are asleep, and `EmptyPage`
 - `app/Page515.cs`:
-  - `Page515`: the G515 screen, the preview debounce, the backups menu and the offer to restore when the saved lighting is half written. Profiles are `profile.g515.<name>`.
-  - On a G915 the same screen has no Save, Backups or idle settings. It keeps the lighting as `lighting.<device>` in `settings.txt` and sets it again on each load. Profiles are `profile.g915.<name>`.
+  - `Page515`: the G515 screen, the preview debounce, the backups menu and the offer to restore when the saved lighting is half written. Presets are `profile.g515.<name>`.
+  - On a G915 the same screen has no Save, Backups or idle settings. It keeps the lighting as `lighting.<device>` in `settings.txt` and sets it again on each load. Presets are `profile.g915.<name>`.
   - `KeyPicture`: the live key picture
 - `app/Screen.cs`: the Screen effect. `ScreenSetup` (monitor, up to five zones as fractions of the screen, key id to zone, boost, update rate, smoothing, pauses; kept as `screen.<device>`, and `screen.on.<device>=1` while it runs), `ScreenCapture` (shrinks each zone with StretchBlt and averages it), `KeyLights` (0x8081: fn 0 lists the lit ids, fn 6 sets one colour on up to 13 ids, fn 7 shows the frame, sent with `Hidpp.Quiet` so frames stay out of the log), `Presence` (screen off and lock, from the main window), `ScreenPreview` and `ZoneList`. See `docs/screen.md`.
 - `app/PageMouse.cs`: `PageMouse`, the mouse screen with Save to mouse, its backups and the offer to restore a damaged profile, and `MousePicture`. On the G9x it has only Off and Static, and no factory restore.

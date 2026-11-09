@@ -530,6 +530,7 @@ class Drop : Ctl
 {
     public readonly List<string> Items = new List<string>();
     public event Action<int> Picked;
+    public Func<string, string> Label;
     int index = -1;
 
     public Drop() { AccessibleRole = AccessibleRole.ComboBox; }
@@ -550,7 +551,7 @@ class Drop : Ctl
         for (int i = 0; i < Items.Count; i++)
         {
             int n = i;
-            var item = new ToolStripMenuItem(Items[i]) { Checked = i == index };
+            var item = new ToolStripMenuItem(Label != null ? Label(Items[i]) : Items[i]) { Checked = i == index };
             item.Click += (s, a) => { Index = n; if (Picked != null) Picked(n); };
             m.Items.Add(item);
         }
