@@ -24,7 +24,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `Main`: the tray icon, the single-instance mutex and `--demo`
 - `app/Devices.cs`:
   - `Devices.Scan`: finds every Logitech HID++ interface. Direct devices answer at index 0xFF. Receivers list their paired slots (register 0xB5), and each slot is pinged. A port with neither is tried as an old HID++ 1.0 USB device at index 0x00 (register 0xF1, firmware), like the G9x Laser Mouse: its name comes from the USB product string (`Found.Hidpp10`, `Found.ShortPath`). The G9x gets the mouse screen, others the info page. It returns G devices only.
-  - `Found`: what the scan learned about a device
+  - `Found`: what the scan learned about a device. `Models` holds its product IDs per connection, decoded from 0x0003 fn 0 (bytes 5–6 the connection bits: 0x01/0x02 Bluetooth, 0x04 LIGHTSPEED, 0x08 USB; bytes 7–12 one ID per set bit, in bit order), or from the USB path for HID++ 1.0 devices. Retail model numbers aren't on the device.
   - `Probe`: the scan's HID++ calls. HID++ 1.0 errors come back on the receiver's short collection.
   - Names of devices seen awake are kept as `seen.<wireless id>` in `settings.txt`, for when they're asleep.
 - `app/Pages.cs`:

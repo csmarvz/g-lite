@@ -147,6 +147,7 @@ static class Report
         Row(s, "Device", f.Name == "" ? "–" : f.Name);
         Row(s, "Kind", f.Kind);
         Row(s, "Link", f.Link + f.Slot + (f.Hidpp10 ? " · HID++ 1.0" : "") + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "") + Usb(f.Path));
+        Row(s, "Model", f.Models == "" ? "–" : f.Models);
         Row(s, "Firmware", f.Firmware == "" ? "–" : f.Firmware);
         Row(s, "Battery", battery());
         Row(s, "Screen", screen);

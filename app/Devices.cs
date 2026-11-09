@@ -10,7 +10,7 @@ using Microsoft.Win32.SafeHandles;
 
 class Found
 {
-    public string Key, Path, ShortPath, Name = "", Kind = "device", Link = "", Firmware = "";
+    public string Key, Path, ShortPath, Name = "", Kind = "device", Link = "", Firmware = "", Models = "";
     public byte Index;
     public int Wpid, Battery = -1, Millivolts;
     public bool Approx, Asleep, Hidpp10;
@@ -30,6 +30,19 @@ class Found
     public string Short { get { return Regex.Replace(Regex.Replace(Name, @"(\s+Wireless\s+RGB\s+Mechanical)?\s+Gaming\s+(Mouse|Headset|Keyboard)$", "", RegexOptions.IgnoreCase), @"\s+LIGHTSPEED\b", "", RegexOptions.IgnoreCase); } }
 
     public string BatteryText { get { return Battery < 0 ? "" : (Approx ? "~" : "") + Battery + "%"; } }
+
+    public static string ModelText(byte[] info)
+    {
+        if (info == null || info.Length < 13) return "";
+        int transports = info[5] << 8 | info[6];
+        var ids = Enumerable.Range(0, 3).Select(i => info[7 + 2 * i] << 8 | info[8 + 2 * i]).ToList();
+        var names = new[] { "Bluetooth", "Bluetooth", "LIGHTSPEED", "USB" };
+        var labels = Enumerable.Range(0, 4).Where(bit => (transports >> bit & 1) != 0).Select(bit => names[bit]).ToList();
+        bool matches = labels.Count > 0 && labels.Count <= 3 && ids.Take(labels.Count).All(id => id != 0) && ids.Skip(labels.Count).All(id => id == 0);
+        if (!matches) return string.Join(" · ", ids.Where(id => id != 0).Select(id => id.ToString("X4")));
+        var order = new[] { "USB", "LIGHTSPEED", "Bluetooth" };
+        return string.Join(" · ", labels.Select((label, i) => new { label, id = ids[i] }).OrderBy(pair => Array.IndexOf(order, pair.label)).Select(pair => pair.label + " " + pair.id.ToString("X4")));
+    }
 
     public string Sub
     {
@@ -174,7 +187,8 @@ static class Devices
         {
             Path = p.Long, ShortPath = p.Short, Index = 0, Key = p.Long + "|0", Link = "USB", Hidpp10 = true, Name = name,
             Kind = low.Contains("mouse") ? "mouse" : low.Contains("keyboard") ? "keyboard" : low.Contains("headset") ? "headset" : "device",
-            Firmware = v[1].ToString("X2") + "." + v[2].ToString("X2") + (b != null ? " · build " + b[1].ToString("X2") + b[2].ToString("X2") : "")
+            Firmware = v[1].ToString("X2") + "." + v[2].ToString("X2") + (b != null ? " · build " + b[1].ToString("X2") + b[2].ToString("X2") : ""),
+            Models = Regex.IsMatch(p.Long, @"PID_[0-9A-F]{4}", RegexOptions.IgnoreCase) ? "USB " + Regex.Match(p.Long, @"PID_([0-9A-F]{4})", RegexOptions.IgnoreCase).Groups[1].Value.ToUpper() : ""
         };
     }
 
@@ -217,6 +231,7 @@ static class Devices
         }
         byte fw = pr.Feature(idx, 0x0003);
         var entities = fw == 0 ? null : pr.Call(idx, fw, 0);
+        f.Models = Found.ModelText(entities);
         byte[] info = null;
         for (int e = 0; entities != null && e < entities[0] && info == null; e++)
         {

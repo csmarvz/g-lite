@@ -221,6 +221,9 @@ static class SelfTest
         G9x.SetLight(g9xMouse, new MouseLight { Effect = 0x00 });
         Check(g9xMouse.Registers[0x57].SequenceEqual(new byte[3]) && G9x.Read(g9xMouse).Light.Effect == 0x00, "the G9x light turns off");
         Check(G9x.StagesOf(g9xMouse.Pages[3]).SequenceEqual(new[] { 200, 800, 2000 }) && new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04" }.IsG9x && !new Found { Path = @"\\?\hid#vid_046d&pid_c066" }.IsG9x, "G9x profile 2 and detection");
+        Check(Found.ModelText(FakeHidpp.Hex("0400000000000EB38940B4C35500")) == "USB C355 · LIGHTSPEED 40B4 · Bluetooth B389"
+            && Found.ModelText(FakeHidpp.Hex("0300000000000C4079C0880000")) == "USB C088 · LIGHTSPEED 4079"
+            && Found.ModelText(FakeHidpp.Hex("01000000000003000000000ABA")) == "0ABA", "product IDs from 0x0003 as the G515, G Pro Wireless and PRO X Wireless answer");
         var g9xSaver = new FakeG9x();
         var g9xBefore = G9x.Read(g9xSaver);
         var g9xOtherPage = (byte[])g9xSaver.Pages[3].Clone();
