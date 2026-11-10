@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.0.15-alpha] - 2026-11-10
 
 ### Added
 
@@ -14,7 +14,7 @@
 ### Fixed
 
 - On the mouse screen, Save to mouse stayed on after Revert or picking None, although nothing was left to save.
-- A report could stop after the firmware line, though it was complete. The G512 X 75's firmware name ends with a zero byte, which hid the rest of the report in the window and the copy. The firmware now shows in full, and the report drops such characters.
+- A report could stop after the firmware line, though it was complete. The G512 X 75's firmware name ends with a zero byte, which hid the rest of the report in the window and the copy. The firmware now shows in full, and the report drops such characters. Keyboard reports now also read the user and factory profile files, not only the directories, to help add new keyboards.
 
 ## [0.0.14-alpha] - 2026-11-10
 
