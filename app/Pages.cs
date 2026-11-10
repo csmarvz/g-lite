@@ -25,7 +25,7 @@ abstract class DevicePage : Control, IPage
     Task queue = Task.FromResult(0);
     const string NoPreset = "None";
     readonly string prefix;
-    readonly Label sub;
+    readonly SubLine sub;
     readonly Drop profiles;
     readonly Field nameField;
     readonly Btn updateBtn, moreBtn, undoBtn, reportBtn;
@@ -36,7 +36,6 @@ abstract class DevicePage : Control, IPage
     bool naming, touched;
     string baseline, renaming, loaded;
     readonly Dictionary<string, string[]> drafts = new Dictionary<string, string[]>();
-    string readAt = "";
     public string Note;
 
     protected DevicePage(Found f, Hidpp fake, MouseEventHandler drag, string title, string noun, string prefix)
@@ -47,7 +46,7 @@ abstract class DevicePage : Control, IPage
         Ui.Style(this, () => BackColor = Theme.Bg);
         MouseDown += drag;
         Ui.Text(this, title, 20, 14, () => Theme.Text, 13.5f, Ui.Semi).MouseDown += drag;
-        sub = Ui.Text(this, "", 21, 44, () => Theme.Dim, 9f);
+        sub = Ui.Add(this, new SubLine(), 21, 42, 540, 20);
         sub.MouseDown += drag;
         reportBtn = Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Report", AccessibleName = "Report of the " + noun }, 572 - 80, 10, 80, 28);
 
@@ -170,7 +169,7 @@ abstract class DevicePage : Control, IPage
 
     void ShowSub()
     {
-        sub.Text = found.Link + (found.Battery >= 0 ? " · " + found.BatteryText : "") + (readAt != "" ? " · read at " + readAt : "");
+        sub.Set(found.Sub, found.Asleep ? -1 : found.Battery, found.BatteryText, "");
     }
 
     public void Say(string text, bool warn = false, Action click = null, string action = null)
@@ -238,7 +237,6 @@ abstract class DevicePage : Control, IPage
 
     protected void Loaded()
     {
-        readAt = DateTime.Now.ToString("HH:mm");
         ShowSets();
         ShowSub();
         Calm();
@@ -461,7 +459,8 @@ class ColorRow
 
 class InfoPage : Control
 {
-    readonly Label title, sub, head, text, link, battery, firmware, features;
+    readonly SubLine sub;
+    readonly Label title, head, text, link, battery, firmware, features;
     readonly Btn again, create, reportBtn;
     readonly ReportView report;
     Found found;
@@ -472,7 +471,7 @@ class InfoPage : Control
         MouseDown += drag;
         title = Ui.Text(this, "", 20, 14, () => Theme.Text, 13.5f, Ui.Semi);
         title.MouseDown += drag;
-        sub = Ui.Text(this, "", 21, 44, () => Theme.Dim, 9f);
+        sub = Ui.Add(this, new SubLine(), 21, 42, 540, 20);
         sub.MouseDown += drag;
 
         var state = Ui.Add(this, new Box(), 20, 80, 616, 104);
@@ -534,7 +533,7 @@ class InfoPage : Control
     {
         found = f;
         title.Text = f.Short == "" ? "Logitech device" : f.Short;
-        sub.Text = f.Sub;
+        sub.Set(f.Sub, f.Asleep ? -1 : f.Battery, f.BatteryText, "");
         head.Text = f.Asleep ? "Asleep" : "Not supported yet";
         text.Text = f.Asleep
             ? "It's paired but didn't answer. Wake it with a key press or a click, and G-Lite picks it up."

@@ -21,7 +21,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `G915`: live lighting on the G915 and G915 TKL (0x8071 keys and logo clusters, the older effect ids). No saving yet. See `docs/G915.md`.
 - `app/Program.cs`:
   - `MainWindow`: the device sidebar, one page per found device, rescans on plug and unplug, the Settings and Logs screens, updates and run on startup
-  - `Main`: the tray icon and its menu (CPU and memory use, the devices, Open, Quit), the single-instance mutex and `--demo`
+  - `Main`: the tray icon, its menu (CPU and memory use, the devices, Open, Quit) and its hover popup (`TrayTip` in `app/Ui.cs`: CPU, RAM, each device with its battery, a new version), the single-instance mutex and `--demo`
   - `Support`: the device table. Each entry says which devices it matches (`Found.IsG515`, `IsMouse`…), which screen they get, how to make it (with its driver), and the fake `--demo` uses. The first match wins; asleep or unmatched devices get `InfoPage`. To add a device that works like one already supported, add an entry. For a new protocol, add a driver (like `IMouse`) and an entry.
 - `app/Devices.cs`:
   - `Devices.Scan`: finds every Logitech HID++ interface. Direct devices answer at index 0xFF. Receivers list their paired slots (register 0xB5), and each slot is pinged. Ports come from cfgmgr32 (`CM_Get_Device_Interface_List`), not WMI. A port with neither is tried as an old HID++ 1.0 USB device at index 0x00 (register 0xF1, firmware), like the G9x Laser Mouse: its name comes from the USB product string (`Found.Hidpp10`, `Found.ShortPath`). The G9x gets the mouse screen, others the info page. It returns G devices only. The G510 and G510s (C22D, C22E) don't speak HID++: they are listed with `Found.PlainHid`, skipped by the HID++ scan, and get the info page. See `docs/G510.md`.
@@ -47,7 +47,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/Headset.cs`: `GHeadset`, which reads and sets sidetone (0x8300) and the auto-off time (0x1F20 fn 1 and fn 2, in minutes, 0 is never). 0x1F20 fn 0 is the battery voltage, and byte 2 is 3 while charging.
 - `app/Ui.cs`:
   - `Theme`: dark, light or system, from `theme=` in `settings.txt`
-  - The owner-drawn controls. They read `Theme` when they paint. Labels and containers register their colours with `Ui.Style`, so a theme change restyles them.
+  - The owner-drawn controls. They read `Theme` when they paint. Labels and containers register their colours with `Ui.Style`, so a theme change restyles them. `Ui.Battery` draws the battery icon (whole pixels, no anti-aliasing) for the tray popup, the device list (`DevItem`) and the device screen's second line (`SubLine`).
 - `app/Fake.cs`:
   - `Model`: loads `models/*.json`, which are embedded resources
   - `FakeHidpp`: an in-memory G515

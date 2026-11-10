@@ -104,6 +104,31 @@ static class Ui
         return l;
     }
 
+    public static int BatteryWidth(float k) { return (int)Math.Round(16 * k) + (int)Math.Round(2 * k); }
+    public static int BatteryHeight(float k) { return (int)Math.Round(9 * k); }
+
+    public static void Battery(Graphics g, float left, float top, int percent, float k, Color? color = null)
+    {
+        int x = (int)Math.Round(left), y = (int)Math.Round(top);
+        int line = Math.Max(1, (int)Math.Round(k)), width = (int)Math.Round(16 * k), height = BatteryHeight(k), nub = (int)Math.Round(3 * k);
+        var ink = color ?? Theme.Text;
+        var smoothing = g.SmoothingMode;
+        g.SmoothingMode = SmoothingMode.None;
+        using (var outline = new SolidBrush(ink))
+        {
+            g.FillRectangle(outline, x, y, width, line);
+            g.FillRectangle(outline, x, y + height - line, width, line);
+            g.FillRectangle(outline, x, y, line, height);
+            g.FillRectangle(outline, x + width - line, y, line, height);
+            g.FillRectangle(outline, x + width, y + nub, BatteryWidth(k) - width, height - nub * 2);
+        }
+        int inset = line * 2, room = width - inset * 2;
+        int fill = Math.Max(line, (int)Math.Round(room * Math.Max(0, Math.Min(100, percent)) / 100.0));
+        using (var brush = new SolidBrush(percent <= 20 ? Theme.Warn : ink))
+            g.FillRectangle(brush, x + inset, y + inset, fill, height - inset * 2);
+        g.SmoothingMode = smoothing;
+    }
+
     public static T Add<T>(Control parent, T c, int x, int y, int w, int h) where T : Control
     {
         c.Bounds = new Rectangle(x, y, w, h);
@@ -747,7 +772,8 @@ class StatusLine : Ctl
 
 class DevItem : Ctl
 {
-    public string Title = "", Sub = "", Icon = "keyboard";
+    public string Title = "", Sub = "", Icon = "keyboard", Value = "";
+    public int Level = -1;
     public bool On;
 
     public DevItem() { AccessibleRole = AccessibleRole.PushButton; }
@@ -762,7 +788,59 @@ class DevItem : Ctl
         Icons.Draw(g, Icon, new RectangleF(8 * K + 7 * K, y + 7 * K, 18 * K, 18 * K), On ? Theme.Accent : Theme.Dim);
         float x = 8 * K + s + 10 * K;
         Ui.Draw(g, Title, Ui.Get(9.75f, Ui.Semi), new RectangleF(x, 0, Width - x - 4 * K, Height / 2f + 1), Theme.Text, TextFormatFlags.Bottom | TextFormatFlags.EndEllipsis);
-        Ui.Draw(g, Sub, Ui.Get(8.6f, Ui.Regular), new RectangleF(x, Height / 2f + 1, Width - x - 4 * K, Height / 2f), Theme.Dim, TextFormatFlags.Top | TextFormatFlags.EndEllipsis);
+        var font = Ui.Get(8.6f, Ui.Regular);
+        float top = Height / 2f + 1;
+        Ui.Draw(g, Sub, font, new RectangleF(x, top, Width - x - 4 * K, Height / 2f), Theme.Dim, TextFormatFlags.Top | TextFormatFlags.EndEllipsis);
+        if (Level < 0) return;
+        x += TextRenderer.MeasureText(g, Sub, font, Size.Empty, TextFormatFlags.NoPadding).Width + 6 * K;
+        Ui.Battery(g, x, top + (font.Height - Ui.BatteryHeight(K)) / 2f, Level, K, Theme.Dim);
+        x += Ui.BatteryWidth(K) + 5 * K;
+        Ui.Draw(g, Value, font, new RectangleF(x, top, Width - x - 4 * K, Height / 2f), Theme.Dim, TextFormatFlags.Top | TextFormatFlags.EndEllipsis);
+    }
+}
+
+class SubLine : Control
+{
+    string before = "", value = "", after = "";
+    int level = -1;
+
+    public SubLine()
+    {
+        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.SupportsTransparentBackColor, true);
+        BackColor = Color.Transparent;
+    }
+
+    public void Set(string before, int level, string value, string after)
+    {
+        this.before = before;
+        this.level = level;
+        this.value = value;
+        this.after = after;
+        AccessibleName = before + (level >= 0 ? " · " + value : "") + after;
+        Invalidate();
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        var g = e.Graphics;
+        var font = Ui.Get(9f, Ui.Regular);
+        var flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix;
+        float k = Ui.K, x = 0;
+        int y = (Height - font.Height) / 2;
+        Action<string> text = s =>
+        {
+            TextRenderer.DrawText(g, s, font, new Point((int)x, y), Theme.Dim, flags);
+            x += TextRenderer.MeasureText(g, s, font, Size.Empty, flags).Width;
+        };
+        text(before);
+        if (level >= 0)
+        {
+            x += 6 * k;
+            Ui.Battery(g, (int)x, y + (font.Height - Ui.BatteryHeight(k)) / 2, level, k, Theme.Dim);
+            x += Ui.BatteryWidth(k) + 5 * k;
+            text(value);
+        }
+        text(after);
     }
 }
 
@@ -816,5 +894,121 @@ class MenuLook : ToolStripProfessionalRenderer
         var r = e.ImageRectangle;
         float s = Math.Min(r.Width, r.Height);
         Icons.Draw(e.Graphics, "check", new RectangleF(r.X + (r.Width - s) / 2, r.Y + (r.Height - s) / 2, s, s), Theme.Accent);
+    }
+}
+
+class TrayTip : Form
+{
+    public Func<List<string[]>> Rows;
+    List<string[]> rows = new List<string[]>();
+    Point anchor;
+    DateTime firstAt, movedAt, filledAt;
+    bool hovering;
+    float scale = 1;
+    Font font;
+    int nameWidth, rowHeight;
+    readonly Timer watch = new Timer { Interval = 100 };
+
+    public TrayTip()
+    {
+        FormBorderStyle = FormBorderStyle.None;
+        ShowInTaskbar = false;
+        StartPosition = FormStartPosition.Manual;
+        TopMost = true;
+        DoubleBuffered = true;
+        Win.Round(this);
+        watch.Tick += (s, e) => Tick();
+    }
+
+    protected override bool ShowWithoutActivation { get { return true; } }
+
+    protected override CreateParams CreateParams
+    {
+        get
+        {
+            var p = base.CreateParams;
+            p.ExStyle |= 0x08000000 | 0x80 | 0x20 | 0x08;
+            return p;
+        }
+    }
+
+    public void Moved()
+    {
+        var now = DateTime.UtcNow;
+        if (!hovering) { hovering = true; firstAt = now; watch.Start(); }
+        anchor = Cursor.Position;
+        movedAt = now;
+    }
+
+    public void Gone()
+    {
+        hovering = false;
+        watch.Stop();
+        Hide();
+    }
+
+    void Tick()
+    {
+        var now = DateTime.UtcNow;
+        if (Cursor.Position != anchor && (now - movedAt).TotalMilliseconds > 250) { Gone(); return; }
+        if (!Visible && (now - firstAt).TotalMilliseconds < 400) return;
+        if (Visible && (now - filledAt).TotalMilliseconds < 1000) return;
+        filledAt = now;
+        Fill();
+    }
+
+    void Fill()
+    {
+        rows = Rows();
+        scale = Win.At(anchor);
+        if (font != null) font.Dispose();
+        font = Win.Px(9, scale);
+        int pad = S(10), gap = S(24), valueWidth = 0;
+        nameWidth = 0;
+        rowHeight = font.Height + S(4);
+        var flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine;
+        foreach (var r in rows)
+        {
+            nameWidth = Math.Max(nameWidth, TextRenderer.MeasureText(r[0], font, Size.Empty, flags).Width);
+            valueWidth = Math.Max(valueWidth, TextRenderer.MeasureText(r[1], font, Size.Empty, flags).Width + (HasIcon(r) ? S(18) + S(6) : 0));
+        }
+        var size = new Size(pad * 2 + nameWidth + gap + valueWidth, S(8) * 2 + rowHeight * rows.Count);
+        var area = Screen.FromPoint(anchor).WorkingArea;
+        int x = Math.Max(area.Left, Math.Min(area.Right - size.Width, anchor.X - size.Width / 2));
+        int y = anchor.Y - size.Height - S(16);
+        if (y < area.Top) y = anchor.Y + S(24);
+        y = Math.Max(area.Top, Math.Min(area.Bottom - size.Height, y));
+        Bounds = new Rectangle(new Point(x, y), size);
+        BackColor = Theme.Card;
+        if (!Visible) { Show(); Win.Border(this, Theme.Border); }
+        Invalidate();
+    }
+
+    int S(int value) { return (int)Math.Round(value * scale); }
+
+    static bool HasIcon(string[] row) { return row.Length > 2 && row[2] != ""; }
+
+    void DrawBattery(Graphics g, int x, int y, string level)
+    {
+        int percent;
+        if (int.TryParse(level, out percent)) Ui.Battery(g, x, y, percent, scale);
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        var g = e.Graphics;
+        g.Clear(Theme.Card);
+        if (font == null) return;
+        int pad = S(10), top = S(8) + S(2);
+        var flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine;
+        for (int i = 0; i < rows.Count; i++)
+        {
+            int y = top + i * rowHeight;
+            TextRenderer.DrawText(g, rows[i][0], font, new Point(pad, y), Theme.Dim, flags);
+            var width = TextRenderer.MeasureText(rows[i][1], font, Size.Empty, flags).Width;
+            TextRenderer.DrawText(g, rows[i][1], font, new Point(Width - pad - width, y), Theme.Text, flags);
+            if (HasIcon(rows[i])) DrawBattery(g, Width - pad - width - S(6) - S(18), y + (font.Height - S(9)) / 2, rows[i][2]);
+        }
+        if (!Win.Rounded) using (var pen = new Pen(Theme.Border)) g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
     }
 }

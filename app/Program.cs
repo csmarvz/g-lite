@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
-[assembly: System.Reflection.AssemblyVersion("0.0.15")]
-[assembly: System.Reflection.AssemblyFileVersion("0.0.15")]
-[assembly: System.Reflection.AssemblyInformationalVersion("0.0.15-alpha")]
+[assembly: System.Reflection.AssemblyVersion("0.0.16")]
+[assembly: System.Reflection.AssemblyFileVersion("0.0.16")]
+[assembly: System.Reflection.AssemblyInformationalVersion("0.0.16-alpha")]
 [assembly: System.Reflection.AssemblyTitle("G-Lite")]
 [assembly: System.Reflection.AssemblyProduct("G-Lite")]
 [assembly: System.Reflection.AssemblyCompany("com.csmarvz")]
@@ -19,7 +19,7 @@ class MainWindow : Form
 {
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-    const int W = 840, H = 680, SideW = 184, SideIn = SideW - 20;
+    const int W = 856, H = 680, SideW = 200, SideIn = SideW - 20;
 
     public NotifyIcon Tray;
     readonly FakeHidpp fake;
@@ -311,6 +311,8 @@ class MainWindow : Form
             item.TabIndex = list.IndexOf(f);
             item.Title = f.Short;
             item.Sub = f.Sub;
+            item.Level = f.Asleep ? -1 : f.Battery;
+            item.Value = f.BatteryText;
             item.Icon = f.Kind == "keyboard" || f.Kind == "mouse" || f.Kind == "headset" ? f.Kind : "device";
             item.AccessibleName = f.Short;
             item.Location = new Point(S(10), S(y));
@@ -444,8 +446,10 @@ class MainWindow : Form
         available = v;
         updText.Text = v == null ? "" : "Version " + v + " is available";
         updBox.Visible = v != null;
-        if (Tray != null) Tray.Text = "G-Lite " + Application.ProductVersion + (demo ? " (demo)" : "") + (v == null ? "" : " · " + v + " available");
     }
+
+    public string Available { get { return available; } }
+
 
     public void CheckUpdates(bool manual)
     {
@@ -543,14 +547,14 @@ class MainWindow : Form
             Log.Add("", "start", "G-Lite " + Application.ProductVersion + (demo ? " demo" : "") + " · " + Report.Windows());
             var fake = demo ? new FakeHidpp() : null;
             var panel = new MainWindow(fake);
-            var tray = new NotifyIcon { Text = "G-Lite " + Application.ProductVersion + (demo ? " (demo)" : ""), Visible = true };
+            var tray = new NotifyIcon { Visible = true };
             tray.ContextMenuStrip = new ContextMenuStrip { Renderer = Ui.Menus, ShowImageMargin = false, BackColor = Theme.Card };
             var menu = tray.ContextMenuStrip;
             var usage = new ToolStripMenuItem("") { Enabled = false };
             var self = System.Diagnostics.Process.GetCurrentProcess();
             var lastCpu = TimeSpan.Zero;
             var lastAt = self.StartTime.ToUniversalTime();
-            Action measure = () =>
+            Func<double> measure = () =>
             {
                 self.Refresh();
                 var cpu = self.TotalProcessorTime;
@@ -558,20 +562,36 @@ class MainWindow : Form
                 double percent = (cpu - lastCpu).TotalMilliseconds / Math.Max(1, (now - lastAt).TotalMilliseconds) / Environment.ProcessorCount * 100;
                 lastCpu = cpu;
                 lastAt = now;
-                usage.Text = "CPU " + percent.ToString("0.0") + "% · RAM " + (Win.PrivateMemory() >> 20) + " MB";
+                return percent;
             };
+            Func<string> usageText = () => "CPU " + measure().ToString("0.0") + "% · RAM " + (Win.PrivateMemory() >> 20) + " MB";
+            Func<Found, string> state = f => f.Asleep ? "asleep" : f.Battery >= 0 ? f.BatteryText : "";
+            Func<Found, string> line = f => f.Short + (state(f) == "" ? "" : " · " + state(f));
             var live = new System.Windows.Forms.Timer { Interval = 1000 };
-            live.Tick += (s, e) => measure();
+            live.Tick += (s, e) => usage.Text = usageText();
+            var tip = new TrayTip();
+            tip.Rows = () =>
+            {
+                var rows = new List<string[]>();
+                if (demo) rows.Add(new[] { "G-Lite", "demo" });
+                rows.Add(new[] { "CPU", measure().ToString("0.0") + "%" });
+                rows.Add(new[] { "RAM", (Win.PrivateMemory() >> 20) + " MB" });
+                rows.AddRange(panel.Listed.Select(f => new[] { f.Short, state(f), f.Asleep ? "" : f.Battery >= 0 ? f.Battery.ToString() : "" }));
+                if (panel.Available != null) rows.Add(new[] { "Update", panel.Available });
+                return rows;
+            };
+            tray.MouseMove += (s, e) => tip.Moved();
+            tray.MouseDown += (s, e) => tip.Gone();
             Action fill = () =>
             {
                 menu.Items.Clear();
-                measure();
+                usage.Text = usageText();
                 menu.Items.Add(usage);
                 menu.Items.Add(new ToolStripSeparator());
                 foreach (var f in panel.Listed)
                 {
                     var key = f.Key;
-                    menu.Items.Add(f.Short + (f.Asleep ? " · asleep" : f.Battery >= 0 ? " · " + f.BatteryText : ""), null, (s, e) => panel.Open(key));
+                    menu.Items.Add(line(f), null, (s, e) => panel.Open(key));
                 }
                 if (panel.Listed.Count > 0) menu.Items.Add(new ToolStripSeparator());
                 menu.Items.Add("Open", null, (s, e) => panel.ShowPanel());

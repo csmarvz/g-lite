@@ -47,8 +47,7 @@ class Found
     {
         get
         {
-            if (Asleep) return Link + " · asleep";
-            return Link + (Battery >= 0 ? " · " + BatteryText : "");
+            return Asleep ? Link + " · asleep" : Link;
         }
     }
 

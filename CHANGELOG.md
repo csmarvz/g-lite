@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16-alpha] - 2026-11-10
+
+### Changed
+
+- Hovering the tray icon shows a small table: G-Lite's CPU and memory use, each device with its battery, and a new version when there is one. The version number is no longer in the tray tooltip.
+- A battery icon next to the battery level in the tray popup, the device list and the device screen. It turns amber at 20% and under.
+- The device list is a little wider. The device screen no longer shows when it was read.
+
 ## [0.0.15-alpha] - 2026-11-10
 
 ### Added
