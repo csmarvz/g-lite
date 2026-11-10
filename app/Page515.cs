@@ -254,6 +254,8 @@ class Page515 : DevicePage
     int previewSeq, edits;
     readonly Timer debounce = new Timer { Interval = 120 };
 
+    internal override bool Busy { get { return debounce.Enabled; } }
+
     readonly Label lightHead, colorHead, dirHead, speedHead, speedValue, brightValue;
     readonly Seg effects, dirs;
     readonly ColorRow colors;
@@ -400,7 +402,7 @@ class Page515 : DevicePage
         screenTimer.Tick += (s, e) => Tick();
         snapTimer.Tick += (s, e) => Snap();
         watchTimer.Tick += (s, e) => Watch();
-        watchTimer.Start();
+        if (!Manual) watchTimer.Start();
         presenceChanged = () => { if (IsHandleCreated) BeginInvoke((Action)PresenceChanged); };
         Presence.Changed += presenceChanged;
         exiting = (s, e) => Exiting();
@@ -727,7 +729,9 @@ class Page515 : DevicePage
         ShowLive();
     }
 
-    void Exiting()
+    public static bool Manual;
+
+    internal void Exiting()
     {
         if (Screening)
         {
@@ -870,8 +874,11 @@ class Page515 : DevicePage
         else Say(dirty ? "Not saved to the keyboard" : stored == null ? "" : "Matches the keyboard");
     }
 
+    public static int TestDynamicLighting = -1;
+
     static bool DynamicLightingOn()
     {
+        if (TestDynamicLighting >= 0) return TestDynamicLighting == 1;
         using (var k = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Lighting"))
             return k != null && Equals(k.GetValue("AmbientLightingEnabled"), 1);
     }
@@ -1099,7 +1106,7 @@ class Page515 : DevicePage
         else Preview();
     }
 
-    void Watch()
+    internal void Watch()
     {
         if (g915 || Screening || !dirty || !claimed || away) { idleLevel = 0; return; }
         Idle();

@@ -1,0 +1,331 @@
+open
+  register 83 63
+  register 81 64
+  register 81 57
+  register 81 0F
+  register 83 A2  01
+  register 83 A2  01 08
+  register 83 A2  01 10
+  register 83 A2  01 18
+  register 83 A2  01 20
+  register 83 A2  01 28
+  register 83 A2  01 30
+  register 83 A2  01 38
+  register 83 A2  01 40
+  register 83 A2  01 48
+  register 83 A2  01 50
+  register 83 A2  01 58
+  register 83 A2  01 60
+  register 83 A2  01 68
+  register 83 A2  01 70
+  register 83 A2  01 78
+  register 83 A2  01 80
+  register 83 A2  01 88
+  register 83 A2  01 90
+  register 83 A2  01 98
+  register 83 A2  01 A0
+  register 83 A2  01 A8
+  register 83 A2  01 B0
+  register 83 A2  01 B8
+  register 83 A2  01 C0
+  register 83 A2  01 C8
+  register 83 A2  01 D0
+  register 83 A2  01 D8
+  register 83 A2  01 E0
+  register 83 A2  01 E8
+  register 83 A2  01 F0
+  register 83 A2  01 F8
+  register 83 A2  02
+  register 83 A2  02 08
+  register 83 A2  02 10
+  register 83 A2  02 18
+  register 83 A2  02 20
+  register 83 A2  02 28
+  register 83 A2  02 30
+  register 83 A2  02 38
+  register 83 A2  02 40
+  register 83 A2  02 48
+  register 83 A2  02 50
+  register 83 A2  02 58
+  register 83 A2  02 60
+  register 83 A2  02 68
+  register 83 A2  02 70
+  register 83 A2  02 78
+  register 83 A2  02 80
+  register 83 A2  02 88
+  register 83 A2  02 90
+  register 83 A2  02 98
+  register 83 A2  02 A0
+  register 83 A2  02 A8
+  register 83 A2  02 B0
+  register 83 A2  02 B8
+  register 83 A2  02 C0
+  register 83 A2  02 C8
+  register 83 A2  02 D0
+  register 83 A2  02 D8
+  register 83 A2  02 E0
+  register 83 A2  02 E8
+  register 83 A2  02 F0
+  register 83 A2  02 F8
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static DPI stage=800 <Your color> DPI=12 Report rate=500 Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+slide DPI 30
+  register 83 63
+  register 82 63  48 00 48 00 80 01
+  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static DPI stage=1700 <Your color> DPI=30 Report rate=500 Brightness=100 Speed=0 (off) [Revert] [Save to mouse]
+pick Effect Static
+  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static DPI stage=1700 <Your color> DPI=30 Report rate=500 Brightness=100 Speed=0 (off) [Revert] [Save to mouse]
+press Color 3080FF
+  register 80 57  30 80 FF
+  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static DPI stage=1700 <Color 3080FF> DPI=30 Report rate=500 Brightness=100 Speed=0 (off) [Revert] [Save to mouse]
+pick Report rate 500
+  register 80 64  02
+  register 83 63
+  register 81 64
+  register 81 57
+  register 81 0F
+  register 83 A2  01
+  register 83 A2  01 08
+  register 83 A2  01 10
+  register 83 A2  01 18
+  register 83 A2  01 20
+  register 83 A2  01 28
+  register 83 A2  01 30
+  register 83 A2  01 38
+  register 83 A2  01 40
+  register 83 A2  01 48
+  register 83 A2  01 50
+  register 83 A2  01 58
+  register 83 A2  01 60
+  register 83 A2  01 68
+  register 83 A2  01 70
+  register 83 A2  01 78
+  register 83 A2  01 80
+  register 83 A2  01 88
+  register 83 A2  01 90
+  register 83 A2  01 98
+  register 83 A2  01 A0
+  register 83 A2  01 A8
+  register 83 A2  01 B0
+  register 83 A2  01 B8
+  register 83 A2  01 C0
+  register 83 A2  01 C8
+  register 83 A2  01 D0
+  register 83 A2  01 D8
+  register 83 A2  01 E0
+  register 83 A2  01 E8
+  register 83 A2  01 F0
+  register 83 A2  01 F8
+  register 83 A2  02
+  register 83 A2  02 08
+  register 83 A2  02 10
+  register 83 A2  02 18
+  register 83 A2  02 20
+  register 83 A2  02 28
+  register 83 A2  02 30
+  register 83 A2  02 38
+  register 83 A2  02 40
+  register 83 A2  02 48
+  register 83 A2  02 50
+  register 83 A2  02 58
+  register 83 A2  02 60
+  register 83 A2  02 68
+  register 83 A2  02 70
+  register 83 A2  02 78
+  register 83 A2  02 80
+  register 83 A2  02 88
+  register 83 A2  02 90
+  register 83 A2  02 98
+  register 83 A2  02 A0
+  register 83 A2  02 A8
+  register 83 A2  02 B0
+  register 83 A2  02 B8
+  register 83 A2  02 C0
+  register 83 A2  02 C8
+  register 83 A2  02 D0
+  register 83 A2  02 D8
+  register 83 A2  02 E0
+  register 83 A2  02 E8
+  register 83 A2  02 F0
+  register 83 A2  02 F8
+  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static DPI stage=1700 <Color 3080FF> DPI=30 Report rate=500 Brightness=100 Speed=0 (off) [Revert] [Save to mouse]
+press Save to mouse
+  register 83 A2  02
+  register 83 A2  02 08
+  register 83 A2  02 10
+  register 83 A2  02 18
+  register 83 A2  02 20
+  register 83 A2  02 28
+  register 83 A2  02 30
+  register 83 A2  02 38
+  register 83 A2  02 40
+  register 83 A2  02 48
+  register 83 A2  02 50
+  register 83 A2  02 58
+  register 83 A2  02 60
+  register 83 A2  02 68
+  register 83 A2  02 70
+  register 83 A2  02 78
+  register 83 A2  02 80
+  register 83 A2  02 88
+  register 83 A2  02 90
+  register 83 A2  02 98
+  register 83 A2  02 A0
+  register 83 A2  02 A8
+  register 83 A2  02 B0
+  register 83 A2  02 B8
+  register 83 A2  02 C0
+  register 83 A2  02 C8
+  register 83 A2  02 D0
+  register 83 A2  02 D8
+  register 83 A2  02 E0
+  register 83 A2  02 E8
+  register 83 A2  02 F0
+  register 83 A2  02 F8
+  register 80 0F  FF
+  register 80 A1  01
+  upload 92 00  01 00 00 00 00 01 00 00 00 30 80 FF 80 00 11
+  upload 93 01  11 22 11 00 48 00 48 22 12 00 44 00 44 22 22
+  upload 93 02  88 00 88 12 22 00 00 00 00 12 21 01 01 10 10 02
+  upload 93 03  81 01 00 81 02 00 81 04 00 81 08 00 81 10 00 8F
+  upload 93 04  00 00 83 01 00 83 02 00 83 04 00 83 08 00 FF FF
+  upload 93 05  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 06  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 07  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 08  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 09  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 0A  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 0B  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 0C  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 0D  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 0E  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 0F  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 10  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  register 82 A0  02 00 00 00 00 00 02 00 00 00 01
+  register 82 A0  03 00 00 00 00 00 02 00 00 00 01
+  register 80 A1  01
+  upload 92 00  01 00 00 00 00 01 00 00 00 FF FF FF FF FF FF FF
+  upload 93 01  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 02  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 03  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 04  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 05  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 06  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 07  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 08  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 09  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 0A  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 0B  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 0C  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 0D  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 0E  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 0F  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  upload 93 10  FF FF FF FF FF FF FF 5D 60 FF FF FF FF FF FF FF
+  register 82 A0  03 00 00 00 00 00 02 80 00 00 01
+  register 80 0F
+  register 83 A2  02
+  register 83 A2  02 08
+  register 83 A2  02 10
+  register 83 A2  02 18
+  register 83 A2  02 20
+  register 83 A2  02 28
+  register 83 A2  02 30
+  register 83 A2  02 38
+  register 83 A2  02 40
+  register 83 A2  02 48
+  register 83 A2  02 50
+  register 83 A2  02 58
+  register 83 A2  02 60
+  register 83 A2  02 68
+  register 83 A2  02 70
+  register 83 A2  02 78
+  register 83 A2  02 80
+  register 83 A2  02 88
+  register 83 A2  02 90
+  register 83 A2  02 98
+  register 83 A2  02 A0
+  register 83 A2  02 A8
+  register 83 A2  02 B0
+  register 83 A2  02 B8
+  register 83 A2  02 C0
+  register 83 A2  02 C8
+  register 83 A2  02 D0
+  register 83 A2  02 D8
+  register 83 A2  02 E0
+  register 83 A2  02 E8
+  register 83 A2  02 F0
+  register 83 A2  02 F8
+  register 83 63
+  register 81 64
+  register 81 57
+  register 81 0F
+  register 83 A2  01
+  register 83 A2  01 08
+  register 83 A2  01 10
+  register 83 A2  01 18
+  register 83 A2  01 20
+  register 83 A2  01 28
+  register 83 A2  01 30
+  register 83 A2  01 38
+  register 83 A2  01 40
+  register 83 A2  01 48
+  register 83 A2  01 50
+  register 83 A2  01 58
+  register 83 A2  01 60
+  register 83 A2  01 68
+  register 83 A2  01 70
+  register 83 A2  01 78
+  register 83 A2  01 80
+  register 83 A2  01 88
+  register 83 A2  01 90
+  register 83 A2  01 98
+  register 83 A2  01 A0
+  register 83 A2  01 A8
+  register 83 A2  01 B0
+  register 83 A2  01 B8
+  register 83 A2  01 C0
+  register 83 A2  01 C8
+  register 83 A2  01 D0
+  register 83 A2  01 D8
+  register 83 A2  01 E0
+  register 83 A2  01 E8
+  register 83 A2  01 F0
+  register 83 A2  01 F8
+  register 83 A2  02
+  register 83 A2  02 08
+  register 83 A2  02 10
+  register 83 A2  02 18
+  register 83 A2  02 20
+  register 83 A2  02 28
+  register 83 A2  02 30
+  register 83 A2  02 38
+  register 83 A2  02 40
+  register 83 A2  02 48
+  register 83 A2  02 50
+  register 83 A2  02 58
+  register 83 A2  02 60
+  register 83 A2  02 68
+  register 83 A2  02 70
+  register 83 A2  02 78
+  register 83 A2  02 80
+  register 83 A2  02 88
+  register 83 A2  02 90
+  register 83 A2  02 98
+  register 83 A2  02 A0
+  register 83 A2  02 A8
+  register 83 A2  02 B0
+  register 83 A2  02 B8
+  register 83 A2  02 C0
+  register 83 A2  02 C8
+  register 83 A2  02 D0
+  register 83 A2  02 D8
+  register 83 A2  02 E0
+  register 83 A2  02 E8
+  register 83 A2  02 F0
+  register 83 A2  02 F8
+  = status "Saved to the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static DPI stage=1700 <Color 3080FF> DPI=30 Report rate=500 Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+pick Effect Off
+  register 80 57
+  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] Effect=Off DPI stage=1700 DPI=30 Report rate=500 Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
+press Revert changes
+  register 80 57  30 80 FF
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static DPI stage=1700 <Color 3080FF> DPI=30 Report rate=500 Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse]

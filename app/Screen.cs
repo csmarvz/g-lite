@@ -272,7 +272,7 @@ static class Presence
         Set(Locked, state == 0);
     }
 
-    static void Set(bool locked, bool off)
+    public static void Set(bool locked, bool off)
     {
         if (locked == Locked && off == DisplayOff) return;
         Locked = locked;

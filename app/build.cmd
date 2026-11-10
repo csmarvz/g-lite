@@ -8,7 +8,7 @@ if not exist "%OUT%" mkdir "%OUT%"
 set RES=
 for %%f in (models\*.json) do call set "RES=%%RES%% /resource:%%f,%%~nxf"
 set REFS=%RES% /r:System.Windows.Forms.dll /r:System.Drawing.dll
-"%CSC%" /nologo /optimize /target:exe /nowarn:649 /out:build\selftest.exe %REFS% SelfTest.cs Devices.cs Keyboard.cs Backup.cs Mouse.cs Headset.cs Report.cs Log.cs Fake.cs Game.cs Update.cs Settings.cs Win.cs Logo.cs Ui.cs Screen.cs || exit /b 1
+"%CSC%" /nologo /optimize /target:exe /nowarn:649 /main:SelfTest /out:build\selftest.exe %REFS% SelfTest.cs Traces.cs Program.cs Page515.cs PageMouse.cs PageHeadset.cs Pages.cs Devices.cs Keyboard.cs Backup.cs Mouse.cs Headset.cs Report.cs Log.cs Fake.cs Game.cs Update.cs Settings.cs Win.cs Logo.cs Ui.cs Screen.cs || exit /b 1
 build\selftest.exe build\GLite.ico || exit /b 1
 "%CSC%" /nologo /optimize /target:winexe /win32icon:build\GLite.ico /out:build\GLite.exe %REFS% Program.cs Page515.cs PageMouse.cs PageHeadset.cs Pages.cs Devices.cs Keyboard.cs Backup.cs Mouse.cs Headset.cs Report.cs Log.cs Fake.cs Game.cs Update.cs Settings.cs Win.cs Logo.cs Ui.cs Screen.cs || exit /b 1
 taskkill /im GLite.exe /f >nul 2>&1

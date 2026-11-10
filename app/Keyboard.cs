@@ -31,6 +31,22 @@ class Hidpp : IDisposable
     Task<int> pending, shortPending;
     Dictionary<int, byte> features = new Dictionary<int, byte>();
     public string Who;
+    public static Action<string> Tap;
+
+    static string Bytes(byte[] p, int most)
+    {
+        var used = p.Take(most).ToArray();
+        int n = used.Length;
+        while (n > 0 && used[n - 1] == 0) n--;
+        return n == 0 ? "" : "  " + BitConverter.ToString(used, 0, n).Replace("-", " ");
+    }
+
+    void Record(byte feat, int fn, byte[] p)
+    {
+        if (Tap == null || feat == 0) return;
+        int id = features.Where(x => x.Value == feat).Select(x => x.Key).FirstOrDefault();
+        Tap((id != 0 ? id.ToString("X4") : "index " + feat.ToString("X2")) + " fn" + fn.ToString("X") + Bytes(p, 16));
+    }
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr sec, uint disp, uint flags, IntPtr tmpl);
@@ -57,6 +73,7 @@ class Hidpp : IDisposable
     public byte[] Register(byte subId, byte register, params byte[] parameters)
     {
         bool isSet = subId == 0x80 || subId == 0x82;
+        if (Tap != null) Tap("register " + subId.ToString("X2") + " " + register.ToString("X2") + Bytes(parameters, 16));
         try
         {
             var reply = SendRegister(subId, register, parameters);
@@ -92,6 +109,7 @@ class Hidpp : IDisposable
 
     public void Upload(byte subId, byte sequence, byte[] data)
     {
+        if (Tap != null) Tap("upload " + subId.ToString("X2") + " " + sequence.ToString("X2") + Bytes(data, 16));
         try
         {
             SendUpload(subId, sequence, data);
@@ -143,6 +161,7 @@ class Hidpp : IDisposable
 
     public byte[] Call(byte feat, int fn, params byte[] p)
     {
+        Record(feat, fn, p);
         if (Who == null || feat == 0) return Send(feat, fn, p);
         int id = features.Where(x => x.Value == feat).Select(x => x.Key).FirstOrDefault();
         bool read = Log.Reads(id, fn);
@@ -156,7 +175,7 @@ class Hidpp : IDisposable
         catch (TimeoutException) { Log.Sent(Who, id, fn, p, "no answer"); throw; }
     }
 
-    public byte[] Quiet(byte feat, int fn, params byte[] p) { return Send(feat, fn, p); }
+    public byte[] Quiet(byte feat, int fn, params byte[] p) { Record(feat, fn, p); return Send(feat, fn, p); }
 
     protected virtual byte[] Send(byte feat, int fn, byte[] p)
     {

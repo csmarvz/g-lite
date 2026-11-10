@@ -1,0 +1,74 @@
+open
+  8071 fn0
+  8071 fn0  00 01
+  8071 fn0  00 02
+  8071 fn0  00 03
+  8071 fn0  00 04
+  8071 fn0  01
+  8071 fn0  01 01
+  8071 fn0  01 02
+  8071 fn0  01 03
+  8071 fn0  01 04
+  8071 fn0  01 05
+  8071 fn0  01 06
+  8071 fn0  02
+  8040 fn1
+  8071 fn0
+  8071 fn0  00 01
+  8071 fn0  00 02
+  8071 fn0  00 03
+  8071 fn0  00 04
+  8071 fn0  01
+  8071 fn0  01 01
+  8071 fn0  01 02
+  8071 fn0  01 03
+  8071 fn0  01 04
+  8071 fn0  01 05
+  8071 fn0  01 06
+  8071 fn0  02
+  8040 fn1
+  = status "" [Report] Preset=None [Update (off)] […] Effect=- Direction=- (off) Brightness=80 Speed=0 (off) [Revert (off)]
+pick Effect Static
+  8040 fn1
+  8071 fn5  01 03 04
+  8071 fn1  00 01 FF FF FF 02 00 00 00 00 00 00 01
+  8071 fn1  01 01 FF FF FF 02 00 00 00 00 00 00 01
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Effect=Static <Color FFFFFF> Direction=- (off) Brightness=80 Speed=0 (off) [Revert]
+press Color 30D050
+  8040 fn1
+  8071 fn5  01 03 04
+  8071 fn1  00 01 30 D0 50 02 00 00 00 00 00 00 01
+  8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Effect=Static <Color 30D050> Direction=- (off) Brightness=80 Speed=0 (off) [Revert]
+slide Brightness 50
+  8040 fn1
+  8040 fn2  00 32
+  8071 fn5  01 03 04
+  8071 fn1  00 01 30 D0 50 02 00 00 00 00 00 00 01
+  8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Effect=Static <Color 30D050> Direction=- (off) Brightness=50 Speed=0 (off) [Revert]
+menu More preset actions > Save as new preset…
+  menu: Save as new preset… | Rename… (off) | Delete (off)
+  = status "Set by G-Lite · not saved to the keyboard" [Report] [Save] [Cancel] Effect=Static <Color 30D050> Direction=- (off) Brightness=50 Speed=0 (off) [Revert]
+type Green
+  = status "Set by G-Lite · not saved to the keyboard" [Report] [Save] [Cancel] Effect=Static <Color 30D050> Direction=- (off) Brightness=50 Speed=0 (off) [Revert]
+press Save
+  = status "Saved the preset Green" [Report] Preset=Green [Update (off)] […] Effect=Static <Color 30D050> Direction=- (off) Brightness=50 Speed=0 (off) [Revert (off)]
+pick Effect Breathe
+  8040 fn1
+  8071 fn5  01 03 04
+  8071 fn1  00 03 30 D0 50 13 88 00 64 00 00 00 01
+  8071 fn1  01 02 30 D0 50 13 88 00 64 00 00 00 01
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=Green • [Update] […] Effect=Breathe <Color 30D050> Direction=- (off) Brightness=50 Speed=78 [Revert]
+pick Preset None
+  8071 fn5  01
+  8040 fn1
+  = status "" [Report] Preset=None [Update (off)] […] Effect=- Direction=- (off) Brightness=50 Speed=78 (off) [Revert (off)]
+pick Preset Green
+  8040 fn1
+  8071 fn5  01 03 04
+  8071 fn1  00 03 30 D0 50 13 88 00 64 00 00 00 01
+  8071 fn1  01 02 30 D0 50 13 88 00 64 00 00 00 01
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=Green • [Update] […] Effect=Breathe <Color 30D050> Direction=- (off) Brightness=50 Speed=78 [Revert]
+quit
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=Green • [Update] […] Effect=Breathe <Color 30D050> Direction=- (off) Brightness=50 Speed=78 [Revert]

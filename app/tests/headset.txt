@@ -1,0 +1,26 @@
+open
+  8300 fn0
+  1F20 fn0
+  1F20 fn1
+  = status "Matches the headset" [Report] Preset=None [Update (off)] […] Turn off after=30 min Sidetone=30 [Test sidetone] [Revert (off)]
+slide Sidetone 40
+  8300 fn1  28
+  = status "Applied to the headset" [Report] Preset=None [Update (off)] […] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert]
+pick Turn off after 30 min
+  = status "Applied to the headset" [Report] Preset=None [Update (off)] […] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert]
+menu More preset actions > Save as new preset…
+  menu: Save as new preset… | Rename… (off) | Delete (off)
+  = status "Applied to the headset" [Report] [Save] [Cancel] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert]
+type Calls
+  = status "Applied to the headset" [Report] [Save] [Cancel] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert]
+press Save
+  = status "Saved the preset Calls" [Report] Preset=Calls [Update (off)] […] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert (off)]
+slide Sidetone 10
+  8300 fn1  0A
+  = status "Applied to the headset" [Report] Preset=Calls • [Update] […] Turn off after=30 min Sidetone=10 [Test sidetone] [Revert]
+press Revert changes
+  8300 fn1  28
+  = status "Applied to the headset" [Report] Preset=Calls [Update (off)] […] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert (off)]
+pick Preset None
+  8300 fn1  1E
+  = status "Matches the headset" [Report] Preset=None [Update (off)] […] Turn off after=30 min Sidetone=30 [Test sidetone] [Revert (off)]

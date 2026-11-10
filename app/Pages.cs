@@ -126,6 +126,7 @@ abstract class DevicePage : Control, IPage
             Process.Start(dir);
         }));
         m.Closed += (s, a) => BeginInvoke((Action)m.Dispose);
+        if (Ui.Popped != null) { Ui.Popped(m); return; }
         m.Show(anchor, new Point(anchor.Width, anchor.Height + (int)(2 * Ui.K)), ToolStripDropDownDirection.BelowLeft);
     }
 
@@ -136,6 +137,8 @@ abstract class DevicePage : Control, IPage
     }
 
     public virtual void Shown() { Load(); }
+
+    internal virtual bool Busy { get { return false; } }
 
     public virtual void Hidden() { }
 
@@ -305,6 +308,7 @@ abstract class DevicePage : Control, IPage
         m.Items.Add(new ToolStripMenuItem("Rename…", null, (s, e) => StartName(name)) { Enabled = picked });
         m.Items.Add(new ToolStripMenuItem("Delete", null, (s, e) => DeleteSet(name)) { Enabled = picked });
         m.Closed += (s, a) => BeginInvoke((Action)m.Dispose);
+        if (Ui.Popped != null) { Ui.Popped(m); return; }
         m.Show(moreBtn, new Point(moreBtn.Width, moreBtn.Height + (int)(2 * Ui.K)), ToolStripDropDownDirection.BelowLeft);
     }
 

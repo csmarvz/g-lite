@@ -56,6 +56,8 @@ class FakeHidpp : Hidpp
     static readonly byte[] EffectIds = { 0x00, 0x01, 0x0A, 0x15, 0x16, 0x17 };
     public readonly Dictionary<int, int> Keys = new Dictionary<int, int>();
     readonly byte[] control = new byte[2];
+
+    public void PowerCycle() { control[0] = control[1] = 0; }
     public int Frames, Battery = 82;
     public bool Charging;
 
@@ -187,7 +189,8 @@ class FakeG915 : Hidpp
 
 class FakeMouse : Hidpp
 {
-    public int Dpi = 1600, Stage = 2, Reloads, Rate = 1;
+    public int Dpi = 1600, Stage = 2, Reloads, Rate = 1, ZoneCount = 2;
+    public string Info = "0103010501081000ff0a04";
     public readonly byte[][] Zones = { new byte[12], new byte[12] };
     public readonly Dictionary<int, byte[]> Sectors = new Dictionary<int, byte[]>();
     static readonly byte[] Ids = { 0x00, 0x01, 0x03, 0x0A };
@@ -219,6 +222,13 @@ class FakeMouse : Hidpp
         current = 0x0101;
     }
 
+    public static FakeMouse G305()
+    {
+        var mouse = new FakeMouse(true) { ZoneCount = 1, Info = "0103010101060600ff0a02", Dpi = 800, Stage = 1 };
+        mouse.Sectors[0x0101] = FakeHidpp.Hex("010100900120034006800C0000FFFFFFFF00FFFFFFFFFFFFFFFFFFFFFFFFFFFF800100018001000280010004800100088001001090050000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000000000001F400000000000000000001F40000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+        return mouse;
+    }
+
     int[] Stages { get { return GMouse.StagesOf(Sectors[current]); } }
 
     public override void Dispose() { }
@@ -245,13 +255,13 @@ class FakeMouse : Hidpp
                 if (fn == 2) throw new HidppError(5, "HID++ error 0x05");
                 break;
             case 3:
-                if (fn == 0) r[0] = 2;
+                if (fn == 0) r[0] = (byte)ZoneCount;
                 if (fn == 1) { r[0] = p[0]; r[2] = (byte)(p[0] + 1); r[3] = 4; }
                 if (fn == 2) { if (p[1] >= Ids.Length) throw new HidppError(2, "invalid argument"); r[0] = p[0]; r[1] = p[1]; r[3] = Ids[p[1]]; }
                 if (fn == 3) Zones[p[0]] = p.Take(12).ToArray();
                 break;
             case 4:
-                if (fn == 0) FakeHidpp.Hex("0103010501081000ff0a04").CopyTo(r, 0);
+                if (fn == 0) FakeHidpp.Hex(Info).CopyTo(r, 0);
                 if (fn == 2) r[0] = 1;
                 if (fn == 3)
                 {

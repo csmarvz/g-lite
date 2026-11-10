@@ -108,6 +108,8 @@ class PageMouse : DevicePage
     int seq;
     readonly Timer debounce = new Timer { Interval = 120 };
 
+    internal override bool Busy { get { return debounce.Enabled; } }
+
     readonly Label lightHead, colorHead, speedHead, speedValue, brightHead, brightValue, stageHead, dpiValue, rateHead, rateHint;
     readonly Seg effects, stages, rates;
     readonly ColorRow colors;

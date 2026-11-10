@@ -63,6 +63,7 @@ static class Ui
 {
     public const string Regular = "Segoe UI", Semi = "Segoe UI Semibold";
     public static float K = 1;
+    public static Action<ContextMenuStrip> Popped;
     static readonly List<KeyValuePair<Control, Action>> styles = new List<KeyValuePair<Control, Action>>();
     static readonly List<Tuple<Control, float, string>> fonts = new List<Tuple<Control, float, string>>();
     static readonly Dictionary<string, Font> cache = new Dictionary<string, Font>();
@@ -223,6 +224,12 @@ class Ctl : Control
     }
 
     protected bool Pressed { get { return (down && hover || key) && Enabled; } }
+
+    public void Press()
+    {
+        if (!Enabled || !Visible) throw new InvalidOperationException((AccessibleName ?? Text) + " can't be pressed now");
+        OnClick(EventArgs.Empty);
+    }
     protected virtual bool Clicks { get { return true; } }
     protected float Now { get { return now; } }
 
@@ -395,6 +402,13 @@ class Seg : Ctl
 
     public int Index { get { return index; } set { if (value == index) return; index = value; Jump(value); } }
 
+    public void Pick(int i)
+    {
+        if (!Enabled || !Visible) throw new InvalidOperationException(AccessibleName + " can't be changed now");
+        Slide(i);
+        if (Picked != null) Picked(i);
+    }
+
     protected override bool Clicks { get { return false; } }
 
     RectangleF Cell(float i)
@@ -541,6 +555,13 @@ class Drop : Ctl
         set { index = value; Text = value >= 0 && value < Items.Count ? Items[value] : ""; }
     }
 
+    public void Pick(int i)
+    {
+        if (!Enabled || !Visible) throw new InvalidOperationException(AccessibleName + " can't be changed now");
+        Index = i;
+        if (Picked != null) Picked(i);
+    }
+
     protected override void OnClick(EventArgs e)
     {
         base.OnClick(e);
@@ -647,7 +668,7 @@ class Slider : Ctl
         Put(Value + notches * Step);
     }
 
-    void Put(int v)
+    public void Put(int v)
     {
         v = Math.Max(0, Math.Min(Max, v));
         if (v == Value) return;

@@ -2,3 +2,4 @@ app/build/
 .superpowers/
 backup-*/
 *.reg
+app/tests/*.fail.txt

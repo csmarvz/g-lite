@@ -8,6 +8,7 @@ static class SelfTest
 
     static void Check(bool ok, string what) { if (!ok) { Console.WriteLine("FAIL " + what); Environment.Exit(1); } }
 
+    [STAThread]
     static int Main(string[] args)
     {
         var factory = Hex("0101003c012cffffffffffffffffffffffffffffffffffffffffffffffff18ff008180aaff00006400000000000000000000000019ff008180aaff0000640000000000000000000000000300000000000000000010000104000200ffffffffffffffff");
@@ -288,7 +289,7 @@ static class SelfTest
         System.IO.File.Delete(Settings.Location);
         using (var logo = Logo.Draw(64))
             Check(logo.GetPixel(0, 0).A == 0 && logo.GetPixel(32, 4).A == 255 && logo.GetPixel(32, 32).A < 255, "logo is a white disc with a transparent GL");
-        if (args.Length > 0) Logo.WriteIco(args[0]);
+        if (args.Length > 0 && !args[0].StartsWith("--")) Logo.WriteIco(args[0]);
         Log.File = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "glite-selftest-log.txt");
         Log.Clear();
         var lm = new FakeMouse { Who = "M" };
@@ -351,6 +352,9 @@ static class SelfTest
         Check(perKey.Keys.Count == 22 && perKey.Keys[0x14] == 0xFF0000 && perKey.Keys[0x6F] == 0x0000FF && perKey.Frames == 1, "per-key colours go out in groups of 13 and end with a frame");
         Check(perKey.Call(perKey.F(0x4540), 0)[0] == 0x0D, "the fake keyboard reports a Swiss layout");
 
+        var traceFailures = Traces.Run(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\tests"), args.Contains("--record"));
+        foreach (var failure in traceFailures) Console.WriteLine("FAIL " + failure);
+        if (traceFailures.Count > 0) return 1;
         Console.WriteLine("selftest ok");
         return 0;
     }

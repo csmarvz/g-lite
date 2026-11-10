@@ -66,6 +66,8 @@ class PageHeadset : DevicePage
     int seq;
     int[] offs = GHeadset.OffMinutes;
     readonly Timer debounce = new Timer { Interval = 120 }, testing = new Timer { Interval = 100 };
+
+    internal override bool Busy { get { return debounce.Enabled; } }
     Mic mic;
     DateTime testEnd;
 

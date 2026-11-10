@@ -16,8 +16,11 @@ static class Win
     struct LastInput { public int Size, Time; }
     [DllImport("user32.dll")] static extern bool GetLastInputInfo(ref LastInput info);
 
+    public static int TestIdle = -1;
+
     public static int IdleSeconds()
     {
+        if (TestIdle >= 0) return TestIdle;
         var info = new LastInput { Size = 8 };
         if (!GetLastInputInfo(ref info)) return 0;
         return (int)(((uint)Environment.TickCount - (uint)info.Time) / 1000);
