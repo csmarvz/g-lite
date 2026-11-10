@@ -191,6 +191,8 @@ class FakeMouse : Hidpp
 {
     public int Dpi = 1600, Stage = 2, Reloads, Rate = 1, ZoneCount = 2;
     public string Info = "0103010501081000ff0a04";
+    public bool Wheel;
+    public byte WheelMode;
     public readonly byte[][] Zones = { new byte[12], new byte[12] };
     public readonly Dictionary<int, byte[]> Sectors = new Dictionary<int, byte[]>();
     static readonly byte[] Ids = { 0x00, 0x01, 0x03, 0x0A };
@@ -242,7 +244,7 @@ class FakeMouse : Hidpp
         {
             case 0:
                 int id = u16(0);
-                r[0] = (byte)(id == 0x2201 ? 1 : id == 0x8060 ? 2 : id == 0x8070 ? 3 : id == 0x8100 ? 4 : 0);
+                r[0] = (byte)(id == 0x2201 ? 1 : id == 0x8060 ? 2 : id == 0x8070 ? 3 : id == 0x8100 ? 4 : id == 0x2121 && Wheel ? 5 : 0);
                 break;
             case 1:
                 if (fn == 1) FakeHidpp.Hex("000064e0326400").CopyTo(r, 0);
@@ -285,6 +287,11 @@ class FakeMouse : Hidpp
                 if (fn == 8) Sectors[writeTo] = pending.Take(writeLength).ToArray();
                 if (fn == 0xB) r[0] = (byte)Math.Max(0, Stage);
                 if (fn == 0xC) { Stage = p[0]; Dpi = Stages[Stage]; }
+                break;
+            case 5:
+                if (fn == 0) { r[0] = 0x08; r[1] = 0x0C; }
+                if (fn == 1) r[0] = WheelMode;
+                if (fn == 2) { WheelMode = p[0]; r[0] = WheelMode; }
                 break;
         }
         return r;

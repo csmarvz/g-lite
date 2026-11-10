@@ -729,8 +729,6 @@ class Page515 : DevicePage
         ShowLive();
     }
 
-    public static bool Manual;
-
     internal void Exiting()
     {
         if (Screening)

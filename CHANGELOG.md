@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Invert scrolling on mice whose wheel can do it (0x2121), like the G502 LIGHTSPEED. The mouse forgets it when it turns off, so G-Lite checks every 5 seconds and sets it again.
+
 ### Fixed
 
 - On the mouse screen, Save to mouse stayed on after Revert or picking None, although nothing was left to save.

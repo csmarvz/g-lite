@@ -106,7 +106,9 @@ class PageMouse : DevicePage
     GMouse.State state;
     bool loading, dirty, lightSet;
     int seq;
-    readonly Timer debounce = new Timer { Interval = 120 };
+    readonly Timer debounce = new Timer { Interval = 120 }, watch = new Timer { Interval = 5000 };
+    readonly Toggle invert;
+    readonly Label invertLabel;
 
     internal override bool Busy { get { return debounce.Enabled; } }
 
@@ -180,7 +182,14 @@ class PageMouse : DevicePage
         };
         rateHint = Ui.Text(sens, "", 14, 212, () => Theme.Dim, 9f);
         rateHint.AutoSize = false;
-        rateHint.Size = new Size(196, 48);
+        rateHint.Size = new Size(196, 24);
+        invert = Ui.Add(sens, new Toggle { AccessibleName = "Invert scrolling", Visible = false }, 14, 242, 34, 18);
+        invert.Changed += () => SetInvert(invert.Checked);
+        invertLabel = Ui.Text(sens, "Invert scrolling", 56, 242, () => Theme.Text, 9f);
+        invertLabel.Visible = false;
+        invertLabel.Click += (s, e) => { invert.Checked = !invert.Checked; SetInvert(invert.Checked); };
+        watch.Tick += (s, e) => Watch();
+        if (!Manual) watch.Start();
 
         saveBtn = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Save to mouse" }, 496, 635, 140, 32);
         saveBtn.Click += (s, e) => Save();
@@ -274,7 +283,9 @@ class PageMouse : DevicePage
         rates.Invalidate();
         Shade(rateHead, rateOn);
         rateHead.Text = "Report rate" + (ready && state.Rates.Length > 0 ? " (Hz)" : "") + (ready && state.Onboard && state.Savable ? " · on save" : "");
-        rateHint.Text = !ready || !state.Onboard || state.Savable ? "" : "Set by the profile saved on the mouse.";
+        rateHint.Text = !ready || !state.Onboard || state.Savable ? "" : "Set by the saved profile.";
+        invert.Visible = invertLabel.Visible = ready && state.CanInvert;
+        invert.Checked = ready && state.Inverted;
         saveBtn.Enabled = ready && state.Savable && dirty;
         saveBtn.Visible = ready ? state.Writable : mouse.HasFactory;
         backupsBtn.Visible = mouse.HasFactory || ready && state.Writable;
@@ -389,6 +400,35 @@ class PageMouse : DevicePage
             }
             sent = want;
         }, () => { if (n == seq) Calm(); });
+    }
+
+    string InvertKey { get { return "wheel.invert." + found.Slug; } }
+
+    void SetInvert(bool on)
+    {
+        if (state == null) return;
+        Settings.Set(InvertKey, on ? "1" : "0");
+        Did(on ? "Invert scrolling" : "Normal scrolling");
+        Do(h => mouse.SetInvert(h, on), () => { state.Inverted = on; Sync(); });
+    }
+
+    internal void Watch()
+    {
+        if (Settings.Get(InvertKey) != "1") return;
+        Do(h =>
+        {
+            try { mouse.SetInvert(h, true); }
+            catch (NotSupportedException) { }
+            catch (HidppError) { }
+            catch (TimeoutException) { }
+            catch (Refused) { }
+        });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) watch.Dispose();
+        base.Dispose(disposing);
     }
 
     void SendRate(int hz)

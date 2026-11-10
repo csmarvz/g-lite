@@ -1,0 +1,58 @@
+open
+  2201 fn1
+  2201 fn2
+  8060 fn0
+  8060 fn1
+  8070 fn0
+  8070 fn1  00 FF
+  8070 fn2  00 00 FF
+  8070 fn2  00 01 FF
+  8070 fn2  00 02 FF
+  8070 fn2  00 03 FF
+  8070 fn1  01 FF
+  8070 fn2  01 00 FF
+  8070 fn2  01 01 FF
+  8070 fn2  01 02 FF
+  8070 fn2  01 03 FF
+  2121 fn0
+  2121 fn1
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fnB
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
+watch, off
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
+press Invert scrolling
+  2121 fn1
+  2121 fn2  04
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=on [Revert (off)] [Save to mouse (off)]
+watch, on
+  2121 fn1
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=on [Revert (off)] [Save to mouse (off)]
+power cycle, then watch
+  2121 fn1
+  2121 fn2  04
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=on [Revert (off)] [Save to mouse (off)]
+press Invert scrolling
+  2121 fn1
+  2121 fn2
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
+watch, off
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]

@@ -140,6 +140,8 @@ abstract class DevicePage : Control, IPage
 
     internal virtual bool Busy { get { return false; } }
 
+    public static bool Manual;
+
     public virtual void Hidden() { }
 
     public virtual void Restyle() { }

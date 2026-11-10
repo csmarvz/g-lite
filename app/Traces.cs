@@ -222,7 +222,7 @@ static class Traces
         Log.File = Path.GetTempFileName();
         Win.TestIdle = 0;
         Presence.Set(false, false);
-        Page515.Manual = true;
+        DevicePage.Manual = true;
     }
 
     static Script last;
@@ -310,6 +310,23 @@ static class Traces
         }
     }
 
+    static string Wheel()
+    {
+        var device = new FakeMouse { Wheel = true };
+        var found = new Found { Key = "trace|wheel", Name = "G502 LIGHTSPEED Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, Wpid = 0x407F, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2121, 0x2201, 0x8060, 0x8070, 0x8100 } };
+        PageMouse page = null;
+        using (var s = Begin(() => page = (PageMouse)Support.For(found).Make(found, device, null)))
+        {
+            s.Do("watch, off", () => page.Watch());
+            s.Press("Invert scrolling");
+            s.Do("watch, on", () => page.Watch());
+            s.Do("power cycle, then watch", () => { device.WheelMode = 0; page.Watch(); });
+            s.Press("Invert scrolling");
+            s.Do("watch, off", () => page.Watch());
+            return s.Text;
+        }
+    }
+
     static string G9x()
     {
         var found = new Found { Key = "trace|g9x", Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04" };
@@ -349,6 +366,7 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("g915", G915);
         yield return new KeyValuePair<string, Func<string>>("gpro", () => Mouse("G Pro Wireless Gaming Mouse", new FakeMouse(), new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("g305", () => Mouse("G305 Lightspeed Wireless Gaming Mouse", FakeMouse.G305(), new[] { 0x0001, 0x0003, 0x0005, 0x1000, 0x2201, 0x8060, 0x8070, 0x8100 }));
+        yield return new KeyValuePair<string, Func<string>>("wheel", Wheel);
         yield return new KeyValuePair<string, Func<string>>("g9x", G9x);
         yield return new KeyValuePair<string, Func<string>>("headset", Headset);
     }

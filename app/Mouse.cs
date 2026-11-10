@@ -57,7 +57,7 @@ static class GMouse
     {
         public int Dpi, Stage = -1, Rate;
         public int[] Dpis = new int[0], Stages = new int[0], Rates = new int[0];
-        public bool Onboard, ProfileOk, Flash, Fresh;
+        public bool Onboard, ProfileOk, Flash, Fresh, CanInvert, Inverted;
         public MouseLight Light;
         public EffectDef[] Effects = GMouse.Effects;
         public Dictionary<int, Dictionary<int, int>> Zones = new Dictionary<int, Dictionary<int, int>>();
@@ -311,6 +311,14 @@ static class GMouse
         if (logo < 0) logo = s.Zones.Count - 1;
         try
         {
+            byte w = h.F(0x2121);
+            s.CanInvert = (h.Call(w, 0)[1] & 0x08) != 0;
+            s.Inverted = (h.Call(w, 1)[0] & 0x04) != 0;
+        }
+        catch (NotSupportedException) { }
+        catch (HidppError) { s.CanInvert = false; }
+        try
+        {
             byte o = h.F(0x8100);
             s.Onboard = h.Call(o, 2)[0] == 1;
             if (s.Onboard)
@@ -348,6 +356,15 @@ static class GMouse
 
     public static void SetDpi(Hidpp h, int dpi) { h.Call(h.F(0x2201), 3, 0, (byte)(dpi >> 8), (byte)dpi); }
 
+    public static void SetInvert(Hidpp h, bool on)
+    {
+        byte w = h.F(0x2121);
+        var mode = h.Quiet(w, 1);
+        bool now = (mode[0] & 0x04) != 0;
+        if (now == on) return;
+        h.Call(w, 2, (byte)(on ? mode[0] | 0x04 : mode[0] & ~0x04), mode[1], mode[2]);
+    }
+
     public static void SetStage(Hidpp h, int i) { h.Call(h.F(0x8100), 0xC, (byte)i); }
 
     public static void SetRate(Hidpp h, int hz) { h.Call(h.F(0x8060), 2, (byte)(1000 / hz)); }
@@ -372,6 +389,7 @@ interface IMouse
     void SendDpi(Hidpp h, GMouse.State s, MouseSet want, MouseSet sent);
     void SetLight(Hidpp h, GMouse.State s, MouseLight light);
     void SetRate(Hidpp h, int hz);
+    void SetInvert(Hidpp h, bool on);
     byte[] ReadProfile(Hidpp h, GMouse.State s);
     void Setup(Hidpp h, GMouse.State s, MouseSet want);
     void Save(Hidpp h, GMouse.State s, byte[] now, MouseSet want);
@@ -395,6 +413,7 @@ class HidppMouse : IMouse
 
     public void SetLight(Hidpp h, GMouse.State s, MouseLight light) { GMouse.SetLight(h, s, light); }
     public void SetRate(Hidpp h, int hz) { GMouse.SetRate(h, hz); }
+    public void SetInvert(Hidpp h, bool on) { GMouse.SetInvert(h, on); }
     public byte[] ReadProfile(Hidpp h, GMouse.State s) { return GMouse.ReadSector(h, s.Sector, s.SectorSize); }
     public void Setup(Hidpp h, GMouse.State s, MouseSet want) { GMouse.Setup(h, s, GMouse.Build(GMouse.ReadSector(h, s.Sector, s.SectorSize), want, s.Zones.Count)); }
     public void Save(Hidpp h, GMouse.State s, byte[] now, MouseSet want) { GMouse.Store(h, s, GMouse.Build(now, want, s.Zones.Count)); }
@@ -416,6 +435,7 @@ class G9xMouse : IMouse
 
     public void SetLight(Hidpp h, GMouse.State s, MouseLight light) { G9x.SetLight(h, light); }
     public void SetRate(Hidpp h, int hz) { G9x.SetRate(h, hz); }
+    public void SetInvert(Hidpp h, bool on) { throw new Refused("This mouse can't invert its wheel"); }
     public byte[] ReadProfile(Hidpp h, GMouse.State s) { return G9x.ReadPage(h, s.Sector); }
     public void Setup(Hidpp h, GMouse.State s, MouseSet want) { throw new Refused("Saving isn't supported on this mouse"); }
     public void Save(Hidpp h, GMouse.State s, byte[] now, MouseSet want) { G9x.Store(h, s, G9x.Build(now, want, s.Rate)); }
