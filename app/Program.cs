@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
-[assembly: System.Reflection.AssemblyVersion("0.0.12")]
-[assembly: System.Reflection.AssemblyFileVersion("0.0.12")]
-[assembly: System.Reflection.AssemblyInformationalVersion("0.0.12-alpha")]
+[assembly: System.Reflection.AssemblyVersion("0.0.13")]
+[assembly: System.Reflection.AssemblyFileVersion("0.0.13")]
+[assembly: System.Reflection.AssemblyInformationalVersion("0.0.13-alpha")]
 [assembly: System.Reflection.AssemblyTitle("G-Lite")]
 [assembly: System.Reflection.AssemblyProduct("G-Lite")]
 [assembly: System.Reflection.AssemblyCompany("com.csmarvz")]
