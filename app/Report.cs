@@ -27,6 +27,7 @@ static class Report
         { 0x8071, new[] { 0 } },
         { 0x8081, new[] { 0 } },
         { 0x8100, new[] { 0, 2, 4, 5, 0xB } },
+        { 0x8110, new[] { 0 } },
         { 0x8101, new[] { 8, 0xC } },
         { 0x8300, new[] { 0 } },
         { 0x8310, new[] { 2 } },
@@ -319,6 +320,7 @@ static class Report
                     for (int i = 0; i < files.Length; i += 2) File(r, files[i], files[i + 1]);
                     break;
                 }
+            case 0x8110: r.Show("buttons", id, 0); break;
             case 0x8300: r.Show("sidetone", id, 0); break;
             case 0x8310: r.Show("bands", id, 2); break;
         }

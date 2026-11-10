@@ -4,6 +4,11 @@
 
 ### Added
 
+- A Buttons view on the mouse screen, for mice with onboard profiles: pick what each button does (mouse buttons, DPI, scrolling, profiles, media keys, a keystroke, or nothing), and Save to mouse. Press a button on the mouse and its row lights up, so you can tell which one is which. The left button always stays Left click. Presets keep the buttons too, and Revert brings them back.
+
+### Changed
+
+- Mouse presets keep the report rate as the mouse has it, and Revert brings it back. Before, a preset saved without touching the rate didn't keep it.
 - Invert scrolling on mice whose wheel can do it (0x2121), like the G502 LIGHTSPEED. The mouse forgets it when it turns off, so G-Lite checks every 5 seconds and sets it again.
 
 ### Fixed

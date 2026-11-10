@@ -327,6 +327,37 @@ static class Traces
         }
     }
 
+    static string Buttons()
+    {
+        var device = FakeMouse.G502();
+        var found = new Found { Key = "trace|buttons", Name = "G502 LIGHTSPEED Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, Wpid = 0x407F, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2121, 0x2201, 0x8060, 0x8070, 0x8100, 0x8110 } };
+        PageMouse page = null;
+        using (var s = Begin(() => page = (PageMouse)Support.For(found).Make(found, device, null)))
+        {
+            s.Pick("View", "Buttons");
+            s.Do("G7 pressed on the mouse", () => page.Pressed(0x0040));
+            s.Pick("G7", "Next profile");
+            s.Pick("Thumb, front", "Keystroke…");
+            s.Do("keys Ctrl + Shift + M", () => page.Recorded(Keys.Control | Keys.Shift | Keys.M));
+            s.Press("Save to mouse");
+            s.Pick("G8", "Disabled");
+            s.Press("Revert changes");
+            s.Menu("More preset actions", "Save as new preset…");
+            s.Type("Keys");
+            s.Press("Save");
+            s.Pick("G9", "Mute");
+            s.Pick("View", "Settings");
+            s.Pick("Report rate", "250");
+            s.Press("Revert changes");
+            s.Pick("Preset", "None");
+            s.Pick("Report rate", "500");
+            s.Press("Save to mouse");
+            s.Pick("Preset", "Keys");
+            s.Pick("View", "Buttons");
+            return s.Text;
+        }
+    }
+
     static string G9x()
     {
         var found = new Found { Key = "trace|g9x", Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04" };
@@ -367,6 +398,7 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("gpro", () => Mouse("G Pro Wireless Gaming Mouse", new FakeMouse(), new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("g305", () => Mouse("G305 Lightspeed Wireless Gaming Mouse", FakeMouse.G305(), new[] { 0x0001, 0x0003, 0x0005, 0x1000, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("wheel", Wheel);
+        yield return new KeyValuePair<string, Func<string>>("buttons", Buttons);
         yield return new KeyValuePair<string, Func<string>>("g9x", G9x);
         yield return new KeyValuePair<string, Func<string>>("headset", Headset);
     }

@@ -14,6 +14,7 @@ What works, learned while adding the G305, G502 LIGHTSPEED, G510 and G512 X. Fol
 - A feature the device reports isn't always one that does something visible. The G502 LIGHTSPEED reports two light zones, but zone 0 lights nothing. Before building UI, send the change once (a one-off script, or a hidden build) and ask the user to watch the device.
 - A feature can work on the device and still be wrong on Windows. High-resolution scrolling (0x2121 bit 1) made the G502's wheel about 8 times too fast. Try it with the user before adding a switch.
 - Settings the device forgets when it turns off (like the wheel mode) need G-Lite to set them again: a timer on the device's screen that reads, and writes only when needed, catching timeouts so an asleep device logs nothing.
+- To learn what an unknown event or bit means, run a listener script in the background that stops on a file (`stop.flag`) rather than a timer, and let the user press things in a known order, with a picture of the order. Button spy on the G502 was mapped this way in one go.
 - Names the device doesn't give (which zone is which, which button is G7) need the user to look. Don't put a guess in the UI.
 
 ## 3. Build it behind the traces

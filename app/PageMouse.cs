@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -109,6 +110,17 @@ class PageMouse : DevicePage
     readonly Timer debounce = new Timer { Interval = 120 }, watch = new Timer { Interval = 5000 };
     readonly Toggle invert;
     readonly Label invertLabel;
+    readonly Seg viewPick;
+    readonly Box buttonsBox;
+    readonly Control[] settingsArea;
+    readonly Label[] rowNames = new Label[16];
+    readonly Drop[] rowDrops = new Drop[16];
+    readonly Label buttonsHint;
+    readonly Field keyField;
+    readonly Timer pressedTimer = new Timer { Interval = 1500 };
+    bool showingButtons, spying;
+    int recording = -1, pressedRow = -1;
+    ButtonSpy spy;
 
     internal override bool Busy { get { return debounce.Enabled; } }
 
@@ -176,7 +188,7 @@ class PageMouse : DevicePage
         rates = Ui.Add(sens, new Seg { AccessibleName = "Report rate" }, 14, 174, 196, 32);
         rates.Picked += i =>
         {
-            if (!state.Onboard) { SendRate(state.Rates[i]); return; }
+            if (!state.Onboard) { cur.Rate = state.Rates[i]; Edited(); SendRate(state.Rates[i]); return; }
             cur.Rate = state.Rates[i];
             Changed(true);
         };
@@ -190,6 +202,26 @@ class PageMouse : DevicePage
         invertLabel.Click += (s, e) => { invert.Checked = !invert.Checked; SetInvert(invert.Checked); };
         watch.Tick += (s, e) => Watch();
         if (!Manual) watch.Start();
+
+        settingsArea = new Control[] { pic, light, sens };
+        viewPick = Ui.Add(this, new Seg { Items = new[] { "Settings", "Buttons" }, AccessibleName = "View", Visible = false }, 440, 72, 196, 32);
+        viewPick.Picked += i => ShowView(i == 1);
+        buttonsBox = Ui.Add(this, new Box { Visible = false }, 20, 118, 616, 493);
+        Ui.Text(buttonsBox, "Buttons", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
+        buttonsHint = Value(buttonsBox, 200, 12, 402);
+        var actionNames = Bindings.Actions.Select(a => a.Name).Concat(new[] { "Keystroke…" }).ToList();
+        for (int i = 0; i < 16; i++)
+        {
+            int row = i;
+            rowNames[i] = Ui.Text(buttonsBox, "", 14, 45 + 28 * i, () => Theme.Text, 9.75f);
+            rowNames[i].Visible = false;
+            rowDrops[i] = Ui.Add(buttonsBox, new Drop { Visible = false }, 380, 40 + 28 * i, 222, 26);
+            rowDrops[i].Items.AddRange(actionNames);
+            rowDrops[i].Picked += k => PickAction(row, k);
+        }
+        keyField = Ui.Add(buttonsBox, new Field { Visible = false }, 380, 40, 222, 26);
+        keyField.Box.KeyDown += (s, e) => { e.Handled = e.SuppressKeyPress = true; Recorded(e.KeyData); };
+        pressedTimer.Tick += (s, e) => { pressedTimer.Stop(); pressedRow = -1; SyncButtons(); };
 
         saveBtn = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Save to mouse" }, 496, 635, 140, 32);
         saveBtn.Click += (s, e) => Save();
@@ -214,6 +246,10 @@ class PageMouse : DevicePage
     protected override void Use(string text)
     {
         var s = MouseSet.FromText(text);
+        var saved = stored != null && stored.Buttons != null ? stored.Buttons : cur.Buttons;
+        if (cur.Buttons == null) s.Buttons = null;
+        else if (s.Buttons == null) s.Buttons = Bindings.Copy(saved);
+        else s.Buttons = Enumerable.Range(0, cur.Buttons.Length).Select(i => i > 0 && i < s.Buttons.Length ? s.Buttons[i] : (byte[])saved[i].Clone()).ToArray();
         if (state != null && state.Dpis.Length > 0) s.Dpi = state.Dpis[Near(state.Dpis, s.Dpi)];
         s.Stage = state != null && Array.IndexOf(state.Stages, s.Dpi) >= 0 ? Array.IndexOf(state.Stages, s.Dpi) : cur.Stage;
         cur = s;
@@ -223,6 +259,7 @@ class PageMouse : DevicePage
     protected override void Revert()
     {
         if (stored == null) return;
+        recording = -1;
         cur = stored.Clone();
         Changed(true);
         dirty = lightSet && stored.Light == null;
@@ -286,6 +323,10 @@ class PageMouse : DevicePage
         rateHint.Text = !ready || !state.Onboard || state.Savable ? "" : "Set by the saved profile.";
         invert.Visible = invertLabel.Visible = ready && state.CanInvert;
         invert.Checked = ready && state.Inverted;
+        viewPick.Visible = ready && state.ButtonCount > 0 && state.Buttons != null;
+        if (!viewPick.Visible && showingButtons) ShowView(false);
+        viewPick.Index = showingButtons ? 1 : 0;
+        SyncButtons();
         saveBtn.Enabled = ready && state.Savable && dirty;
         saveBtn.Visible = ready ? state.Writable : mouse.HasFactory;
         backupsBtn.Visible = mouse.HasFactory || ready && state.Writable;
@@ -312,6 +353,9 @@ class PageMouse : DevicePage
     {
         if (state == null) { Say(""); return; }
         if (!state.ProfileOk) { ShowBroken(); return; }
+        bool buttons = stored != null && !Bindings.Same(cur.Buttons, stored.Buttons);
+        bool rate = stored != null && state.Onboard && cur.Rate > 0 && cur.Rate != stored.Rate;
+        if (dirty && (buttons || rate)) { Say((buttons && rate ? "Buttons and report rate change" : buttons ? "Buttons change" : "Report rate changes") + " when saved to the mouse"); return; }
         Say(!dirty ? "Matches the mouse" : state.Savable ? "Applied to the mouse · not saved on it yet" : "Applied to the mouse · not saved on it");
     }
 
@@ -393,6 +437,7 @@ class PageMouse : DevicePage
         {
             if (n != seq) return;
             mouse.SendDpi(h, s, want, sent);
+            if (!s.Onboard && want.Rate > 0 && want.Rate != s.Rate && (sent == null || sent.Rate != want.Rate) && s.Rates.Contains(want.Rate)) mouse.SetRate(h, want.Rate);
             if (want.Light != null && s.Zones.Count > 0 && (sent == null || !want.Light.Same(sent.Light)))
             {
                 mouse.SetLight(h, s, want.Light);
@@ -400,6 +445,161 @@ class PageMouse : DevicePage
             }
             sent = want;
         }, () => { if (n == seq) Calm(); });
+    }
+
+    void ShowView(bool buttons)
+    {
+        showingButtons = buttons;
+        recording = -1;
+        foreach (var c in settingsArea) c.Visible = !buttons;
+        buttonsBox.Visible = buttons;
+        if (buttons) StartSpy(); else StopSpy();
+        viewPick.Index = buttons ? 1 : 0;
+        SyncButtons();
+    }
+
+    void SyncButtons()
+    {
+        int count = state == null || state.Buttons == null || cur.Buttons == null ? 0 : Math.Min(state.ButtonCount, cur.Buttons.Length);
+        var names = Bindings.Names(found.Wpid, count);
+        bool can = state != null && state.Savable;
+        for (int i = 0; i < 16; i++)
+        {
+            bool on = i < count;
+            rowNames[i].Visible = on;
+            rowDrops[i].Visible = on && i != recording;
+            if (!on) continue;
+            rowNames[i].Text = names[i] + (i == pressedRow ? "  ·  pressed" : "");
+            rowNames[i].ForeColor = i == pressedRow ? Theme.Accent : Theme.Text;
+            rowDrops[i].AccessibleName = names[i];
+            int k = Bindings.Find(cur.Buttons[i]);
+            rowDrops[i].Index = k;
+            if (k < 0) rowDrops[i].Text = Bindings.Describe(cur.Buttons[i]);
+            rowDrops[i].Enabled = can && i != 0 && recording < 0;
+        }
+        keyField.Visible = recording >= 0 && recording < count;
+        if (keyField.Visible) keyField.Top = rowDrops[recording].Top;
+        buttonsHint.Text = recording >= 0 ? "Press the keys, or Esc to cancel." : spying ? "Press a button on the mouse to find it." : "";
+    }
+
+    void PickAction(int row, int k)
+    {
+        if (loading || state == null || cur.Buttons == null) return;
+        if (k >= Bindings.Actions.Length)
+        {
+            recording = row;
+            SyncButtons();
+            keyField.Box.Text = "";
+            keyField.Box.Focus();
+            return;
+        }
+        cur.Buttons[row] = (byte[])Bindings.Actions[k].Bytes.Clone();
+        ButtonsEdited();
+    }
+
+    internal void Recorded(Keys keys)
+    {
+        if (recording < 0 || cur.Buttons == null) return;
+        var key = keys & Keys.KeyCode;
+        if (key == Keys.Escape) { recording = -1; SyncButtons(); return; }
+        int usage = Usage(key);
+        if (usage == 0) return;
+        int modifiers = ((keys & Keys.Control) != 0 ? 1 : 0) | ((keys & Keys.Shift) != 0 ? 2 : 0) | ((keys & Keys.Alt) != 0 ? 4 : 0);
+        cur.Buttons[recording] = Bindings.Key(modifiers, usage);
+        recording = -1;
+        ButtonsEdited();
+    }
+
+    static int Usage(Keys k)
+    {
+        if (k >= Keys.A && k <= Keys.Z) return 0x04 + (int)k - (int)Keys.A;
+        if (k >= Keys.D1 && k <= Keys.D9) return 0x1E + (int)k - (int)Keys.D1;
+        if (k >= Keys.F1 && k <= Keys.F12) return 0x3A + (int)k - (int)Keys.F1;
+        switch (k)
+        {
+            case Keys.D0: return 0x27;
+            case Keys.Enter: return 0x28;
+            case Keys.Back: return 0x2A;
+            case Keys.Tab: return 0x2B;
+            case Keys.Space: return 0x2C;
+            case Keys.OemMinus: return 0x2D;
+            case Keys.Oemplus: return 0x2E;
+            case Keys.OemOpenBrackets: return 0x2F;
+            case Keys.OemCloseBrackets: return 0x30;
+            case Keys.OemPipe: return 0x31;
+            case Keys.OemSemicolon: return 0x33;
+            case Keys.OemQuotes: return 0x34;
+            case Keys.Oemtilde: return 0x35;
+            case Keys.Oemcomma: return 0x36;
+            case Keys.OemPeriod: return 0x37;
+            case Keys.OemQuestion: return 0x38;
+            case Keys.PrintScreen: return 0x46;
+            case Keys.Scroll: return 0x47;
+            case Keys.Pause: return 0x48;
+            case Keys.Insert: return 0x49;
+            case Keys.Home: return 0x4A;
+            case Keys.PageUp: return 0x4B;
+            case Keys.Delete: return 0x4C;
+            case Keys.End: return 0x4D;
+            case Keys.PageDown: return 0x4E;
+            case Keys.Right: return 0x4F;
+            case Keys.Left: return 0x50;
+            case Keys.Down: return 0x51;
+            case Keys.Up: return 0x52;
+        }
+        return 0;
+    }
+
+    void ButtonsEdited()
+    {
+        if (state == null) return;
+        dirty = true;
+        Edited();
+        Sync();
+        Calm();
+    }
+
+    void StartSpy()
+    {
+        if (spying || found.Path == null || !found.Has(0x8110)) return;
+        spying = true;
+        byte feature = 0;
+        Do(h => { feature = h.F(0x8110); h.Call(feature, 1); }, () =>
+        {
+            if (!spying || spy != null) return;
+            try { spy = new ButtonSpy(found.Path, found.Index, feature, bits => { if (IsHandleCreated) BeginInvoke((Action)(() => Pressed(bits))); }); }
+            catch (IOException) { }
+            SyncButtons();
+        });
+    }
+
+    void StopSpy()
+    {
+        if (!spying) return;
+        spying = false;
+        if (spy != null) { spy.Dispose(); spy = null; }
+        Do(h => { try { h.Call(h.F(0x8110), 2); } catch (HidppError) { } });
+    }
+
+    internal void Pressed(int bits)
+    {
+        if (bits == 0) return;
+        pressedRow = Enumerable.Range(0, 16).First(i => (bits >> i & 1) != 0);
+        pressedTimer.Stop();
+        pressedTimer.Start();
+        SyncButtons();
+    }
+
+    public override void Shown()
+    {
+        base.Shown();
+        if (showingButtons) StartSpy();
+    }
+
+    public override void Hidden()
+    {
+        StopSpy();
+        base.Hidden();
     }
 
     string InvertKey { get { return "wheel.invert." + found.Slug; } }
@@ -427,7 +627,12 @@ class PageMouse : DevicePage
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) watch.Dispose();
+        if (disposing)
+        {
+            watch.Dispose();
+            pressedTimer.Dispose();
+            if (spy != null) spy.Dispose();
+        }
         base.Dispose(disposing);
     }
 
@@ -447,12 +652,14 @@ class PageMouse : DevicePage
             state = s;
             fix = s.ProfileOk ? null : Backups.List(BackupId).FirstOrDefault(e => Usable(e) != null);
             int start = s.Stage >= 0 ? s.Stage : s.Profile != null && s.Stages.Length > 0 ? Math.Min(mouse.DefaultStage(s.Profile), s.Stages.Length - 1) : -1;
-            stored = new MouseSet { Dpi = s.Dpi, Light = s.Light, Stage = start };
+            stored = new MouseSet { Dpi = s.Dpi, Rate = s.Rate, Light = s.Light, Stage = start, Buttons = Bindings.Copy(s.Buttons) };
             if (n == seq)
             {
                 cur.Dpi = s.Dpi;
-                cur.Rate = 0;
+                cur.Rate = s.Rate;
                 cur.Stage = start;
+                cur.Buttons = Bindings.Copy(s.Buttons);
+                recording = -1;
                 if (!lightSet || cur.Light == null) cur.Light = s.Light == null ? null : s.Light.Clone();
                 if (!lightSet) dirty = false;
                 sent = new MouseSet { Dpi = s.Dpi, Stage = start, Light = lightSet && cur.Light != null ? cur.Light.Clone() : s.Light };

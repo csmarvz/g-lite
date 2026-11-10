@@ -1,0 +1,256 @@
+open
+  2201 fn1
+  2201 fn2
+  8060 fn0
+  8060 fn1
+  8070 fn0
+  8070 fn1  00 FF
+  8070 fn2  00 00 FF
+  8070 fn2  00 01 FF
+  8070 fn2  00 02 FF
+  8070 fn2  00 03 FF
+  8070 fn1  01 FF
+  8070 fn2  01 00 FF
+  8070 fn2  01 01 FF
+  8070 fn2  01 02 FF
+  8070 fn2  01 03 FF
+  2121 fn0
+  2121 fn1
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fnB
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
+pick View Buttons
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Buttons Left button=Left click (off) Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Forward Sniper=DPI shift G7=DPI down G8=DPI up G9=Next profile Wheel tilt right=Scroll right Wheel tilt left=Scroll left [Revert (off)] [Save to mouse (off)]
+G7 pressed on the mouse
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Buttons Left button=Left click (off) Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Forward Sniper=DPI shift G7=DPI down G8=DPI up G9=Next profile Wheel tilt right=Scroll right Wheel tilt left=Scroll left [Revert (off)] [Save to mouse (off)]
+pick G7 Next profile
+  = status "Buttons change when saved to the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Buttons Left button=Left click (off) Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Forward Sniper=DPI shift G7=Next profile G8=DPI up G9=Next profile Wheel tilt right=Scroll right Wheel tilt left=Scroll left [Revert] [Save to mouse]
+pick Thumb, front Keystroke…
+  = status "Buttons change when saved to the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Buttons Left button=Left click (off) Right button=Right click (off) Wheel click=Middle click (off) Thumb, back=Back (off) Sniper=DPI shift (off) G7=Next profile (off) G8=DPI up (off) G9=Next profile (off) Wheel tilt right=Scroll right (off) Wheel tilt left=Scroll left (off) [Revert] [Save to mouse]
+keys Ctrl + Shift + M
+  = status "Buttons change when saved to the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Buttons Left button=Left click (off) Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Ctrl + Shift + M Sniper=DPI shift G7=Next profile G8=DPI up G9=Next profile Wheel tilt right=Scroll right Wheel tilt left=Scroll left [Revert] [Save to mouse]
+press Save to mouse
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fn6  00 01 00 00 00 FF
+  8100 fn7  01 02 02 90 01 20 03 40 06 80 0C 00 19 FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  80 01 00 01 80 01 00 02 80 01 00 04 80 01 00 08
+  8100 fn7  80 02 03 10 90 07 00 00 90 08 00 00 90 03
+  8100 fn7  90 08 00 00 90 02 00 00 90 01 00 00 FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  44 00 65 00 66 00 61 00 75 00 6C 00 74 00 FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  03 00 00 00 00 00 1F 40 64 00 00 03
+  8100 fn7  00 1F 40 64 00 00 FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF 99 EE
+  8100 fn8
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fn3  00 01
+  2201 fn1
+  2201 fn2
+  8060 fn0
+  8060 fn1
+  8070 fn0
+  8070 fn1  00 FF
+  8070 fn2  00 00 FF
+  8070 fn2  00 01 FF
+  8070 fn2  00 02 FF
+  8070 fn2  00 03 FF
+  8070 fn1  01 FF
+  8070 fn2  01 00 FF
+  8070 fn2  01 01 FF
+  8070 fn2  01 02 FF
+  8070 fn2  01 03 FF
+  2121 fn0
+  2121 fn1
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fnB
+  = status "Saved to the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Buttons Left button=Left click (off) Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Ctrl + Shift + M Sniper=DPI shift G7=Next profile G8=DPI up G9=Next profile Wheel tilt right=Scroll right Wheel tilt left=Scroll left [Revert (off)] [Save to mouse (off)]
+pick G8 Disabled
+  = status "Buttons change when saved to the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Buttons Left button=Left click (off) Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Ctrl + Shift + M Sniper=DPI shift G7=Next profile G8=Disabled G9=Next profile Wheel tilt right=Scroll right Wheel tilt left=Scroll left [Revert] [Save to mouse]
+press Revert changes
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Buttons Left button=Left click (off) Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Ctrl + Shift + M Sniper=DPI shift G7=Next profile G8=DPI up G9=Next profile Wheel tilt right=Scroll right Wheel tilt left=Scroll left [Revert (off)] [Save to mouse (off)]
+menu More preset actions > Save as new preset…
+  menu: Save as new preset… | Rename… (off) | Delete (off)
+  = status "Matches the mouse" [Report] [Backups] [Save] [Cancel] View=Buttons Left button=Left click (off) Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Ctrl + Shift + M Sniper=DPI shift G7=Next profile G8=DPI up G9=Next profile Wheel tilt right=Scroll right Wheel tilt left=Scroll left [Revert (off)] [Save to mouse (off)]
+type Keys
+  = status "Matches the mouse" [Report] [Backups] [Save] [Cancel] View=Buttons Left button=Left click (off) Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Ctrl + Shift + M Sniper=DPI shift G7=Next profile G8=DPI up G9=Next profile Wheel tilt right=Scroll right Wheel tilt left=Scroll left [Revert (off)] [Save to mouse (off)]
+press Save
+  = status "Saved the preset Keys" [Report] [Backups] Preset=Keys [Update (off)] […] View=Buttons Left button=Left click (off) Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Ctrl + Shift + M Sniper=DPI shift G7=Next profile G8=DPI up G9=Next profile Wheel tilt right=Scroll right Wheel tilt left=Scroll left [Revert (off)] [Save to mouse (off)]
+pick G9 Mute
+  = status "Buttons change when saved to the mouse" [Report] [Backups] Preset=Keys • [Update] […] View=Buttons Left button=Left click (off) Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Ctrl + Shift + M Sniper=DPI shift G7=Next profile G8=DPI up G9=Mute Wheel tilt right=Scroll right Wheel tilt left=Scroll left [Revert] [Save to mouse]
+pick View Settings
+  = status "Buttons change when saved to the mouse" [Report] [Backups] Preset=Keys • [Update] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=off [Revert] [Save to mouse]
+pick Report rate 250
+  = status "Buttons and report rate change when saved to the mouse" [Report] [Backups] Preset=Keys • [Update] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=250 Brightness=100 Speed=63 Invert scrolling=off [Revert] [Save to mouse]
+press Revert changes
+  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=Keys [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse]
+pick Preset None
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
+pick Report rate 500
+  = status "Report rate changes when saved to the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=500 Brightness=100 Speed=63 Invert scrolling=off [Revert] [Save to mouse]
+press Save to mouse
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fn6  00 01 00 00 00 FF
+  8100 fn7  02 02 02 90 01 20 03 40 06 80 0C 00 19 FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  80 01 00 01 80 01 00 02 80 01 00 04 80 01 00 08
+  8100 fn7  80 02 03 10 90 07 00 00 90 08 00 00 90 03
+  8100 fn7  90 08 00 00 90 02 00 00 90 01 00 00 FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  44 00 65 00 66 00 61 00 75 00 6C 00 74 00 FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  03 00 00 00 00 00 1F 40 64 00 00 03
+  8100 fn7  00 1F 40 64 00 00 FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF A3 87
+  8100 fn8
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fn3  00 01
+  2201 fn1
+  2201 fn2
+  8060 fn0
+  8060 fn1
+  8070 fn0
+  8070 fn1  00 FF
+  8070 fn2  00 00 FF
+  8070 fn2  00 01 FF
+  8070 fn2  00 02 FF
+  8070 fn2  00 03 FF
+  8070 fn1  01 FF
+  8070 fn2  01 00 FF
+  8070 fn2  01 01 FF
+  8070 fn2  01 02 FF
+  8070 fn2  01 03 FF
+  2121 fn0
+  2121 fn1
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fnB
+  = status "Saved to the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=500 Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
+pick Preset Keys
+  = status "Report rate changes when saved to the mouse" [Report] [Backups] Preset=Keys [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse]
+pick View Buttons
+  = status "Report rate changes when saved to the mouse" [Report] [Backups] Preset=Keys [Update (off)] […] View=Buttons Left button=Left click (off) Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Ctrl + Shift + M Sniper=DPI shift G7=Next profile G8=DPI up G9=Next profile Wheel tilt right=Scroll right Wheel tilt left=Scroll left [Revert (off)] [Save to mouse]

@@ -224,6 +224,19 @@ class FakeMouse : Hidpp
         current = 0x0101;
     }
 
+    public static FakeMouse G502()
+    {
+        var mouse = new FakeMouse { Info = "01030105010B1000ff0a04", Wheel = true };
+        var bindings = new[] { "80010001", "80010002", "80010004", "80010008", "80010010", "90070000", "90040000", "90030000", "90080000", "90020000", "90010000" };
+        foreach (var sector in new[] { 0x0001, 0x0101 })
+        {
+            var profile = mouse.Sectors[sector];
+            for (int i = 0; i < bindings.Length; i++) FakeHidpp.Hex(bindings[i]).CopyTo(profile, 0x20 + 4 * i);
+        }
+        GMouse.Seal(mouse.Sectors[0x0001]);
+        return mouse;
+    }
+
     public static FakeMouse G305()
     {
         var mouse = new FakeMouse(true) { ZoneCount = 1, Info = "0103010101060600ff0a02", Dpi = 800, Stage = 1 };
