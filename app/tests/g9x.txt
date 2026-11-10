@@ -328,4 +328,4 @@ pick Effect Off
   = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] Effect=Off DPI stage=1700 DPI=30 Report rate=500 Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
 press Revert changes
   register 80 57  30 80 FF
-  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static DPI stage=1700 <Color 3080FF> DPI=30 Report rate=500 Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse]
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static DPI stage=1700 <Color 3080FF> DPI=30 Report rate=500 Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]

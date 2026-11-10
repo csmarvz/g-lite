@@ -150,14 +150,14 @@ pick Effect Breathe
 press Revert changes
   8070 fn3  00 01 99 7B
   8070 fn3  01 01 99 7B
-  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static DPI stage=400 <Your color> DPI=6 Report rate=500 Brightness=60 Speed=78 (off) [Revert (off)] [Save to mouse]
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static DPI stage=400 <Your color> DPI=6 Report rate=500 Brightness=60 Speed=78 (off) [Revert (off)] [Save to mouse (off)]
 menu More preset actions > Save as new preset…
   menu: Save as new preset… | Rename… (off) | Delete (off)
-  = status "Matches the mouse" [Report] [Backups] [Save] [Cancel] Effect=Static DPI stage=400 <Your color> DPI=6 Report rate=500 Brightness=60 Speed=78 (off) [Revert (off)] [Save to mouse]
+  = status "Matches the mouse" [Report] [Backups] [Save] [Cancel] Effect=Static DPI stage=400 <Your color> DPI=6 Report rate=500 Brightness=60 Speed=78 (off) [Revert (off)] [Save to mouse (off)]
 type Work
-  = status "Matches the mouse" [Report] [Backups] [Save] [Cancel] Effect=Static DPI stage=400 <Your color> DPI=6 Report rate=500 Brightness=60 Speed=78 (off) [Revert (off)] [Save to mouse]
+  = status "Matches the mouse" [Report] [Backups] [Save] [Cancel] Effect=Static DPI stage=400 <Your color> DPI=6 Report rate=500 Brightness=60 Speed=78 (off) [Revert (off)] [Save to mouse (off)]
 press Save
-  = status "Saved the preset Work" [Report] [Backups] Preset=Work [Update (off)] […] Effect=Static DPI stage=400 <Your color> DPI=6 Report rate=500 Brightness=60 Speed=78 (off) [Revert (off)] [Save to mouse]
+  = status "Saved the preset Work" [Report] [Backups] Preset=Work [Update (off)] […] Effect=Static DPI stage=400 <Your color> DPI=6 Report rate=500 Brightness=60 Speed=78 (off) [Revert (off)] [Save to mouse (off)]
 pick DPI stage 3200
   8100 fnC  03
   = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=Work • [Update] […] Effect=Static DPI stage=3200 <Your color> DPI=62 Report rate=500 Brightness=60 Speed=78 (off) [Revert] [Save to mouse]
@@ -165,7 +165,7 @@ press Update
   = status "Updated the preset Work" [Report] [Backups] Preset=Work [Update (off)] […] Effect=Static DPI stage=3200 <Your color> DPI=62 Report rate=500 Brightness=60 Speed=78 (off) [Revert (off)] [Save to mouse]
 pick Preset None
   8100 fnC
-  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static DPI stage=400 <Your color> DPI=6 Report rate=500 Brightness=60 Speed=78 (off) [Revert (off)] [Save to mouse]
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static DPI stage=400 <Your color> DPI=6 Report rate=500 Brightness=60 Speed=78 (off) [Revert (off)] [Save to mouse (off)]
 menu Backups > Restore the factory profile
   menu: Restore the factory profile | Restore a backup (off) | <when> · 1600 DPI · Cycle · 1000 Hz · first backup | Open the backups folder
   8100 fn5  00 01

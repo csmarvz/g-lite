@@ -217,6 +217,7 @@ class PageMouse : DevicePage
         cur = stored.Clone();
         Changed(true);
         dirty = lightSet && stored.Light == null;
+        Sync();
         Calm();
     }
 

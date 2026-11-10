@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- On the mouse screen, Save to mouse stayed on after Revert or picking None, although nothing was left to save.
+
 ## [0.0.14-alpha] - 2026-11-10
 
 ### Added
