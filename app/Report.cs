@@ -316,7 +316,7 @@ static class Report
             case 0x8100: Profiles(r); break;
             case 0x8101:
                 {
-                    var files = f.IsG515 ? new[] { 0x0000, 16, 0x0008, 99, 0x0100, 16, 0x0101, 99 } : new[] { 0x0000, 16, 0x0100, 16 };
+                    var files = f.IsG515 || f.Kind == "keyboard" ? new[] { 0x0000, 16, 0x0008, 99, 0x0100, 16, 0x0101, 99 } : new[] { 0x0000, 16, 0x0100, 16 };
                     for (int i = 0; i < files.Length; i += 2) File(r, files[i], files[i + 1]);
                     break;
                 }
