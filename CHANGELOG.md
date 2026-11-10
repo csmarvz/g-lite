@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.0.17-alpha] - 2026-11-10
+
+### Added
+
+- Any mouse button can be changed now, the left one too. While no button is set to Left click, Save to mouse and Update are off, so you can't lose your click.
+- Names for the G Pro Wireless buttons: both side pairs and the DPI button underneath.
+
+### Changed
+
+- The tray menu is rounded and lists each device with its battery on the right, then Scan for devices, Settings (opens the window on the settings) and Quit G-Lite. CPU and memory use are in the hover popup.
+- A pressed mouse button shows a green band behind its name in the Buttons view, like the selected device.
+- The battery level shows without the ~, and the device list is wide enough for 100%.
+
+### Fixed
+
+- The keyboard kept showing the last Screen frame after switching to another effect or pressing Revert, when that lighting matched the saved one.
+- The tray menu closed when the hover popup appeared over it.
+- The headset screen said it matched the headset when the headset hadn't answered. It now says so, with Try again.
+
 ## [0.0.16-alpha] - 2026-11-10
 
 ### Changed
