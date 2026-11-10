@@ -117,9 +117,11 @@ class PageMouse : DevicePage
     readonly MousePicture picture;
     readonly Btn saveBtn, backupsBtn;
     Backups.Entry fix;
+    readonly IMouse mouse;
 
-    public PageMouse(Found found, Hidpp fake, MouseEventHandler drag) : base(found, fake, drag, found.Short, "mouse", "profile." + found.Slug + ".")
+    public PageMouse(Found found, Hidpp fake, MouseEventHandler drag, IMouse mouse) : base(found, fake, drag, found.Short, "mouse", "profile." + found.Slug + ".")
     {
+        this.mouse = mouse;
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };
         backupsBtn = BackupsButton("mouse's profile");
         backupsBtn.Click += (s, e) => ShowBackups();
@@ -186,7 +188,7 @@ class PageMouse : DevicePage
         Sync();
     }
 
-    EffectDef[] Fx { get { return state != null ? state.Effects : found.Hidpp10 ? G9x.Effects : GMouse.Effects; } }
+    EffectDef[] Fx { get { return state != null ? state.Effects : mouse.Effects; } }
 
     MouseLight Light()
     {
@@ -273,8 +275,8 @@ class PageMouse : DevicePage
         rateHead.Text = "Report rate" + (ready && state.Rates.Length > 0 ? " (Hz)" : "") + (ready && state.Onboard && state.Savable ? " · on save" : "");
         rateHint.Text = !ready || !state.Onboard || state.Savable ? "" : "Set by the profile saved on the mouse.";
         saveBtn.Enabled = ready && state.Savable && dirty;
-        saveBtn.Visible = ready ? state.Writable : !found.Hidpp10;
-        backupsBtn.Visible = !found.Hidpp10 || ready && state.Writable;
+        saveBtn.Visible = ready ? state.Writable : mouse.HasFactory;
+        backupsBtn.Visible = mouse.HasFactory || ready && state.Writable;
 
         picture.Display(lit ? l : new MouseLight { Effect = 0 }, ready ? cur.Dpi : 0,
             !ready ? "" : stage >= 0 ? "Stage " + (stage + 1) + " of " + state.Stages.Length + (cur.Dpi != state.Stages[stage] ? " · was " + state.Stages[stage] : "") : "",
@@ -313,15 +315,15 @@ class PageMouse : DevicePage
     {
         const string bad = "The profile saved on the mouse is damaged.";
         if (fix != null) Say(bad + " Last good backup: " + When(fix) + ".", true, () => Restore(Usable(fix), "the backup from " + When(fix)), "Restore backup");
-        else if (state.Writable && !found.Hidpp10) Say(bad, true, () => Restore(null, "the factory profile"), "Restore factory profile");
+        else if (state.Writable && mouse.HasFactory) Say(bad, true, () => Restore(null, "the factory profile"), "Restore factory profile");
         else Say(bad + " G-Lite can't repair it on this mouse.", true);
     }
 
     void ShowBackups()
     {
-        bool can = state != null && state.Writable && !state.Fresh && !found.Hidpp10;
+        bool can = state != null && state.Writable && !state.Fresh && mouse.HasFactory;
         BackupMenu(backupsBtn, BackupId, can ? "Restore the factory profile" : null, () => Restore(null, "the factory profile"),
-            e => { var d = e.Get(state == null ? "" : state.Key); return d == null ? "another profile" : found.Hidpp10 ? G9x.Describe(d) : GMouse.Describe(d); },
+            e => { var d = e.Get(state == null ? "" : state.Key); return d == null ? "another profile" : mouse.Describe(d); },
             e => Usable(e) != null, e => Restore(Usable(e), "the backup from " + When(e)));
     }
 
@@ -335,12 +337,11 @@ class PageMouse : DevicePage
         Did("Save to mouse");
         Do(h =>
         {
-            if (s.Fresh) { GMouse.Setup(h, s, GMouse.Build(GMouse.ReadSector(h, s.Sector, s.SectorSize), want, s.Zones.Count)); return; }
-            var now = s.Flash ? G9x.ReadPage(h, s.Sector) : GMouse.ReadSector(h, s.Sector, s.SectorSize);
+            if (s.Fresh) { mouse.Setup(h, s, want); return; }
+            var now = mouse.ReadProfile(h, s);
             if (!GMouse.Valid(now)) throw new Refused("The profile on the mouse is damaged, not touching it");
             Backups.Save(BackupId, new Dictionary<string, byte[]> { { s.Key, now } }, Who);
-            if (s.Flash) G9x.Store(h, s, G9x.Build(now, want, s.Rate));
-            else GMouse.Store(h, s, GMouse.Build(now, want, s.Zones.Count));
+            mouse.Save(h, s, now, want);
         }, () =>
         {
             lightSet = false;
@@ -360,10 +361,9 @@ class PageMouse : DevicePage
         Did("Restore " + what);
         Do(h =>
         {
-            var now = s.Flash ? G9x.ReadPage(h, s.Sector) : GMouse.ReadSector(h, s.Sector, s.SectorSize);
+            var now = mouse.ReadProfile(h, s);
             Backups.Save(BackupId, new Dictionary<string, byte[]> { { s.Key, now } }, Who);
-            if (s.Flash) { if (data == null) throw new Refused("G-Lite can't restore the factory profile on this mouse"); G9x.Store(h, s, data); }
-            else GMouse.Store(h, s, data ?? GMouse.Factory(GMouse.ReadSector(h, GMouse.RomSector, s.SectorSize), now));
+            mouse.Restore(h, s, now, data);
         }, () =>
         {
             lightSet = false;
@@ -380,21 +380,10 @@ class PageMouse : DevicePage
         Do(h =>
         {
             if (n != seq) return;
-            if (found.Hidpp10)
-            {
-                if (sent == null || want.Dpi != sent.Dpi) G9x.SetDpi(h, want.Dpi);
-                if (want.Light != null && (sent == null || !want.Light.Same(sent.Light))) { G9x.SetLight(h, want.Light); lightSet = !want.Light.Same(s.Light); }
-                sent = want;
-                return;
-            }
-            if (sent == null || want.Dpi != sent.Dpi || want.Stage != sent.Stage)
-            {
-                bool saved = s.Onboard && want.Stage >= 0 && want.Stage < s.Stages.Length && s.Stages[want.Stage] == want.Dpi;
-                if (saved) GMouse.SetStage(h, want.Stage); else GMouse.SetDpi(h, want.Dpi);
-            }
+            mouse.SendDpi(h, s, want, sent);
             if (want.Light != null && s.Zones.Count > 0 && (sent == null || !want.Light.Same(sent.Light)))
             {
-                GMouse.SetLight(h, s, want.Light);
+                mouse.SetLight(h, s, want.Light);
                 lightSet = !want.Light.Same(s.Light);
             }
             sent = want;
@@ -403,7 +392,7 @@ class PageMouse : DevicePage
 
     void SendRate(int hz)
     {
-        Do(h => { if (found.Hidpp10) G9x.SetRate(h, hz); else GMouse.SetRate(h, hz); }, () => Load());
+        Do(h => mouse.SetRate(h, hz), () => Load());
     }
 
     public override void Load()
@@ -412,11 +401,11 @@ class PageMouse : DevicePage
         Say("Reading the mouse…");
         GMouse.State s = null;
         int n = seq;
-        Do(h => s = found.Hidpp10 ? G9x.Read(h) : GMouse.Read(h), () =>
+        Do(h => s = mouse.Read(h), () =>
         {
             state = s;
             fix = s.ProfileOk ? null : Backups.List(BackupId).FirstOrDefault(e => Usable(e) != null);
-            int start = s.Stage >= 0 ? s.Stage : s.Profile != null && s.Stages.Length > 0 ? Math.Min((int)s.Profile[s.Flash ? 0x23 : 1], s.Stages.Length - 1) : -1;
+            int start = s.Stage >= 0 ? s.Stage : s.Profile != null && s.Stages.Length > 0 ? Math.Min(mouse.DefaultStage(s.Profile), s.Stages.Length - 1) : -1;
             stored = new MouseSet { Dpi = s.Dpi, Light = s.Light, Stage = start };
             if (n == seq)
             {

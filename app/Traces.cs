@@ -232,7 +232,7 @@ static class Traces
         var device = new FakeHidpp();
         var found = new Found { Key = "trace|g515", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, Wpid = 0x40B4, Features = Keyboard };
         Page515 page = null;
-        using (var s = Begin(() => page = new Page515(found, device, null)))
+        using (var s = Begin(() => page = (Page515)Support.For(found).Make(found, device, null)))
         {
             s.Pick("Effect", "Static");
             s.Press("Color FF2020");
@@ -269,7 +269,7 @@ static class Traces
     {
         var found = new Found { Key = "trace|g915", Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, Wpid = 0x408E, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 } };
         Page515 page = null;
-        using (var s = Begin(() => page = new Page515(found, new FakeG915(), null)))
+        using (var s = Begin(() => page = (Page515)Support.For(found).Make(found, new FakeG915(), null)))
         {
             s.Pick("Effect", "Static");
             s.Press("Color 30D050");
@@ -288,7 +288,7 @@ static class Traces
     static string Mouse(string name, FakeMouse device, int[] features)
     {
         var found = new Found { Key = "trace|" + name, Name = name, Kind = "mouse", Link = "LIGHTSPEED", Index = 1, Wpid = 0x4079, Features = features };
-        using (var s = Begin(() => new PageMouse(found, device, null)))
+        using (var s = Begin(() => Support.For(found).Make(found, device, null)))
         {
             s.Slide("DPI", 20);
             s.Pick("DPI stage", "400");
@@ -313,7 +313,7 @@ static class Traces
     static string G9x()
     {
         var found = new Found { Key = "trace|g9x", Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04" };
-        using (var s = Begin(() => new PageMouse(found, new FakeG9x(), null)))
+        using (var s = Begin(() => Support.For(found).Make(found, new FakeG9x(), null)))
         {
             s.Slide("DPI", 30);
             s.Pick("Effect", "Static");
@@ -329,7 +329,7 @@ static class Traces
     static string Headset()
     {
         var found = new Found { Key = "trace|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "LIGHTSPEED", Index = 0xFF, Path = @"\\?\hid#vid_046d&pid_0aba&mi_03&col01", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300 } };
-        using (var s = Begin(() => new PageHeadset(found, new FakeHeadset(), null)))
+        using (var s = Begin(() => Support.For(found).Make(found, new FakeHeadset(), null)))
         {
             s.Slide("Sidetone", 40);
             s.Pick("Turn off after", "30 min");

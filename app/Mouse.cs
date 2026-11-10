@@ -364,6 +364,72 @@ static class GMouse
     }
 }
 
+interface IMouse
+{
+    EffectDef[] Effects { get; }
+    bool HasFactory { get; }
+    GMouse.State Read(Hidpp h);
+    void SendDpi(Hidpp h, GMouse.State s, MouseSet want, MouseSet sent);
+    void SetLight(Hidpp h, GMouse.State s, MouseLight light);
+    void SetRate(Hidpp h, int hz);
+    byte[] ReadProfile(Hidpp h, GMouse.State s);
+    void Setup(Hidpp h, GMouse.State s, MouseSet want);
+    void Save(Hidpp h, GMouse.State s, byte[] now, MouseSet want);
+    void Restore(Hidpp h, GMouse.State s, byte[] now, byte[] data);
+    string Describe(byte[] profile);
+    int DefaultStage(byte[] profile);
+}
+
+class HidppMouse : IMouse
+{
+    public EffectDef[] Effects { get { return GMouse.Effects; } }
+    public bool HasFactory { get { return true; } }
+    public GMouse.State Read(Hidpp h) { return GMouse.Read(h); }
+
+    public void SendDpi(Hidpp h, GMouse.State s, MouseSet want, MouseSet sent)
+    {
+        if (sent != null && want.Dpi == sent.Dpi && want.Stage == sent.Stage) return;
+        bool saved = s.Onboard && want.Stage >= 0 && want.Stage < s.Stages.Length && s.Stages[want.Stage] == want.Dpi;
+        if (saved) GMouse.SetStage(h, want.Stage); else GMouse.SetDpi(h, want.Dpi);
+    }
+
+    public void SetLight(Hidpp h, GMouse.State s, MouseLight light) { GMouse.SetLight(h, s, light); }
+    public void SetRate(Hidpp h, int hz) { GMouse.SetRate(h, hz); }
+    public byte[] ReadProfile(Hidpp h, GMouse.State s) { return GMouse.ReadSector(h, s.Sector, s.SectorSize); }
+    public void Setup(Hidpp h, GMouse.State s, MouseSet want) { GMouse.Setup(h, s, GMouse.Build(GMouse.ReadSector(h, s.Sector, s.SectorSize), want, s.Zones.Count)); }
+    public void Save(Hidpp h, GMouse.State s, byte[] now, MouseSet want) { GMouse.Store(h, s, GMouse.Build(now, want, s.Zones.Count)); }
+    public void Restore(Hidpp h, GMouse.State s, byte[] now, byte[] data) { GMouse.Store(h, s, data ?? GMouse.Factory(GMouse.ReadSector(h, GMouse.RomSector, s.SectorSize), now)); }
+    public string Describe(byte[] profile) { return GMouse.Describe(profile); }
+    public int DefaultStage(byte[] profile) { return profile[1]; }
+}
+
+class G9xMouse : IMouse
+{
+    public EffectDef[] Effects { get { return G9x.Effects; } }
+    public bool HasFactory { get { return false; } }
+    public GMouse.State Read(Hidpp h) { return G9x.Read(h); }
+
+    public void SendDpi(Hidpp h, GMouse.State s, MouseSet want, MouseSet sent)
+    {
+        if (sent == null || want.Dpi != sent.Dpi) G9x.SetDpi(h, want.Dpi);
+    }
+
+    public void SetLight(Hidpp h, GMouse.State s, MouseLight light) { G9x.SetLight(h, light); }
+    public void SetRate(Hidpp h, int hz) { G9x.SetRate(h, hz); }
+    public byte[] ReadProfile(Hidpp h, GMouse.State s) { return G9x.ReadPage(h, s.Sector); }
+    public void Setup(Hidpp h, GMouse.State s, MouseSet want) { throw new Refused("Saving isn't supported on this mouse"); }
+    public void Save(Hidpp h, GMouse.State s, byte[] now, MouseSet want) { G9x.Store(h, s, G9x.Build(now, want, s.Rate)); }
+
+    public void Restore(Hidpp h, GMouse.State s, byte[] now, byte[] data)
+    {
+        if (data == null) throw new Refused("G-Lite can't restore the factory profile on this mouse");
+        G9x.Store(h, s, data);
+    }
+
+    public string Describe(byte[] profile) { return G9x.Describe(profile); }
+    public int DefaultStage(byte[] profile) { return profile[0x23]; }
+}
+
 static class G9x
 {
     public static readonly EffectDef[] Effects = GMouse.Effects.Where(effect => effect.Id <= 0x01).ToArray();

@@ -327,22 +327,18 @@ class MainWindow : Form
 
     static Type PageFor(Found f)
     {
-        if (f.Asleep) return typeof(InfoPage);
-        if (f.IsG515 || f.IsG915) return typeof(Page515);
-        if (f.IsMouse || f.IsG9x) return typeof(PageMouse);
-        if (f.IsHeadset) return typeof(PageHeadset);
-        return typeof(InfoPage);
+        var support = Support.For(f);
+        return support == null ? typeof(InfoPage) : support.Screen;
     }
 
     Control Make(Found f, Type type)
     {
+        var support = Support.For(f);
+        if (support == null || support.Screen != type) return new InfoPage(f, Drag, Rescan);
         Hidpp dev = null;
         if (demo && !demoDevs.TryGetValue(f.Key, out dev))
-            demoDevs[f.Key] = dev = f.IsG915 ? new FakeG915() : f.IsG9x ? new FakeG9x() : f.Kind == "keyboard" ? fake : f.Kind == "mouse" ? new FakeMouse() : (Hidpp)new FakeHeadset();
-        if (type == typeof(Page515)) return new Page515(f, dev, Drag);
-        if (type == typeof(PageMouse)) return new PageMouse(f, dev, Drag);
-        if (type == typeof(PageHeadset)) return new PageHeadset(f, dev, Drag);
-        return new InfoPage(f, Drag, Rescan);
+            demoDevs[f.Key] = dev = support.Fake != null ? support.Fake() : fake;
+        return support.Make(f, dev, Drag);
     }
 
     void Remove(string key)
@@ -610,4 +606,23 @@ class MainWindow : Form
             tray.Visible = false;
         }
     }
+}
+
+class Support
+{
+    public Func<Found, bool> Matches;
+    public Type Screen;
+    public Func<Found, Hidpp, MouseEventHandler, Control> Make;
+    public Func<Hidpp> Fake;
+
+    public static readonly Support[] All =
+    {
+        new Support { Matches = f => f.IsG515, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag) },
+        new Support { Matches = f => f.IsG915, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag), Fake = () => new FakeG915() },
+        new Support { Matches = f => f.IsG9x, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new G9xMouse()), Fake = () => new FakeG9x() },
+        new Support { Matches = f => f.IsMouse, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new HidppMouse()), Fake = () => new FakeMouse() },
+        new Support { Matches = f => f.IsHeadset, Screen = typeof(PageHeadset), Make = (f, d, drag) => new PageHeadset(f, d, drag), Fake = () => new FakeHeadset() },
+    };
+
+    public static Support For(Found f) { return f.Asleep ? null : All.FirstOrDefault(s => s.Matches(f)); }
 }
