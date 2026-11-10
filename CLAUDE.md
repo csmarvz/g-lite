@@ -75,7 +75,8 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - Mouse onboard profiles (0x8100, profile format 3 only): fn 0 gives the sector size at bytes 7–8 (255 on the G Pro Wireless), fn 4 the active profile's sector, fn 5 reads 16 bytes at a sector and offset.
   - Layout: byte 0 is the report interval in ms, byte 1 the default DPI stage, bytes 3–12 the five stages (little endian), 0xA0 the name (UTF-16), LED records of 11 bytes from 0xD0 (effect id, then the 0x8070 parameters). The last two bytes are a CRC-16 (CCITT, start 0xFFFF, big endian) over the rest.
   - Writing: fn 6 with sector, offset 0 and length, fn 7 for each 16 bytes, fn 8 to finish, then read back. fn 3 with the active profile reloads it.
-  - Never write sector 0x0000 (the profile directory) or 0x0100 and up (the factory profiles). The factory profile at 0x0101 has no checksum.
+  - Never write 0x0100 and up (the factory profiles). The factory profile at 0x0101 has no checksum.
+  - Sector 0x0000 (the profile directory) is written only by `GMouse.Setup`, on a mouse that runs a factory profile and has no directory (fn 5 answers error 02, like the G305) or an empty one (`State.Fresh`). The first Save to mouse then writes the profile, built from the factory one, to 0x0001, then the directory `GMouse.Directory` builds (`00 01 01 00`, `FF FF 00 00`, `FF` to the end, CRC-16), then loads 0x0001 with fn 3. `WriteSector` still refuses 0x0000. Same layout as libratbag's `hidpp20_onboard_profiles_write_dict`.
 - The PRO X Wireless dongle (PID 0ABA) answers HID++ itself at index 0xFF. Its sidetone only plays while an app uses the microphone. It stores an equalizer (0x8310: fn 2 reads one signed byte per band, fn 3 writes a 0x02 followed by them) but doesn't apply it, so G-Lite doesn't show it. G HUB applies EQ on the PC.
 
 ## Rules

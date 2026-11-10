@@ -22,6 +22,8 @@ static class Log
 
     public static void Add(string who, string kind, string text) { Write(who, kind, text, ""); }
 
+    public static void Add(string who, string kind, string text, string result) { Write(who, kind, text, result); }
+
     public static void Sent(string who, int id, int fn, byte[] p, string result)
     {
         Write(who, "sent", id.ToString("X4") + " fn" + fn.ToString("X") + (p.Length > 0 ? "  " + BitConverter.ToString(p).Replace("-", " ") : ""), result);

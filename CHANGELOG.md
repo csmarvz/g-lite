@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Save to mouse on mice that only have their factory settings, like a G305 never set up with G HUB. The first save adds a profile next to the factory one, which stays as it was; the report rate can then be changed on save. Each step is in the logs.
+
+### Fixed
+
+- Replies from the device could be taken for another program's, if it talked to the same device at the same moment. A report could then list every feature as 0100. Each call now has its own software ID.
+
 ## [0.0.13-alpha] - 2026-11-10
 
 ### Added

@@ -27,6 +27,7 @@ If Windows says it protected your PC, click **More info**, then **Run anyway**. 
 |---|---|---|
 | G515 LIGHTSPEED TKL | LIGHTSPEED receiver | Lighting effects, colour, speed, direction, brightness, idle dimming and turn-off, profiles, saving to the keyboard, backups and restoring them, factory lighting |
 | G Pro Wireless | LIGHTSPEED receiver | DPI and DPI stage, logo lighting, report rate, profiles, saving to the mouse, backups and restoring them, factory profile |
+| G305 LIGHTSPEED | LIGHTSPEED receiver | DPI and DPI stage, lighting of the status light, report rate, profiles, saving to the mouse (the first save adds a profile next to the factory one), backups and restoring them, factory profile |
 | PRO X Wireless | Its own LIGHTSPEED receiver | Sidetone, turning off when idle, battery, profiles |
 | G915 and G915 TKL | LIGHTSPEED receiver or USB | Untested. Lighting effects, colour, speed, direction, brightness and profiles, live only. G-Lite sets your lighting again when it starts and when you open the keyboard, but can't save it to the keyboard yet. |
 

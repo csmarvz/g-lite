@@ -24,7 +24,7 @@ class HalfWritten : Refused
 
 class Hidpp : IDisposable
 {
-    const byte Swid = 0x0B;
+    int calls = new Random().Next(12);
     readonly byte Idx = 1;
     FileStream fs, shortStream;
     byte[] rbuf = new byte[20], shortBuffer = new byte[7];
@@ -161,7 +161,7 @@ class Hidpp : IDisposable
     protected virtual byte[] Send(byte feat, int fn, byte[] p)
     {
         var msg = new byte[20];
-        msg[0] = 0x11; msg[1] = Idx; msg[2] = feat; msg[3] = (byte)(fn << 4 | Swid);
+        msg[0] = 0x11; msg[1] = Idx; msg[2] = feat; msg[3] = (byte)(fn << 4 | 1 + (System.Threading.Interlocked.Increment(ref calls) & 0x7FFFFFFF) % 12);
         Array.Copy(p, 0, msg, 4, p.Length);
         fs.Write(msg, 0, 20);
         var deadline = DateTime.UtcNow.AddSeconds(3);

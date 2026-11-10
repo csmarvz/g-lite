@@ -317,7 +317,7 @@ class PageMouse : DevicePage
 
     void ShowBackups()
     {
-        bool can = state != null && state.Writable && !found.Hidpp10;
+        bool can = state != null && state.Writable && !state.Fresh && !found.Hidpp10;
         BackupMenu(backupsBtn, BackupId, can ? "Restore the factory profile" : null, () => Restore(null, "the factory profile"),
             e => { var d = e.Get(state == null ? "" : state.Key); return d == null ? "another profile" : found.Hidpp10 ? G9x.Describe(d) : GMouse.Describe(d); },
             e => Usable(e) != null, e => Restore(Usable(e), "the backup from " + When(e)));
@@ -333,6 +333,7 @@ class PageMouse : DevicePage
         Did("Save to mouse");
         Do(h =>
         {
+            if (s.Fresh) { GMouse.Setup(h, s, GMouse.Build(GMouse.ReadSector(h, s.Sector, s.SectorSize), want, s.Zones.Count)); return; }
             var now = s.Flash ? G9x.ReadPage(h, s.Sector) : GMouse.ReadSector(h, s.Sector, s.SectorSize);
             if (!GMouse.Valid(now)) throw new Refused("The profile on the mouse is damaged, not touching it");
             Backups.Save(BackupId, new Dictionary<string, byte[]> { { s.Key, now } }, Who);
@@ -349,7 +350,7 @@ class PageMouse : DevicePage
     void Restore(byte[] data, string what)
     {
         var s = state;
-        if (s == null || !s.Writable) return;
+        if (s == null || !s.Writable || s.Fresh) return;
         debounce.Stop();
         seq++;
         saveBtn.Enabled = false;

@@ -192,9 +192,11 @@ class FakeMouse : Hidpp
     public readonly Dictionary<int, byte[]> Sectors = new Dictionary<int, byte[]>();
     static readonly byte[] Ids = { 0x00, 0x01, 0x03, 0x0A };
     List<byte> pending = new List<byte>();
-    int writeTo, writeLength;
+    int writeTo, writeLength, current = 1;
 
-    public FakeMouse() : base(false)
+    public FakeMouse() : this(false) { }
+
+    public FakeMouse(bool fresh) : base(false)
     {
         var rom = Enumerable.Repeat((byte)0xFF, 255).ToArray();
         rom[0] = 1; rom[1] = 2; rom[2] = 2;
@@ -211,9 +213,13 @@ class FakeMouse : Hidpp
         Sectors[0x0101] = rom;
         Sectors[0x0001] = user;
         Sectors[0x0000] = FakeHidpp.Hex("00010100").Concat(Enumerable.Repeat((byte)0xFF, 251)).ToArray();
+        if (!fresh) return;
+        Sectors.Remove(0x0000);
+        Sectors.Remove(0x0001);
+        current = 0x0101;
     }
 
-    int[] Stages { get { return GMouse.StagesOf(Sectors[0x0001]); } }
+    int[] Stages { get { return GMouse.StagesOf(Sectors[current]); } }
 
     public override void Dispose() { }
 
@@ -250,6 +256,7 @@ class FakeMouse : Hidpp
                 if (fn == 3)
                 {
                     var prof = Sectors[u16(0)];
+                    current = u16(0);
                     Reloads++;
                     Rate = prof[0];
                     Stage = prof[1];
@@ -257,7 +264,7 @@ class FakeMouse : Hidpp
                     Zones[0] = new byte[] { 0, 0 }.Concat(prof.Skip(0xD1).Take(10)).ToArray();
                     Zones[1] = new byte[] { 1, 0 }.Concat(prof.Skip(0xDC).Take(10)).ToArray();
                 }
-                if (fn == 4) r[1] = 1;
+                if (fn == 4) { r[0] = (byte)(current >> 8); r[1] = (byte)current; }
                 if (fn == 5)
                 {
                     if (!Sectors.ContainsKey(u16(0))) throw new HidppError(2, "HID++ error 0x02");

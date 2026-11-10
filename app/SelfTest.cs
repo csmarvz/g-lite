@@ -131,6 +131,20 @@ static class SelfTest
         broken[5] ^= 1;
         try { GMouse.WriteSector(m2, 1, broken); } catch (Refused) { refusals++; }
         Check(refusals == 3 && GMouse.Valid(m2.Sectors[1]) && GMouse.Valid(m2.Sectors[0x0101]) == false, "the directory, the factory profile and bad checksums are never written");
+        Check(!st3.Fresh, "a mouse with a profile isn't set up again");
+        var fresh = new FakeMouse(true);
+        var freshFactory = (byte[])fresh.Sectors[0x0101].Clone();
+        var fs = GMouse.Read(fresh);
+        Check(fs.Fresh && fs.Writable && fs.Savable && fs.Sector == 0x0101, "a mouse with only its factory profile can be saved to");
+        int freshRefusals = 0;
+        try { GMouse.Store(fresh, fs, GMouse.Build(fs.Profile, new MouseSet { Dpi = 800 }, 2)); } catch (Refused) { freshRefusals++; }
+        try { GMouse.Setup(m2, st3, st3.Profile); } catch (Refused) { freshRefusals++; }
+        try { GMouse.Directory(255, 0); } catch (Refused) { freshRefusals++; }
+        Check(freshRefusals == 3 && !fresh.Sectors.ContainsKey(0x0001) && !fresh.Sectors.ContainsKey(0x0000), "setting up is refused on a mouse that has a profile, and a save never writes the factory profile");
+        GMouse.Setup(fresh, fs, GMouse.Build(fs.Profile, new MouseSet { Dpi = 3200, Rate = 500, Stage = 3 }, 2));
+        var fs2 = GMouse.Read(fresh);
+        var dir = fresh.Sectors[0x0000];
+        Check(fs2.Sector == 1 && !fs2.Fresh && fs2.Savable && fs2.Dpi == 3200 && fs2.Rate == 500 && fresh.Reloads == 1 && GMouse.Valid(dir) && dir.Take(8).SequenceEqual(FakeHidpp.Hex("00010100FFFF0000")) && dir.Skip(8).Take(245).All(x => x == 0xFF) && fresh.Sectors[0x0101].SequenceEqual(freshFactory), "the first save writes the profile and the directory, and leaves the factory profile as it was");
 
         var headset = new FakeHeadset();
         var hs = GHeadset.Read(headset, true);

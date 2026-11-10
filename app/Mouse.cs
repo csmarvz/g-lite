@@ -57,7 +57,7 @@ static class GMouse
     {
         public int Dpi, Stage = -1, Rate;
         public int[] Dpis = new int[0], Stages = new int[0], Rates = new int[0];
-        public bool Onboard, ProfileOk, Flash;
+        public bool Onboard, ProfileOk, Flash, Fresh;
         public MouseLight Light;
         public EffectDef[] Effects = GMouse.Effects;
         public Dictionary<int, Dictionary<int, int>> Zones = new Dictionary<int, Dictionary<int, int>>();
@@ -69,7 +69,7 @@ static class GMouse
             get
             {
                 if (Flash) return Sector >= 2 && Sector < 32 && SectorSize == 512 && Current != null;
-                return Onboard && Format == 3 && SectorSize >= 0xF0 && Sector > 0 && Sector < 0x100;
+                return Onboard && Format == 3 && SectorSize >= 0xF0 && (Sector > 0 && Sector < 0x100 || Fresh);
             }
         }
         public bool Savable { get { return Writable && ProfileOk; } }
@@ -137,7 +137,7 @@ static class GMouse
 
     public static byte[] Factory(byte[] rom, byte[] current)
     {
-        if (rom[0] == 0 || rom[0] > 8 || StagesOf(rom).Length == 0) throw new Refused("Couldn't read the mouse's factory profile, not restoring it");
+        if (rom[0] == 0 || rom[0] > 8 || StagesOf(rom).Length == 0) throw new Refused("Couldn't read the mouse's factory profile, not restoring it (it starts " + BitConverter.ToString(rom, 0, Math.Min(13, rom.Length)).Replace("-", " ") + ")");
         var p = (byte[])rom.Clone();
         if (Valid(current)) Array.Copy(current, 0xA0, p, 0xA0, 0x30);
         Seal(p);
@@ -161,6 +161,11 @@ static class GMouse
     {
         if (sector <= 0 || sector >= 0x100) throw new Refused("Refusing to write that part of the mouse's memory");
         if (!Valid(p)) throw new Refused("Refusing to write a profile with a bad checksum");
+        Write(h, sector, p);
+    }
+
+    static void Write(Hidpp h, int sector, byte[] p)
+    {
         byte o = h.F(0x8100);
         h.Call(o, 6, (byte)(sector >> 8), (byte)sector, 0, 0, (byte)(p.Length >> 8), (byte)p.Length);
         for (int i = 0; i < p.Length; i += 16)
@@ -173,9 +178,31 @@ static class GMouse
         if (!ReadSector(h, sector, p.Length).SequenceEqual(p)) throw new IOException("The profile on the mouse didn't read back the same after saving");
     }
 
+    public static byte[] Directory(int size, int profiles)
+    {
+        if (profiles < 1 || profiles > 8 || size < 0xF0) throw new Refused("Refusing to build that profile directory");
+        var d = Enumerable.Repeat((byte)0xFF, size).ToArray();
+        for (int i = 0; i < profiles; i++) { d[4 * i] = 0; d[4 * i + 1] = (byte)(i + 1); d[4 * i + 2] = (byte)(i == 0 ? 1 : 0); d[4 * i + 3] = 0; }
+        d[4 * profiles + 2] = 0;
+        d[4 * profiles + 3] = 0;
+        Seal(d);
+        return d;
+    }
+
+    public static void Setup(Hidpp h, State s, byte[] p)
+    {
+        if (!s.Fresh || s.Format != 3 || p.Length != s.SectorSize) throw new Refused("Saving isn't supported on this mouse");
+        WriteSector(h, 1, p);
+        var directory = Directory(s.SectorSize, 1);
+        Write(h, 0x0000, directory);
+        try { h.Call(h.F(0x8100), 3, 0x00, 0x01); }
+        catch (HidppError) { }
+        if (h.Who != null) Log.Add(h.Who, "sent", "Onboard memory set up: the profile at 0001, built from the factory profile at " + s.Sector.ToString("X4") + ", and the directory at 0000", "ok");
+    }
+
     public static void Store(Hidpp h, State s, byte[] p)
     {
-        if (!s.Writable || p.Length != s.SectorSize) throw new Refused("Saving isn't supported on this mouse");
+        if (!s.Writable || s.Fresh || p.Length != s.SectorSize) throw new Refused("Saving isn't supported on this mouse");
         WriteSector(h, s.Sector, p);
         try { h.Call(h.F(0x8100), 3, s.Current); }
         catch (HidppError) { }
@@ -300,6 +327,15 @@ static class GMouse
                     s.ProfileOk = Valid(s.Profile) || s.Sector >= 0x100;
                     s.Stages = StagesOf(s.Profile);
                     if (logo >= 0 && logo < 2) s.Light = Decode(s.Profile.Skip(0xD0 + 11 * logo).Take(11).ToArray());
+                }
+                if (s.Sector >= 0x100 && s.Format == 3 && desc[3] >= 1 && s.SectorSize >= 0xF0 && s.SectorSize <= 0x1000)
+                {
+                    try
+                    {
+                        var directory = ReadSector(h, 0x0000, s.SectorSize);
+                        s.Fresh = Valid(directory) && U16(directory, 0) == 0xFFFF;
+                    }
+                    catch (HidppError e) { s.Fresh = e.Code == 2; }
                 }
                 s.Stage = h.Call(o, 0xB)[0];
                 if (s.Stage >= s.Stages.Length) s.Stage = -1;
