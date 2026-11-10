@@ -219,6 +219,7 @@ class Page515 : DevicePage
     string Saved { get { return "screen." + found.Slug; } }
     string Active { get { return "screen.on." + found.Slug; } }
     bool Screening { get { return cur.Effect == ScreenEffect; } }
+    bool leftScreen;
 
     static Model BoardFor(Found f) { return !f.IsG915 ? G515Board : f.Name.ToUpper().Contains("TKL") ? G915Tkl : G915Full; }
 
@@ -491,6 +492,7 @@ class Page515 : DevicePage
         shown = sent = null;
         released = false;
         Did("Screen effect off");
+        leftScreen = true;
         if (claimed) Do(h => { if (g915) G915.Release(h); else G515.Release(h); claimed = false; });
     }
 
@@ -922,6 +924,7 @@ class Page515 : DevicePage
         if (Screening)
         {
             ScreenOff();
+            dirty = true;
             cur = stored != null ? stored.Clone() : new Lighting();
         }
         if (g915) { Forget(); return; }
@@ -945,12 +948,14 @@ class Page515 : DevicePage
         idleLevel = 0;
         var l = cur.Clone();
         int b = brightness, seq = ++previewSeq;
+        bool repaint = leftScreen;
+        leftScreen = false;
         if (g915) { Apply(l, b, seq); return; }
         Do(h =>
         {
             if (seq != previewSeq) return;
             if (b != G515.Brightness(h)) G515.SetBrightness(h, b);
-            if (!claimed && l.Same(stored)) return;
+            if (!claimed && !repaint && l.Same(stored)) return;
             if (!claimed) { G515.Claim(h); claimed = true; }
             try { G515.Preview(h, l); }
             catch (HidppError e) { if (e.Code != 5) throw; G515.Claim(h); G515.Preview(h, l); }
@@ -1164,11 +1169,14 @@ class Page515 : DevicePage
         idleLevel = 0;
         int b = storedBrightness;
         var back = unknownStored || stored == null ? null : stored.Clone();
+        bool repaint = leftScreen && back != null;
+        leftScreen = false;
         previewSeq++;
         Do(h =>
         {
             if (b >= 0) G515.SetBrightness(h, b);
-            if (!claimed) return;
+            if (!claimed && !repaint) return;
+            if (!claimed) G515.Claim(h);
             try { if (back != null) G515.Preview(h, back); }
             catch (HidppError e) { if (e.Code != 5) throw; }
             G515.Release(h);
