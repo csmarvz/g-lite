@@ -217,6 +217,7 @@ class PageHeadset : DevicePage
     protected override void Calm()
     {
         if (mic != null) return;
+        if (state != null && !state.HasSidetone && !state.HasOff && state.Millivolts == 0) { Say("The headset didn't answer. Is it on?", true, Load, "Try again"); return; }
         Say(state == null ? "" : dirty ? "Applied to the headset" : "Matches the headset");
     }
 
