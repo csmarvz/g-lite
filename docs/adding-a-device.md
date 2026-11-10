@@ -7,6 +7,7 @@ What works, learned while adding the G305, G502 LIGHTSPEED, G510 and G512 X. Fol
 - Get a report from the device first (Report on its screen or info page). It lists the features, and every read G-Lite knows.
 - A feature G-Lite doesn't read yet: add its read-only functions to `Report.Reads` and a line in `Report.Section`, so every later report has them. Only functions known to only read.
 - With the device plugged in here, a read-only report can be run from a copy of the exe, without the user: load `GLite.exe` with reflection in Windows PowerShell (not pwsh), `Devices.Scan()`, pick the device, `new Hidpp(path, index, shortPath)`, `Report.Build`. Pass arguments as `[object[]]` and the `Found` as `.psobject.BaseObject`. Don't run it while the user makes a report in the app: both read the same device at the same time.
+- Text from a device can hold zero bytes (the G512 X's firmware name is "U1" and a 0x00). A zero byte hides everything after it in a Windows text box, so cut device strings at the first byte that isn't printable.
 - Note the facts in `docs/` (the device's ids, its feature list, what each byte means) with the sources.
 
 ## 2. Check what the user can see before building a screen

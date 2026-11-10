@@ -57,6 +57,12 @@ class Found
         return Regex.IsMatch(name ?? "", @"^(Logitech\s+)?(G\s?\d|G\s+PRO|PRO\b|ASTRO|A\d0\b)", RegexOptions.IgnoreCase);
     }
 
+    public static string FirmwareText(byte[] info)
+    {
+        var prefix = new string(info.Skip(1).Take(3).TakeWhile(b => b >= 0x20 && b < 0x7F).Select(b => (char)b).ToArray()).Trim();
+        return (prefix + " " + info[4].ToString("X2") + "." + info[5].ToString("X2") + " · build " + info[6].ToString("X2") + info[7].ToString("X2")).Trim();
+    }
+
     public static int FromVolts(int mv) { return Math.Max(0, Math.Min(100, (mv - 3500) * 100 / 600)); }
 }
 
@@ -272,7 +278,7 @@ static class Devices
             if (r != null && r[0] == 0) info = r;
         }
         if (info != null)
-            f.Firmware = new string(info.Skip(1).Take(3).Select(b => (char)b).ToArray()).Trim() + " " + info[4].ToString("X2") + "." + info[5].ToString("X2") + " · build " + info[6].ToString("X2") + info[7].ToString("X2");
+            f.Firmware = Found.FirmwareText(info);
         Battery(pr, f);
         return f;
     }

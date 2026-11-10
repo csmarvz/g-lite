@@ -700,6 +700,7 @@ class ReportView : Control
                 status.Set(err, true, null);
                 return;
             }
+            t = new string(t.Where(c => c >= ' ' || c == '\r' || c == '\n' || c == '\t').ToArray());
             text = t;
             box.Text = t;
             size.Text = (Encoding.UTF8.GetByteCount(t) / 1024.0).ToString("0.0", CultureInfo.InvariantCulture) + " KB · " + t.TrimEnd().Split('\n').Length + " lines";
