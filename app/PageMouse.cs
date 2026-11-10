@@ -219,6 +219,12 @@ class PageMouse : DevicePage
             rowDrops[i].Items.AddRange(actionNames);
             rowDrops[i].Picked += k => PickAction(row, k);
         }
+        buttonsBox.Paint += (s, e) =>
+        {
+            if (pressedRow < 0 || pressedRow >= 16 || !rowNames[pressedRow].Visible) return;
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            Ui.Fill(e.Graphics, new RectangleF(6 * Ui.K, (40 + 28 * pressedRow) * Ui.K, 360 * Ui.K, 26 * Ui.K), 6 * Ui.K, Theme.AccentBg, Theme.AccentBg);
+        };
         keyField = Ui.Add(buttonsBox, new Field { Visible = false }, 380, 40, 222, 26);
         keyField.Box.KeyDown += (s, e) => { e.Handled = e.SuppressKeyPress = true; Recorded(e.KeyData); };
         pressedTimer.Tick += (s, e) => { pressedTimer.Stop(); pressedRow = -1; SyncButtons(); };
@@ -471,14 +477,14 @@ class PageMouse : DevicePage
             rowNames[i].Visible = on;
             rowDrops[i].Visible = on && i != recording;
             if (!on) continue;
-            rowNames[i].Text = names[i] + (i == pressedRow ? "  ·  pressed" : "");
-            rowNames[i].ForeColor = i == pressedRow ? Theme.Accent : Theme.Text;
+            rowNames[i].Text = names[i];
             rowDrops[i].AccessibleName = names[i];
             int k = Bindings.Find(cur.Buttons[i]);
             rowDrops[i].Index = k;
             if (k < 0) rowDrops[i].Text = Bindings.Describe(cur.Buttons[i]);
             rowDrops[i].Enabled = can && recording < 0;
         }
+        buttonsBox.Invalidate(true);
         keyField.Visible = recording >= 0 && recording < count;
         if (keyField.Visible) keyField.Top = rowDrops[recording].Top;
         buttonsHint.Text = recording >= 0 ? "Press the keys, or Esc to cancel." : spying ? "Press a button on the mouse to find it." : "";

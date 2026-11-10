@@ -372,6 +372,7 @@ class Box : Control
         g.Clear(Parent != null ? Parent.BackColor : Theme.Bg);
         g.SmoothingMode = SmoothingMode.AntiAlias;
         Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 8 * Ui.K, Theme.Card, Theme.Border);
+        base.OnPaint(e);
     }
 }
 
