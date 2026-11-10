@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
 
 static class Report
 {
@@ -123,6 +125,69 @@ static class Report
             }
         }
         return text.ToString();
+    }
+
+    [DllImport("hid.dll")] static extern bool HidD_GetPreparsedData(SafeFileHandle handle, out IntPtr data);
+    [DllImport("hid.dll")] static extern bool HidD_FreePreparsedData(IntPtr data);
+    [DllImport("hid.dll")] static extern int HidP_GetCaps(IntPtr data, short[] caps);
+    [DllImport("hid.dll")] static extern int HidP_GetButtonCaps(int type, byte[] caps, ref short length, IntPtr data);
+    [DllImport("hid.dll")] static extern int HidP_GetValueCaps(int type, byte[] caps, ref short length, IntPtr data);
+    [DllImport("hid.dll", SetLastError = true)] static extern bool HidD_GetFeature(SafeFileHandle handle, byte[] buffer, int length);
+
+    public static string Plain(Found found, string screen)
+    {
+        var text = new StringBuilder();
+        Head(text, found, screen, () => "–");
+        var pid = Regex.Match(found.Path ?? "", @"PID_([0-9A-F]{4})", RegexOptions.IgnoreCase).Groups[1].Value;
+        foreach (var id in Devices.PlainIds(pid))
+        {
+            var name = Regex.Replace(id.Split('\\')[1], @"^VID_[0-9A-F]{4}&PID_[0-9A-F]{4}&?", "");
+            text.AppendLine();
+            text.AppendLine("collection " + (name == "" ? "main" : name));
+            Collection(text, Devices.PathOf(id));
+        }
+        return text.ToString();
+    }
+
+    static void Collection(StringBuilder text, string path)
+    {
+        bool shared = false;
+        var handle = Devices.OpenSync(path, 0xC0000000);
+        if (handle.IsInvalid) { handle.Dispose(); handle = Devices.OpenSync(path, 0); shared = true; }
+        using (handle)
+        {
+            IntPtr data;
+            if (handle.IsInvalid || !HidD_GetPreparsedData(handle, out data)) { text.AppendLine("can't open"); return; }
+            try
+            {
+                var caps = new short[32];
+                HidP_GetCaps(data, caps);
+                text.AppendLine(string.Format("usage={0:X4}:{1:X4} input={2} output={3} feature={4}{5}", (ushort)caps[1], (ushort)caps[0], caps[2], caps[3], caps[4], shared ? " · held by Windows" : ""));
+                var ids = new SortedSet<int>();
+                FeatureIds(ids, data, caps[29], true);
+                FeatureIds(ids, data, caps[30], false);
+                if (caps[4] <= 0 || ids.Count == 0) return;
+                text.AppendLine("feature ids=" + string.Join(" ", ids.Select(n => n.ToString("X2"))));
+                foreach (var reportId in ids)
+                {
+                    var buffer = new byte[caps[4]];
+                    buffer[0] = (byte)reportId;
+                    bool read = HidD_GetFeature(handle, buffer, buffer.Length);
+                    text.AppendLine("feature " + reportId.ToString("X2") + "=" + (read ? Hex(buffer, " ") : "error " + Marshal.GetLastWin32Error()));
+                }
+            }
+            finally { HidD_FreePreparsedData(data); }
+        }
+    }
+
+    static void FeatureIds(SortedSet<int> ids, IntPtr data, short count, bool buttons)
+    {
+        if (count <= 0) return;
+        var caps = new byte[72 * count];
+        short length = count;
+        int status = buttons ? HidP_GetButtonCaps(2, caps, ref length, data) : HidP_GetValueCaps(2, caps, ref length, data);
+        if (status != 0x00110000) return;
+        for (int i = 0; i < length; i++) ids.Add(caps[72 * i + 2]);
     }
 
     static byte[] ReadRegister(Hidpp device, byte subId, byte register, ref int misses)

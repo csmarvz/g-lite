@@ -239,6 +239,7 @@ static class SelfTest
         bool g9xRefused = false;
         try { G9x.Store(g9xSaver, g9xDirectory, g9xPage); } catch (Refused) { g9xRefused = true; }
         Check(g9xRefused && !g9xDirectory.Writable && g9xSaver.Writes.Count == 3, "the G9x never writes the directory page");
+        Check(new Found { Name = "G510 Gaming Keyboard" }.Short == "G510" && Found.LooksG("G510 Gaming Keyboard"), "the G510 gets a short name and counts as a G device");
         var g9xReport = Report.Registers(new FakeG9x(), new Found { Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Hidpp10 = true }, "PageMouse");
         Check(g9xReport.Contains("long 63=22 00 22 00 80 01") && g9xReport.Contains("page 02 · current") && g9xReport.Contains("page 04"), "the G9x report has its registers and profile pages");
         Check(new[] { "g515-tkl.json", "g915-tkl.json", "g915.json" }.All(x => Model.Load(x).Rows.Length > 5), "the key layouts load");

@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- The G510 and G510s show up, on the info page. Their report lists the keyboard's HID collections and reads its feature reports, to help add them. G-Lite sends them nothing.
+
 ## [0.0.12-alpha] - 2026-11-09
 
 ### Changed

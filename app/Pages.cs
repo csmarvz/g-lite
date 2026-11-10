@@ -509,7 +509,8 @@ class InfoPage : Control
             string t = null, err = null;
             try
             {
-                using (var h = new Hidpp(f.Path, f.Index, f.ShortPath))
+                if (f.PlainHid) t = Report.Plain(f, "none, not supported yet");
+                else using (var h = new Hidpp(f.Path, f.Index, f.ShortPath))
                     t = f.Hidpp10 ? Report.Registers(h, f, "none, not supported yet") : Report.Build(h, f, "none, not supported yet");
             }
             catch (Exception ex) { err = ex.Message; }

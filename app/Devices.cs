@@ -12,7 +12,7 @@ class Found
     public string Key, Path, ShortPath, Name = "", Kind = "device", Link = "", Firmware = "", Models = "";
     public byte Index;
     public int Wpid, Battery = -1, Millivolts;
-    public bool Approx, Asleep, Hidpp10;
+    public bool Approx, Asleep, Hidpp10, PlainHid;
     public int[] Features = new int[0];
 
     public bool Has(int f) { return Features.Contains(f); }
@@ -75,7 +75,9 @@ static class Devices
     [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)] static extern int CM_Get_Device_Interface_List_Size(out int length, ref Guid interfaceClass, string deviceId, int flags);
     [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)] static extern int CM_Get_Device_Interface_List(ref Guid interfaceClass, string deviceId, char[] buffer, int length, int flags);
 
-    static string[] HidIds()
+    static readonly Regex PlainModels = new Regex(@"PID_(C22D|C22E)", RegexOptions.IgnoreCase);
+
+    public static string[] HidIds()
     {
         var hid = new Guid(HidClass.Substring(2, 36));
         for (int attempt = 0; attempt < 3; attempt++)
@@ -94,6 +96,20 @@ static class Devices
     public static string PathOf(string id) { return @"\\?\" + id.Replace('\\', '#') + HidClass; }
 
     public static SafeFileHandle Open(string path) { return CreateFile(path, 0xC0000000, 3, IntPtr.Zero, 3, 0x40000000, IntPtr.Zero); }
+
+    public static SafeFileHandle OpenSync(string path, uint access) { return CreateFile(path, access, 3, IntPtr.Zero, 3, 0, IntPtr.Zero); }
+
+    public static string[] PlainIds(string pid) { return pid == "" ? new string[0] : HidIds().Where(id => id.Contains("PID_" + pid.ToUpperInvariant())).OrderBy(id => id).ToArray(); }
+
+    static List<Found> Plain()
+    {
+        return HidIds().Select(id => PlainModels.Match(id)).Where(m => m.Success).Select(m => m.Groups[1].Value.ToUpperInvariant()).Distinct().Select(pid =>
+        {
+            var paths = PlainIds(pid).Select(PathOf).ToList();
+            var name = Regex.Replace(paths.Select(Product).FirstOrDefault(Found.LooksG) ?? "G510 Gaming Keyboard", @"^Logitech\s+", "", RegexOptions.IgnoreCase);
+            return new Found { Key = "plain|" + pid, Path = paths[0], Name = name, Kind = "keyboard", Link = "USB", Index = 0xFF, Models = "USB " + pid, PlainHid = true };
+        }).ToList();
+    }
 
     class Port { public string Id, Group, Long, Short; }
 
@@ -119,7 +135,7 @@ static class Devices
         foreach (var id in HidIds())
             {
                 int col = id.IndexOf("&COL", StringComparison.OrdinalIgnoreCase), slash = id.LastIndexOf('\\'), amp = id.LastIndexOf('&');
-                if (col < 0 || slash < 0 || amp < slash) continue;
+                if (col < 0 || slash < 0 || amp < slash || PlainModels.IsMatch(id)) continue;
                 var group = id.Substring(0, col) + "|" + id.Substring(slash, amp - slash);
                 int page, len;
                 var path = PathOf(id);
@@ -137,6 +153,7 @@ static class Devices
         var tasks = Ports().Select(p => Task.Run(() => { try { return ScanPort(p); } catch (Exception) { return new List<Found>(); } })).ToArray();
         Task.WaitAll(tasks, 20000);
         var all = tasks.Where(t => t.IsCompleted).SelectMany(t => t.Result).ToList();
+        try { all.AddRange(Plain()); } catch (Exception) { }
         foreach (var f in all.Where(f => !f.Asleep && f.Wpid != 0)) Settings.Set("seen." + f.Wpid.ToString("X4"), f.Name + "|" + f.Kind);
         return all.Where(f => Found.LooksG(f.Name)).OrderBy(f => f.Kind == "keyboard" ? 0 : f.Kind == "mouse" ? 1 : f.Kind == "headset" ? 2 : 3).ThenBy(f => f.Name).ToList();
     }
