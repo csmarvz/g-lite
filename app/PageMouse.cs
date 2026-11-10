@@ -249,7 +249,8 @@ class PageMouse : DevicePage
         var saved = stored != null && stored.Buttons != null ? stored.Buttons : cur.Buttons;
         if (cur.Buttons == null) s.Buttons = null;
         else if (s.Buttons == null) s.Buttons = Bindings.Copy(saved);
-        else s.Buttons = Enumerable.Range(0, cur.Buttons.Length).Select(i => i > 0 && i < s.Buttons.Length ? s.Buttons[i] : (byte[])saved[i].Clone()).ToArray();
+        else s.Buttons = Enumerable.Range(0, cur.Buttons.Length).Select(i => i < s.Buttons.Length ? s.Buttons[i] : (byte[])saved[i].Clone()).ToArray();
+        if (s.Buttons != null && !Bindings.HasLeft(s.Buttons, ButtonCount)) s.Buttons[0] = (byte[])Bindings.Actions[0].Bytes.Clone();
         if (state != null && state.Dpis.Length > 0) s.Dpi = state.Dpis[Near(state.Dpis, s.Dpi)];
         s.Stage = state != null && Array.IndexOf(state.Stages, s.Dpi) >= 0 ? Array.IndexOf(state.Stages, s.Dpi) : cur.Stage;
         cur = s;
@@ -327,7 +328,7 @@ class PageMouse : DevicePage
         if (!viewPick.Visible && showingButtons) ShowView(false);
         viewPick.Index = showingButtons ? 1 : 0;
         SyncButtons();
-        saveBtn.Enabled = ready && state.Savable && dirty;
+        saveBtn.Enabled = ready && state.Savable && dirty && Keepable;
         saveBtn.Visible = ready ? state.Writable : mouse.HasFactory;
         backupsBtn.Visible = mouse.HasFactory || ready && state.Writable;
 
@@ -353,6 +354,7 @@ class PageMouse : DevicePage
     {
         if (state == null) { Say(""); return; }
         if (!state.ProfileOk) { ShowBroken(); return; }
+        if (!Keepable) { Say("No button is set to Left click. Set one to save.", true); return; }
         bool buttons = stored != null && !Bindings.Same(cur.Buttons, stored.Buttons);
         bool rate = stored != null && state.Onboard && cur.Rate > 0 && cur.Rate != stored.Rate;
         if (dirty && (buttons || rate)) { Say((buttons && rate ? "Buttons and report rate change" : buttons ? "Buttons change" : "Report rate changes") + " when saved to the mouse"); return; }
@@ -475,7 +477,7 @@ class PageMouse : DevicePage
             int k = Bindings.Find(cur.Buttons[i]);
             rowDrops[i].Index = k;
             if (k < 0) rowDrops[i].Text = Bindings.Describe(cur.Buttons[i]);
-            rowDrops[i].Enabled = can && i != 0 && recording < 0;
+            rowDrops[i].Enabled = can && recording < 0;
         }
         keyField.Visible = recording >= 0 && recording < count;
         if (keyField.Visible) keyField.Top = rowDrops[recording].Top;
@@ -493,7 +495,16 @@ class PageMouse : DevicePage
             keyField.Box.Focus();
             return;
         }
-        cur.Buttons[row] = (byte[])Bindings.Actions[k].Bytes.Clone();
+        Assign(row, (byte[])Bindings.Actions[k].Bytes.Clone());
+    }
+
+    protected override bool Keepable { get { return cur.Buttons == null || Bindings.HasLeft(cur.Buttons, ButtonCount) || stored == null || !Bindings.HasLeft(stored.Buttons, ButtonCount); } }
+
+    int ButtonCount { get { return state == null || cur.Buttons == null ? 0 : Math.Min(state.ButtonCount, cur.Buttons.Length); } }
+
+    void Assign(int row, byte[] binding)
+    {
+        cur.Buttons[row] = binding;
         ButtonsEdited();
     }
 
@@ -505,9 +516,9 @@ class PageMouse : DevicePage
         int usage = Usage(key);
         if (usage == 0) return;
         int modifiers = ((keys & Keys.Control) != 0 ? 1 : 0) | ((keys & Keys.Shift) != 0 ? 2 : 0) | ((keys & Keys.Alt) != 0 ? 4 : 0);
-        cur.Buttons[recording] = Bindings.Key(modifiers, usage);
+        int row = recording;
         recording = -1;
-        ButtonsEdited();
+        Assign(row, Bindings.Key(modifiers, usage));
     }
 
     static int Usage(Keys k)

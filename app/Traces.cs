@@ -354,6 +354,9 @@ static class Traces
             s.Press("Save to mouse");
             s.Pick("Preset", "Keys");
             s.Pick("View", "Buttons");
+            s.Pick("Left button", "Back");
+            s.Pick("Thumb, back", "Left click");
+            s.Press("Save to mouse");
             return s.Text;
         }
     }

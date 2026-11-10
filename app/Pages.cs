@@ -157,6 +157,8 @@ abstract class DevicePage : Control, IPage
 
     protected virtual bool Unsaved { get { return false; } }
 
+    protected virtual bool Keepable { get { return true; } }
+
     protected void Edited() { touched = true; ShowSets(); }
 
     protected virtual void Lost() { }
@@ -273,7 +275,7 @@ abstract class DevicePage : Control, IPage
         moreBtn.Text = naming ? "Cancel" : "…";
         bool picked = profiles.Index > 0;
         bool changed = picked && Changed();
-        updateBtn.Enabled = naming || changed;
+        updateBtn.Enabled = (naming || changed) && Keepable;
         if (picked) profiles.Text = profiles.Items[profiles.Index] + (changed ? " •" : "");
         profiles.Invalidate();
         undoBtn.Enabled = picked ? changed : Unsaved;

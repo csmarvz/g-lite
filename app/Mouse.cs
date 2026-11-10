@@ -40,6 +40,8 @@ static class Bindings
 
     static readonly string[] Modifiers = { "Ctrl", "Shift", "Alt", "Win" };
 
+    public static bool HasLeft(byte[][] buttons, int count) { return buttons != null && buttons.Take(count).Any(b => b != null && b.SequenceEqual(Actions[0].Bytes)); }
+
     public static int Find(byte[] b) { return b == null ? -1 : Array.FindIndex(Actions, a => a.Bytes.SequenceEqual(b)); }
 
     public static byte[] Key(int modifiers, int usage) { return new byte[] { 0x80, 0x02, (byte)modifiers, (byte)usage }; }
@@ -89,7 +91,9 @@ static class Bindings
 
     public static string[] Names(int wpid, int count)
     {
-        var known = wpid == 0x407F ? new[] { "Left button", "Right button", "Wheel click", "Thumb, back", "Thumb, front", "Sniper", "G7", "G8", "G9", "Wheel tilt right", "Wheel tilt left" } : new[] { "Left button", "Right button", "Wheel click" };
+        var known = wpid == 0x407F ? new[] { "Left button", "Right button", "Wheel click", "Thumb, back", "Thumb, front", "Sniper", "G7", "G8", "G9", "Wheel tilt right", "Wheel tilt left" }
+            : wpid == 0x4079 ? new[] { "Left button", "Right button", "Wheel click", "Left side, back", "Left side, front", "DPI, underneath", "Right side, back", "Right side, front" }
+            : new[] { "Left button", "Right button", "Wheel click" };
         return Enumerable.Range(0, count).Select(i => i < known.Length ? known[i] : "Button " + (i + 1)).ToArray();
     }
 }
@@ -235,7 +239,12 @@ static class GMouse
         p[1] = (byte)i;
         if (want.Rate > 0) p[0] = (byte)(1000 / want.Rate);
         if (want.Buttons != null)
-            for (int b = 1; b < Math.Min(want.Buttons.Length, 16); b++) want.Buttons[b].CopyTo(p, 0x20 + 4 * b);
+        {
+            int count = Math.Min(want.Buttons.Length, 16);
+            var before = Enumerable.Range(0, count).Select(k => p.Skip(0x20 + 4 * k).Take(4).ToArray()).ToArray();
+            if (Bindings.HasLeft(before, count) && !Bindings.HasLeft(want.Buttons, count)) throw new Refused("No button is set to Left click, not saving");
+            for (int b = 0; b < count; b++) want.Buttons[b].CopyTo(p, 0x20 + 4 * b);
+        }
         if (want.Light != null)
             for (int z = 0; z < Math.Min(zones, 2); z++)
             {
