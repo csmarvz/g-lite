@@ -47,7 +47,7 @@ class HeadsetPicture : Ctl
 
         float tx = x + w + 70 * K, top = Height / 2f - 46 * K;
         var big = Ui.Get(27f, Ui.Semi);
-        var text = battery < 0 ? "–" : (approx ? "~" : "") + battery + "%";
+        var text = battery < 0 ? "–" : battery + "%";
         Ui.Draw(g, text, big, new RectangleF(tx, top, Width - tx, 48 * K), Theme.Text, TextFormatFlags.Left | TextFormatFlags.Bottom);
         float bw = TextRenderer.MeasureText(g, text, big, Size.Empty, TextFormatFlags.NoPadding).Width;
         Ui.Draw(g, charging ? "charging" : "battery", Ui.Get(11f, Ui.Semi), new RectangleF(tx + bw + 8 * K, top, 120 * K, 44 * K), Theme.Dim, TextFormatFlags.Left | TextFormatFlags.Bottom);

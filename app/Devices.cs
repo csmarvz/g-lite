@@ -28,7 +28,7 @@ class Found
 
     public string Short { get { return Regex.Replace(Regex.Replace(Name, @"(\s+Wireless\s+RGB\s+Mechanical)?\s+Gaming\s+(Mouse|Headset|Keyboard)$", "", RegexOptions.IgnoreCase), @"\s+LIGHTSPEED\b", "", RegexOptions.IgnoreCase); } }
 
-    public string BatteryText { get { return Battery < 0 ? "" : (Approx ? "~" : "") + Battery + "%"; } }
+    public string BatteryText { get { return Battery < 0 ? "" : Battery + "%"; } }
 
     public static string ModelText(byte[] info)
     {
