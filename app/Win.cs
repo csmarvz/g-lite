@@ -90,6 +90,13 @@ static class Win
         try { DwmSetWindowAttribute(f.Handle, 34, ref v, 4); } catch (DllNotFoundException) { }
     }
 
+    public static bool Corners(IntPtr handle, Color border)
+    {
+        int round = 2, color = border.R | border.G << 8 | border.B << 16;
+        try { return DwmSetWindowAttribute(handle, 33, ref round, 4) == 0 && DwmSetWindowAttribute(handle, 34, ref color, 4) == 0; }
+        catch (DllNotFoundException) { return false; }
+    }
+
     public static void Round(Form f)
     {
         f.HandleCreated += (s, e) =>

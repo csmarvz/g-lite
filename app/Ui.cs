@@ -885,8 +885,17 @@ class MenuLook : ToolStripProfessionalRenderer
 
     protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
     {
+        var row = e.Item as MenuRow;
+        if (row != null && e.Text == row.ShortcutKeyDisplayString) { row.Draw(e.Graphics, e.TextRectangle); return; }
+        if (row != null) row.TextLeft = e.TextRectangle.Left;
         e.TextColor = e.Item.Enabled ? Theme.Text : Theme.Dim;
         base.OnRenderItemText(e);
+    }
+
+    protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
+    {
+        if (Equals(e.ToolStrip.Tag, "round") && Win.Rounded) return;
+        base.OnRenderToolStripBorder(e);
     }
 
     protected override void OnRenderItemCheck(ToolStripItemImageRenderEventArgs e)
@@ -1011,5 +1020,31 @@ class TrayTip : Form
             if (HasIcon(rows[i])) DrawBattery(g, Width - pad - width - S(6) - S(18), y + (font.Height - S(9)) / 2, rows[i][2]);
         }
         if (!Win.Rounded) using (var pen = new Pen(Theme.Border)) g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+    }
+}
+
+class MenuRow : ToolStripMenuItem
+{
+    string value = "";
+    public int Level = -1;
+    public int TextLeft;
+
+    public MenuRow(string name) : base(name) { ShowShortcutKeys = true; }
+
+    public string Value
+    {
+        get { return value; }
+        set { this.value = value; ShortcutKeyDisplayString = (Level >= 0 ? "  " : "") + value; }
+    }
+
+    public void Draw(Graphics g, Rectangle area)
+    {
+        float k = Owner != null ? Owner.DeviceDpi / 96f : 1;
+        var flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix;
+        var size = TextRenderer.MeasureText(g, value, Font, Size.Empty, flags);
+        int right = (Owner != null ? Owner.Width - 2 * Bounds.X : Width) - TextLeft - (int)(2 * k), y = area.Top + (area.Height - size.Height) / 2;
+        var color = Enabled ? Theme.Text : Theme.Dim;
+        TextRenderer.DrawText(g, value, Font, new Point(right - size.Width, y), color, flags);
+        if (Level >= 0) Ui.Battery(g, right - size.Width - (int)(5 * k) - Ui.BatteryWidth(k), y + (size.Height - Ui.BatteryHeight(k)) / 2, Level, k, color);
     }
 }

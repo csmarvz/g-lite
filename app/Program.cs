@@ -498,6 +498,12 @@ class MainWindow : Form
         ShowPanel();
     }
 
+    public void OpenSettings()
+    {
+        ShowPanel();
+        ShowSettings();
+    }
+
     public void ShowPanel()
     {
         if (WindowState == FormWindowState.Minimized) { Show(); WindowState = FormWindowState.Normal; }
@@ -550,7 +556,8 @@ class MainWindow : Form
             var tray = new NotifyIcon { Visible = true };
             tray.ContextMenuStrip = new ContextMenuStrip { Renderer = Ui.Menus, ShowImageMargin = false, BackColor = Theme.Card };
             var menu = tray.ContextMenuStrip;
-            var usage = new ToolStripMenuItem("") { Enabled = false };
+            menu.Tag = "round";
+            menu.Opened += (s, e) => Win.Corners(menu.Handle, Theme.Border);
             var self = System.Diagnostics.Process.GetCurrentProcess();
             var lastCpu = TimeSpan.Zero;
             var lastAt = self.StartTime.ToUniversalTime();
@@ -564,11 +571,7 @@ class MainWindow : Form
                 lastAt = now;
                 return percent;
             };
-            Func<string> usageText = () => "CPU " + measure().ToString("0.0") + "% · RAM " + (Win.PrivateMemory() >> 20) + " MB";
             Func<Found, string> state = f => f.Asleep ? "asleep" : f.Battery >= 0 ? f.BatteryText : "";
-            Func<Found, string> line = f => f.Short + (state(f) == "" ? "" : " · " + state(f));
-            var live = new System.Windows.Forms.Timer { Interval = 1000 };
-            live.Tick += (s, e) => usage.Text = usageText();
             var tip = new TrayTip();
             tip.Rows = () =>
             {
@@ -580,26 +583,29 @@ class MainWindow : Form
                 if (panel.Available != null) rows.Add(new[] { "Update", panel.Available });
                 return rows;
             };
-            tray.MouseMove += (s, e) => tip.Moved();
+            tray.MouseMove += (s, e) => { if (!menu.Visible) tip.Moved(); };
             tray.MouseDown += (s, e) => tip.Gone();
             Action fill = () =>
             {
                 menu.Items.Clear();
-                usage.Text = usageText();
-                menu.Items.Add(usage);
-                menu.Items.Add(new ToolStripSeparator());
                 foreach (var f in panel.Listed)
                 {
                     var key = f.Key;
-                    menu.Items.Add(line(f), null, (s, e) => panel.Open(key));
+                    var row = new MenuRow(f.Short) { Level = f.Asleep ? -1 : f.Battery, Value = state(f) };
+                    row.Click += (s, e) => panel.Open(key);
+                    menu.Items.Add(row);
                 }
                 if (panel.Listed.Count > 0) menu.Items.Add(new ToolStripSeparator());
-                menu.Items.Add("Open", null, (s, e) => panel.ShowPanel());
-                menu.Items.Add("Quit", null, (s, e) => { tray.Visible = false; Application.Exit(); });
+                menu.Items.Add("Scan for devices", null, (s, e) => panel.Rescan());
+                menu.Items.Add("Settings", null, (s, e) => panel.OpenSettings());
+                menu.Items.Add("Quit G-Lite", null, (s, e) => { tray.Visible = false; Application.Exit(); });
+                float k = Win.At(Cursor.Position);
+                menu.Padding = new Padding((int)(4 * k), (int)(6 * k), (int)(4 * k), (int)(6 * k));
+                menu.Items.Insert(0, new ToolStripLabel { AutoSize = false, Height = (int)(5 * k), Enabled = false });
+                foreach (ToolStripItem item in menu.Items) if (item is ToolStripMenuItem) item.Padding = new Padding((int)(6 * k), (int)(3 * k), (int)(6 * k), (int)(3 * k));
             };
             fill();
-            menu.Opening += (s, e) => { fill(); live.Start(); e.Cancel = false; };
-            menu.Closed += (s, e) => live.Stop();
+            menu.Opening += (s, e) => { tip.Gone(); fill(); e.Cancel = false; };
             tray.MouseClick += (s, e) => { if (e.Button == MouseButtons.Left) { if (panel.Visible && panel.WindowState != FormWindowState.Minimized) panel.HidePanel(); else panel.ShowPanel(); } };
             panel.CreateControl();
             panel.Handle.ToString();
