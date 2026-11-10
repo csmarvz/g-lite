@@ -423,7 +423,7 @@ class FakeHeadset : Hidpp
 
 class KeyboardView : Form
 {
-    const float U = 40, Pad = 16, Head = 30;
+    const float U = 40, Pad = 16, Head = 40;
     [DllImport("user32.dll")] static extern bool ReleaseCapture();
     [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, IntPtr l);
     readonly FakeHidpp kb;
@@ -465,7 +465,14 @@ class KeyboardView : Form
             var l = Enumerable.Range(0, Game.W).Where(c => Pad + (c + 0.5f) * U >= k.Item1.X && Pad + (c + 0.5f) * U < k.Item1.Right + 4).Select(c => new Point(c, r)).ToList();
             return l.Count > 0 ? l : null;
         }).ToArray();
-        Text = model.Name + " (demo)";
+        Text = model.Name;
+        mines = Button("Mines", () => Play(() => new Mines(keys.Select(k => k.Item1).ToArray(), cells)));
+        blocks = Button("Blocks", () => Play(() => new Blocks()));
+        snake = Button("Snake", () => Play(() => new Snake(cells)));
+        stop = Button("Stop", () => { game = null; Sync(); });
+        close = Button("", Hide);
+        close.Icon = "close";
+        close.AccessibleName = "Close";
         BackColor = Color.FromArgb(28, 28, 28);
         DoubleBuffered = true;
         FormBorderStyle = FormBorderStyle.None;
@@ -482,11 +489,6 @@ class KeyboardView : Form
             if (e.Button != MouseButtons.Left) return;
             float ex = e.X / scale, ey = e.Y / scale;
             if (ey >= Head + Pad / 2) { ripples.Add(Tuple.Create(new PointF(ex, ey), clock.Elapsed.TotalSeconds)); return; }
-            if (ex > bw - Pad - 20) { Hide(); return; }
-            if (game != null) { if (ex > bw - Pad - 70) game = null; return; }
-            if (ex > bw - Pad - 70) { Play(() => new Snake(cells)); return; }
-            if (ex > bw - Pad - 125) { Play(() => new Blocks()); return; }
-            if (ex > bw - Pad - 180) { Play(() => new Mines(keys.Select(k => k.Item1).ToArray(), cells)); return; }
             ReleaseCapture();
             SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero);
         };
@@ -496,7 +498,40 @@ class KeyboardView : Form
     {
         scale = ns;
         ClientSize = new Size((int)Math.Ceiling(bw * scale), (int)Math.Ceiling(bh * scale));
+        float right = bw - 12;
+        Place(close, ref right, 36);
+        right -= 4;
+        float playing = right;
+        Place(snake, ref right, 72);
+        Place(blocks, ref right, 72);
+        Place(mines, ref right, 72);
+        Place(stop, ref playing, 72);
+        Sync();
         Invalidate();
+    }
+
+    readonly Btn mines, blocks, snake, stop, close;
+
+    Btn Button(string text, Action click)
+    {
+        var button = new Btn { Look = Look.Ghost, Text = text, AccessibleName = text };
+        button.Click += (s, e) => click();
+        Controls.Add(button);
+        return button;
+    }
+
+    void Place(Btn button, ref float right, float width)
+    {
+        right -= width;
+        button.Bounds = new Rectangle((int)Math.Round(right * scale), (int)Math.Round(10 * scale), (int)Math.Round(width * scale), (int)Math.Round(28 * scale));
+    }
+
+    void Sync()
+    {
+        if (mines == null) return;
+        bool on = game != null;
+        foreach (var button in new[] { mines, blocks, snake }) if (button.Visible == on) button.Visible = !on;
+        if (stop.Visible != on) stop.Visible = on;
     }
 
     protected override void WndProc(ref Message m)
@@ -509,6 +544,7 @@ class KeyboardView : Form
     {
         make = m;
         game = m();
+        Sync();
         nextStep = clock.Elapsed.TotalMilliseconds + game.Interval;
         Activate();
     }
@@ -524,7 +560,7 @@ class KeyboardView : Form
     protected override bool ProcessCmdKey(ref Message msg, Keys key)
     {
         if (game == null) return base.ProcessCmdKey(ref msg, key);
-        if (key == Keys.Escape) game = null; else if (game.Over) Play(make); else game.Key(key);
+        if (key == Keys.Escape) { game = null; Sync(); } else if (game.Over) Play(make); else game.Key(key);
         Invalidate();
         return true;
     }
@@ -626,9 +662,7 @@ class KeyboardView : Form
         using (var f = Win.Px(9, 1))
         using (var b = new SolidBrush(Color.FromArgb(150, 150, 150)))
         {
-            g.DrawString(Text, f, b, Pad, 12);
-            g.DrawString("✕", f, b, bw - Pad - 14, 12);
-            using (var a = new SolidBrush(Color.FromArgb(63, 169, 138))) g.DrawString(game == null ? "Mines      Blocks      Snake" : "Stop", f, a, bw - Pad - (game == null ? 175 : 66), 12);
+            g.DrawString(Text, f, b, Pad, 17);
         }
         string what = def == null ? "factory animation (approximation)" : def.Name;
         if (id == 0x17) what += " — click the keys";

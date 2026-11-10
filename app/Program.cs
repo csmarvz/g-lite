@@ -40,7 +40,7 @@ class MainWindow : Form
     readonly Label updText, checkText, themeHint;
     readonly Seg themeSeg;
     readonly Toggle runToggle, checkToggle, autoToggle;
-    readonly KeyboardView view;
+    KeyboardView view;
     readonly bool demo;
     string available;
     bool wantView, moved;
@@ -69,7 +69,16 @@ class MainWindow : Form
         Ui.Style(side, () => side.BackColor = Theme.Side);
         side.Paint += (s, e) => { using (var p = new Pen(Theme.Border)) e.Graphics.DrawLine(p, side.Width - 1, 0, side.Width - 1, side.Height); };
         side.MouseDown += Drag;
-        Ui.Add(side, new Brand { Tag2 = demo ? "demo" : "" }, 10, 12, SideIn, 34).MouseDown += Drag;
+        Ui.Add(side, new Brand { Tag2 = demo ? "demo" : "" }, 10, 12, SideIn, 34).MouseDown += (s, e) =>
+        {
+            if (e.Button != MouseButtons.Left) return;
+            var at = Location;
+            bool was = moved;
+            Drag(s, e);
+            if (Location != at) return;
+            moved = was;
+            if (e.X < 60 * Ui.K) ToggleView();
+        };
         Ui.Text(side, "DEVICES", 18, 58, () => Theme.Dim, 8.25f, Ui.Semi).MouseDown += Drag;
         noneText = Ui.Text(side, "Looking…", 18, 82, () => Theme.Dim, 9f);
 
@@ -430,6 +439,16 @@ class MainWindow : Form
             var v = k == null ? null : k.GetValue("GLite") as byte[];
             return v == null || v.Length == 0 || (v[0] & 1) == 0;
         }
+    }
+
+    void ToggleView()
+    {
+        if (view == null)
+        {
+            view = new KeyboardView(new FakeHidpp(), Model.Load("g515-tkl.json"));
+            view.VisibleChanged += (s, e) => wantView = view.Visible;
+        }
+        if (view.Visible) view.Hide(); else ShowView();
     }
 
     void ShowView()

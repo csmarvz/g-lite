@@ -20,7 +20,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `G515`: the effect table, profile encode and decode, CRC32, onboard file read and write, preview
   - `G915`: live lighting on the G915 and G915 TKL (0x8071 keys and logo clusters, the older effect ids). No saving yet. See `docs/G915.md`.
 - `app/Program.cs`:
-  - `MainWindow`: the device sidebar, one page per found device, rescans on plug and unplug, the Settings and Logs screens, updates and run on startup
+  - `MainWindow`: the device sidebar, one page per found device, rescans on plug and unplug, the Settings and Logs screens, updates and run on startup. A click on the G-Lite title (not a drag) opens `KeyboardView` with the games on its own `FakeHidpp`; it doesn't look clickable on purpose
   - `Main`: the tray icon, its menu (the devices with their battery, Scan for devices, Settings, Quit G-Lite: `MenuRow` puts the value in the shortcut column) and its hover popup (`TrayTip` in `app/Ui.cs`: CPU, RAM, each device with its battery, a new version), the single-instance mutex and `--demo`
   - `Support`: the device table. Each entry says which devices it matches (`Found.IsG515`, `IsMouse`…), which screen they get, how to make it (with its driver), and the fake `--demo` uses. The first match wins; asleep or unmatched devices get `InfoPage`. To add a device that works like one already supported, add an entry. For a new protocol, add a driver (like `IMouse`) and an entry.
 - `app/Devices.cs`:
