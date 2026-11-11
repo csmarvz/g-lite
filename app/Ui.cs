@@ -104,7 +104,19 @@ static class Ui
         return l;
     }
 
-    public const int Charging = 1000;
+    public const int Charging = 1000, Asleep = -2;
+    static readonly string[] Moon =
+    {
+        "..###......#....",
+        ".##.......###...",
+        "##.........#....",
+        "##..............",
+        "##..............",
+        "##............#.",
+        "###....#........",
+        ".######....#....",
+        "..####.........."
+    };
     static readonly int[] Spark = { 4, 5, 3, 4, 2, 3, 1, 5, 3, 4, 2, 3, 1, 2 };
 
     public static int BatteryWidth(float k) { return (int)Math.Round(16 * k) + (int)Math.Round(2 * k); }
@@ -117,6 +129,22 @@ static class Ui
         var ink = color ?? Theme.Text;
         var smoothing = g.SmoothingMode;
         g.SmoothingMode = SmoothingMode.None;
+        if (percent == Asleep)
+        {
+            using (var brush = new SolidBrush(ink))
+                for (int row = 0; row < Moon.Length; row++)
+                    for (int from = 0; from < Moon[row].Length; from++)
+                    {
+                        if (Moon[row][from] != '#') continue;
+                        int to = from;
+                        while (to + 1 < Moon[row].Length && Moon[row][to + 1] == '#') to++;
+                        int cell = Math.Max(1, (int)Math.Round(k)), cellLeft = (int)Math.Round(from * k);
+                        g.FillRectangle(brush, x + cellLeft, y + (int)Math.Round(row * k), (int)Math.Round(to * k) + cell - cellLeft, cell);
+                        from = to;
+                    }
+            g.SmoothingMode = smoothing;
+            return;
+        }
         using (var outline = new SolidBrush(ink))
         {
             g.FillRectangle(outline, x, y, width, line);
@@ -817,7 +845,7 @@ class DevItem : Ctl
         var font = Ui.Get(8.6f, Ui.Regular);
         float top = Height / 2f + 1;
         Ui.Draw(g, Sub, font, new RectangleF(x, top, Width - x - 4 * K, Height / 2f), Theme.Dim, TextFormatFlags.Top | TextFormatFlags.EndEllipsis);
-        if (Level < 0) return;
+        if (Level == -1) return;
         x += TextRenderer.MeasureText(g, Sub, font, Size.Empty, TextFormatFlags.NoPadding).Width + 6 * K;
         Ui.Battery(g, x, top + (font.Height - Ui.BatteryHeight(K)) / 2f, Level, K, Theme.Dim);
         x += Ui.BatteryWidth(K) + 5 * K;
@@ -842,7 +870,7 @@ class SubLine : Control
         this.level = level;
         this.value = value;
         this.after = after;
-        AccessibleName = before + (level >= 0 ? " · " + value : "") + after;
+        AccessibleName = before + (level == Ui.Asleep ? " · asleep" : level >= 0 ? " · " + value : "") + after;
         Invalidate();
     }
 
@@ -859,7 +887,7 @@ class SubLine : Control
             x += TextRenderer.MeasureText(g, s, font, Size.Empty, flags).Width;
         };
         text(before);
-        if (level >= 0)
+        if (level != -1)
         {
             x += 6 * k;
             Ui.Battery(g, (int)x, y + (font.Height - Ui.BatteryHeight(k)) / 2, level, k, Theme.Dim);
@@ -1005,7 +1033,7 @@ class TrayTip : Form
         foreach (var r in rows)
         {
             nameWidth = Math.Max(nameWidth, TextRenderer.MeasureText(r[0], font, Size.Empty, flags).Width);
-            valueWidth = Math.Max(valueWidth, TextRenderer.MeasureText(r[1], font, Size.Empty, flags).Width + (HasIcon(r) ? S(18) + S(6) : 0));
+            valueWidth = Math.Max(valueWidth, TextRenderer.MeasureText(r[1], font, Size.Empty, flags).Width + (HasIcon(r) ? S(18) + (r[1] == "" ? 0 : S(6)) : 0));
         }
         var size = new Size(pad * 2 + nameWidth + gap + valueWidth, S(8) * 2 + rowHeight * rows.Count);
         var area = Screen.FromPoint(anchor).WorkingArea;
@@ -1042,7 +1070,7 @@ class TrayTip : Form
             TextRenderer.DrawText(g, rows[i][0], font, new Point(pad, y), Theme.Dim, flags);
             var width = TextRenderer.MeasureText(rows[i][1], font, Size.Empty, flags).Width;
             TextRenderer.DrawText(g, rows[i][1], font, new Point(Width - pad - width, y), Theme.Text, flags);
-            if (HasIcon(rows[i])) DrawBattery(g, Width - pad - width - S(6) - S(18), y + (font.Height - S(9)) / 2, rows[i][2]);
+            if (HasIcon(rows[i])) DrawBattery(g, Width - pad - width - (rows[i][1] == "" ? 0 : S(6)) - S(18), y + (font.Height - S(9)) / 2, rows[i][2]);
         }
         if (!Win.Rounded) using (var pen = new Pen(Theme.Border)) g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
     }
@@ -1059,7 +1087,7 @@ class MenuRow : ToolStripMenuItem
     public string Value
     {
         get { return value; }
-        set { this.value = value; ShortcutKeyDisplayString = (Level >= 0 ? "  " : "") + value; }
+        set { this.value = value; ShortcutKeyDisplayString = (Level != -1 ? "  " : "") + value; }
     }
 
     public void Draw(Graphics g, Rectangle area)
@@ -1070,6 +1098,6 @@ class MenuRow : ToolStripMenuItem
         int right = (Owner != null ? Owner.Width - 2 * Bounds.X : Width) - TextLeft - (int)(2 * k), y = area.Top + (area.Height - size.Height) / 2;
         var color = Enabled ? Theme.Text : Theme.Dim;
         TextRenderer.DrawText(g, value, Font, new Point(right - size.Width, y), color, flags);
-        if (Level >= 0) Ui.Battery(g, right - size.Width - (int)(5 * k) - Ui.BatteryWidth(k), y + (size.Height - Ui.BatteryHeight(k)) / 2, Level, k, color);
+        if (Level != -1) Ui.Battery(g, right - size.Width - (value == "" ? 0 : (int)(5 * k)) - Ui.BatteryWidth(k), y + (size.Height - Ui.BatteryHeight(k)) / 2, Level, k, color);
     }
 }

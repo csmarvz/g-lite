@@ -662,7 +662,7 @@ class MainWindow : Form
                 lastAt = now;
                 return percent;
             };
-            Func<Found, string> state = f => f.Asleep ? "asleep" : f.Battery >= 0 ? f.BatteryText : "";
+            Func<Found, string> state = f => f.Asleep ? "" : f.Battery >= 0 ? f.BatteryText : "";
             var tip = new TrayTip();
             tip.Rows = () =>
             {
@@ -670,7 +670,7 @@ class MainWindow : Form
                 if (demo) rows.Add(new[] { "G-Lite", "demo" });
                 rows.Add(new[] { "CPU", measure().ToString("0.0") + "%" });
                 rows.Add(new[] { "RAM", (Win.PrivateMemory() >> 20) + " MB" });
-                rows.AddRange(panel.Listed.Select(f => new[] { f.Short, state(f), f.Level >= 0 ? f.Level.ToString() : "" }));
+                rows.AddRange(panel.Listed.Select(f => new[] { f.Short, state(f), f.Level != -1 ? f.Level.ToString() : "" }));
                 if (panel.Available != null) rows.Add(new[] { "Update", panel.Available });
                 return rows;
             };

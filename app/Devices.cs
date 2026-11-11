@@ -31,7 +31,7 @@ class Found
 
     public string BatteryText { get { return Battery < 0 ? "" : Battery + "%"; } }
 
-    public int Level { get { return Asleep || Battery < 0 ? -1 : Battery + (Charging ? Ui.Charging : 0); } }
+    public int Level { get { return Asleep ? Ui.Asleep : Battery < 0 ? -1 : Battery + (Charging ? Ui.Charging : 0); } }
 
     public static string ModelText(byte[] info)
     {
@@ -50,7 +50,7 @@ class Found
     {
         get
         {
-            return Asleep ? Link + " · asleep" : Link;
+            return Link;
         }
     }
 

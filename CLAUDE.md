@@ -50,7 +50,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/Headset.cs`: `GHeadset`, which reads and sets sidetone (0x8300) and the auto-off time (0x1F20 fn 1 and fn 2, in minutes, 0 is never). 0x1F20 fn 0 is the battery voltage, and byte 2 is 3 while charging.
 - `app/Ui.cs`:
   - `Theme`: dark, light or system, from `theme=` in `settings.txt`
-  - The owner-drawn controls. They read `Theme` when they paint. Labels and containers register their colours with `Ui.Style`, so a theme change restyles them. `Ui.Battery` draws the battery icon (whole pixels, no anti-aliasing), with a spark cut out of it while charging (the level plus `Ui.Charging`), for the tray popup, the device list (`DevItem`) and the device screen's second line (`SubLine`).
+  - The owner-drawn controls. They read `Theme` when they paint. Labels and containers register their colours with `Ui.Style`, so a theme change restyles them. `Ui.Battery` draws the battery icon (whole pixels, no anti-aliasing), with a spark cut out of it while charging (the level plus `Ui.Charging`) and a moon with stars instead for an asleep device (`Ui.Asleep`), for the tray popup, the device list (`DevItem`) and the device screen's second line (`SubLine`).
 - `app/Fake.cs`:
   - `Model`: loads `models/*.json`, which are embedded resources
   - `FakeHidpp`: an in-memory G515
