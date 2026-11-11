@@ -844,12 +844,20 @@ class DevItem : Ctl
         Ui.Draw(g, Title, Ui.Get(9.75f, Ui.Semi), new RectangleF(x, 0, Width - x - 4 * K, Height / 2f + 1), Theme.Text, TextFormatFlags.Bottom | TextFormatFlags.EndEllipsis);
         var font = Ui.Get(8.6f, Ui.Regular);
         float top = Height / 2f + 1;
-        Ui.Draw(g, Sub, font, new RectangleF(x, top, Width - x - 4 * K, Height / 2f), Theme.Dim, TextFormatFlags.Top | TextFormatFlags.EndEllipsis);
-        if (Level == -1) return;
-        x += TextRenderer.MeasureText(g, Sub, font, Size.Empty, TextFormatFlags.NoPadding).Width + 6 * K;
-        Ui.Battery(g, x, top + (font.Height - Ui.BatteryHeight(K)) / 2f, Level, K, Theme.Dim);
-        x += Ui.BatteryWidth(K) + 5 * K;
-        Ui.Draw(g, Value, font, new RectangleF(x, top, Width - x - 4 * K, Height / 2f), Theme.Dim, TextFormatFlags.Top | TextFormatFlags.EndEllipsis);
+        float right = Width - 10 * K;
+        if (Level != -1)
+        {
+            right -= Ui.BatteryWidth(K);
+            Ui.Battery(g, right, top + (font.Height - Ui.BatteryHeight(K)) / 2f, Level, K, Theme.Dim);
+            if (Value != "")
+            {
+                float valueWidth = TextRenderer.MeasureText(g, Value, font, Size.Empty, TextFormatFlags.NoPadding).Width;
+                right -= 5 * K + valueWidth;
+                Ui.Draw(g, Value, font, new RectangleF(right, top, valueWidth + 4 * K, Height / 2f), Theme.Dim, TextFormatFlags.Top);
+            }
+            right -= 6 * K;
+        }
+        Ui.Draw(g, Sub, font, new RectangleF(x, top, right - x, Height / 2f), Theme.Dim, TextFormatFlags.Top | TextFormatFlags.EndEllipsis);
     }
 }
 
@@ -890,9 +898,13 @@ class SubLine : Control
         if (level != -1)
         {
             x += 6 * k;
+            if (value != "")
+            {
+                text(value);
+                x += 5 * k;
+            }
             Ui.Battery(g, (int)x, y + (font.Height - Ui.BatteryHeight(k)) / 2, level, k, Theme.Dim);
-            x += Ui.BatteryWidth(k) + 5 * k;
-            text(value);
+            x += Ui.BatteryWidth(k);
         }
         text(after);
     }
@@ -1030,11 +1042,13 @@ class TrayTip : Form
         nameWidth = 0;
         rowHeight = font.Height + S(4);
         var flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine;
-        foreach (var r in rows)
-        {
-            nameWidth = Math.Max(nameWidth, TextRenderer.MeasureText(r[0], font, Size.Empty, flags).Width);
-            valueWidth = Math.Max(valueWidth, TextRenderer.MeasureText(r[1], font, Size.Empty, flags).Width + (HasIcon(r) ? S(18) + (r[1] == "" ? 0 : S(6)) : 0));
-        }
+        using (var surface = new Bitmap(1, 1))
+        using (var g = Graphics.FromImage(surface))
+            foreach (var r in rows)
+            {
+                nameWidth = Math.Max(nameWidth, TextRenderer.MeasureText(g, r[0], font, Size.Empty, flags).Width);
+                valueWidth = Math.Max(valueWidth, TextRenderer.MeasureText(g, r[1], font, Size.Empty, flags).Width + (HasIcon(r) ? S(18) + (r[1] == "" ? 0 : S(5)) : 0));
+            }
         var size = new Size(pad * 2 + nameWidth + gap + valueWidth, S(8) * 2 + rowHeight * rows.Count);
         var area = Screen.FromPoint(anchor).WorkingArea;
         int x = Math.Max(area.Left, Math.Min(area.Right - size.Width, anchor.X - size.Width / 2));
@@ -1068,9 +1082,14 @@ class TrayTip : Form
         {
             int y = top + i * rowHeight;
             TextRenderer.DrawText(g, rows[i][0], font, new Point(pad, y), Theme.Dim, flags);
-            var width = TextRenderer.MeasureText(rows[i][1], font, Size.Empty, flags).Width;
-            TextRenderer.DrawText(g, rows[i][1], font, new Point(Width - pad - width, y), Theme.Text, flags);
-            if (HasIcon(rows[i])) DrawBattery(g, Width - pad - width - (rows[i][1] == "" ? 0 : S(6)) - S(18), y + (font.Height - S(9)) / 2, rows[i][2]);
+            var width = TextRenderer.MeasureText(g, rows[i][1], font, Size.Empty, flags).Width;
+            int right = Width - pad;
+            if (HasIcon(rows[i]))
+            {
+                DrawBattery(g, right - S(18), y + (font.Height - S(9)) / 2, rows[i][2]);
+                right -= S(18) + S(5);
+            }
+            TextRenderer.DrawText(g, rows[i][1], font, new Point(right - width, y), Theme.Text, flags);
         }
         if (!Win.Rounded) using (var pen = new Pen(Theme.Border)) g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
     }
@@ -1097,7 +1116,11 @@ class MenuRow : ToolStripMenuItem
         var size = TextRenderer.MeasureText(g, value, Font, Size.Empty, flags);
         int right = (Owner != null ? Owner.Width - 2 * Bounds.X : Width) - TextLeft - (int)(2 * k), y = area.Top + (area.Height - size.Height) / 2;
         var color = Enabled ? Theme.Text : Theme.Dim;
+        if (Level != -1)
+        {
+            Ui.Battery(g, right - Ui.BatteryWidth(k), y + (size.Height - Ui.BatteryHeight(k)) / 2, Level, k, color);
+            right -= Ui.BatteryWidth(k) + (int)(5 * k);
+        }
         TextRenderer.DrawText(g, value, Font, new Point(right - size.Width, y), color, flags);
-        if (Level != -1) Ui.Battery(g, right - size.Width - (value == "" ? 0 : (int)(5 * k)) - Ui.BatteryWidth(k), y + (size.Height - Ui.BatteryHeight(k)) / 2, Level, k, color);
     }
 }
