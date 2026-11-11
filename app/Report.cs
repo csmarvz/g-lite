@@ -135,6 +135,7 @@ static class Report
     [DllImport("hid.dll")] static extern int HidP_GetButtonCaps(int type, byte[] caps, ref short length, IntPtr data);
     [DllImport("hid.dll")] static extern int HidP_GetValueCaps(int type, byte[] caps, ref short length, IntPtr data);
     [DllImport("hid.dll", SetLastError = true)] static extern bool HidD_GetFeature(SafeFileHandle handle, byte[] buffer, int length);
+    [DllImport("hid.dll", SetLastError = true)] static extern bool HidD_GetInputReport(SafeFileHandle handle, byte[] buffer, int length);
 
     public static string Plain(Found found, string screen)
     {
@@ -165,6 +166,20 @@ static class Report
                 var caps = new short[32];
                 HidP_GetCaps(data, caps);
                 text.AppendLine(string.Format("usage={0:X4}:{1:X4} input={2} output={3} feature={4}{5}", (ushort)caps[1], (ushort)caps[0], caps[2], caps[3], caps[4], shared ? " · held by Windows" : ""));
+                var kinds = new[] { "input", "output", "feature" };
+                int inputId = -1;
+                for (int type = 0; type < 3; type++)
+                {
+                    int first = Fields(text, data, type, kinds[type], caps[23 + type * 3], true);
+                    int value = Fields(text, data, type, kinds[type], caps[24 + type * 3], false);
+                    if (type == 0) inputId = first >= 0 ? first : value;
+                }
+                if (!shared && caps[2] > 0 && inputId >= 0 && (ushort)caps[1] < 0xFF00)
+                {
+                    var input = new byte[caps[2]];
+                    input[0] = (byte)inputId;
+                    text.AppendLine("input now=" + (HidD_GetInputReport(handle, input, input.Length) ? Hex(input, " ") : "error " + Marshal.GetLastWin32Error()));
+                }
                 var ids = new SortedSet<int>();
                 FeatureIds(ids, data, caps[29], true);
                 FeatureIds(ids, data, caps[30], false);
@@ -180,6 +195,27 @@ static class Report
             }
             finally { HidD_FreePreparsedData(data); }
         }
+    }
+
+    static int Fields(StringBuilder text, IntPtr data, int type, string kind, short count, bool buttons)
+    {
+        if (count <= 0) return -1;
+        var caps = new byte[72 * count];
+        short length = count;
+        int status = buttons ? HidP_GetButtonCaps(type, caps, ref length, data) : HidP_GetValueCaps(type, caps, ref length, data);
+        if (status != 0x00110000) return -1;
+        for (int i = 0; i < length; i++)
+        {
+            int at = 72 * i;
+            Func<int, int> u16 = o => caps[at + o] | caps[at + o + 1] << 8;
+            Func<int, int> s32 = o => BitConverter.ToInt32(caps, at + o);
+            bool range = caps[at + 12] != 0;
+            string usage = u16(56).ToString("X4") + (range ? "-" + u16(58).ToString("X4") : "");
+            string line = kind + (buttons ? " buttons" : " value") + " id=" + caps[at + 2].ToString("X2") + " page=" + u16(0).ToString("X4") + " usage=" + usage;
+            if (!buttons) line += " bits=" + u16(18) + " count=" + u16(20) + " logical=" + s32(40) + ".." + s32(44) + (caps[at + 16] != 0 ? " null" : "");
+            text.AppendLine(line);
+        }
+        return length > 0 ? caps[2] : -1;
     }
 
     static void FeatureIds(SortedSet<int> ids, IntPtr data, short count, bool buttons)

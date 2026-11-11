@@ -96,7 +96,15 @@ static class Devices
     [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)] static extern int CM_Get_Device_Interface_List_Size(out int length, ref Guid interfaceClass, string deviceId, int flags);
     [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)] static extern int CM_Get_Device_Interface_List(ref Guid interfaceClass, string deviceId, char[] buffer, int length, int flags);
 
-    static readonly Regex PlainModels = new Regex(@"PID_(C22D|C22E)", RegexOptions.IgnoreCase);
+    static readonly Regex PlainModels = new Regex(@"PID_(C22D|C22E|C216|C218|C219)", RegexOptions.IgnoreCase);
+    static readonly Dictionary<string, string[]> PlainNames = new Dictionary<string, string[]>
+    {
+        { "C22D", new[] { "G510 Gaming Keyboard", "keyboard" } },
+        { "C22E", new[] { "G510 Gaming Keyboard", "keyboard" } },
+        { "C216", new[] { "Gamepad F310", "gamepad" } },
+        { "C218", new[] { "Rumble Gamepad F510", "gamepad" } },
+        { "C219", new[] { "Wireless Gamepad F710", "gamepad" } },
+    };
 
     public static string[] HidIds()
     {
@@ -127,8 +135,9 @@ static class Devices
         return HidIds().Select(id => PlainModels.Match(id)).Where(m => m.Success).Select(m => m.Groups[1].Value.ToUpperInvariant()).Distinct().Select(pid =>
         {
             var paths = PlainIds(pid).Select(PathOf).ToList();
-            var name = Regex.Replace(paths.Select(Product).FirstOrDefault(Found.LooksG) ?? "G510 Gaming Keyboard", @"^Logitech\s+", "", RegexOptions.IgnoreCase);
-            return new Found { Key = "plain|" + pid, Path = paths[0], Name = name, Kind = "keyboard", Link = "USB", Index = 0xFF, Models = "USB " + pid, PlainHid = true };
+            var known = PlainNames[pid];
+            var name = Regex.Replace(paths.Select(Product).FirstOrDefault(Found.LooksG) ?? known[0], @"^Logitech\s+", "", RegexOptions.IgnoreCase);
+            return new Found { Key = "plain|" + pid, Path = paths[0], Name = name, Kind = known[1], Link = "USB", Index = 0xFF, Models = "USB " + pid, PlainHid = true };
         }).ToList();
     }
 
@@ -182,7 +191,7 @@ static class Devices
         all.RemoveAll(f => f.Asleep && f.Wpid != 0 && all.Any(o => !o.Asleep && Regex.IsMatch(o.Models, @"\b" + f.Wpid.ToString("X4") + @"\b")));
         foreach (var f in all.Where(f => !f.Asleep && f.Approx && f.Battery >= 0)) Remember(f, DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute);
         foreach (var f in all.Where(f => !f.Asleep && f.Wpid != 0)) Settings.Set("seen." + f.Wpid.ToString("X4"), f.Name + "|" + f.Kind);
-        return all.Where(f => Found.LooksG(f.Name)).OrderBy(f => f.Kind == "keyboard" ? 0 : f.Kind == "mouse" ? 1 : f.Kind == "headset" ? 2 : 3).ThenBy(f => f.Name).ToList();
+        return all.Where(f => f.PlainHid || Found.LooksG(f.Name)).OrderBy(f => f.Kind == "keyboard" ? 0 : f.Kind == "mouse" ? 1 : f.Kind == "headset" ? 2 : 3).ThenBy(f => f.Name).ToList();
     }
 
     public static void Remember(Found f, long minute)
