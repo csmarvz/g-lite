@@ -20,12 +20,16 @@ static class Theme
         set { Settings.Set("theme", value); Apply(); }
     }
 
-    public static bool SystemLight()
+    public static bool SystemLight() { return Personalize("AppsUseLightTheme"); }
+
+    public static bool TaskbarLight() { return Personalize("SystemUsesLightTheme"); }
+
+    static bool Personalize(string name)
     {
         try
         {
             using (var k = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
-                return k != null && Equals(k.GetValue("AppsUseLightTheme"), 1);
+                return k != null && Equals(k.GetValue(name), 1);
         }
         catch { return false; }
     }

@@ -316,6 +316,11 @@ static class SelfTest
         System.IO.File.Delete(Settings.Location);
         using (var logo = Logo.Draw(64))
             Check(logo.GetPixel(0, 0).A == 0 && logo.GetPixel(32, 4).A == 255 && logo.GetPixel(32, 32).A < 255, "logo is a white disc with a transparent GL");
+        bool trayFits = true;
+        for (int side = 16; side <= 64; side++)
+            using (var tray = Logo.Slanted(side, System.Drawing.Color.White))
+                trayFits &= tray.GetPixel(0, 0).A == 0 && tray.GetPixel(side - 1, side - 1).A == 0;
+        Check(trayFits, "the slanted GL fits the tray icon at every size");
         if (args.Length > 0 && !args[0].StartsWith("--")) Logo.WriteIco(args[0]);
         Log.File = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "glite-selftest-log.txt");
         Log.Clear();

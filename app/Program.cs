@@ -48,6 +48,7 @@ class MainWindow : Form
     string available;
     bool wantView, moved;
     int traySize, bigSize;
+    bool trayLight;
     float scale = 1;
 
     [DllImport("user32.dll")] static extern bool ReleaseCapture();
@@ -469,7 +470,8 @@ class MainWindow : Form
     public void RefreshIcons()
     {
         int t = (int)Math.Round(16 * Win.At(Point.Empty)), b = S(32);
-        if (Tray != null && t != traySize) { traySize = t; Tray.Icon = Logo.Make(t); }
+        bool light = Theme.TaskbarLight();
+        if (Tray != null && (t != traySize || light != trayLight)) { traySize = t; trayLight = light; Tray.Icon = Logo.MakeTray(t, light); }
         if (b != bigSize) { bigSize = b; Icon = Logo.Make(b); }
     }
 

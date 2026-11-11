@@ -49,6 +49,42 @@ static class Logo
         using (var b = Draw(n)) return Icon.FromHandle(b.GetHicon());
     }
 
+    public static Bitmap Slanted(int n, Color color)
+    {
+        int height = (int)Math.Round(n * 0.54f);
+        int stroke = Math.Max(2, (int)Math.Round(height * 0.21f));
+        if ((height - stroke) % 2 != 0) height++;
+        int gWidth = (int)Math.Round(height * 0.84f), lWidth = (int)Math.Round(height * 0.75f), gap = Math.Max(1, (int)Math.Round(stroke * 0.33f));
+        int slant = (int)Math.Ceiling(height * 0.25f);
+        while (gWidth + gap + lWidth + slant > n) { if (lWidth >= gWidth) lWidth--; else gWidth--; }
+        int left = (n - (gWidth + gap + lWidth + slant)) / 2, top = (n - height) / 2;
+        int middle = (height - stroke) / 2, barStart = (int)Math.Round(gWidth * 0.55f), lLeft = gWidth + gap;
+        var bmp = new Bitmap(n, n);
+        using (var g = Graphics.FromImage(bmp))
+        using (var path = new GraphicsPath(FillMode.Winding))
+        using (var brush = new SolidBrush(color))
+        using (var shear = new Matrix(1, 0, -0.25f, 1, left + 0.25f * (top + height), top))
+        {
+            path.AddRectangle(new RectangleF(0, 0, gWidth, stroke));
+            path.AddRectangle(new RectangleF(0, height - stroke, gWidth, stroke));
+            path.AddRectangle(new RectangleF(0, 0, stroke, height));
+            path.AddRectangle(new RectangleF(gWidth - stroke, middle, stroke, height - middle));
+            path.AddRectangle(new RectangleF(barStart, middle, gWidth - barStart, stroke));
+            path.AddRectangle(new RectangleF(lLeft, 0, stroke, height));
+            path.AddRectangle(new RectangleF(lLeft, height - stroke, lWidth, stroke));
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            g.Transform = shear;
+            g.FillPath(brush, path);
+        }
+        return bmp;
+    }
+
+    public static Icon MakeTray(int n, bool light)
+    {
+        using (var b = Slanted(n, light ? Color.FromArgb(28, 28, 28) : Color.White)) return Icon.FromHandle(b.GetHicon());
+    }
+
     public static void WriteIco(string path)
     {
         var images = Sizes.Select(n =>
