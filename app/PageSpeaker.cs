@@ -111,7 +111,7 @@ class PageSpeaker : DevicePage
         speed = Ui.Add(light, new Slider { AccessibleName = "Speed" }, 194, 234, 172, 24);
         speed.Changed += (s, e) =>
         {
-            var d = GMouse.Def(Shown().Effect);
+            var d = GMouse.Def(Displayed().Effect);
             int period = d.MaxP - (d.MaxP - d.MinP) * speed.Value / 100;
             Edit(l => l.Period = period, false);
         };
@@ -124,7 +124,7 @@ class PageSpeaker : DevicePage
         if (cur != null) Load();
     }
 
-    MouseLight Shown()
+    MouseLight Displayed()
     {
         if (cur == null) return null;
         return cur[picked == 0 ? 0 : picked - 1];
@@ -176,7 +176,7 @@ class PageSpeaker : DevicePage
     {
         loading = true;
         bool ready = zones != null && zones.Count > 0;
-        var l = Shown();
+        var l = Displayed();
         bool known = l != null;
         var d = known ? GMouse.Def(l.Effect) : null;
         bool mixed = picked == 0 && cur != null && cur.Any(z => z == null || !z.Same(cur[0]));
