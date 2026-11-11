@@ -104,6 +104,9 @@ static class Ui
         return l;
     }
 
+    public const int Charging = 1000;
+    static readonly int[] Spark = { 4, 5, 3, 4, 2, 3, 1, 5, 3, 4, 2, 3, 1, 2 };
+
     public static int BatteryWidth(float k) { return (int)Math.Round(16 * k) + (int)Math.Round(2 * k); }
     public static int BatteryHeight(float k) { return (int)Math.Round(9 * k); }
 
@@ -122,10 +125,32 @@ static class Ui
             g.FillRectangle(outline, x + width - line, y, line, height);
             g.FillRectangle(outline, x + width, y + nub, BatteryWidth(k) - width, height - nub * 2);
         }
+        bool charging = percent >= Charging;
+        if (charging) percent -= Charging;
         int inset = line * 2, room = width - inset * 2;
         int fill = Math.Max(line, (int)Math.Round(room * Math.Max(0, Math.Min(100, percent)) / 100.0));
-        using (var brush = new SolidBrush(percent <= 20 ? Theme.Warn : ink))
-            g.FillRectangle(brush, x + inset, y + inset, fill, height - inset * 2);
+        var level = new Rectangle(x + inset, y + inset, fill, height - inset * 2);
+        using (var spark = new Region(Rectangle.Empty))
+        {
+            if (charging)
+                for (int row = 0; row < Spark.Length / 2; row++)
+                {
+                    int upper = y + (int)Math.Round((row + 1) * k), lower = y + (int)Math.Round((row + 2) * k);
+                    int from = x + (int)Math.Round((5 + Spark[row * 2]) * k), to = x + (int)Math.Round((6 + Spark[row * 2 + 1]) * k);
+                    spark.Union(new Rectangle(from, upper, to - from, lower - upper));
+                }
+            var clip = g.Clip;
+            g.ExcludeClip(spark);
+            using (var brush = new SolidBrush(percent <= 20 ? Theme.Warn : ink)) g.FillRectangle(brush, level);
+            g.Clip = clip;
+            if (charging)
+            {
+                g.ExcludeClip(level);
+                using (var brush = new SolidBrush(ink)) g.FillRegion(brush, spark);
+                g.Clip = clip;
+            }
+            clip.Dispose();
+        }
         g.SmoothingMode = smoothing;
     }
 

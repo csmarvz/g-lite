@@ -205,6 +205,24 @@ static class SelfTest
         int setBright;
         var set = Lighting.FromText(new Lighting { Effect = 0x16, Color = 0x3080FF, Period = 2500, Direction = 6 }.ToText(40), out setBright);
         Check(set.Same(new Lighting { Effect = 0x16, Color = 0x3080FF, Period = 2500, Direction = 6 }) && setBright == 40, "a set round-trips through text");
+        var full = new Found { BatteryId = 0x1001 };
+        Devices.Decode(full, new byte[] { 0x10, 0x72, 0x81 });
+        var charging = new Found { BatteryId = 0x1001 };
+        Devices.Decode(charging, new byte[] { 0x10, 0x72, 0x80 });
+        var unplugged = new Found { BatteryId = 0x1001 };
+        Devices.Decode(unplugged, new byte[] { 0x0F, 0x3C, 0x00 });
+        Check(full.Charging && full.Battery == 100 && charging.Charging && charging.Battery == 68 && !unplugged.Charging && unplugged.Battery == 66 && unplugged.Millivolts == 3900, "battery voltage flags: charging, full, unplugged");
+        var pro = new Found { Name = "G Pro Wireless Gaming Mouse", Battery = 95 };
+        Devices.Remember(pro, 1000);
+        pro = new Found { Name = "G Pro Wireless Gaming Mouse", Battery = 68, Charging = true };
+        Devices.Remember(pro, 1010);
+        var later = new Found { Name = "G Pro Wireless Gaming Mouse", Battery = 68, Charging = true };
+        Devices.Remember(later, 1013);
+        var stale = new Found { Name = "G Pro Wireless Gaming Mouse", Battery = 30 };
+        Devices.Remember(stale, 2000);
+        stale = new Found { Name = "G Pro Wireless Gaming Mouse", Battery = 68, Charging = true };
+        Devices.Remember(stale, 2100);
+        Check(pro.Battery == 95 && later.Battery == 98 && stale.Battery == 68, "a charging battery keeps the level it had before and counts up");
         Settings.Set("set.Night", "1,FFFFFF,5000,1,50,60,300,20");
         Settings.Remove("set.Night");
         Check(!Settings.Keys().Contains("set.Night"), "a removed set is gone from the file");
@@ -218,6 +236,7 @@ static class SelfTest
             && !Found.LooksG("MX KEYS S") && !Found.LooksG("Logitech USB Receiver") && !Found.LooksG(""), "G devices are told from other Logitech devices");
         Check(new Found { Name = "G Pro Wireless Gaming Mouse" }.Short == "G Pro Wireless" && new Found { Name = "G515 LIGHTSPEED TKL" }.Short == "G515 TKL", "short device names");
         Check(Found.FromVolts(4200) == 100 && Found.FromVolts(3300) == 0 && Found.FromVolts(3800) == 50, "battery estimate from the voltage");
+        Check(Found.FromChargingVolts(4096) == 44 && Found.FromChargingVolts(4200) == 68 && Found.FromChargingVolts(4300) == 68 && Found.FromChargingVolts(3000) == 2, "battery estimate from the charging voltage");
         Check(new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071, 0x8040, 0x8101 } }.IsG515 && !new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071 } }.IsG515, "the G515 needs its three features");
         Check(new Found { Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Features = new[] { 0x8071, 0x8040, 0x8100 } }.IsG915
             && !new Found { Name = "G915 X LIGHTSPEED", Features = new[] { 0x8071, 0x8040, 0x8100 } }.IsG915

@@ -320,7 +320,7 @@ class MainWindow : Form
             item.TabIndex = list.IndexOf(f);
             item.Title = f.Short;
             item.Sub = f.Sub;
-            item.Level = f.Asleep ? -1 : f.Battery;
+            item.Level = f.Level;
             item.Value = f.BatteryText;
             item.Icon = f.Kind == "keyboard" || f.Kind == "mouse" || f.Kind == "headset" ? f.Kind : "device";
             item.AccessibleName = f.Short;
@@ -598,7 +598,7 @@ class MainWindow : Form
                 if (demo) rows.Add(new[] { "G-Lite", "demo" });
                 rows.Add(new[] { "CPU", measure().ToString("0.0") + "%" });
                 rows.Add(new[] { "RAM", (Win.PrivateMemory() >> 20) + " MB" });
-                rows.AddRange(panel.Listed.Select(f => new[] { f.Short, state(f), f.Asleep ? "" : f.Battery >= 0 ? f.Battery.ToString() : "" }));
+                rows.AddRange(panel.Listed.Select(f => new[] { f.Short, state(f), f.Level >= 0 ? f.Level.ToString() : "" }));
                 if (panel.Available != null) rows.Add(new[] { "Update", panel.Available });
                 return rows;
             };
@@ -610,7 +610,7 @@ class MainWindow : Form
                 foreach (var f in panel.Listed)
                 {
                     var key = f.Key;
-                    var row = new MenuRow(f.Short) { Level = f.Asleep ? -1 : f.Battery, Value = state(f) };
+                    var row = new MenuRow(f.Short) { Level = f.Level, Value = state(f) };
                     row.Click += (s, e) => panel.Open(key);
                     menu.Items.Add(row);
                 }

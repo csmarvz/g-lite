@@ -11,8 +11,9 @@ class Found
 {
     public string Key, Path, ShortPath, Name = "", Kind = "device", Link = "", Firmware = "", Models = "";
     public byte Index;
-    public int Wpid, Battery = -1, Millivolts;
-    public bool Approx, Asleep, Hidpp10, PlainHid;
+    public int Wpid, Battery = -1, Millivolts, BatteryId;
+    public byte BatteryFeature;
+    public bool Approx, Charging, Asleep, Hidpp10, PlainHid;
     public int[] Features = new int[0];
 
     public bool Has(int f) { return Features.Contains(f); }
@@ -29,6 +30,8 @@ class Found
     public string Short { get { return Regex.Replace(Regex.Replace(Name, @"(\s+Wireless\s+RGB\s+Mechanical)?\s+Gaming\s+(Mouse|Headset|Keyboard)$", "", RegexOptions.IgnoreCase), @"\s+LIGHTSPEED\b", "", RegexOptions.IgnoreCase); } }
 
     public string BatteryText { get { return Battery < 0 ? "" : Battery + "%"; } }
+
+    public int Level { get { return Asleep || Battery < 0 ? -1 : Battery + (Charging ? Ui.Charging : 0); } }
 
     public static string ModelText(byte[] info)
     {
@@ -63,6 +66,17 @@ class Found
     }
 
     public static int FromVolts(int mv) { return Math.Max(0, Math.Min(100, (mv - 3500) * 100 / 600)); }
+
+    static readonly int[] ChargingCurve = { 3270, 2, 3670, 3, 3790, 5, 3910, 8, 4000, 20, 4050, 33, 4100, 46, 4150, 57, 4200, 68 };
+
+    public static int FromChargingVolts(int mv)
+    {
+        var c = ChargingCurve;
+        if (mv <= c[0]) return c[1];
+        for (int i = 2; i < c.Length; i += 2)
+            if (mv <= c[i]) return c[i - 1] + (mv - c[i - 2]) * (c[i + 1] - c[i - 1]) / (c[i] - c[i - 2]);
+        return c[c.Length - 1];
+    }
 }
 
 static class Devices
@@ -159,8 +173,24 @@ static class Devices
         Task.WaitAll(tasks, 20000);
         var all = tasks.Where(t => t.IsCompleted).SelectMany(t => t.Result).ToList();
         try { all.AddRange(Plain()); } catch (Exception) { }
+        foreach (var f in all.Where(f => !f.Asleep && f.Approx && f.Battery >= 0)) Remember(f, DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute);
         foreach (var f in all.Where(f => !f.Asleep && f.Wpid != 0)) Settings.Set("seen." + f.Wpid.ToString("X4"), f.Name + "|" + f.Kind);
         return all.Where(f => Found.LooksG(f.Name)).OrderBy(f => f.Kind == "keyboard" ? 0 : f.Kind == "mouse" ? 1 : f.Kind == "headset" ? 2 : 3).ThenBy(f => f.Name).ToList();
+    }
+
+    public static void Remember(Found f, long minute)
+    {
+        var key = "battery." + f.Slug;
+        var saved = Settings.Get(key).Split('|');
+        int level, wasCharging;
+        long at;
+        if (f.Charging && saved.Length == 3 && int.TryParse(saved[0], out level) && long.TryParse(saved[1], out at) && int.TryParse(saved[2], out wasCharging))
+        {
+            long minutes = minute - at;
+            if (wasCharging == 1) f.Battery = Math.Max(f.Battery, (int)Math.Min(100, level + minutes));
+            else if (minutes < 60) f.Battery = Math.Max(f.Battery, level);
+        }
+        Settings.Set(key, f.Battery + "|" + minute + "|" + (f.Charging ? 1 : 0));
     }
 
     static string LinkOf(string id)
@@ -282,18 +312,31 @@ static class Devices
         return f;
     }
 
+    static readonly int[] BatteryFeatures = { 0x1004, 0x1000, 0x1001, 0x1F20 };
+
     static void Battery(Probe pr, Found f)
     {
-        byte i;
-        byte[] r;
-        if ((i = pr.Feature(f.Index, 0x1004)) != 0 && (r = pr.Call(f.Index, i, 1)) != null) { f.Battery = r[0]; return; }
-        if ((i = pr.Feature(f.Index, 0x1000)) != 0 && (r = pr.Call(f.Index, i, 0)) != null) { f.Battery = r[0]; return; }
-        if (((i = pr.Feature(f.Index, 0x1001)) != 0 || (i = pr.Feature(f.Index, 0x1F20)) != 0) && (r = pr.Call(f.Index, i, 0)) != null)
+        foreach (var id in BatteryFeatures)
         {
-            f.Millivolts = r[0] << 8 | r[1];
-            f.Battery = Found.FromVolts(f.Millivolts);
-            f.Approx = true;
+            var i = pr.Feature(f.Index, id);
+            if (i == 0) continue;
+            var r = pr.Call(f.Index, i, id == 0x1004 ? 1 : 0);
+            if (r == null) continue;
+            f.BatteryFeature = i;
+            f.BatteryId = id;
+            Decode(f, r);
+            return;
         }
+    }
+
+    public static void Decode(Found f, byte[] r)
+    {
+        if (f.BatteryId == 0x1004) { f.Battery = r[0]; f.Charging = r[2] == 1 || r[2] == 2; return; }
+        if (f.BatteryId == 0x1000) { f.Battery = r[0]; f.Charging = r[2] == 1 || r[2] == 2 || r[2] == 4; return; }
+        f.Millivolts = r[0] << 8 | r[1];
+        f.Approx = true;
+        f.Charging = f.BatteryId == 0x1001 ? (r[2] & 0x80) != 0 : r[2] == 3;
+        f.Battery = !f.Charging ? Found.FromVolts(f.Millivolts) : f.BatteryId == 0x1001 && (r[2] & 0x07) == 1 ? 100 : Found.FromChargingVolts(f.Millivolts);
     }
 }
 

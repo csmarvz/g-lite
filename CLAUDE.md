@@ -28,6 +28,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `Found`: what the scan learned about a device. `Models` holds its product IDs per connection, decoded from 0x0003 fn 0 (bytes 5–6 the connection bits: 0x01/0x02 Bluetooth, 0x04 LIGHTSPEED, 0x08 USB; bytes 7–12 one ID per set bit, in bit order), or from the USB path for HID++ 1.0 devices. Retail model numbers aren't on the device.
   - `Probe`: the scan's HID++ calls. HID++ 1.0 errors come back on the receiver's short collection.
   - Names of devices seen awake are kept as `seen.<wireless id>` in `settings.txt`, for when they're asleep.
+  - Battery: the scan finds the first of 0x1004, 0x1000, 0x1001 or 0x1F20 (`Found.BatteryFeature`, `BatteryId`) and `Devices.Decode` reads the level and the charging flag. 0x1001 byte 2: bit 7 is on external power, bits 0–2 are 1 when full. While a voltage-only device charges, its voltage says little: the level comes from a charging curve (`Found.FromChargingVolts`, a few points of G HUB's model for the G Pro Wireless, 68% at 4.2 V), and `Devices.Remember` keeps the last level read off the charger (`battery.<device>` in `settings.txt`: level, minute, charging) and counts up 1% a minute from it.
 - `app/Pages.cs`:
   - `DevicePage`: what every device screen shares: the title, the presets row (None, which calls `Revert`, plus the presets, Update, and a … menu with Save as new, Rename and Delete; a dot marks a preset changed since it was loaded or updated), the device work queue, the status line with Revert (with a preset loaded: loads it again, enabled while it has the dot; with None: calls `Revert`, enabled while `Unsaved`) and the Backups menu. Presets are stored on the PC as `profile.<device>.<name>`.
   - `ColorRow`: the colour swatches
@@ -47,7 +48,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/Headset.cs`: `GHeadset`, which reads and sets sidetone (0x8300) and the auto-off time (0x1F20 fn 1 and fn 2, in minutes, 0 is never). 0x1F20 fn 0 is the battery voltage, and byte 2 is 3 while charging.
 - `app/Ui.cs`:
   - `Theme`: dark, light or system, from `theme=` in `settings.txt`
-  - The owner-drawn controls. They read `Theme` when they paint. Labels and containers register their colours with `Ui.Style`, so a theme change restyles them. `Ui.Battery` draws the battery icon (whole pixels, no anti-aliasing) for the tray popup, the device list (`DevItem`) and the device screen's second line (`SubLine`).
+  - The owner-drawn controls. They read `Theme` when they paint. Labels and containers register their colours with `Ui.Style`, so a theme change restyles them. `Ui.Battery` draws the battery icon (whole pixels, no anti-aliasing), with a spark cut out of it while charging (the level plus `Ui.Charging`), for the tray popup, the device list (`DevItem`) and the device screen's second line (`SubLine`).
 - `app/Fake.cs`:
   - `Model`: loads `models/*.json`, which are embedded resources
   - `FakeHidpp`: an in-memory G515

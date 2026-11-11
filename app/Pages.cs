@@ -171,7 +171,7 @@ abstract class DevicePage : Control, IPage
 
     void ShowSub()
     {
-        sub.Set(found.Sub, found.Asleep ? -1 : found.Battery, found.BatteryText, "");
+        sub.Set(found.Sub, found.Level, found.BatteryText, "");
     }
 
     public void Say(string text, bool warn = false, Action click = null, string action = null)
@@ -535,7 +535,7 @@ class InfoPage : Control
     {
         found = f;
         title.Text = f.Short == "" ? "Logitech device" : f.Short;
-        sub.Set(f.Sub, f.Asleep ? -1 : f.Battery, f.BatteryText, "");
+        sub.Set(f.Sub, f.Level, f.BatteryText, "");
         head.Text = f.Asleep ? "Asleep" : "Not supported yet";
         text.Text = f.Asleep
             ? "It's paired but didn't answer. Wake it with a key press or a click, and G-Lite picks it up."
@@ -544,7 +544,7 @@ class InfoPage : Control
         create.Visible = reportBtn.Visible = !f.Asleep;
         if (f.Asleep && report.Visible) report.Close();
         link.Text = f.Link + f.Slot + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "");
-        battery.Text = f.Battery < 0 ? "–" : f.BatteryText + (f.Approx ? " (estimated from the voltage)" : "");
+        battery.Text = f.Battery < 0 ? "–" : f.BatteryText + (f.Charging ? ", charging" : "") + (f.Approx ? " (estimated from the voltage)" : "");
         firmware.Text = f.Firmware == "" ? "–" : f.Firmware;
         var known = f.Features.Where(x => x >= 0x0100 && x != 0x1D4B && (x < 0x1000 || x > 0x1004) && Report.Name(x) != "").ToList();
         var named = known.Select(x => Report.Name(x)).Select(n => char.ToUpper(n[0]) + n.Substring(1)).Distinct().ToList();
