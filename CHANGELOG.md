@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.20-alpha] - 2026-11-11
+
+### Changed
+
+- New tray icon: the slanted GL without the disc, sharp at every scaling, white on a dark taskbar and dark on a light one. It switches by itself when the taskbar's colour changes.
+
 ## [0.0.19-alpha] - 2026-11-11
 
 ### Added
