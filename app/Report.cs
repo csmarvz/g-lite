@@ -211,6 +211,7 @@ static class Report
     {
         s.AppendLine("G-Lite device report");
         s.AppendLine("G-Lite " + Version() + " · " + Windows());
+        s.AppendLine(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm 'UTC'", System.Globalization.CultureInfo.InvariantCulture));
         s.AppendLine();
         Row(s, "Device", f.Name == "" ? "–" : f.Name);
         Row(s, "Kind", f.Kind);
