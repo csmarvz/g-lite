@@ -1,15 +1,15 @@
 # Changelog
 
-## Unreleased
+## [0.0.19-alpha] - 2026-11-11
 
 ### Added
 
 - G560 Gaming Speaker: lighting effects, colour, speed, brightness and presets, live on all four zones at once or on each one. Not checked on real speakers yet.
+- The F310, F510 and F710 gamepads show up in D mode (DirectInput), with a report that lists their buttons, sticks and outputs. Nothing on them can be changed yet. In X mode Windows hides them from G-Lite.
 
 ### Changed
 
 - Reports read the equalizer's band count and frequencies too.
-- The F310, F510 and F710 gamepads show up in D mode (DirectInput), with a report that lists their buttons, sticks and outputs. Nothing on them can be changed yet. In X mode Windows hides them from G-Lite.
 
 ## [0.0.18-alpha] - 2026-11-11
 
