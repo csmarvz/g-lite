@@ -203,6 +203,19 @@ class KeyPicture : Ctl
     }
 }
 
+class Keyboards
+{
+    public Model Keys, Iso;
+    public string Prefix;
+    public bool Saves;
+
+    public static readonly Keyboards
+        G515 = new Keyboards { Keys = Model.Load("g515-tkl.json"), Iso = Model.Load("g515-tkl-iso.json"), Prefix = "profile.g515.", Saves = true },
+        G915Tkl = new Keyboards { Keys = Model.Load("g915-tkl.json"), Prefix = "profile.g915." },
+        G915 = new Keyboards { Keys = Model.Load("g915.json"), Prefix = "profile.g915." },
+        G512X = new Keyboards { Keys = Model.Load("g512-x-75.json"), Prefix = "profile.g512x." };
+}
+
 class Page515 : DevicePage
 {
     static readonly int[] IdleSecs = { 0, 15, 30, 60, 120, 300, 600 };
@@ -213,7 +226,6 @@ class Page515 : DevicePage
     static readonly string[] SleepText = { "Never", "1 min", "2 min", "5 min", "10 min", "15 min", "30 min" };
     static readonly int[] Directions = { 6, 1, 3, 8 };
     static readonly string[] DirText = { "Left", "Right", "Center out", "Center in" };
-    static readonly Model G515Board = Model.Load("g515-tkl.json"), G515Iso = Model.Load("g515-tkl-iso.json"), G915Tkl = Model.Load("g915-tkl.json"), G915Full = Model.Load("g915.json");
     const byte ScreenEffect = 0xFE;
     string Remembered { get { return "lighting." + found.Slug; } }
     string Saved { get { return "screen." + found.Slug; } }
@@ -221,9 +233,8 @@ class Page515 : DevicePage
     bool Screening { get { return cur.Effect == ScreenEffect; } }
     bool leftScreen;
 
-    static Model BoardFor(Found f) { return !f.IsG915 ? G515Board : f.Name.ToUpper().Contains("TKL") ? G915Tkl : G915Full; }
-
-    readonly bool g915, canScreen;
+    readonly Keyboards kind;
+    readonly bool live, canScreen;
     List<byte[]> clusters;
     ScreenSetup setup;
     readonly Timer screenTimer = new Timer { Interval = 100 }, snapTimer = new Timer { Interval = 1000 }, watchTimer = new Timer { Interval = 500 };
@@ -266,13 +277,14 @@ class Page515 : DevicePage
     readonly KeyPicture picture;
     Backups.Entry fix;
 
-    public Page515(Found found, Hidpp fake, MouseEventHandler drag) : base(found, fake, drag, BoardFor(found).Name, "keyboard", found.IsG915 ? "profile.g915." : "profile.g515.")
+    public Page515(Found found, Hidpp fake, MouseEventHandler drag, Keyboards kind) : base(found, fake, drag, kind.Keys.Name, "keyboard", kind.Prefix)
     {
-        g915 = found.IsG915;
+        this.kind = kind;
+        live = !kind.Saves;
         debounce.Tick += (s, e) => { debounce.Stop(); Preview(); };
-        if (!g915 && found.Wpid != 0) Backups.Move(found.Wpid.ToString("X4"), BackupId);
+        if (!live && found.Wpid != 0) Backups.Move(found.Wpid.ToString("X4"), BackupId);
 
-        if (!g915)
+        if (!live)
         {
             backupsBtn = BackupsButton("keyboard's lighting");
             backupsBtn.Click += (s, e) => ShowBackups();
@@ -280,7 +292,7 @@ class Page515 : DevicePage
 
         var pic = Ui.Add(this, new Box(), 20, 118, 616, 209);
         Ui.Text(pic, "Live on the keyboard", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
-        picture = Ui.Add(pic, new KeyPicture(BoardFor(found)), 14, 36, 588, 161);
+        picture = Ui.Add(pic, new KeyPicture(kind.Keys), 14, 36, 588, 161);
 
         canScreen = found.Has(0x8081);
         setup = ScreenSetup.FromText(Settings.Get(Saved));
@@ -411,17 +423,17 @@ class Page515 : DevicePage
 
         var idle = Ui.Add(this, new Box(), 412, 339, 224, 272);
         idleArea = idle;
-        Ui.Text(idle, g915 ? "Saving" : "When idle", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
+        Ui.Text(idle, live ? "Saving" : "When idle", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
         var note = Ui.Text(idle, "G-Lite can't save to this keyboard yet. It keeps your lighting and sets it again when G-Lite starts and when you open this screen. Picking None gives the keyboard its own lighting back.", 14, 40, () => Theme.Dim, 9f);
         note.AutoSize = false;
         note.Size = new Size(196, 200);
-        note.Visible = g915;
+        note.Visible = live;
         idleBox = Choice(idle, "Dim after", IdleText, 40, i => cur.Idle = IdleSecs[i]);
         dimBox = Choice(idle, "Dim to", DimText, 98, i => cur.Dim = DimPcts[i]);
         sleepBox = Choice(idle, "Turn off after", SleepText, 156, i => cur.Sleep = SleepSecs[i]);
-        if (g915) foreach (Control c in idle.Controls) if (c != note && c.Top > 30) c.Visible = false;
+        if (live) foreach (Control c in idle.Controls) if (c != note && c.Top > 30) c.Visible = false;
 
-        saveBtn = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Save to keyboard", Visible = !g915 }, 496, 635, 140, 32);
+        saveBtn = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Save to keyboard", Visible = !live }, 496, 635, 140, 32);
         saveBtn.Click += (s, e) => Save();
 
         if (canScreen && Settings.Get(Active) == "1")
@@ -430,7 +442,7 @@ class Page515 : DevicePage
             ScreenOn();
         }
         Sync();
-        if (g915) Load();
+        if (live) Load();
     }
 
     Toggle Option(Control parent, string text, int y, Action flip)
@@ -493,7 +505,7 @@ class Page515 : DevicePage
         released = false;
         Did("Screen effect off");
         leftScreen = true;
-        if (claimed) Do(h => { if (g915) G915.Release(h); else G515.Release(h); claimed = false; });
+        if (claimed) Do(h => { if (live) G915.Release(h); else G515.Release(h); claimed = false; });
     }
 
     void ScreenChanged()
@@ -529,9 +541,15 @@ class Page515 : DevicePage
 
     void Claim(Hidpp h, bool quiet)
     {
-        if (!quiet) { if (g915) G915.Claim(h); else G515.Claim(h); return; }
-        if (!g915) h.Quiet(h.F(0x8101), 6, 0x05);
+        if (!quiet) { ClaimLights(h); return; }
+        if (found.Has(0x8101)) h.Quiet(h.F(0x8101), 6, 0x05);
         h.Quiet(h.F(0x8071), 5, 0x01, 0x03, 0x04);
+    }
+
+    void ClaimLights(Hidpp h)
+    {
+        if (found.Has(0x8101)) G515.Claim(h);
+        else G915.Claim(h);
     }
 
     void Failed(Exception e)
@@ -569,7 +587,7 @@ class Page515 : DevicePage
             {
                 try
                 {
-                    if (release && claimed) { if (g915) G915.Release(h); else G515.Release(h); claimed = false; }
+                    if (release && claimed) { if (live) G915.Release(h); else G515.Release(h); claimed = false; }
                     if (readBattery) ReadBattery(h);
                     statusDirty = true;
                     Worked();
@@ -631,7 +649,7 @@ class Page515 : DevicePage
         force = false;
         sent = (int[])shown.Clone();
         sending = true;
-        bool send = changed, readLayout = layoutCode < 0 && !g915 && found.Has(0x4540);
+        bool send = changed, readLayout = layoutCode < 0 && !live && found.Has(0x4540);
         Do(h =>
         {
             try
@@ -661,9 +679,9 @@ class Page515 : DevicePage
 
     void ApplyLayout()
     {
-        if (g915 || iso || layoutCode <= 2) return;
+        if (kind.Iso == null || iso || layoutCode <= 2) return;
         iso = true;
-        picture.SetModel(G515Iso);
+        picture.SetModel(kind.Iso);
         force = true;
         if (Screening) SyncScreen();
     }
@@ -736,9 +754,9 @@ class Page515 : DevicePage
         if (Screening)
         {
             if (!claimed) return;
-            Do(h => { if (g915) G915.Release(h); else G515.Release(h); claimed = false; });
+            Do(h => { if (live) G915.Release(h); else G515.Release(h); claimed = false; });
         }
-        else if (g915 || !dirty) return;
+        else if (live || !dirty) return;
         else Release();
         Queue.Wait(2000);
     }
@@ -763,7 +781,7 @@ class Page515 : DevicePage
 
     protected override void Lost() { claimed = false; clusters = null; present = null; }
 
-    protected override bool Unsaved { get { return cur != null && (g915 ? Known() : stored != null && (dirty || Screening)); } }
+    protected override bool Unsaved { get { return cur != null && (live ? Known() : stored != null && (dirty || Screening)); } }
 
     protected override string Current() { return cur.ToText(brightness) + (Screening ? "|" + setup.ToText() : ""); }
 
@@ -792,7 +810,7 @@ class Page515 : DevicePage
         return d;
     }
 
-    bool Known() { return g915 ? !unknownStored : !(unknownStored && !dirty); }
+    bool Known() { return live ? !unknownStored : !(unknownStored && !dirty); }
 
     static int Near(int[] values, int v)
     {
@@ -813,7 +831,7 @@ class Page515 : DevicePage
         var d = G515.Def(cur.Effect);
         bool known = Known();
         bool color = known && d != null && d.Color, dir = known && d != null && d.Direction, spd = known && d != null && d.Speed;
-        lightHead.Text = known ? "Lighting" : broken ? "Lighting · half written on the keyboard" : g915 ? "Lighting · as on the keyboard" : "Lighting · factory animation";
+        lightHead.Text = known ? "Lighting" : broken ? "Lighting · half written on the keyboard" : live ? "Lighting · as on the keyboard" : "Lighting · factory animation";
         effects.Index = known ? Array.FindIndex(G515.Effects, e => e.Id == cur.Effect) : -1;
         Shade(colorHead, color);
         colors.Sync(cur.Color, color);
@@ -848,7 +866,7 @@ class Page515 : DevicePage
     void Changed(bool now)
     {
         if (loading) return;
-        if (g915) unknownStored = false;
+        if (live) unknownStored = false;
         dirty = true;
         edits++;
         Edited();
@@ -870,7 +888,7 @@ class Page515 : DevicePage
             else if (ScreenCapture.Missing(setup.Monitor)) Say("The chosen monitor isn't connected. Using the main monitor.", true);
             else Say("Live only.");
         }
-        else if (g915) Say(Known() ? "Set by G-Lite · not saved to the keyboard" : "");
+        else if (live) Say(Known() ? "Set by G-Lite · not saved to the keyboard" : "");
         else Say(dirty ? "Not saved to the keyboard" : stored == null ? "" : "Matches the keyboard");
     }
 
@@ -927,7 +945,7 @@ class Page515 : DevicePage
             dirty = true;
             cur = stored != null ? stored.Clone() : new Lighting();
         }
-        if (g915) { Forget(); return; }
+        if (live) { Forget(); return; }
         if (stored == null) { Sync(); Calm(); return; }
         cur = stored.Clone();
         brightness = storedBrightness;
@@ -950,7 +968,7 @@ class Page515 : DevicePage
         int b = brightness, seq = ++previewSeq;
         bool repaint = leftScreen;
         leftScreen = false;
-        if (g915) { Apply(l, b, seq); return; }
+        if (live) { Apply(l, b, seq); return; }
         Do(h =>
         {
             if (seq != previewSeq) return;
@@ -995,7 +1013,7 @@ class Page515 : DevicePage
             if (clusters == null) clusters = G915.Clusters(h);
             if (b != G515.Brightness(h)) G515.SetBrightness(h, b);
             if (!known) return;
-            G915.Claim(h);
+            ClaimLights(h);
             G915.Preview(h, clusters, l);
             sent = true;
         }, () =>
@@ -1019,7 +1037,7 @@ class Page515 : DevicePage
         Do(h => { G915.Release(h); b = G515.Brightness(h); }, () => { if (seq == previewSeq && b >= 0) { brightness = b; Sync(); } });
     }
 
-    void LoadG915()
+    void LoadLive()
     {
         dirty = false;
         debounce.Stop();
@@ -1038,7 +1056,7 @@ class Page515 : DevicePage
             if (l != null && seq == previewSeq && !screening)
             {
                 if (kb >= 0 && kb <= 100 && kb != G515.Brightness(h)) G515.SetBrightness(h, kb);
-                G915.Claim(h);
+                ClaimLights(h);
                 try { G915.Preview(h, clusters, l); }
                 catch (Refused) { G915.Release(h); dropped = true; }
             }
@@ -1061,9 +1079,9 @@ class Page515 : DevicePage
 
     public override void Load()
     {
-        if (g915) { LoadG915(); return; }
-        bool live = dirty && !Screening;
-        if (!live) { dirty = false; debounce.Stop(); }
+        if (live) { LoadLive(); return; }
+        bool editing = dirty && !Screening;
+        if (!editing) { dirty = false; debounce.Stop(); }
         Say("Reading the keyboard…");
         int n = edits;
         Lighting l = null;
@@ -1087,7 +1105,7 @@ class Page515 : DevicePage
             storedBrightness = b;
             stored = half ? null : l.Clone();
             unknownStored = half || unknown;
-            if (n == edits && !live)
+            if (n == edits && !editing)
             {
                 brightness = b;
                 if (!half && !Screening) cur = l;
@@ -1102,7 +1120,7 @@ class Page515 : DevicePage
     {
         if (Screening) { Tick(); Calm(); return; }
         bool now = Presence.Locked || Presence.DisplayOff;
-        if (g915 || now == away) return;
+        if (live || now == away) return;
         away = now;
         if (!dirty) return;
         if (away) { if (idleLevel != 2) GiveBack(); }
@@ -1111,7 +1129,7 @@ class Page515 : DevicePage
 
     internal void Watch()
     {
-        if (g915 || Screening || !dirty || !claimed || away) { idleLevel = 0; return; }
+        if (live || Screening || !dirty || !claimed || away) { idleLevel = 0; return; }
         Idle();
         if (++watchTicks % 6 != 0 || watching || idleLevel == 2) return;
         watching = true;

@@ -285,6 +285,22 @@ static class Traces
         }
     }
 
+    static string G512X()
+    {
+        var found = new Found { Key = "trace|g512x", Name = "G512 X 75", Kind = "keyboard", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x8071, 0x8081, 0x8040, 0x8101, 0x4540 } };
+        Page515 page = null;
+        using (var s = Begin(() => page = (Page515)Support.For(found).Make(found, FakeG915.G512X(), null)))
+        {
+            s.Pick("Effect", "Static");
+            s.Press("Color 30D050");
+            s.Pick("Effect", "Wave");
+            s.Pick("Effect", "Ripple");
+            s.Slide("Brightness", 50);
+            s.Do("quit", () => page.Exiting());
+            return s.Text;
+        }
+    }
+
     static string Mouse(string name, FakeMouse device, int[] features)
     {
         var found = new Found { Key = "trace|" + name, Name = name, Kind = "mouse", Link = "LIGHTSPEED", Index = 1, Wpid = 0x4079, Features = features };
@@ -398,6 +414,7 @@ static class Traces
     {
         yield return new KeyValuePair<string, Func<string>>("g515", G515);
         yield return new KeyValuePair<string, Func<string>>("g915", G915);
+        yield return new KeyValuePair<string, Func<string>>("g512x", G512X);
         yield return new KeyValuePair<string, Func<string>>("gpro", () => Mouse("G Pro Wireless Gaming Mouse", new FakeMouse(), new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("g305", () => Mouse("G305 Lightspeed Wireless Gaming Mouse", FakeMouse.G305(), new[] { 0x0001, 0x0003, 0x0005, 0x1000, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("wheel", Wheel);

@@ -8,7 +8,8 @@ What works, learned while adding the G305, G502 LIGHTSPEED, G510 and G512 X. Fol
 - A feature G-Lite doesn't read yet: add its read-only functions to `Report.Reads` and a line in `Report.Section`, so every later report has them. Only functions known to only read.
 - With the device plugged in here, a read-only report can be run from a copy of the exe, without the user: load `GLite.exe` with reflection in Windows PowerShell (not pwsh), `Devices.Scan()`, pick the device, `new Hidpp(path, index, shortPath)`, `Report.Build`. Pass arguments as `[object[]]` and the `Found` as `.psobject.BaseObject`. Don't run it while the user makes a report in the app: both read the same device at the same time.
 - Text from a device can hold zero bytes (the G512 X's firmware name is "U1" and a 0x00). A zero byte hides everything after it in a Windows text box, so cut device strings at the first byte that isn't printable.
-- Note the facts in `docs/` (the device's ids, its feature list, what each byte means) with the sources.
+- Note the facts in `docs/` (the device's ids, its feature list, what each byte means) with the sources. Keep the report there too, like `docs/G512X.md`.
+- Keyboards that share the features can still lay out their onboard files differently: the G512 X 75's profile is 111 bytes and one byte off from the G515's. Compare them byte by byte before allowing Save, and start with live lighting when they differ. A file's size is byte 9 of its directory entry.
 
 ## 2. Check what the user can see before building a screen
 
@@ -22,7 +23,8 @@ What works, learned while adding the G305, G502 LIGHTSPEED, G510 and G512 X. Fol
 
 - Make a fake from the real report's bytes (`FakeMouse.G305()` is the pattern), and add a trace in `app/Traces.cs` that drives the screen through the new feature.
 - Existing traces must not change, except state lines the feature adds. Check with `diff` against `git show HEAD:app/tests/<device>.txt`, ignoring the new state, and say what changed.
-- A device that works like one already supported is one `Support` entry. A new protocol is a driver (like `IMouse`) and an entry.
+- A device that works like one already supported is one `Support` entry. A new protocol is a driver (like `IMouse`) and an entry. A keyboard is a `Keyboards` entry (key map, preset prefix, saves or not) passed to `Page515`.
+- A fake can often be an existing one with the report's lists: `FakeG915.G512X()` is the G915 fake with the G512 X's effect ids.
 
 ## 4. Build, then check it's really running
 

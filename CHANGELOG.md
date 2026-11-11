@@ -6,11 +6,13 @@
 
 - Charging shows as a spark in the battery icon. A device that only reports its voltage (like the G Pro Wireless) shows a level estimated from the charging voltage, keeps the level it had when you plugged it in and counts up from there, and shows 100% when it says it's full.
 - A moon with stars replaces the word asleep for a device that doesn't answer.
+- G512 X 75: lighting effects, colour, speed, direction, brightness and presets, live on the keys and the light bar. Not saved to the keyboard yet: its onboard files are laid out differently from the G515's. The key picture is built from its layout and not checked on a real keyboard yet.
 
 ### Changed
 
 - Devices update live: the receivers say when a device wakes up or goes to sleep, and a device's battery message updates it when charging starts or stops. Every battery is read once a minute and when you hover the tray icon.
 - The battery level comes before its icon, and the icons line up on the right in the device list, the tray menu and the hover popup.
+- Keyboard reports read the onboard profiles at the size the keyboard gives, so a G512 X 75 report holds its whole 111-byte profile.
 
 ### Fixed
 

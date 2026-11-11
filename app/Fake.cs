@@ -153,12 +153,21 @@ class FakeHidpp : Hidpp
 
 class FakeG915 : Hidpp
 {
-    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8071, 10 }, { 0x8040, 20 }, { 0x8100, 21 } };
-    public static readonly byte[][] Ids = { new byte[] { 0x00, 0x01, 0x03, 0x0A }, new byte[] { 0x00, 0x01, 0x0A, 0x03, 0x04, 0x0B } };
+    Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8071, 10 }, { 0x8040, 20 }, { 0x8100, 21 } };
+    public byte[][] Ids = { new byte[] { 0x00, 0x01, 0x03, 0x0A }, new byte[] { 0x00, 0x01, 0x0A, 0x03, 0x04, 0x0B } };
     public readonly byte[][] Live = { new byte[13], new byte[13] };
     public int Brightness = 80, Claimed;
 
     public FakeG915() : base(false) { }
+
+    public static FakeG915 G512X()
+    {
+        return new FakeG915
+        {
+            Index = new Dictionary<int, byte> { { 0x8071, 6 }, { 0x8040, 8 }, { 0x8101, 9 } },
+            Ids = new[] { new byte[] { 0x00, 0x01, 0x0A, 0x15, 0x16, 0x17, 0x18 }, new byte[] { 0x00, 0x01, 0x0A, 0x15, 0x16, 0x18 } }
+        };
+    }
 
     public override void Dispose() { }
 
@@ -182,7 +191,7 @@ class FakeG915 : Hidpp
             }
             if (fn == 5) Claimed = p[1];
         }
-        else if (feat != Index[0x8100]) throw new HidppError(2, "invalid argument");
+        else if (!Index.ContainsValue(feat)) throw new HidppError(2, "invalid argument");
         return r;
     }
 }

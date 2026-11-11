@@ -238,6 +238,7 @@ static class SelfTest
         Check(Found.FromVolts(4200) == 100 && Found.FromVolts(3300) == 0 && Found.FromVolts(3800) == 50, "battery estimate from the voltage");
         Check(Found.FromChargingVolts(4096) == 44 && Found.FromChargingVolts(4200) == 68 && Found.FromChargingVolts(4300) == 68 && Found.FromChargingVolts(3000) == 2, "battery estimate from the charging voltage");
         Check(new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071, 0x8040, 0x8101 } }.IsG515 && !new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071 } }.IsG515, "the G515 needs its three features");
+        Check(new Found { Name = "G512 X 75", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8101 } }.IsG512X && !new Found { Name = "G512 X 98", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8101 } }.IsG512X && !new Found { Name = "G512 X 75", Features = new[] { 0x8071 } }.IsG512X, "the G512 X 75 is told apart, with its features");
         Check(new Found { Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Features = new[] { 0x8071, 0x8040, 0x8100 } }.IsG915
             && !new Found { Name = "G915 X LIGHTSPEED", Features = new[] { 0x8071, 0x8040, 0x8100 } }.IsG915
             && new Found { Name = "G915 WIRELESS RGB MECHANICAL GAMING KEYBOARD" }.Short == "G915"
@@ -277,7 +278,7 @@ static class SelfTest
         Check(new Found { Name = "G510 Gaming Keyboard" }.Short == "G510" && Found.LooksG("G510 Gaming Keyboard"), "the G510 gets a short name and counts as a G device");
         var g9xReport = Report.Registers(new FakeG9x(), new Found { Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Hidpp10 = true }, "PageMouse");
         Check(g9xReport.Contains("long 63=22 00 22 00 80 01") && g9xReport.Contains("page 02 · current") && g9xReport.Contains("page 04"), "the G9x report has its registers and profile pages");
-        Check(new[] { "g515-tkl.json", "g915-tkl.json", "g915.json" }.All(x => Model.Load(x).Rows.Length > 5), "the key layouts load");
+        Check(new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json" }.All(x => Model.Load(x).Rows.Length > 5), "the key layouts load");
         var g9 = new FakeG915();
         var cl = G915.Clusters(g9);
         Check(cl.Count == 2 && G915.Keys(cl) == 1, "the G915's keys are the cluster with the most effects");
@@ -334,7 +335,7 @@ static class SelfTest
         Check(hreport.Contains("sidetone=1E") && hreport.Contains("auto-off=1E") && hreport.Contains("% · 3926 mV"), "the headset report reads sidetone, auto-off and the battery");
         Check(!Report.Reads[0x8100].Intersect(new[] { 1, 3, 6, 7, 8, 0xC }).Any() && !Report.Reads[0x8101].Intersect(new[] { 2, 3, 6, 7 }).Any() && !Report.Reads[0x8071].Contains(1) && !Report.Reads[0x8070].Contains(3), "the report never calls a write function");
 
-        foreach (var file in new[] { "g515-tkl.json", "g515-tkl-iso.json", "g915-tkl.json", "g915.json" })
+        foreach (var file in new[] { "g515-tkl.json", "g515-tkl-iso.json", "g915-tkl.json", "g915.json", "g512-x-75.json" })
         {
             var board = Model.Load(file);
             int keys = board.Rows.Sum(r => r.Split('|').Count(t => !t.StartsWith("_")));

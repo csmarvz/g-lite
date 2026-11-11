@@ -316,8 +316,10 @@ static class Report
             case 0x8100: Profiles(r); break;
             case 0x8101:
                 {
-                    var files = f.IsG515 || f.Kind == "keyboard" ? new[] { 0x0000, 16, 0x0008, 99, 0x0100, 16, 0x0101, 99 } : new[] { 0x0000, 16, 0x0100, 16 };
-                    for (int i = 0; i < files.Length; i += 2) File(r, files[i], files[i + 1]);
+                    var user = File(r, 0x0000, 16);
+                    if (f.Kind == "keyboard") File(r, 0x0008, ProfileSize(user));
+                    var factory = File(r, 0x0100, 16);
+                    if (f.Kind == "keyboard") File(r, 0x0101, ProfileSize(factory));
                     break;
                 }
             case 0x8110: r.Show("buttons", id, 0); break;
@@ -370,17 +372,25 @@ static class Report
         return p;
     }
 
-    static void File(Reader r, int addr, int size)
+    static byte[] File(Reader r, int addr, int size)
     {
-        if (r.Ask(0x8101, 8, (byte)(addr >> 8), (byte)addr, (byte)(size >> 8), (byte)size) == null) { r.S.AppendLine(addr.ToString("X4") + "=" + r.Error); return; }
+        if (r.Ask(0x8101, 8, (byte)(addr >> 8), (byte)addr, (byte)(size >> 8), (byte)size) == null) { r.S.AppendLine(addr.ToString("X4") + "=" + r.Error); return null; }
         var o = new List<byte>();
         for (int off = 0; off < size; off += 16)
         {
             var x = r.Ask(0x8101, 0xC, (byte)(off >> 8), (byte)off);
-            if (x == null) { r.S.AppendLine(addr.ToString("X4") + "=" + r.Error); return; }
+            if (x == null) { r.S.AppendLine(addr.ToString("X4") + "=" + r.Error); return null; }
             o.AddRange(x);
         }
-        r.S.AppendLine(addr.ToString("X4") + "=" + Hex(o.Take(size).ToArray(), ""));
+        var data = o.Take(size).ToArray();
+        r.S.AppendLine(addr.ToString("X4") + "=" + Hex(data, ""));
+        return data;
+    }
+
+    static int ProfileSize(byte[] directory)
+    {
+        bool entry = directory != null && directory.Length == 16 && directory[5] == 0x01 && directory[6] == 0x81 && directory[7] == 0x01 && directory[8] == 0x40;
+        return entry && directory[9] >= 16 ? directory[9] : 99;
     }
 
     public static string Name(int id) { string n; return Names.TryGetValue(id, out n) ? n : ""; }

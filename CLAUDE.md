@@ -38,7 +38,8 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `InfoPage` for G devices G-Lite can't change yet or that are asleep, and `EmptyPage`
 - `app/Page515.cs`:
   - `Page515`: the G515 screen, the preview debounce, the backups menu and the offer to restore when the saved lighting is half written. Presets are `profile.g515.<name>`.
-  - On a G915 the same screen has no Save, Backups or idle settings. It keeps the lighting as `lighting.<device>` in `settings.txt` and sets it again on each load. Presets are `profile.g915.<name>`.
+  - `Keyboards`: what differs between the keyboards on this screen, given by their `Support` entry: the key map (and the ISO one, picked when 0x4540 reports a layout above 2), the preset prefix and whether it saves.
+  - A keyboard that doesn't save (the G915, the G512 X 75) has no Save, Backups or idle settings. It keeps the lighting as `lighting.<device>` in `settings.txt` and sets it again on each load, on every 0x8071 cluster (`G915.Clusters`, `G915.Pick`: a cluster without the effect gets a close one). Presets are `profile.g915.<name>` and `profile.g512x.<name>`. See `docs/G512X.md`.
   - `KeyPicture`: the live key picture
 - `app/Screen.cs`: the Screen effect. `ScreenSetup` (monitor, up to five zones as fractions of the screen, key id to zone, boost, update rate, smoothing, pauses; kept as `screen.<device>`, and `screen.on.<device>=1` while it runs), `ScreenCapture` (shrinks each zone with StretchBlt and averages it), `KeyLights` (0x8081: fn 0 lists the lit ids, fn 6 sets one colour on up to 13 ids, fn 7 shows the frame, sent with `Hidpp.Quiet` so frames stay out of the log), `Presence` (screen off and lock, from the main window), `ScreenPreview` and `ZoneList`. See `docs/screen.md`.
 - `app/PageMouse.cs`: `PageMouse`, the mouse screen with Save to mouse, its backups and the offer to restore a damaged profile, and `MousePicture`. On the G9x it has only Off and Static, and no factory restore.
@@ -63,7 +64,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/Logo.cs`: draws the GL logo at any size and writes the multi-size ico.
 - `app/SelfTest.cs`: self-checks with golden bytes from the real keyboard. Add a check here whenever the encoding or rules change.
 - `app/Traces.cs`: traces, run by the self-test. Each one drives a real screen (`Page515`, `PageMouse`, `PageHeadset`) on a fake device through a script of clicks, and records every message sent (`Hidpp.Tap`) and the state of the screen after each step. They're compared with `app/tests/<device>.txt`, and the build stops at the first line that differs. A change that's meant to change what's sent: run `build\selftest.exe --record` from `app`, check the diff of `app/tests`, and commit it with the change. A failing run writes `app/tests/<device>.fail.txt`. The screens get test hooks: `Ctl.Press`, `Seg.Pick`, `Drop.Pick`, `Slider.Put`, `Ui.Popped` for menus, `Win.TestIdle`, `Presence.Set`, `Page515.Manual` (no watch timer; the script calls `Watch`). `FakeMouse.G305()` is built from the bytes of a real G305.
-- `app/models/g515-tkl.json`, `g515-tkl-iso.json`, `g915-tkl.json`, `g915.json`: the key layouts. The G515 page picks ISO when 0x4540 reports a layout above 2.
+- `app/models/g515-tkl.json`, `g515-tkl-iso.json`, `g915-tkl.json`, `g915.json`, `g512-x-75.json`: the key layouts. The G515 page picks ISO when 0x4540 reports a layout above 2.
   - A row is written `Label:width|...`.
   - `_n` is a gap of n units.
   - A row made only of gaps adds vertical space.
