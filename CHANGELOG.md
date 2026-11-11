@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Charging shows as a spark in the battery icon. A device that only reports its voltage (like the G Pro Wireless) shows a level estimated from the charging voltage, keeps the level it had when you plugged it in and counts up from there, and shows 100% when it says it's full.
+- A moon with stars replaces the word asleep for a device that doesn't answer.
+
+### Changed
+
+- Devices update live: the receivers say when a device wakes up or goes to sleep, and a device's battery message updates it when charging starts or stops. Every battery is read once a minute and when you hover the tray icon.
+- The battery level comes before its icon, and the icons line up on the right in the device list, the tray menu and the hover popup.
+
+### Fixed
+
+- A keyboard on its cable showed twice, once on the cable and once asleep on its receiver.
+
 ## [0.0.17-alpha] - 2026-11-10
 
 ### Added
