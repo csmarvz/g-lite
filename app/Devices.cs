@@ -173,6 +173,7 @@ static class Devices
         Task.WaitAll(tasks, 20000);
         var all = tasks.Where(t => t.IsCompleted).SelectMany(t => t.Result).ToList();
         try { all.AddRange(Plain()); } catch (Exception) { }
+        all.RemoveAll(f => f.Asleep && f.Wpid != 0 && all.Any(o => !o.Asleep && Regex.IsMatch(o.Models, @"\b" + f.Wpid.ToString("X4") + @"\b")));
         foreach (var f in all.Where(f => !f.Asleep && f.Approx && f.Battery >= 0)) Remember(f, DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute);
         foreach (var f in all.Where(f => !f.Asleep && f.Wpid != 0)) Settings.Set("seen." + f.Wpid.ToString("X4"), f.Name + "|" + f.Kind);
         return all.Where(f => Found.LooksG(f.Name)).OrderBy(f => f.Kind == "keyboard" ? 0 : f.Kind == "mouse" ? 1 : f.Kind == "headset" ? 2 : 3).ThenBy(f => f.Name).ToList();
