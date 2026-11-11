@@ -30,7 +30,7 @@ static class Report
         { 0x8110, new[] { 0 } },
         { 0x8101, new[] { 8, 0xC } },
         { 0x8300, new[] { 0 } },
-        { 0x8310, new[] { 2 } },
+        { 0x8310, new[] { 0, 1, 2 } },
     };
 
     static readonly Dictionary<int, string> Names = new Dictionary<int, string>
@@ -325,7 +325,14 @@ static class Report
                 }
             case 0x8110: r.Show("buttons", id, 0); break;
             case 0x8300: r.Show("sidetone", id, 0); break;
-            case 0x8310: r.Show("bands", id, 2); break;
+            case 0x8310:
+                {
+                    var info = r.Show("info", id, 0);
+                    int count = info == null ? 0 : Math.Min((int)info[0], 32);
+                    for (int start = 0; start < count; start += 7) r.Show("frequencies " + start, id, 1, (byte)start);
+                    r.Show("bands", id, 2);
+                    break;
+                }
         }
     }
 

@@ -239,6 +239,12 @@ static class SelfTest
         Check(Found.FromChargingVolts(4096) == 44 && Found.FromChargingVolts(4200) == 68 && Found.FromChargingVolts(4300) == 68 && Found.FromChargingVolts(3000) == 2, "battery estimate from the charging voltage");
         Check(new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071, 0x8040, 0x8101 } }.IsG515 && !new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071 } }.IsG515, "the G515 needs its three features");
         Check(new Found { Name = "G512 X 75", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8101 } }.IsG512X && !new Found { Name = "G512 X 98", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8101 } }.IsG512X && !new Found { Name = "G512 X 75", Features = new[] { 0x8071 } }.IsG512X, "the G512 X 75 is told apart, with its features");
+        Check(new Found { Name = "G560 Gaming Speaker", Features = new[] { 0x8070, 0x8040 } }.IsG560 && !new Found { Name = "G560 Gaming Speaker", Features = new[] { 0x8040 } }.IsG560, "the G560 needs its lighting feature");
+        var breathe = new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 4800, Bright = 50 };
+        var speakerLights = GSpeaker.FromText(GSpeaker.ToText(new[] { breathe, null, new MouseLight(), breathe }), 4);
+        var oneForAll = GSpeaker.FromText("1,FF0000,5000,100", 4);
+        Check(speakerLights != null && speakerLights[0].Same(breathe) && speakerLights[1] == null && speakerLights[2].Same(new MouseLight()) && speakerLights[3].Same(breathe)
+            && oneForAll.All(l => l != null && l.Color == 0xFF0000) && GSpeaker.FromText("7,FFFFFF,1000,100", 4) == null && GSpeaker.FromText("", 4) == null, "speaker zone lighting round-trips through text, one light sets every zone, unknown effects are dropped");
         Check(new Found { Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Features = new[] { 0x8071, 0x8040, 0x8100 } }.IsG915
             && !new Found { Name = "G915 X LIGHTSPEED", Features = new[] { 0x8071, 0x8040, 0x8100 } }.IsG915
             && new Found { Name = "G915 WIRELESS RGB MECHANICAL GAMING KEYBOARD" }.Short == "G915"

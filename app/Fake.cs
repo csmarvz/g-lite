@@ -151,6 +151,33 @@ class FakeHidpp : Hidpp
     }
 }
 
+class FakeSpeaker : Hidpp
+{
+    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8070, 4 }, { 0x8040, 8 } };
+    static readonly byte[] Effects = { 0x00, 0x01, 0x03, 0x07, 0x0A };
+    public readonly byte[][] Live = new byte[4][];
+
+    public FakeSpeaker() : base(false) { }
+
+    public override void Dispose() { }
+
+    protected override byte[] Send(byte feat, int fn, byte[] p)
+    {
+        Thread.Sleep(5);
+        var r = new byte[16];
+        if (feat == 0) { byte i; r[0] = Index.TryGetValue(p[0] << 8 | p[1], out i) ? i : (byte)0; }
+        else if (feat == Index[0x8070])
+        {
+            if (fn == 0) r[0] = 4;
+            else if (fn == 1) { r[0] = p[0]; r[2] = (byte)(p[0] + 1); r[3] = (byte)Effects.Length; }
+            else if (fn == 2) { if (p[1] >= Effects.Length) throw new HidppError(2, "invalid argument"); r[0] = p[0]; r[1] = p[1]; r[3] = Effects[p[1]]; }
+            else if (fn == 3) { if (p[0] >= 4) throw new HidppError(2, "invalid argument"); Live[p[0]] = p.Take(12).ToArray(); }
+        }
+        else if (feat != Index[0x8040]) throw new HidppError(2, "invalid argument");
+        return r;
+    }
+}
+
 class FakeG915 : Hidpp
 {
     Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8071, 10 }, { 0x8040, 20 }, { 0x8100, 21 } };

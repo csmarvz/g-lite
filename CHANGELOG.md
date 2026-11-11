@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- G560 Gaming Speaker: lighting effects, colour, speed, brightness and presets, live on all four zones at once or on each one. Not checked on real speakers yet.
+
+### Changed
+
+- Reports read the equalizer's band count and frequencies too.
+
 ## [0.0.18-alpha] - 2026-11-11
 
 ### Added

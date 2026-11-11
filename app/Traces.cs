@@ -301,6 +301,31 @@ static class Traces
         }
     }
 
+    static string G560()
+    {
+        var found = new Found { Key = "trace|g560", Name = "G560 Gaming Speaker", Kind = "device", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 } };
+        using (var s = Begin(() => Support.For(found).Make(found, new FakeSpeaker(), null)))
+        {
+            s.Pick("Effect", "Static");
+            s.Press("Color 30D050");
+            s.Slide("Brightness", 50);
+            s.Pick("Effect", "Breathe");
+            s.Slide("Speed", 80);
+            s.Menu("More preset actions", "Save as new preset…");
+            s.Type("Green");
+            s.Press("Save");
+            s.Pick("Zone", "Zone 2");
+            s.Pick("Effect", "Static");
+            s.Press("Color 3080FF");
+            s.Pick("Zone", "All");
+            s.Pick("Effect", "Cycle");
+            s.Pick("Effect", "Off");
+            s.Pick("Preset", "None");
+            s.Pick("Preset", "Green");
+            return s.Text;
+        }
+    }
+
     static string Mouse(string name, FakeMouse device, int[] features)
     {
         var found = new Found { Key = "trace|" + name, Name = name, Kind = "mouse", Link = "LIGHTSPEED", Index = 1, Wpid = 0x4079, Features = features };
@@ -415,6 +440,7 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("g515", G515);
         yield return new KeyValuePair<string, Func<string>>("g915", G915);
         yield return new KeyValuePair<string, Func<string>>("g512x", G512X);
+        yield return new KeyValuePair<string, Func<string>>("g560", G560);
         yield return new KeyValuePair<string, Func<string>>("gpro", () => Mouse("G Pro Wireless Gaming Mouse", new FakeMouse(), new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("g305", () => Mouse("G305 Lightspeed Wireless Gaming Mouse", FakeMouse.G305(), new[] { 0x0001, 0x0003, 0x0005, 0x1000, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("wheel", Wheel);

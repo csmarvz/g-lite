@@ -21,6 +21,7 @@ class Found
     public bool IsG515 { get { return Name.ToUpper().Contains("G515") && Has(0x8071) && Has(0x8040) && Has(0x8101); } }
     public bool IsG915 { get { var n = Name.ToUpper(); return n.Contains("G915") && !n.Contains("G915 X") && Has(0x8071) && Has(0x8040) && Has(0x8100) && !Has(0x8101); } }
     public bool IsG512X { get { return Name.ToUpper().Contains("G512 X 75") && Has(0x8071) && Has(0x8040) && Has(0x8081); } }
+    public bool IsG560 { get { return Name.ToUpper().Contains("G560") && Has(0x8070); } }
     public bool IsMouse { get { return Kind == "mouse" && Has(0x2201); } }
     public bool IsG9x { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_(C066|C249)", RegexOptions.IgnoreCase); } }
     public bool IsHeadset { get { return Kind == "headset" && Has(0x8300); } }
