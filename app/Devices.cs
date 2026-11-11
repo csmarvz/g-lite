@@ -167,9 +167,13 @@ static class Devices
         return groups.Values.Where(p => p.Long != null).ToList();
     }
 
+    public static Dictionary<string, string> Shorts = new Dictionary<string, string>();
+
     public static List<Found> Scan()
     {
-        var tasks = Ports().Select(p => Task.Run(() => { try { return ScanPort(p); } catch (Exception) { return new List<Found>(); } })).ToArray();
+        var ports = Ports();
+        Shorts = ports.Where(p => p.Short != null).GroupBy(p => p.Long).ToDictionary(g => g.Key, g => g.First().Short);
+        var tasks = ports.Select(p => Task.Run(() => { try { return ScanPort(p); } catch (Exception) { return new List<Found>(); } })).ToArray();
         Task.WaitAll(tasks, 20000);
         var all = tasks.Where(t => t.IsCompleted).SelectMany(t => t.Result).ToList();
         try { all.AddRange(Plain()); } catch (Exception) { }
@@ -315,6 +319,19 @@ static class Devices
 
     static readonly int[] BatteryFeatures = { 0x1004, 0x1000, 0x1001, 0x1F20 };
 
+    public static Found ReadBattery(Found f)
+    {
+        if (f.BatteryFeature == 0) return null;
+        var copy = new Found { Name = f.Name, Index = f.Index, BatteryFeature = f.BatteryFeature, BatteryId = f.BatteryId };
+        byte[] r;
+        try { using (var pr = new Probe(f.Path, f.ShortPath)) r = pr.Call(f.Index, f.BatteryFeature, f.BatteryId == 0x1004 ? 1 : 0); }
+        catch (Exception) { return null; }
+        if (r == null) return null;
+        Decode(copy, r);
+        if (copy.Approx) Remember(copy, DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute);
+        return copy;
+    }
+
     static void Battery(Probe pr, Found f)
     {
         foreach (var id in BatteryFeatures)
@@ -339,6 +356,43 @@ static class Devices
         f.Charging = f.BatteryId == 0x1001 ? (r[2] & 0x80) != 0 : r[2] == 3;
         f.Battery = !f.Charging ? Found.FromVolts(f.Millivolts) : f.BatteryId == 0x1001 && (r[2] & 0x07) == 1 ? 100 : Found.FromChargingVolts(f.Millivolts);
     }
+}
+
+class Watch : IDisposable
+{
+    readonly List<FileStream> streams = new List<FileStream>();
+    volatile bool done;
+
+    public Watch(IEnumerable<string> paths, Action<string, byte[]> heard)
+    {
+        foreach (var path in paths)
+        {
+            Listen(path, path, 20, heard);
+            string shortPath;
+            if (Devices.Shorts.TryGetValue(path, out shortPath)) Listen(shortPath, path, 7, heard);
+        }
+    }
+
+    void Listen(string path, string key, int size, Action<string, byte[]> heard)
+    {
+        var handle = Devices.Open(path);
+        if (handle.IsInvalid) return;
+        var stream = new FileStream(handle, FileAccess.ReadWrite, 1, true);
+        streams.Add(stream);
+        Task.Run(() =>
+        {
+            var buffer = new byte[size];
+            while (!done)
+            {
+                int n;
+                try { n = stream.Read(buffer, 0, size); }
+                catch (Exception) { return; }
+                if (n >= 7) heard(key, (byte[])buffer.Clone());
+            }
+        });
+    }
+
+    public void Dispose() { done = true; foreach (var s in streams) s.Dispose(); }
 }
 
 class Probe : IDisposable

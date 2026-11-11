@@ -29,13 +29,16 @@ class MainWindow : Form
     List<Found> found = new List<Found>();
     string selected, note;
     Control shown;
-    bool scanning;
+    bool scanning, reading;
+    Watch watch;
+    string watched = "";
+    DateTime batteriesRead;
     readonly EmptyPage empty;
     readonly Label noneText;
     readonly Control side, settingsPage;
     readonly Btn settingsBtn, logsBtn, scanBtn, minimize, close;
     readonly LogsPage logsPage;
-    readonly System.Windows.Forms.Timer rescanSoon = new System.Windows.Forms.Timer { Interval = 1500 }, sleepers = new System.Windows.Forms.Timer { Interval = 15000 };
+    readonly System.Windows.Forms.Timer rescanSoon = new System.Windows.Forms.Timer { Interval = 1500 }, sleepers = new System.Windows.Forms.Timer { Interval = 15000 }, batteries = new System.Windows.Forms.Timer { Interval = 60000 };
     readonly Box updBox;
     readonly Label updText, checkText, themeHint;
     readonly Seg themeSeg;
@@ -118,6 +121,8 @@ class MainWindow : Form
         empty = Ui.Add(this, new EmptyPage(Drag, Rescan), SideW, 0, W - SideW, H);
         rescanSoon.Tick += (s, e) => { rescanSoon.Stop(); Rescan(); };
         sleepers.Tick += (s, e) => { if (Visible) Rescan(); };
+        batteries.Tick += (s, e) => ReadBatteries();
+        if (!demo) batteries.Start();
 
         settingsPage = Ui.Add(this, new Control { Visible = false }, SideW, 0, W - SideW, H);
         Ui.Style(settingsPage, () => settingsPage.BackColor = Theme.Bg);
@@ -280,6 +285,72 @@ class MainWindow : Form
         });
     }
 
+    public void ReadBatteries()
+    {
+        if (demo || (DateTime.UtcNow - batteriesRead).TotalSeconds < 5) return;
+        var due = found.Where(f => !f.Asleep && f.Battery >= 0 && f.Path != null && !f.Hidpp10 && !f.PlainHid && f.BatteryFeature != 0).ToList();
+        if (scanning || reading || due.Count == 0) return;
+        reading = true;
+        batteriesRead = DateTime.UtcNow;
+        Task.Run(() =>
+        {
+            var read = due.Select(f => new { f, now = Devices.ReadBattery(f) }).ToList();
+            BeginInvoke((Action)(() =>
+            {
+                reading = false;
+                foreach (var r in read) if (r.now != null) ShowBattery(r.f, r.now);
+                if (read.Any(r => r.now == null)) RescanSoon();
+            }));
+        });
+    }
+
+    void RescanSoon()
+    {
+        rescanSoon.Stop();
+        rescanSoon.Start();
+    }
+
+    void ShowBattery(Found f, Found now)
+    {
+        if (!found.Contains(f)) return;
+        f.Battery = now.Battery;
+        f.Charging = now.Charging;
+        f.Millivolts = now.Millivolts;
+        DevItem item;
+        if (items.TryGetValue(f.Key, out item)) { item.Level = f.Level; item.Value = f.BatteryText; item.Invalidate(); }
+        Control page;
+        if (pages.TryGetValue(f.Key, out page))
+        {
+            if (page is DevicePage) ((DevicePage)page).SetFound(f);
+            else ((InfoPage)page).SetFound(f);
+        }
+    }
+
+    void Heard(string path, byte[] report)
+    {
+        if (report[0] == 0x10 && report[2] == 0x41) { BeginInvoke((Action)RescanSoon); return; }
+        if (report[0] != 0x11 || report[3] != 0x00) return;
+        BeginInvoke((Action)(() =>
+        {
+            var f = found.FirstOrDefault(d => d.Path == path && d.Index == report[1] && !d.Asleep && d.BatteryFeature != 0 && d.BatteryFeature == report[2]);
+            if (f == null) return;
+            var now = new Found { Name = f.Name, BatteryId = f.BatteryId };
+            Devices.Decode(now, report.Skip(4).ToArray());
+            if (now.Approx) Devices.Remember(now, DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute);
+            ShowBattery(f, now);
+        }));
+    }
+
+    void Listen(List<Found> list)
+    {
+        var paths = list.Where(f => f.Path != null && !f.PlainHid && !f.Hidpp10).Select(f => f.Path).Distinct().OrderBy(p => p).ToList();
+        var key = string.Join("|", paths);
+        if (key == watched) return;
+        watched = key;
+        if (watch != null) watch.Dispose();
+        watch = paths.Count == 0 ? null : new Watch(paths, Heard);
+    }
+
     void Apply(List<Found> list)
     {
         scanning = false;
@@ -332,7 +403,8 @@ class MainWindow : Form
         noneText.Visible = list.Count == 0;
         minimize.BringToFront();
         close.BringToFront();
-        sleepers.Enabled = list.Any(f => f.Asleep);
+        sleepers.Enabled = list.Any(f => f.Asleep && !Devices.Shorts.ContainsKey(f.Path ?? ""));
+        if (!demo) Listen(list);
         if (!settingsPage.Visible && !logsPage.Visible) Pick(selected);
     }
 
@@ -403,7 +475,7 @@ class MainWindow : Form
     {
         if (m.Msg == Win.DpiChanged) Rescale(Win.FromMessage(m));
         Presence.Power(m);
-        if (m.Msg == 0x0219 && !demo) { rescanSoon.Stop(); rescanSoon.Start(); }
+        if (m.Msg == 0x0219 && !demo) RescanSoon();
         base.WndProc(ref m);
     }
 
@@ -602,7 +674,7 @@ class MainWindow : Form
                 if (panel.Available != null) rows.Add(new[] { "Update", panel.Available });
                 return rows;
             };
-            tray.MouseMove += (s, e) => { if (!menu.Visible) tip.Moved(); };
+            tray.MouseMove += (s, e) => { if (menu.Visible) return; tip.Moved(); panel.ReadBatteries(); };
             tray.MouseDown += (s, e) => tip.Gone();
             Action fill = () =>
             {
