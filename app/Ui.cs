@@ -282,6 +282,11 @@ static class Icons
                     g.DrawEllipse(p, 9, 11.5f, 6, 6);
                     g.FillEllipse(b, 11, 6, 2, 2);
                     break;
+                case "light":
+                    using (var path = Ui.Round(new RectangleF(3, 4, 18, 6), 2)) g.DrawPath(p, path);
+                    g.DrawLine(p, 12, 10, 12, 20);
+                    g.DrawLine(p, 8, 20, 16, 20);
+                    break;
                 case "device":
                     using (var path = Ui.Round(new RectangleF(4, 4, 16, 16), 3)) g.DrawPath(p, path);
                     g.FillEllipse(b, 10.5f, 10.5f, 3, 3);

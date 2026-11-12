@@ -14,6 +14,7 @@ static class Report
     {
         { 0x0001, new[] { 0, 1 } },
         { 0x0003, new[] { 0, 1 } },
+        { 0x1990, new[] { 0, 2, 3, 7, 8 } },
         { 0x1B04, new[] { 0, 1 } },
         { 0x1F20, new[] { 0, 1 } },
         { 0x2121, new[] { 0, 1, 3 } },
@@ -37,7 +38,7 @@ static class Report
     {
         { 0x0001, "feature set" }, { 0x0003, "firmware" }, { 0x0005, "name" }, { 0x0007, "friendly name" },
         { 0x0020, "config change" }, { 0x1000, "battery" }, { 0x1001, "battery voltage" }, { 0x1004, "battery" },
-        { 0x1300, "LED control" }, { 0x1814, "change host" }, { 0x1815, "hosts info" }, { 0x1B04, "controls" },
+        { 0x1300, "LED control" }, { 0x1814, "change host" }, { 0x1815, "hosts info" }, { 0x1990, "illumination" }, { 0x1B04, "controls" },
         { 0x1D4B, "wireless status" }, { 0x1F20, "battery and auto-off" }, { 0x2121, "scroll wheel" }, { 0x2201, "DPI" }, { 0x4540, "keyboard layout" },
         { 0x8010, "G keys" }, { 0x8020, "M keys" }, { 0x8030, "MR key" }, { 0x8040, "brightness" }, { 0x8060, "report rate" },
         { 0x8070, "LED effects" }, { 0x8071, "RGB effects" }, { 0x8080, "per-key lighting" }, { 0x8081, "per-key lighting" },
@@ -305,6 +306,7 @@ static class Report
                     for (int i = 0; c != null && i < Math.Min((int)c[0], 48); i++) r.Show("control " + i, 0x1B04, 1, (byte)i);
                     break;
                 }
+            case 0x1990: r.Show("on", id, 0); r.Show("brightness info", id, 2); r.Show("brightness", id, 3); r.Show("temperature info", id, 7); r.Show("temperature", id, 8); break;
             case 0x1F20: r.Show("battery", id, 0); r.Show("auto-off", id, 1); break;
             case 0x2121: r.Show("wheel", id, 0); r.Show("mode", id, 1); r.Show("ratchet", id, 3); break;
             case 0x2201: r.Show("sensors", id, 0); r.Show("dpi list", id, 1, 0); r.Show("dpi", id, 2, 0); break;

@@ -178,6 +178,52 @@ class FakeSpeaker : Hidpp
     }
 }
 
+class FakeLight : Hidpp
+{
+    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x1990, 6 }, { 0x8040, 0x0A }, { 0x8081, 0x0C } };
+    public bool FrontOn = true, BackOn = true;
+    public int Lumen = 200, Kelvin = 4000, BackLevel = 80, Frames;
+    public readonly int[] Colors = new int[7];
+
+    public FakeLight() : base(false) { }
+
+    public override void Dispose() { }
+
+    protected override byte[] Send(byte feat, int fn, byte[] p)
+    {
+        Thread.Sleep(5);
+        var r = new byte[16];
+        if (feat == 0) { byte i; r[0] = Index.TryGetValue(p[0] << 8 | p[1], out i) ? i : (byte)0; }
+        else if (feat == Index[0x1990])
+        {
+            if (fn == 0) r[0] = (byte)(FrontOn ? 1 : 0);
+            else if (fn == 1) FrontOn = p[0] == 1;
+            else if (fn == 2) { r[2] = 30; r[3] = 0x01; r[4] = 0x90; r[6] = 1; }
+            else if (fn == 3) { r[0] = (byte)(Lumen >> 8); r[1] = (byte)Lumen; }
+            else if (fn == 4) Lumen = p[0] << 8 | p[1];
+            else if (fn == 7) { r[1] = 0x0A; r[2] = 0x8C; r[3] = 0x19; r[4] = 0x64; r[6] = 100; }
+            else if (fn == 8) { r[0] = (byte)(Kelvin >> 8); r[1] = (byte)Kelvin; }
+            else if (fn == 9) Kelvin = p[0] << 8 | p[1];
+            else throw new HidppError(7, "invalid function");
+        }
+        else if (feat == Index[0x8040])
+        {
+            if (fn == 1) { r[1] = (byte)BackLevel; }
+            else if (fn == 2) BackLevel = p[1];
+            else if (fn == 3) r[0] = (byte)(BackOn ? 1 : 0);
+            else if (fn == 4) BackOn = p[0] == 1;
+        }
+        else if (feat == Index[0x8081])
+        {
+            if (fn == 0) { r[1] = p[1]; if (p[1] == 0) r[2] = 0xFE; }
+            else if (fn == 1) { for (int i = 0; i + 3 < p.Length && i < 16; i += 4) if (p[i] >= 1 && p[i] <= 7) Colors[p[i] - 1] = p[i + 1] << 16 | p[i + 2] << 8 | p[i + 3]; }
+            else if (fn == 7) Frames++;
+        }
+        else throw new HidppError(2, "invalid argument");
+        return r;
+    }
+}
+
 class FakeG915 : Hidpp
 {
     Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8071, 10 }, { 0x8040, 20 }, { 0x8100, 21 } };

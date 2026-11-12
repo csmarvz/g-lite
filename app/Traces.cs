@@ -326,6 +326,33 @@ static class Traces
         }
     }
 
+    static string Litra()
+    {
+        var found = new Found { Key = "trace|litra", Name = "Litra Beam LX", Kind = "light", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1990, 0x8040, 0x8081 } };
+        using (var s = Begin(() => Support.For(found).Make(found, new FakeLight(), null)))
+        {
+            s.Press("Front light on");
+            s.Slide("Front brightness", 50);
+            s.Slide("Color temperature", 10);
+            s.Slide("Back brightness", 40);
+            s.Press("Color FF2020");
+            s.Pick("Zone", "3");
+            s.Press("Color 3080FF");
+            s.Menu("More preset actions", "Save as new preset…");
+            s.Type("Desk");
+            s.Press("Save");
+            s.Press("Back light on");
+            s.Pick("Zone", "All");
+            s.Press("Color FFFFFF");
+            s.Press("Revert changes");
+            s.Pick("Effect", "Breathe");
+            s.Slide("Speed", 80);
+            s.Pick("Effect", "Wave");
+            s.Pick("Effect", "Static");
+            return s.Text;
+        }
+    }
+
     static string Mouse(string name, FakeMouse device, int[] features)
     {
         var found = new Found { Key = "trace|" + name, Name = name, Kind = "mouse", Link = "LIGHTSPEED", Index = 1, Wpid = 0x4079, Features = features };
@@ -441,6 +468,7 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("g915", G915);
         yield return new KeyValuePair<string, Func<string>>("g512x", G512X);
         yield return new KeyValuePair<string, Func<string>>("g560", G560);
+        yield return new KeyValuePair<string, Func<string>>("litra", Litra);
         yield return new KeyValuePair<string, Func<string>>("gpro", () => Mouse("G Pro Wireless Gaming Mouse", new FakeMouse(), new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("g305", () => Mouse("G305 Lightspeed Wireless Gaming Mouse", FakeMouse.G305(), new[] { 0x0001, 0x0003, 0x0005, 0x1000, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("wheel", Wheel);

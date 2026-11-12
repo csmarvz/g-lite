@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Litra Beam LX, Beam and Glow: the front light's power, brightness and colour temperature, and on the Beam LX the back light's power, brightness, colours (all seven zones or each one), Breathe, Cycle and Wave (run by G-Lite while it's open) and the Screen effect. Not checked on a real light yet.
+
+### Changed
+
+- Every Logitech device that answers G-Lite shows up in the sidebar, not only G devices, so anyone can send a report for theirs. Devices that aren't G devices only get the info page.
+
 ## [0.0.20-alpha] - 2026-11-11
 
 ### Changed

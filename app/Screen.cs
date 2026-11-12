@@ -18,7 +18,7 @@ class Zone
 
 class ScreenSetup
 {
-    public static readonly int[] Marks = { 0x3B82F6, 0x8B6CF0, 0xE5533D, 0xF29D38, 0x2FB57D };
+    public static readonly int[] Marks = { 0x3B82F6, 0x8B6CF0, 0xE5533D, 0xF29D38, 0x2FB57D, 0x22B8C8, 0xE0559A };
     public const int MaxZones = 5;
     public string Monitor = "";
     public List<Zone> Zones = Defaults();
@@ -112,7 +112,7 @@ class ScreenSetup
                             Func<int, float> n = i => Math.Max(0, Math.Min(1, float.Parse(f[i], CultureInfo.InvariantCulture)));
                             zones.Add(new Zone { Name = f[0], Mark = int.Parse(f[1], NumberStyles.HexNumber), Area = new RectangleF(n(2), n(3), n(4), n(5)) });
                         }
-                        if (zones.Count > 0) s.Zones = zones.Take(MaxZones).ToList();
+                        if (zones.Count > 0) s.Zones = zones.Take(Marks.Length).ToList();
                         break;
                     case "keys":
                         foreach (var k in value.Split(',').Where(k => k.Contains('.')))

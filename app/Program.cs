@@ -394,7 +394,7 @@ class MainWindow : Form
             item.Sub = f.Sub;
             item.Level = f.Level;
             item.Value = f.BatteryText;
-            item.Icon = f.IsG560 ? "speaker" : f.Kind == "keyboard" || f.Kind == "mouse" || f.Kind == "headset" ? f.Kind : "device";
+            item.Icon = f.IsG560 ? "speaker" : f.Kind == "light" || f.Kind == "keyboard" || f.Kind == "mouse" || f.Kind == "headset" ? f.Kind : "device";
             item.AccessibleName = f.Short;
             item.Location = new Point(S(10), S(y));
             item.Invalidate();
@@ -448,6 +448,7 @@ class MainWindow : Form
             new Found { Key = "demo|mouse", Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "Demo", Index = 1, Wpid = 0x4079, Battery = 54, Approx = true, Millivolts = 3824, Firmware = "MPM 15.02 · build 0017", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
             new Found { Key = "demo|g9x", Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04", Firmware = "58.02 · build 0018" },
             new Found { Key = "demo|g560", Name = "G560 Gaming Speaker", Kind = "device", Link = "Demo", Index = 0xFF, Firmware = "U1 22.03 · build 0023", Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 } },
+            new Found { Key = "demo|litra", Name = "Litra Beam LX", Kind = "light", Link = "Demo", Index = 0xFF, Firmware = "U1 03.02 · build 0011", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1990, 0x8040, 0x8081 } },
             new Found { Key = "demo|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "Demo", Index = 0xFF, Battery = 71, Approx = true, Millivolts = 3926, Firmware = "U1 12.01 · build 0203", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300 } },
         };
     }
@@ -744,8 +745,9 @@ class Support
         new Support { Matches = f => f.IsG9x, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new G9xMouse()), Fake = () => new FakeG9x() },
         new Support { Matches = f => f.IsMouse, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new HidppMouse()), Fake = () => new FakeMouse() },
         new Support { Matches = f => f.IsG560, Screen = typeof(PageSpeaker), Make = (f, d, drag) => new PageSpeaker(f, d, drag), Fake = () => new FakeSpeaker() },
+        new Support { Matches = f => f.IsLight, Screen = typeof(PageLight), Make = (f, d, drag) => new PageLight(f, d, drag), Fake = () => new FakeLight() },
         new Support { Matches = f => f.IsHeadset, Screen = typeof(PageHeadset), Make = (f, d, drag) => new PageHeadset(f, d, drag), Fake = () => new FakeHeadset() },
     };
 
-    public static Support For(Found f) { return f.Asleep ? null : All.FirstOrDefault(s => s.Matches(f)); }
+    public static Support For(Found f) { return f.Asleep || !f.IsG ? null : All.FirstOrDefault(s => s.Matches(f)); }
 }

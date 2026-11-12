@@ -32,9 +32,10 @@ If Windows says it protected your PC, click **More info**, then **Run anyway**. 
 | PRO X Wireless | Its own LIGHTSPEED receiver | Sidetone, turning off when idle, battery, profiles |
 | G512 X 75 | USB | Untested. Lighting effects, colour, speed, direction, brightness and profiles, live only, on the keys and the light bar. The key picture isn't checked on a real keyboard yet. Not yet: saving to the keyboard, the knobs and actuation. See [docs/G512X.md](docs/G512X.md). |
 | G560 Gaming Speaker | USB | Untested. Lighting effects, colour, speed, brightness and profiles, live only, on all four zones or each one. Not yet: zone names, the audio visualizer effect, the equalizer. See [docs/G560.md](docs/G560.md). |
+| Litra Beam LX, Beam and Glow | USB | Untested. Front light on and off, brightness and colour temperature. On the Beam LX, the back light: on and off, brightness, Static, Breathe, Cycle and Wave (run by G-Lite, so they stop when it closes) with a colour for all seven zones or each one, and the Screen effect. Profiles. Live only. See [docs/Litra.md](docs/Litra.md). |
 | G915 and G915 TKL | LIGHTSPEED receiver or USB | Untested. Lighting effects, colour, speed, direction, brightness and profiles, live only. G-Lite sets your lighting again when it starts and when you open the keyboard, but can't save it to the keyboard yet. |
 
-Other G mice and headsets with the same features get the same screens, but they haven't been tested. Other Logitech G devices show up in the sidebar with their connection, battery and firmware, but G-Lite can't change their settings yet. Devices that could come next are listed in [#11](https://github.com/csmarvz/g-lite/issues/11). To help add yours, open it in G-Lite, click **Report** and send the report in a new issue.
+Other G mice and headsets with the same features get the same screens, but they haven't been tested. Other Logitech devices show up in the sidebar with their connection, battery and firmware, but G-Lite can't change their settings yet. Devices that could come next are listed in [#11](https://github.com/csmarvz/g-lite/issues/11). To help add yours, open it in G-Lite, click **Report** and send the report in a new issue.
 
 ## References
 

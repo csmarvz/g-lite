@@ -243,6 +243,27 @@ static class SelfTest
         Check(new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071, 0x8040, 0x8101 } }.IsG515 && !new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071 } }.IsG515, "the G515 needs its three features");
         Check(new Found { Name = "G512 X 75", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8101 } }.IsG512X && !new Found { Name = "G512 X 98", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8101 } }.IsG512X && !new Found { Name = "G512 X 75", Features = new[] { 0x8071 } }.IsG512X, "the G512 X 75 is told apart, with its features");
         Check(new Found { Name = "G560 Gaming Speaker", Features = new[] { 0x8070, 0x8040 } }.IsG560 && !new Found { Name = "G560 Gaming Speaker", Features = new[] { 0x8040 } }.IsG560, "the G560 needs its lighting feature");
+        Check(new Found { Name = "Litra Beam LX", Features = new[] { 0x1990 } }.IsLight && new Found { Path = @"\?\hid#vid_046d&pid_c903&col02", Features = new[] { 0x1990 } }.IsLight && !new Found { Name = "Litra Beam LX" }.IsLight, "a Litra is found by its name or product id, with its light feature");
+        Check(Support.For(new Found { Name = "MX Master 3", Kind = "mouse", Features = new[] { 0x2201, 0x8100 } }) == null && Support.For(new Found { Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Features = new[] { 0x2201 } }) != null, "a device that isn't a G device only gets the info page");
+        var lightState = new LightState { FrontOn = true, Lumen = 120, Kelvin = 5000, BackOn = false, BackLevel = 40, Colors = new[] { 1, 2, 3, 4, 5, 6, 0xFF0000 } };
+        var lightCopy = new LightState();
+        Check(lightCopy.ReadFront(lightState.FrontText()) && lightCopy.ReadBack(lightState.BackText()) && lightCopy.FrontText() == lightState.FrontText() && lightCopy.BackText() == lightState.BackText() && !lightCopy.ReadBack("1,50,FFFFFF"), "the light's settings round-trip through text, with all seven zones");
+        var breatheState = new LightState { Effect = LightState.Breathe, Period = 4000, Colors = Enumerable.Repeat(0xFF8000, 7).ToArray() };
+        var waveState = new LightState { Effect = LightState.Wave, Period = 7000 };
+        var waveCopy = new LightState();
+        Check(Litra.Frame(breatheState, 0)[0] == 0 && Litra.Frame(breatheState, 2000)[3] == 0xFF8000 && Math.Abs((Litra.Frame(breatheState, 1000)[6] >> 16) - 128) <= 1
+            && Litra.Hue(0) == 0xFF0000 && Litra.Hue(1 / 3.0) == 0x00FF00 && Litra.Hue(-1 / 3.0) == 0x0000FF
+            && Litra.Frame(waveState, 1000)[1] == Litra.Frame(waveState, 0)[0] && Litra.Frame(new LightState { Effect = LightState.Cycle, Period = 3000 }, 1000).All(c => c == 0x00FF00)
+            && waveCopy.ReadBack(waveState.BackText()) && waveCopy.Effect == LightState.Wave && waveCopy.Period == 7000 && !waveCopy.ReadBack("1,50,FFFFFF/FFFFFF/FFFFFF/FFFFFF/FFFFFF/FFFFFF/FFFFFF,9,5000"),
+            "the light's breathe, cycle and wave frames, and its effect round-trips through text");
+        var lightScreen = Litra.Screen("");
+        Check(lightScreen.Zones.Count == 7 && Litra.Screen(lightScreen.ToText()).Zones[6].Area == lightScreen.Zones[6].Area && Litra.Screen(new ScreenSetup().ToText()).Zones.Count == 7, "the light's screen effect has seven areas and keeps them");
+        var fakeLight = new FakeLight();
+        var lumenRange = Litra.Lumens(fakeLight);
+        var kelvinRange = Litra.Kelvins(fakeLight);
+        Litra.Colors(fakeLight, new[] { 0x000000, 0xFF0000, 0x00FF00, 0x0000FF, 0x123456, 0xFFFFFF, 0x808080 }, false);
+        Check(lumenRange.Min == 30 && lumenRange.Max == 400 && kelvinRange.Min == 2700 && kelvinRange.Max == 6500 && kelvinRange.Step == 100 && kelvinRange.Snap(4049) == 4000
+            && fakeLight.Colors[0] == 0x010101 && fakeLight.Colors[1] == 0xFF0101 && fakeLight.Colors[6] == 0x808080 && fakeLight.Frames == 1, "the light reads its ranges, and sets its seven back zones in two messages and one frame");
         var breathe = new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 4800, Bright = 50 };
         var speakerScreen = GSpeaker.Screen("");
         Check(speakerScreen.Zones.Count == 4 && GSpeaker.Screen(speakerScreen.ToText()).Zones[3].Area == speakerScreen.Zones[3].Area && GSpeaker.Screen(new ScreenSetup().ToText()).Zones.Count == 4, "the speakers' screen effect has one area per zone and keeps it");

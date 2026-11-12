@@ -24,6 +24,9 @@ class Found
     public bool IsG560 { get { return Name.ToUpper().Contains("G560") && Has(0x8070); } }
     public bool IsMouse { get { return Kind == "mouse" && Has(0x2201); } }
     public bool IsG9x { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_(C066|C249)", RegexOptions.IgnoreCase); } }
+    public bool IsLitra { get { return Name.ToUpper().Contains("LITRA") || Path != null && Regex.IsMatch(Path, @"PID_C90[0-3]", RegexOptions.IgnoreCase); } }
+    public bool IsLight { get { return IsLitra && Has(0x1990); } }
+    public bool IsG { get { return LooksG(Name) || IsLitra; } }
     public bool IsHeadset { get { return Kind == "headset" && Has(0x8300); } }
     public bool HasAutoOff { get { return Path != null && Regex.IsMatch(Path, @"PID_(0AAA|0ABA|0AFB|0AFC)", RegexOptions.IgnoreCase) && Has(0x1F20); } }
 
@@ -197,8 +200,9 @@ static class Devices
         all.RemoveAll(f => f.Asleep && f.Wpid != 0 && all.Any(o => !o.Asleep && Regex.IsMatch(o.Models, @"\b" + f.Wpid.ToString("X4") + @"\b")));
         foreach (var f in all.Where(f => !f.Asleep && f.Approx && f.Battery >= 0)) Remember(f, DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute);
         foreach (var f in all.Where(f => Others.ContainsKey(f.Wpid))) { f.Name = Others[f.Wpid]; f.Coarse = true; }
+        foreach (var f in all.Where(f => f.IsLitra)) f.Kind = "light";
         foreach (var f in all.Where(f => !f.Asleep && f.Wpid != 0)) Settings.Set("seen." + f.Wpid.ToString("X4"), f.Name + "|" + f.Kind);
-        return all.Where(f => f.PlainHid || Found.LooksG(f.Name) || Others.ContainsKey(f.Wpid)).OrderBy(f => f.Kind == "keyboard" ? 0 : f.Kind == "mouse" ? 1 : f.Kind == "headset" ? 2 : 3).ThenBy(f => f.Name).ToList();
+        return all.Where(f => f.Name != "").OrderBy(f => f.PlainHid || f.IsG || Others.ContainsKey(f.Wpid) ? 0 : 1).ThenBy(f => f.Kind == "keyboard" ? 0 : f.Kind == "mouse" ? 1 : f.Kind == "headset" ? 2 : 3).ThenBy(f => f.Name).ToList();
     }
 
     public static void Remember(Found f, long minute)
@@ -320,6 +324,7 @@ static class Devices
             var type = pr.Call(idx, nm, 2);
             if (type != null && type[0] < Kinds.Length) f.Kind = Kinds[type[0]];
         }
+        if (f.Name == "") f.Name = Regex.Replace(Product(p.Long), @"^Logitech\s+", "", RegexOptions.IgnoreCase);
         byte fw = pr.Feature(idx, 0x0003);
         var entities = fw == 0 ? null : pr.Call(idx, fw, 0);
         f.Models = Found.ModelText(entities);
