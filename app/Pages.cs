@@ -65,15 +65,15 @@ abstract class DevicePage : Control, IPage
         moreBtn = Ui.Add(this, new Btn { Text = "…", AccessibleName = "More preset actions" }, 376, 72, 36, 32);
         moreBtn.Click += (s, e) => { if (naming) EndName(); else PresetMenu(); };
 
-        var line = Ui.Add(this, new Control(), 0, 623, 656, 1);
+        var line = Ui.Add(this, new Control(), 0, 673, 656, 1);
         Ui.Style(line, () => line.BackColor = Theme.Border);
-        status = Ui.Add(this, new StatusLine(), 20, 633, 460, 36);
-        undoBtn = Ui.Add(this, new Btn { Text = "Revert", Enabled = false, AccessibleName = "Revert changes" }, 416, 635, 72, 32);
+        status = Ui.Add(this, new StatusLine(), 20, 683, 460, 36);
+        undoBtn = Ui.Add(this, new Btn { Text = "Revert", Enabled = false, AccessibleName = "Revert changes" }, 416, 685, 72, 32);
         undoBtn.Click += (s, e) => Undo();
-        act = Ui.Add(this, new Btn { Visible = false }, 328, 635, 160, 32);
+        act = Ui.Add(this, new Btn { Visible = false }, 328, 685, 160, 32);
         act.TabIndex = 1000;
         act.Click += (s, e) => { if (actDo != null) actDo(); };
-        report = Ui.Add(this, new ReportView(noun, () => ReportView.TitleFor(found), Collect), 0, 72, 656, 608);
+        report = Ui.Add(this, new ReportView(noun, () => ReportView.TitleFor(found), Collect), 0, 72, 656, 658);
         report.Closed += () => { reportBtn.On = false; reportBtn.Invalidate(); reportBtn.Focus(); };
         reportBtn.Click += (s, e) =>
         {
@@ -490,7 +490,7 @@ class InfoPage : Control
         media = Ui.Add(state, new Toggle { AccessibleName = "Use F1–F12 as media keys" }, 14, 42, 34, 18);
         media.Changed += () => SendMedia(media.Checked, true);
         mediaLabel = Ui.Text(state, "Use F1–F12 as media keys", 60, 40, () => Theme.Text, 9.75f);
-        mediaLabel.Click += (s, e) => { media.Checked = !media.Checked; SendMedia(media.Checked, true); };
+        media.Follow(mediaLabel);
         mediaNote = Ui.Text(state, "When on, F1–F12 send media actions, and can't be typed.", 60, 62, () => Theme.Dim, 9f);
 
         var details = Ui.Add(this, new Box(), 20, 196, 616, 196);
@@ -502,7 +502,7 @@ class InfoPage : Control
         features.AutoSize = false;
         features.Size = new Size(470, 60);
         reportBtn = Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Report", AccessibleName = "Report of this device" }, 536 - 4 - 80, 10, 80, 28);
-        report = Ui.Add(this, new ReportView("device", () => ReportView.TitleFor(found), Collect), 0, 72, 656, 608);
+        report = Ui.Add(this, new ReportView("device", () => ReportView.TitleFor(found), Collect), 0, 72, 656, 658);
         report.Closed += () => { reportBtn.On = false; reportBtn.Invalidate(); reportBtn.Focus(); };
         reportBtn.Click += (s, e) => { if (report.Visible) report.Close(); else Open(); };
         create.Click += (s, e) => Open();
@@ -661,23 +661,23 @@ class ReportView : Control
         again = Ui.Add(head, new Btn { Text = "Read again", Icon = "refresh" }, 616 - 14 - 130, 26, 130, 32);
         again.Click += (s, e) => Read();
 
-        var body = Ui.Add(this, new Box(), 20, 104, 616, 435);
+        var body = Ui.Add(this, new Box(), 20, 104, 616, 485);
         Ui.Text(body, "Report", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
         size = Ui.Text(body, "", 300, 12, () => Theme.Dim, 9f);
         size.AutoSize = false;
         size.Size = new Size(302, 18);
         size.TextAlign = ContentAlignment.TopRight;
-        var inset = Ui.Add(body, new Control(), 14, 38, 588, 383);
+        var inset = Ui.Add(body, new Control(), 14, 38, 588, 433);
         Ui.Style(inset, () => inset.BackColor = Theme.Bg);
-        box = Ui.Add(inset, new TextBox { Multiline = true, ReadOnly = true, WordWrap = false, ScrollBars = ScrollBars.Both, BorderStyle = BorderStyle.None, AccessibleName = "Device report" }, 8, 6, 576, 373);
+        box = Ui.Add(inset, new TextBox { Multiline = true, ReadOnly = true, WordWrap = false, ScrollBars = ScrollBars.Both, BorderStyle = BorderStyle.None, AccessibleName = "Device report" }, 8, 6, 576, 423);
         Ui.Font(box, 9f, "Consolas");
         Ui.Style(box, () => { box.BackColor = Theme.Bg; box.ForeColor = Theme.Text; Dark(); });
         box.HandleCreated += (s, e) => Dark();
 
-        var line = Ui.Add(this, new Control(), 0, 551, 656, 1);
+        var line = Ui.Add(this, new Control(), 0, 601, 656, 1);
         Ui.Style(line, () => line.BackColor = Theme.Border);
-        status = Ui.Add(this, new StatusLine(), 20, 561, 256, 36);
-        var back = Ui.Add(this, new Btn { Text = "Back" }, 284, 564, 76, 32);
+        status = Ui.Add(this, new StatusLine(), 20, 611, 256, 36);
+        var back = Ui.Add(this, new Btn { Text = "Back" }, 284, 614, 76, 32);
         back.Click += (s, e) => Close();
         issue = Ui.Add(this, new Btn { Text = "Open GitHub issue" }, 368, 564, 160, 32);
         issue.Click += (s, e) => OpenIssue();
@@ -775,7 +775,7 @@ class LogsPage : Control
         MouseDown += drag;
         Ui.Text(this, "Logs", 20, 14, () => Theme.Text, 13.5f, Ui.Semi).MouseDown += drag;
 
-        var body = Ui.Add(this, new Box(), 20, 56, 616, 555);
+        var body = Ui.Add(this, new Box(), 20, 56, 616, 605);
         Ui.Text(body, "log.txt, newest last", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
         count = Ui.Text(body, "", 300, 12, () => Theme.Dim, 9f);
         count.AutoSize = false;
@@ -788,14 +788,14 @@ class LogsPage : Control
         Ui.Style(box, () => { box.BackColor = Theme.Bg; Dark(); if (Visible) Render(); });
         box.HandleCreated += (s, e) => Dark();
 
-        var line = Ui.Add(this, new Control(), 0, 623, 656, 1);
+        var line = Ui.Add(this, new Control(), 0, 673, 656, 1);
         Ui.Style(line, () => line.BackColor = Theme.Border);
-        status = Ui.Add(this, new StatusLine(), 20, 633, 280, 36);
-        var clear = Ui.Add(this, new Btn { Text = "Clear" }, 314, 636, 76, 32);
+        status = Ui.Add(this, new StatusLine(), 20, 683, 280, 36);
+        var clear = Ui.Add(this, new Btn { Text = "Clear" }, 314, 686, 76, 32);
         clear.Click += (s, e) => { Log.Clear(); Render(); status.Set("Log cleared", false, null); };
-        var folder = Ui.Add(this, new Btn { Text = "Open folder" }, 398, 636, 130, 32);
+        var folder = Ui.Add(this, new Btn { Text = "Open folder" }, 398, 686, 130, 32);
         folder.Click += (s, e) => OpenFolder();
-        var copy = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Copy" }, 536, 636, 100, 32);
+        var copy = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Copy" }, 536, 686, 100, 32);
         copy.Click += (s, e) => Copy();
         timer.Tick += (s, e) => { if (Visible && Log.Version != version) Render(); };
     }

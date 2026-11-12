@@ -19,7 +19,7 @@ class MainWindow : Form
 {
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-    const int W = 868, H = 680, SideW = 212, SideIn = SideW - 20;
+    const int W = 868, H = 730, SideW = 212, SideIn = SideW - 20;
 
     public NotifyIcon Tray;
     readonly FakeHidpp fake;

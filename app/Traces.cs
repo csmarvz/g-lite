@@ -34,11 +34,11 @@ class Script : IDisposable
     {
         lines.Add("open");
         Hidpp.Tap = text => { lock (gate) lines.Add("  " + text); };
-        host = new TraceHost { ShowInTaskbar = false, StartPosition = FormStartPosition.Manual, Location = new Point(-32000, -32000), FormBorderStyle = FormBorderStyle.None, Opacity = 0, ClientSize = new Size(656, 680) };
+        host = new TraceHost { ShowInTaskbar = false, StartPosition = FormStartPosition.Manual, Location = new Point(-32000, -32000), FormBorderStyle = FormBorderStyle.None, Opacity = 0, ClientSize = new Size(656, 730) };
         try
         {
             Page = make();
-            Page.Bounds = new Rectangle(0, 0, 656, 680);
+            Page.Bounds = new Rectangle(0, 0, 656, 730);
             host.Controls.Add(Page);
             host.Show();
             ((IPage)Page).Shown();
@@ -296,6 +296,17 @@ static class Traces
             s.Pick("Effect", "Wave");
             s.Pick("Effect", "Ripple");
             s.Slide("Brightness", 50);
+            s.Press("Lighting per zone");
+            s.Pick("Part", "Light bar");
+            s.Pick("Effect", "Breathe");
+            s.Press("Color FF2020");
+            s.Pick("Part", "Keys");
+            s.Pick("Effect", "Cycle");
+            s.Menu("More preset actions", "Save as new preset…");
+            s.Type("Split");
+            s.Press("Save");
+            s.Press("Lighting per zone");
+            s.Press("Revert changes");
             s.Do("quit", () => page.Exiting());
             return s.Text;
         }

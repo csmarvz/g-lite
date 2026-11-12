@@ -199,14 +199,14 @@ class PageMouse : DevicePage
         invert.Changed += () => SetInvert(invert.Checked);
         invertLabel = Ui.Text(sens, "Invert scrolling", 56, 242, () => Theme.Text, 9f);
         invertLabel.Visible = false;
-        invertLabel.Click += (s, e) => { invert.Checked = !invert.Checked; SetInvert(invert.Checked); };
+        invert.Follow(invertLabel);
         watch.Tick += (s, e) => Watch();
         if (!Manual) watch.Start();
 
         settingsArea = new Control[] { pic, light, sens };
         viewPick = Ui.Add(this, new Seg { Items = new[] { "Settings", "Buttons" }, AccessibleName = "View", Visible = false }, 440, 72, 196, 32);
         viewPick.Picked += i => ShowView(i == 1);
-        buttonsBox = Ui.Add(this, new Box { Visible = false }, 20, 118, 616, 493);
+        buttonsBox = Ui.Add(this, new Box { Visible = false }, 20, 118, 616, 543);
         Ui.Text(buttonsBox, "Buttons", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
         buttonsHint = Value(buttonsBox, 200, 12, 402);
         var actionNames = Bindings.Actions.Select(a => a.Name).Concat(new[] { "Keystroke…" }).ToList();
@@ -229,7 +229,7 @@ class PageMouse : DevicePage
         keyField.Box.KeyDown += (s, e) => { e.Handled = e.SuppressKeyPress = true; Recorded(e.KeyData); };
         pressedTimer.Tick += (s, e) => { pressedTimer.Stop(); pressedRow = -1; SyncButtons(); };
 
-        saveBtn = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Save to mouse" }, 496, 635, 140, 32);
+        saveBtn = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Save to mouse" }, 496, 685, 140, 32);
         saveBtn.Click += (s, e) => Save();
 
         Sync();

@@ -481,6 +481,7 @@ class Btn : Ctl
 class Seg : Ctl
 {
     public string[] Items = new string[0];
+    public int Off = -1;
     public event Action<int> Picked;
     int index = -1, hot = -1;
 
@@ -497,7 +498,7 @@ class Seg : Ctl
 
     public void Pick(int i)
     {
-        if (!Enabled || !Visible) throw new InvalidOperationException(AccessibleName + " can't be changed now");
+        if (!Enabled || !Visible || i == Off) throw new InvalidOperationException(AccessibleName + " can't be changed now");
         Slide(i);
         if (Picked != null) Picked(i);
     }
@@ -526,7 +527,8 @@ class Seg : Ctl
         if (d == 0) return;
         e.Handled = true;
         int to = Math.Max(0, Math.Min(Items.Length - 1, index < 0 ? 0 : index + d));
-        if (to == index) return;
+        if (to == Off) to = Math.Max(0, Math.Min(Items.Length - 1, to + d));
+        if (to == index || to == Off) return;
         Slide(to);
         later.Stop();
         later.Start();
@@ -540,7 +542,7 @@ class Seg : Ctl
 
     int Hit(Point p)
     {
-        for (int i = 0; i < Items.Length; i++) if (Cell(i).Contains(p)) return i;
+        for (int i = 0; i < Items.Length; i++) if (i != Off && Cell(i).Contains(p)) return i;
         return -1;
     }
 
@@ -573,7 +575,7 @@ class Seg : Ctl
             var r = Cell(i);
             bool lit = Math.Abs(Now - i) < 0.5f && index >= 0;
             Color fore = lit ? Theme.OnAccent : Theme.Text;
-            if (!Enabled) fore = Ui.Mix(lit ? Theme.Accent : Theme.Btn, fore, 0.45);
+            if (!Enabled || i == Off) fore = Ui.Mix(lit ? Theme.Accent : Theme.Btn, fore, 0.45);
             Ui.Draw(g, Items[i], Ui.Get(9.4f, lit ? Ui.Semi : Ui.Regular), r, fore,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
         }
@@ -606,7 +608,17 @@ class Toggle : Ctl
     bool on;
     public event Action Changed;
 
-    public Toggle() { AccessibleRole = AccessibleRole.CheckButton; }
+    public Toggle()
+    {
+        AccessibleRole = AccessibleRole.CheckButton;
+        SetStyle(ControlStyles.StandardDoubleClick, false);
+    }
+
+    public void Follow(Control label)
+    {
+        label.Click += (s, e) => { if (Enabled) OnClick(EventArgs.Empty); };
+        label.DoubleClick += (s, e) => { if (Enabled) OnClick(EventArgs.Empty); };
+    }
 
     public bool Checked { get { return on; } set { on = value; Jump(value ? 1 : 0); } }
 

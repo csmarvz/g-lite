@@ -300,7 +300,7 @@ class PageLight : DevicePage
         var label = Ui.Text(parent, text, x + 42, y, () => Theme.Text, 9f);
         label.AutoSize = false;
         label.Size = new Size(176, tall);
-        label.Click += (s, e) => { toggle.Checked = !toggle.Checked; flip(); ScreenChanged(); };
+        toggle.Follow(label);
         return toggle;
     }
 

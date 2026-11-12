@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- G512 X 75: the keys and the light bar can have their own effect. Turn on Lighting per zone, then pick Keys or Light bar, or click them in the picture. Turning it off gives the bar the keys' effect again. Ripple is for the keys only. The Screen effect still covers both.
+
+### Changed
+
+- The window is 50 px taller, to make room for more settings.
+
+### Fixed
+
+- Switches missed a second click made quickly after the first, which Windows counts as a double-click.
+
 ## [0.0.21-alpha] - 2026-11-12
 
 ### Added

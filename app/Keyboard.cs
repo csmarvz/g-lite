@@ -571,16 +571,17 @@ static class G915
 
     public static void Release(Hidpp h) { h.Call(h.F(0x8071), 5, 0x01, 0x00, 0x00); }
 
-    public static void Preview(Hidpp h, List<byte[]> clusters, Lighting l)
+    public static void Preview(Hidpp h, List<byte[]> clusters, Lighting l, Lighting others = null)
     {
         byte f = h.F(0x8071);
         int keys = Keys(clusters);
         if (Pick(l.Effect, clusters[keys], false) < 0) throw new Refused("This keyboard doesn't have that effect");
         for (int c = 0; c < clusters.Count; c++)
         {
-            int i = Pick(l.Effect, clusters[c], c != keys);
+            var light = c == keys || others == null ? l : others;
+            int i = Pick(light.Effect, clusters[c], c != keys);
             if (i < 0) continue;
-            h.Call(f, 1, new byte[] { (byte)c, (byte)i }.Concat(Encode(clusters[c][i], l)).Concat(new byte[] { 0x01 }).ToArray());
+            h.Call(f, 1, new byte[] { (byte)c, (byte)i }.Concat(Encode(clusters[c][i], light)).Concat(new byte[] { 0x01 }).ToArray());
         }
     }
 }
