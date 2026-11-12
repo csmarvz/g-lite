@@ -285,6 +285,18 @@ class PageLight : DevicePage
         if (back && (screening || Settings.Get(Remembered) != "")) Load();
     }
 
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            debounce.Dispose();
+            screenTimer.Dispose();
+            snapTimer.Dispose();
+            animTimer.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+
     Toggle Power(Control parent, int x, int y, string name, Action<bool> changed)
     {
         Ui.Text(parent, "Power", x, y, () => Theme.Dim, 9f);
@@ -391,7 +403,7 @@ class PageLight : DevicePage
 
     void Animate()
     {
-        if (!Animated || framing) return;
+        if (IsDisposed || !Animated || framing) return;
         var frame = Litra.Frame(cur, clock.Elapsed.TotalMilliseconds);
         if (framed != null && frame.SequenceEqual(framed)) return;
         framing = true;
@@ -404,7 +416,7 @@ class PageLight : DevicePage
 
     void Tick()
     {
-        if (!screening || !ready || capturing || framing) return;
+        if (IsDisposed || !screening || !ready || capturing || framing) return;
         if (setup.PauseWhenLocked && (Presence.Locked || Presence.DisplayOff)) return;
         capturing = true;
         var monitor = ScreenCapture.Find(setup.Monitor).Bounds;
@@ -511,7 +523,7 @@ class PageLight : DevicePage
         if (l != null) speed.Value = (LightState.MaxPeriod - l.Period) * 100 / (LightState.MaxPeriod - LightState.MinPeriod);
         speedValue.Text = moving ? speed.Value + "%" : "";
         speed.Invalidate();
-        backBox.Height = (int)Math.Round((screening ? 148 : 268) * Ui.K);
+        backBox.Height = backBox.Width * (screening ? 148 : 268) / 616;
         Animation();
         areas.Visible = settingsBox.Visible = back && screening;
         var all = Screen.AllScreens;

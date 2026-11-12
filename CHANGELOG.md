@@ -13,6 +13,8 @@
 ### Fixed
 
 - Switches missed a second click made quickly after the first, which Windows counts as a double-click.
+- The G560 and Litra screens kept running the Screen effect (and the Litra its animated effects) after the device was unplugged.
+- A device on a receiver that didn't give its name in time was listed under the receiver's name.
 
 ## [0.0.21-alpha] - 2026-11-12
 

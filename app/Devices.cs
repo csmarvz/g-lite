@@ -324,7 +324,7 @@ static class Devices
             var type = pr.Call(idx, nm, 2);
             if (type != null && type[0] < Kinds.Length) f.Kind = Kinds[type[0]];
         }
-        if (f.Name == "") f.Name = Regex.Replace(Product(p.Long), @"^Logitech\s+", "", RegexOptions.IgnoreCase);
+        if (f.Name == "" && idx == 0xFF) f.Name = Regex.Replace(Product(p.Long), @"^Logitech\s+", "", RegexOptions.IgnoreCase);
         byte fw = pr.Feature(idx, 0x0003);
         var entities = fw == 0 ? null : pr.Call(idx, fw, 0);
         f.Models = Found.ModelText(entities);

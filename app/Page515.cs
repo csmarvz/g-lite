@@ -22,7 +22,7 @@ class KeyPicture : Ctl
     byte id = 0x01, barId = 0x01;
     byte[] prm = new byte[10], barPrm = new byte[10];
     public HashSet<int> Bar = new HashSet<int>();
-    public int Focus;
+    public int Part;
     public event Action<bool> PartPicked;
     int bright = 100;
     double lastRipple;
@@ -202,7 +202,7 @@ class KeyPicture : Ctl
                 var full = Color.FromArgb(c.R * 255 / max, c.G * 255 / max, c.B * 255 / max);
                 fill = Ui.Mix(Theme.KeyOff, full, max / 255.0 * bright / 100.0);
             }
-            if (Focus != 0 && Focus != (onBar ? 2 : 1)) fill = Ui.Mix(Theme.KeyOff, fill, 0.3);
+            if (Part != 0 && Part != (onBar ? 2 : 1)) fill = Ui.Mix(Theme.KeyOff, fill, 0.3);
             Ui.Fill(g, Cap(r), 3 * K, fill, fill);
         }
     }
@@ -421,7 +421,7 @@ class Page515 : DevicePage
         screenLight.AddRange(new Control[] { zoneList, addZone, resetZones });
         if (Parts)
         {
-            int shift = (int)Math.Round(44 * Ui.K);
+            const int shift = 44;
             foreach (Control c in light.Controls) if (c != lightHead) c.Top += shift;
             light.Height += shift;
             perZone = Ui.Add(light, new Toggle { AccessibleName = "Lighting per zone" }, 14, 46, 34, 18);
@@ -547,7 +547,7 @@ class Page515 : DevicePage
         dirty = true;
         edits++;
         saveBtn.Enabled = !broken && !Screening;
-        picture.Display(Known() ? cur : null, brightness);
+        picture.Display(Known() ? cur : null, Known() ? bar : null, brightness);
         Calm();
         debounce.Stop();
         debounce.Start();
@@ -929,7 +929,7 @@ class Page515 : DevicePage
             partSeg.Enabled = known && !screening && bar != null;
             partSeg.Index = bar != null && !screening ? part - 1 : -1;
             partSeg.Invalidate();
-            picture.Focus = screening || !known || bar == null ? 0 : part;
+            picture.Part = screening || !known || bar == null ? 0 : part;
         }
         Shade(colorHead, color);
         colors.Sync(view.Color, color);

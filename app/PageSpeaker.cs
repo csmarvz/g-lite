@@ -208,6 +208,17 @@ class PageSpeaker : DevicePage
         if (cur != null || screening) Load();
     }
 
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            debounce.Dispose();
+            screenTimer.Dispose();
+            snapTimer.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+
     Toggle Option(Control parent, string text, int x, int y, int tall, Action flip)
     {
         var toggle = Ui.Add(parent, new Toggle { AccessibleName = text }, x, y + 2, 34, 18);
@@ -306,7 +317,7 @@ class PageSpeaker : DevicePage
 
     void Tick()
     {
-        if (!screening || zones == null || capturing || framing) return;
+        if (IsDisposed || !screening || zones == null || capturing || framing) return;
         if (setup.PauseWhenLocked && (Presence.Locked || Presence.DisplayOff)) return;
         capturing = true;
         var monitor = ScreenCapture.Find(setup.Monitor).Bounds;
@@ -407,7 +418,7 @@ class PageSpeaker : DevicePage
         foreach (var c in plainLight) c.Visible = !screening;
         areas.Visible = settingsBox.Visible = screening;
         if (!screening) colors.Sync(known ? l.Color : 0xFFFFFF, color);
-        light.Height = (int)Math.Round((screening ? 162 : 330) * Ui.K);
+        light.Height = light.Width * (screening ? 162 : 330) / 616;
         var all = Screen.AllScreens;
         var chosen = ScreenCapture.Find(setup.Monitor);
         monitorDrop.Items.Clear();

@@ -679,9 +679,9 @@ class ReportView : Control
         status = Ui.Add(this, new StatusLine(), 20, 611, 256, 36);
         var back = Ui.Add(this, new Btn { Text = "Back" }, 284, 614, 76, 32);
         back.Click += (s, e) => Close();
-        issue = Ui.Add(this, new Btn { Text = "Open GitHub issue" }, 368, 564, 160, 32);
+        issue = Ui.Add(this, new Btn { Text = "Open GitHub issue" }, 368, 614, 160, 32);
         issue.Click += (s, e) => OpenIssue();
-        copy = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Copy" }, 536, 564, 100, 32);
+        copy = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Copy" }, 536, 614, 100, 32);
         copy.Click += (s, e) => { if (Put(text)) status.Set("Copied to the clipboard", false, null); };
     }
 
@@ -781,9 +781,9 @@ class LogsPage : Control
         count.AutoSize = false;
         count.Size = new Size(302, 18);
         count.TextAlign = ContentAlignment.TopRight;
-        var inset = Ui.Add(body, new Control(), 14, 38, 588, 503);
+        var inset = Ui.Add(body, new Control(), 14, 38, 588, 553);
         Ui.Style(inset, () => inset.BackColor = Theme.Bg);
-        box = Ui.Add(inset, new RichTextBox { ReadOnly = true, WordWrap = false, ScrollBars = RichTextBoxScrollBars.Both, BorderStyle = BorderStyle.None, DetectUrls = false, AccessibleName = "Log" }, 8, 6, 576, 493);
+        box = Ui.Add(inset, new RichTextBox { ReadOnly = true, WordWrap = false, ScrollBars = RichTextBoxScrollBars.Both, BorderStyle = BorderStyle.None, DetectUrls = false, AccessibleName = "Log" }, 8, 6, 576, 543);
         Ui.Font(box, 9f, "Consolas");
         Ui.Style(box, () => { box.BackColor = Theme.Bg; Dark(); if (Visible) Render(); });
         box.HandleCreated += (s, e) => Dark();
