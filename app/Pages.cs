@@ -462,10 +462,13 @@ class ColorRow
 class InfoPage : Control
 {
     readonly SubLine sub;
-    readonly Label title, head, text, link, battery, firmware, features;
+    readonly Label title, head, text, link, battery, firmware, features, mediaLabel, mediaNote;
     readonly Btn again, create, reportBtn;
+    readonly Toggle media;
     readonly ReportView report;
-    Found found;
+    Found found, applied;
+
+    string MediaKey { get { return "fnswap." + found.Slug; } }
 
     public InfoPage(Found f, MouseEventHandler drag, Action rescan)
     {
@@ -484,6 +487,11 @@ class InfoPage : Control
         again = Ui.Add(state, new Btn { Text = "Scan again", Icon = "refresh" }, 616 - 14 - 130, 36, 130, 32);
         again.Click += (s, e) => rescan();
         create = Ui.Add(state, new Btn { Look = Look.Primary, Text = "Create report" }, 616 - 14 - 130, 36, 130, 32);
+        media = Ui.Add(state, new Toggle { AccessibleName = "Use F1–F12 as media keys" }, 14, 42, 34, 18);
+        media.Changed += () => SendMedia(media.Checked, true);
+        mediaLabel = Ui.Text(state, "Use F1–F12 as media keys", 60, 40, () => Theme.Text, 9.75f);
+        mediaLabel.Click += (s, e) => { media.Checked = !media.Checked; SendMedia(media.Checked, true); };
+        mediaNote = Ui.Text(state, "When on, F1–F12 send media actions, and can't be typed.", 60, 62, () => Theme.Dim, 9f);
 
         var details = Ui.Add(this, new Box(), 20, 196, 616, 196);
         Ui.Text(details, "Details", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
@@ -525,6 +533,17 @@ class InfoPage : Control
         });
     }
 
+    void SendMedia(bool on, bool chosen)
+    {
+        var f = found;
+        if (chosen) Settings.Set(MediaKey, on ? "1" : "0");
+        Task.Run(() =>
+        {
+            try { using (var h = new Hidpp(f.Path, f.Index, f.ShortPath)) h.Call(h.F(0x40A0), 1, (byte)(on ? 1 : 0)); }
+            catch (Exception) { }
+        });
+    }
+
     static Label Row(Control box, string name, int y)
     {
         Ui.Text(box, name, 14, y, () => Theme.Dim, 9.75f);
@@ -536,12 +555,19 @@ class InfoPage : Control
         found = f;
         title.Text = f.Short == "" ? "Logitech device" : f.Short;
         sub.Set(f.Sub, f.Level, f.BatteryText, "");
-        head.Text = f.Asleep ? "Asleep" : "Not supported yet";
+        bool keys = f.MediaKeys && !f.Asleep;
+        head.Text = f.Asleep ? "Asleep" : keys ? "Keys" : "Not supported yet";
+        text.Visible = !keys;
+        media.Visible = mediaLabel.Visible = mediaNote.Visible = keys;
+        media.Checked = keys && Settings.Get(MediaKey) == "1";
+        if (keys && media.Checked && applied != f) SendMedia(true, false);
+        if (keys) applied = f;
         text.Text = f.Asleep
             ? "It's paired but didn't answer. Wake it with a key press or a click, and G-Lite picks it up."
             : "G-Lite can't change this device yet. A report of what it supports helps add it. G-Lite only reads the device, and nothing is sent until you paste the report somewhere.";
         again.Visible = f.Asleep;
-        create.Visible = reportBtn.Visible = !f.Asleep;
+        reportBtn.Visible = !f.Asleep;
+        create.Visible = !f.Asleep && !keys;
         if (f.Asleep && report.Visible) report.Close();
         link.Text = f.Link + f.Slot + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "");
         battery.Text = f.Battery < 0 ? "–" : f.BatteryWords + (f.Charging ? ", charging" : "") + (f.Approx ? " (estimated from the voltage)" : "");

@@ -31,6 +31,8 @@ class Found
 
     public string Short { get { return Regex.Replace(Regex.Replace(Name, @"(\s+Wireless\s+RGB\s+Mechanical)?\s+Gaming\s+(Mouse|Headset|Keyboard)$", "", RegexOptions.IgnoreCase), @"\s+LIGHTSPEED\b", "", RegexOptions.IgnoreCase); } }
 
+    public bool MediaKeys { get { return Coarse && Has(0x40A0); } }
+
     public string BatteryText { get { return Battery < 0 || Coarse ? "" : Battery + "%"; } }
 
     public string BatteryWords { get { return Battery < 0 ? "–" : Coarse ? (Battery >= 30 ? "Good" : "Low") + " (it only reports good or low)" : BatteryText; } }
