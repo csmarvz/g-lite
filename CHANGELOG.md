@@ -1,13 +1,18 @@
 # Changelog
 
-## Unreleased
+## [0.0.21-alpha] - 2026-11-12
 
 ### Added
 
 - Litra Beam LX, Beam and Glow: the front light's power, brightness and colour temperature, and on the Beam LX the back light's power, brightness, colours (all seven zones or each one), Breathe, Cycle and Wave (run by G-Lite while it's open) and the Screen effect. Not checked on a real light yet.
+- G560 Gaming Speaker: the Screen effect, with four screen areas (one per zone), brightness, colour boost, update rate, smoothing and a pause when the screen is off or locked. The speakers show with a speaker icon.
+- G512 X 75: the light bar, as 33 segments under the keys, so the Screen effect lights it too. Its order isn't checked on a real keyboard yet.
+- K270/K295: the keyboard shows up, by its wireless id. Its battery shows as full or low, since that's all it reports. A switch uses F1–F12 as media keys.
 
 ### Changed
 
+- G512 X 75: the right column is Del, Print Screen, PgUp and PgDn, as G HUB shows it.
+- Keyboard Screen effect: the screen picture has a frame, and the pause switches are named "Pause on low battery" and "Pause when screen off or locked".
 - Every Logitech device that answers G-Lite shows up in the sidebar, not only G devices, so anyone can send a report for theirs. Devices that aren't G devices only get the info page.
 
 ## [0.0.20-alpha] - 2026-11-11
