@@ -45,6 +45,10 @@ No effects are known on the light itself (no 0x8070 or 0x8071), so Breathe, Cycl
 
 G-Lite keeps the back light as `lighting.<device>` (on, brightness, 7 colours, effect, period) once it's been changed, and sets it again when the light's screen loads. The Screen effect has seven areas side by side (`Litra.ScreenZones`), sent as one frame with `Litra.Colors`.
 
+## To do after the owner's report
+
+- `PageLight.sent` and `framed` are written on the device queue and read or changed on the UI thread (`ScreenOff` sets `sent.Colors`, `Lost` sets `sent = null` while a queued `Apply` may read it). The worst case is a null reference caught by `Do`: an error in the log and the device reopened. Fix it together with whatever the report changes, for example by giving `Apply` its own copy of `sent` or doing all of it on the queue.
+
 ## Sources
 
 - timrogers/litra-rs (MIT): the bytes, in `src/lib.rs`, and issues #133, #188, #234, PR #185 (back light).
