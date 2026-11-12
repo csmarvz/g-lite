@@ -394,7 +394,7 @@ class MainWindow : Form
             item.Sub = f.Sub;
             item.Level = f.Level;
             item.Value = f.BatteryText;
-            item.Icon = f.Kind == "keyboard" || f.Kind == "mouse" || f.Kind == "headset" ? f.Kind : "device";
+            item.Icon = f.IsG560 ? "speaker" : f.Kind == "keyboard" || f.Kind == "mouse" || f.Kind == "headset" ? f.Kind : "device";
             item.AccessibleName = f.Short;
             item.Location = new Point(S(10), S(y));
             item.Invalidate();

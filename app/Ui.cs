@@ -277,6 +277,11 @@ static class Icons
                     using (var path = Ui.Round(new RectangleF(3, 14, 4, 6), 1.5f)) g.DrawPath(p, path);
                     using (var path = Ui.Round(new RectangleF(17, 14, 4, 6), 1.5f)) g.DrawPath(p, path);
                     break;
+                case "speaker":
+                    using (var path = Ui.Round(new RectangleF(6, 3, 12, 18), 2.5f)) g.DrawPath(p, path);
+                    g.DrawEllipse(p, 9, 11.5f, 6, 6);
+                    g.FillEllipse(b, 11, 6, 2, 2);
+                    break;
                 case "device":
                     using (var path = Ui.Round(new RectangleF(4, 4, 16, 16), 3)) g.DrawPath(p, path);
                     g.FillEllipse(b, 10.5f, 10.5f, 3, 3);
