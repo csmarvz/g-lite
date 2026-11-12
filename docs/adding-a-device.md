@@ -4,6 +4,7 @@ What works, learned while adding the G305, G502 LIGHTSPEED, G510 and G512 X. Fol
 
 ## 1. Read before writing
 
+- Look the device up in [Lghub](https://github.com/HolyJoey/Lghub) (G HUB reverse-engineered for Linux, MIT, so its code can be used too, with its notice). It often has the feature list, the bytes and what G HUB does with them.
 - Get a report from the device first (Report on its screen or info page). It lists the features, and every read G-Lite knows.
 - A feature G-Lite doesn't read yet: add its read-only functions to `Report.Reads` and a line in `Report.Section`, so every later report has them. Only functions known to only read.
 - With the device plugged in here, a read-only report can be run from a copy of the exe, without the user: load `GLite.exe` with reflection in Windows PowerShell (not pwsh), `Devices.Scan()`, pick the device, `new Hidpp(path, index, shortPath)`, `Report.Build`. Pass arguments as `[object[]]` and the `Found` as `.psobject.BaseObject`. Don't run it while the user makes a report in the app: both read the same device at the same time.
