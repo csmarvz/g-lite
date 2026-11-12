@@ -877,7 +877,6 @@ class DeviceList : Control
 
     public void Watch(Control item)
     {
-        item.MouseWheel += (s, e) => Wheel(e.Delta);
         item.GotFocus += (s, e) => Reveal(item);
     }
 
@@ -944,16 +943,17 @@ class DeviceList : Control
 
     public void Fade(Graphics g, Control item)
     {
-        float zone = 32 * Ui.K;
-        if (offset < content - Height) Shade(g, item, Height - zone, zone, false);
-        if (offset > 0) Shade(g, item, 0, zone, true);
+        float zone = 32 * Ui.K, ramp = 46 * Ui.K;
+        Shade(g, item, Height - zone, zone, false, (content - Height - offset) / ramp);
+        Shade(g, item, 0, zone, true, offset / ramp);
     }
 
-    static void Shade(Graphics g, Control item, float top, float height, bool fromTop)
+    static void Shade(Graphics g, Control item, float top, float height, bool fromTop, float strength)
     {
+        strength = Math.Min(1, strength);
         var area = new RectangleF(0, top - item.Top, item.Width, height);
-        if (area.Bottom <= 0 || area.Top >= item.Height) return;
-        Color clear = Color.FromArgb(0, Theme.Side), solid = Theme.Side;
+        if (strength <= 0 || area.Bottom <= 0 || area.Top >= item.Height) return;
+        Color clear = Color.FromArgb(0, Theme.Side), solid = Color.FromArgb((int)Math.Round(255 * strength), Theme.Side);
         using (var brush = new LinearGradientBrush(new RectangleF(0, area.Top - 1, 1, area.Height + 2), fromTop ? solid : clear, fromTop ? clear : solid, LinearGradientMode.Vertical))
             g.FillRectangle(brush, area);
     }

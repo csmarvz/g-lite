@@ -146,9 +146,9 @@ static class Updater
         catch (UnauthorizedAccessException) { Elevated(exe, bin); }
     }
 
-    public static void Restart(bool show)
+    public static void Restart()
     {
-        var args = Environment.GetCommandLineArgs().Skip(1).Where(a => a != "--restart" && a != "--tray").Concat(show ? new[] { "--restart" } : new[] { "--restart", "--tray" });
+        var args = Environment.GetCommandLineArgs().Skip(1).Where(a => a != "--restart" && a != "--tray").Concat(new[] { "--restart" });
         Process.Start(Exe, string.Join(" ", args));
     }
 

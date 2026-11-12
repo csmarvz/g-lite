@@ -235,6 +235,7 @@ class MainWindow : Form
     void Pick(string key)
     {
         if (key == null || !pages.ContainsKey(key)) key = found.Count > 0 ? found[0].Key : null;
+        bool changed = key != selected;
         selected = key;
         settingsPage.Visible = false;
         settingsBtn.On = false;
@@ -247,7 +248,7 @@ class MainWindow : Form
         empty.Visible = key == null;
         foreach (var i in items) { i.Value.On = i.Key == key; i.Value.Invalidate(); }
         DevItem picked;
-        if (key != null && items.TryGetValue(key, out picked)) deviceList.Reveal(picked);
+        if (changed && key != null && items.TryGetValue(key, out picked)) deviceList.Reveal(picked);
         if (Visible) ShowPage(Current);
     }
 
@@ -603,7 +604,7 @@ class MainWindow : Form
         if (v != null) updatePage.Available(v);
     }
 
-    public string Available { get { return available; } }
+    public string Available { get { return available ?? (ready != null ? ready + " installed" : null); } }
 
 
     public void CheckUpdates(bool manual)
@@ -657,7 +658,7 @@ class MainWindow : Form
     void Restart()
     {
         if (demo) { updatePage.Note("Demo: G-Lite would restart now", false); return; }
-        try { Updater.Restart(true); }
+        try { Updater.Restart(); }
         catch (Exception ex) { updatePage.Note("Couldn't restart: " + ex.Message + ". Quit G-Lite and open it again.", true); ShowUpdatePage(false); return; }
         HidePanel();
         WaitAll();

@@ -18,6 +18,7 @@ class PageUpdate : Control
     readonly Btn back, skip, primary;
     readonly Dictionary<string, List<Release>> changelogs = new Dictionary<string, List<Release>>();
     readonly Dictionary<string, string> changelogErrors = new Dictionary<string, string>();
+    readonly HashSet<string> loading = new HashSet<string>();
     readonly string installed = Application.ProductVersion;
     string state = "", version;
     bool fromSettings, showSkip, showPrimary = true;
@@ -130,7 +131,7 @@ class PageUpdate : Control
     {
         if (state != "downloading") Set("downloading", v, "Version " + v, "");
         meta.Text = percent < 0 ? "Downloading GLite.exe…" : "Downloading GLite.exe… " + percent + "%";
-        status.Set("G-Lite restarts when it's done", false, null);
+        status.Set("When it's done, restart G-Lite to use it", false, null);
     }
 
     public void Failed(string v, string error)
@@ -186,7 +187,8 @@ class PageUpdate : Control
     void Load()
     {
         var tag = version;
-        if (tag == null || changelogs.ContainsKey(tag)) { Render(); return; }
+        if (tag == null || changelogs.ContainsKey(tag) || loading.Contains(tag)) { Render(); return; }
+        loading.Add(tag);
         changelogErrors.Remove(tag);
         var context = SynchronizationContext.Current;
         Task.Run(() =>
@@ -196,6 +198,7 @@ class PageUpdate : Control
             try { list = Updater.Releases(Fetch(tag)); } catch (Exception ex) { error = ex.Message; }
             context.Post(x =>
             {
+                loading.Remove(tag);
                 if (IsDisposed) return;
                 if (list != null) changelogs[tag] = list; else changelogErrors[tag] = error;
                 Render();
