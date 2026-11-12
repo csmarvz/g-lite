@@ -2,6 +2,14 @@
 
 The G512 and similar G keyboards light up through 0x8070, the feature `GMouse` already uses, not through 0x8071 like the G515 and G915. Supporting them is mostly a new screen around code G-Lite has. From OpenLogi's G512 recording (see [openlogi.md](openlogi.md)) and [lighting-control.md](lighting-control.md).
 
+Status: a first version is built on the G560's screen (`PageSpeaker`, for `Found.IsLedKeyboard`: kind keyboard, 0x8070, no 0x8071) and tested against `FakeSpeaker` with two zones only. It sets Off, Static, Breathe and Cycle live on all zones or each one, names zones from their location (1 Keys, 2 Logo, else Zone n), keeps the lighting as `lighting.<device>` and sets it again on load. No Wave, no per-key colours, no key picture, no Save. The plan below (its own page, a shared `Led` class) is kept for when a real keyboard's report is in.
+
+To check on a real keyboard: that 0x8070 fn 3 without a persistence byte lights it (the G560 path), the zone locations, and which effects each zone lists.
+
+## Per-key colours (0x8080), not built
+
+From Lghub (`perkey.py`, read from G HUB): fn 0 gives the key types the keyboard has as bits in its first two bytes (keyboard 1, consumer 2, G key 4, button 8, logo 0x10, other keys 0x40); fn 3 sets colours, `<type u16> <count u16>` then `<key> R G B` per key, up to 14 in a 64-byte report (3 in a 20-byte one); fn 5 `<persist>` shows them. The key byte is the HID usage for keyboard keys.
+
 ## The G512
 
 OpenLogi's recording (`fixtures/devices/g512-001`): "G512 RGB MECHANICAL GAMING KEYBOARD", wired, USB 046D:C33C, HID++ at index 0xFF.

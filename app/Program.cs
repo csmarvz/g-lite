@@ -502,6 +502,7 @@ class MainWindow : Form
             new Found { Key = "demo|keyboard", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Link = "Demo", Wpid = 0x40B4, Battery = 82, Firmware = "MPK 25.02 · build 0016", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
             new Found { Key = "demo|g915", Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "Demo", Index = 1, Wpid = 0x408E, Battery = 70, Approx = true, Millivolts = 3923, Firmware = "MPK 14.01 · build 0021", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 } },
             new Found { Key = "demo|g512x", Name = "G512 X 75", Kind = "keyboard", Link = "Demo", Index = 0xFF, Firmware = "U1 81.05 · build 0020", Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
+            new Found { Key = "demo|g512", Name = "G512 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Link = "Demo", Index = 0xFF, Firmware = "U1 38.03 · build 0015", Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8060, 0x8070, 0x8080 } },
             new Found { Key = "demo|mouse", Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "Demo", Index = 1, Wpid = 0x4079, Battery = 54, Approx = true, Millivolts = 3824, Firmware = "MPM 15.02 · build 0017", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
             new Found { Key = "demo|g9x", Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04", Firmware = "58.02 · build 0018" },
             new Found { Key = "demo|g560", Name = "G560 Gaming Speaker", Kind = "device", Link = "Demo", Index = 0xFF, Firmware = "U1 22.03 · build 0023", Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 } },
@@ -889,8 +890,9 @@ class Support
     public static readonly Support[] All =
     {
         new Support { Matches = f => f.IsG515, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, Keyboards.G515) },
-        new Support { Matches = f => f.IsG915, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, f.Name.ToUpper().Contains("TKL") ? Keyboards.G915Tkl : Keyboards.G915), Fake = () => new FakeG915() },
+        new Support { Matches = f => f.IsG915, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, f.Name.ToUpper().Contains("TKL") ? Keyboards.G915Tkl : f.Name.ToUpper().Contains("G815") ? Keyboards.G815 : Keyboards.G915), Fake = () => new FakeG915() },
         new Support { Matches = f => f.IsG512X, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, Keyboards.G512X), Fake = () => FakeG915.G512X() },
+        new Support { Matches = f => f.IsLedKeyboard, Screen = typeof(PageSpeaker), Make = (f, d, drag) => new PageSpeaker(f, d, drag), Fake = () => new FakeSpeaker { Count = 2 } },
         new Support { Matches = f => f.IsG9x, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new G9xMouse()), Fake = () => new FakeG9x() },
         new Support { Matches = f => f.IsMouse, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new HidppMouse()), Fake = () => new FakeMouse() },
         new Support { Matches = f => f.IsG560, Screen = typeof(PageSpeaker), Make = (f, d, drag) => new PageSpeaker(f, d, drag), Fake = () => new FakeSpeaker() },

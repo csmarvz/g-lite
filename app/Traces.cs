@@ -312,6 +312,24 @@ static class Traces
         }
     }
 
+    static string G512()
+    {
+        var found = new Found { Key = "trace|g512", Name = "G512 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8060, 0x8070, 0x8080 } };
+        using (var s = Begin(() => Support.For(found).Make(found, new FakeSpeaker { Count = 2 }, null)))
+        {
+            s.Pick("Effect", "Static");
+            s.Press("Color 30D050");
+            s.Slide("Brightness", 50);
+            s.Pick("Zone", "Logo");
+            s.Pick("Effect", "Breathe");
+            s.Slide("Speed", 80);
+            s.Pick("Zone", "All");
+            s.Pick("Effect", "Cycle");
+            s.Pick("Effect", "Off");
+            return s.Text;
+        }
+    }
+
     static string G560()
     {
         var found = new Found { Key = "trace|g560", Name = "G560 Gaming Speaker", Kind = "device", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 } };
@@ -479,6 +497,7 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("g915", G915);
         yield return new KeyValuePair<string, Func<string>>("g512x", G512X);
         yield return new KeyValuePair<string, Func<string>>("g560", G560);
+        yield return new KeyValuePair<string, Func<string>>("g512", G512);
         yield return new KeyValuePair<string, Func<string>>("litra", Litra);
         yield return new KeyValuePair<string, Func<string>>("gpro", () => Mouse("G Pro Wireless Gaming Mouse", new FakeMouse(), new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("g305", () => Mouse("G305 Lightspeed Wireless Gaming Mouse", FakeMouse.G305(), new[] { 0x0001, 0x0003, 0x0005, 0x1000, 0x2201, 0x8060, 0x8070, 0x8100 }));

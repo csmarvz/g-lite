@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Older G keyboards that light up through 0x8070 (G512, G513, G PRO keyboard, G810, G910, G410, G413, G213) get a lighting screen: Off, Static, Breathe and Cycle, on all zones or each one, with presets. Live only, and untested on a real keyboard.
+- The G815 opens on the G915's screen.
+- The G915's logo, brightness key, media keys and G keys have their light ids, so the key picture and the Screen effect reach them.
+
 ## [0.0.23-alpha] - 2026-11-12
 
 ### Added

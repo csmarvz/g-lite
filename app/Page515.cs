@@ -233,10 +233,18 @@ class Keyboards
     public bool Saves;
     public int[] Bar;
 
+    static Model Named(string file, string name)
+    {
+        var model = Model.Load(file);
+        model.Name = name;
+        return model;
+    }
+
     public static readonly Keyboards
         G515 = new Keyboards { Keys = Model.Load("g515-tkl.json"), Iso = Model.Load("g515-tkl-iso.json"), Prefix = "profile.g515.", Saves = true },
         G915Tkl = new Keyboards { Keys = Model.Load("g915-tkl.json"), Prefix = "profile.g915." },
         G915 = new Keyboards { Keys = Model.Load("g915.json"), Prefix = "profile.g915." },
+        G815 = new Keyboards { Keys = Named("g915.json", "G815"), Prefix = "profile.g815." },
         G512X = new Keyboards { Keys = Model.Load("g512-x-75.json"), Prefix = "profile.g512x.", Bar = Enumerable.Range(0xA0, 33).ToArray() };
 }
 

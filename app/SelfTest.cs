@@ -245,6 +245,9 @@ static class SelfTest
         Check(Found.FromChargingVolts(4096) == 44 && Found.FromChargingVolts(4200) == 68 && Found.FromChargingVolts(4300) == 68 && Found.FromChargingVolts(3000) == 2, "battery estimate from the charging voltage");
         Check(new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071, 0x8040, 0x8101 } }.IsG515 && !new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071 } }.IsG515, "the G515 needs its three features");
         Check(new Found { Name = "G512 X 75", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8101 } }.IsG512X && !new Found { Name = "G512 X 98", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8101 } }.IsG512X && !new Found { Name = "G512 X 75", Features = new[] { 0x8071 } }.IsG512X, "the G512 X 75 is told apart, with its features");
+        var g512 = new Found { Name = "G512 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Features = new[] { 0x8070, 0x8080 } };
+        Check(g512.IsLedKeyboard && g512.Short == "G512" && Support.For(g512).Screen == typeof(PageSpeaker) && !new Found { Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Features = new[] { 0x8070, 0x8071 } }.IsLedKeyboard && !new Found { Name = "G502 HERO Gaming Mouse", Kind = "mouse", Features = new[] { 0x8070 } }.IsLedKeyboard, "a keyboard with 0x8070 and no 0x8071 gets the zone lighting screen");
+        Check(new Found { Name = "G815 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8100 } }.IsG915, "the G815 is taken as a wired G915");
         Check(new Found { Name = "G560 Gaming Speaker", Features = new[] { 0x8070, 0x8040 } }.IsG560 && !new Found { Name = "G560 Gaming Speaker", Features = new[] { 0x8040 } }.IsG560, "the G560 needs its lighting feature");
         Check(new Found { Name = "Litra Beam LX", Features = new[] { 0x1990 } }.IsLight && new Found { Path = @"\?\hid#vid_046d&pid_c903&col02", Features = new[] { 0x1990 } }.IsLight && !new Found { Name = "Litra Beam LX" }.IsLight, "a Litra is found by its name or product id, with its light feature");
         Check(Support.For(new Found { Name = "MX Master 3", Kind = "mouse", Features = new[] { 0x2201, 0x8100 } }) == null && Support.For(new Found { Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Features = new[] { 0x2201 } }) != null, "a device that isn't a G device only gets the info page");
@@ -381,7 +384,7 @@ static class SelfTest
             int keys = board.Rows.Sum(r => r.Split('|').Count(t => !t.StartsWith("_")));
             var keyIds = board.KeyIds();
             Check(keyIds.Count == keys && board.Ids.Length == board.Rows.Length, file + " has one key id per key");
-            Check(keyIds.Where(i => i >= 0).All(i => (i >= 0x01 && i <= 0x6F) || (i >= 0xA0 && i <= 0xFE)), file + " key ids are lighting ids");
+            Check(keyIds.Where(i => i >= 0).All(i => (i >= 0x01 && i <= 0x6F) || (i >= 0x99 && i <= 0xFE)), file + " key ids are lighting ids");
         }
         var isoIds = Model.Load("g515-tkl-iso.json").KeyIds();
         var ansiIds = Model.Load("g515-tkl.json").KeyIds();
