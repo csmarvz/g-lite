@@ -34,13 +34,18 @@ class MainWindow : Form
     string watched = "";
     DateTime batteriesRead;
     readonly EmptyPage empty;
-    readonly Label noneText;
+    readonly Label noneText, readyText;
+    readonly DeviceList deviceList;
+    int navTop;
+    bool rowShown, labelShown;
+    string ready;
     readonly Control side, settingsPage;
     readonly Btn settingsBtn, logsBtn, scanBtn, minimize, close;
     readonly LogsPage logsPage;
     readonly System.Windows.Forms.Timer rescanSoon = new System.Windows.Forms.Timer { Interval = 1500 }, sleepers = new System.Windows.Forms.Timer { Interval = 15000 }, batteries = new System.Windows.Forms.Timer { Interval = 60000 };
-    readonly Box updBox;
-    readonly Label updText, checkText, themeHint;
+    readonly Btn updateBtn;
+    readonly PageUpdate updatePage;
+    readonly Label checkText, themeHint;
     readonly Seg themeSeg;
     readonly Toggle runToggle, checkToggle, autoToggle;
     KeyboardView view;
@@ -84,7 +89,9 @@ class MainWindow : Form
             if (e.X < 60 * Ui.K) ToggleView();
         };
         Ui.Text(side, "DEVICES", 18, 58, () => Theme.Dim, 8.25f, Ui.Semi).MouseDown += Drag;
-        noneText = Ui.Text(side, "Looking…", 18, 82, () => Theme.Dim, 9f);
+        deviceList = Ui.Add(side, new DeviceList(), 0, 78, SideW - 1, 400);
+        deviceList.MouseDown += Drag;
+        noneText = Ui.Text(deviceList, "Looking…", 18, 4, () => Theme.Dim, 9f);
 
         int bottom = H - 14 - 36;
         var quit = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "power", Text = "Quit" }, 10, bottom, SideIn, 36);
@@ -110,14 +117,18 @@ class MainWindow : Form
             show.Click += (s, e) => { if (view.Visible) view.Hide(); else ShowView(); };
             view.VisibleChanged += (s, e) => { show.Text = view.Visible ? "Hide keyboard" : "Show keyboard"; wantView = view.Visible; };
         }
-        updBox = Ui.Add(side, new Box { Visible = false }, 10, bottom - 8 - 92, SideIn, 92);
-        updText = Ui.Text(updBox, "", 12, 10, () => Theme.Text, 9f);
-        updText.AutoSize = false;
-        updText.Size = new Size(SideIn - 24, 34);
-        var updGo = Ui.Add(updBox, new Btn { Look = Look.Primary, Text = "Update" }, 12, 48, 76, 32);
-        updGo.Click += (s, e) => Install(available, true);
-        var updSkip = Ui.Add(updBox, new Btn { Look = Look.Ghost, Text = "Skip" }, 94, 48, SideIn - 106, 32);
-        updSkip.Click += (s, e) => { Updater.Skipped = available; ShowUpdate(null); };
+        updateBtn = Ui.Add(side, new Btn { Look = Look.Solid, Icon = "download", Text = "Update available", Visible = false }, 10, bottom - 40, SideIn, 36);
+        updateBtn.Click += (s, e) => { if (ready != null) Restart(); else ShowUpdatePage(false); };
+        updateBtn.TabIndex = 99;
+        navTop = bottom;
+        readyText = Ui.Text(side, "", 18, bottom - 40 - 20, () => Theme.Dim, 8.25f);
+        readyText.AutoSize = false;
+        readyText.AutoEllipsis = true;
+        readyText.Size = new Size(SideIn - 8, 16);
+        readyText.Cursor = Cursors.Hand;
+        readyText.Visible = false;
+        readyText.Click += (s, e) => ShowUpdatePage(false);
+        FitList();
 
         empty = Ui.Add(this, new EmptyPage(Drag, Rescan), SideW, 0, W - SideW, H);
         rescanSoon.Tick += (s, e) => { rescanSoon.Stop(); Rescan(); };
@@ -130,6 +141,19 @@ class MainWindow : Form
         settingsPage.MouseDown += Drag;
         var sp = settingsPage;
         logsPage = Ui.Add(this, new LogsPage(Drag), SideW, 0, W - SideW, H);
+        updatePage = Ui.Add(this, new PageUpdate(Drag), SideW, 0, W - SideW, H);
+        if (demo) updatePage.Fetch = DemoChangelog;
+        updatePage.BackClicked = ShowSettings;
+        updatePage.CheckClicked = () => CheckUpdates(true);
+        updatePage.InstallClicked = Install;
+        updatePage.RestartClicked = Restart;
+        updatePage.SkipClicked = () =>
+        {
+            if (!demo) Updater.Skipped = available;
+            checkText.Text = "Version " + available + " skipped";
+            ShowUpdate(null);
+            if (updatePage.FromSettings) ShowSettings(); else Pick(selected);
+        };
         Ui.Text(sp, "Settings", 20, 14, () => Theme.Text, 13.5f, Ui.Semi).MouseDown += Drag;
 
         Ui.Text(sp, "Appearance", 20, 64, () => Theme.Dim, 9f, Ui.Semi);
@@ -152,8 +176,8 @@ class MainWindow : Form
         checkText.AutoSize = false;
         checkText.AutoEllipsis = true;
         checkText.Size = new Size(616 - 14 - 180 - 14 - 14, 18);
-        var now = Ui.Add(upd, new Btn { Text = "Check for updates now" }, 616 - 14 - 180, 128 + 16, 180, 32);
-        now.Click += (s, e) => CheckUpdates(true);
+        var now = Ui.Add(upd, new Btn { Text = "Check for updates" }, 616 - 14 - 180, 128 + 16, 180, 32);
+        now.Click += (s, e) => { ShowUpdatePage(true); CheckUpdates(true); };
 
         Ui.Text(sp, "Startup", 20, 404, () => Theme.Dim, 9f, Ui.Semi);
         var start = Ui.Add(sp, new Box(), 20, 426, 616, 64);
@@ -218,9 +242,12 @@ class MainWindow : Form
         logsPage.Close();
         logsBtn.On = false;
         logsBtn.Invalidate();
+        HideUpdatePage();
         foreach (var p in pages) p.Value.Visible = p.Key == key;
         empty.Visible = key == null;
         foreach (var i in items) { i.Value.On = i.Key == key; i.Value.Invalidate(); }
+        DevItem picked;
+        if (key != null && items.TryGetValue(key, out picked)) deviceList.Reveal(picked);
         if (Visible) ShowPage(Current);
     }
 
@@ -243,6 +270,7 @@ class MainWindow : Form
         logsPage.Close();
         logsBtn.On = false;
         logsBtn.Invalidate();
+        HideUpdatePage();
         settingsPage.Visible = true;
         foreach (var i in items.Values) { i.On = false; i.Invalidate(); }
         settingsBtn.On = true;
@@ -256,10 +284,36 @@ class MainWindow : Form
         settingsPage.Visible = false;
         settingsBtn.On = false;
         settingsBtn.Invalidate();
+        HideUpdatePage();
         foreach (var i in items.Values) { i.On = false; i.Invalidate(); }
         logsPage.Open();
         logsBtn.On = true;
         logsBtn.Invalidate();
+    }
+
+    void ShowUpdatePage(bool fromSettings)
+    {
+        foreach (var p in pages.Values) p.Visible = false;
+        empty.Visible = false;
+        settingsPage.Visible = false;
+        settingsBtn.On = false;
+        settingsBtn.Invalidate();
+        logsPage.Close();
+        logsBtn.On = false;
+        logsBtn.Invalidate();
+        foreach (var i in items.Values) { i.On = false; i.Invalidate(); }
+        if (!fromSettings && available != null && ready == null && !updatePage.Busy && updatePage.State != "failed") updatePage.Available(available);
+        updatePage.FromSettings = fromSettings;
+        updatePage.Visible = true;
+        updateBtn.On = !fromSettings;
+        updateBtn.Invalidate();
+    }
+
+    void HideUpdatePage()
+    {
+        updatePage.Visible = false;
+        updateBtn.On = false;
+        updateBtn.Invalidate();
     }
 
     static string Who(Found f) { return f.Short == "" ? f.Name : f.Short; }
@@ -365,7 +419,7 @@ class MainWindow : Form
         foreach (var f in found.Where(f => !keys.Contains(f.Key))) Log.Add(Who(f), "lost", f.Link);
         found = list;
         foreach (var k in pages.Keys.Where(k => !keys.Contains(k)).ToList()) Remove(k);
-        int y = 78;
+        int y = 0;
         foreach (var f in list)
         {
             var type = PageFor(f);
@@ -385,7 +439,8 @@ class MainWindow : Form
             if (!items.TryGetValue(f.Key, out item))
             {
                 var key = f.Key;
-                item = Place(side, new DevItem(), 10, y, SideIn, 46);
+                item = Place(deviceList, new DevItem(), 10, y, SideIn, 46);
+                deviceList.Watch(item);
                 item.Click += (s, e) => Pick(key);
                 items[key] = item;
             }
@@ -396,17 +451,18 @@ class MainWindow : Form
             item.Value = f.BatteryText;
             item.Icon = f.IsG560 ? "speaker" : f.Kind == "light" || f.Kind == "keyboard" || f.Kind == "mouse" || f.Kind == "headset" ? f.Kind : "device";
             item.AccessibleName = f.Short;
-            item.Location = new Point(S(10), S(y));
+            item.Location = new Point(S(10), S(y) - deviceList.Offset);
             item.Invalidate();
             y += 50;
         }
+        deviceList.Fit(S(Math.Max(0, y - 4)));
         noneText.Text = "None found";
         noneText.Visible = list.Count == 0;
         minimize.BringToFront();
         close.BringToFront();
         sleepers.Enabled = list.Any(f => f.Asleep && !Devices.Shorts.ContainsKey(f.Path ?? ""));
         if (!demo) Listen(list);
-        if (!settingsPage.Visible && !logsPage.Visible) Pick(selected);
+        if (!settingsPage.Visible && !logsPage.Visible && !updatePage.Visible) Pick(selected);
     }
 
     static Type PageFor(Found f)
@@ -449,6 +505,8 @@ class MainWindow : Form
             new Found { Key = "demo|g9x", Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04", Firmware = "58.02 · build 0018" },
             new Found { Key = "demo|g560", Name = "G560 Gaming Speaker", Kind = "device", Link = "Demo", Index = 0xFF, Firmware = "U1 22.03 · build 0023", Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 } },
             new Found { Key = "demo|litra", Name = "Litra Beam LX", Kind = "light", Link = "Demo", Index = 0xFF, Firmware = "U1 03.02 · build 0011", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1990, 0x8040, 0x8081 } },
+            new Found { Key = "demo|g915full", Name = "G915 LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "Demo", Index = 2, Wpid = 0x407C, Battery = 46, Approx = true, Millivolts = 3780, Firmware = "MPK 12.01 · build 0019", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 } },
+            new Found { Key = "demo|g502", Name = "G502 LIGHTSPEED Wireless Gaming Mouse", Kind = "mouse", Link = "Demo", Index = 3, Wpid = 0x407F, Battery = 88, Approx = true, Millivolts = 4020, Firmware = "MPM 16.01 · build 0020", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
             new Found { Key = "demo|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "Demo", Index = 0xFF, Battery = 71, Approx = true, Millivolts = 3926, Firmware = "U1 12.01 · build 0203", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300 } },
         };
     }
@@ -539,9 +597,10 @@ class MainWindow : Form
 
     void ShowUpdate(string v)
     {
+        if (updatePage.Busy || ready != null) return;
         available = v;
-        updText.Text = v == null ? "" : "Version " + v + " is available";
-        updBox.Visible = v != null;
+        ShowRow(v != null ? "Update available" : null, "download", null);
+        if (v != null) updatePage.Available(v);
     }
 
     public string Available { get { return available; } }
@@ -549,39 +608,128 @@ class MainWindow : Form
 
     public void CheckUpdates(bool manual)
     {
-        if (manual) checkText.Text = "Checking for updates…";
+        if (manual) { checkText.Text = "Checking for updates…"; updatePage.Checking(); }
         Task.Run(() =>
         {
             string v = null, err = null;
-            try { v = Updater.Latest(); } catch (Exception ex) { err = ex.Message; }
+            if (demo) { Thread.Sleep(800); v = DemoVersion(); }
+            else try { v = Updater.Latest(); } catch (Exception ex) { err = ex.Message; }
             BeginInvoke((Action)(() => GotVersion(v, err, manual)));
         });
     }
 
     void GotVersion(string v, string err, bool manual)
     {
-        if (err != null) { if (manual) checkText.Text = "Couldn't check for updates: " + err; return; }
-        if (v == null || !Updater.Newer(v, Application.ProductVersion)) { if (manual) checkText.Text = "G-Lite is up to date"; return; }
-        if (!manual && v == Updater.Skipped) return;
-        if (!manual && Updater.Auto) { Install(v, Visible); return; }
+        if (ready != null) { if (manual) { checkText.Text = "Version " + ready + " installed. Restart G-Lite to use it."; updatePage.Ready(ready); } return; }
+        if (err != null) { if (manual) { checkText.Text = "Couldn't check for updates: " + err; updatePage.CheckFailed(err); } return; }
+        if (v == null || !Updater.Newer(v, Application.ProductVersion)) { if (manual) { checkText.Text = "G-Lite is up to date"; updatePage.Current(); } return; }
+        if (!manual && !demo && v == Updater.Skipped) return;
+        if (!manual && Updater.Auto) { Install(v); return; }
         if (manual) checkText.Text = "Version " + v + " is available";
         ShowUpdate(v);
     }
 
-    void Install(string v, bool show)
+    void ShowRow(string text, string icon, string label)
     {
-        ShowUpdate(null);
-        updText.Text = "Downloading " + v + "…";
-        updBox.Visible = true;
+        rowShown = text != null;
+        updateBtn.Visible = rowShown;
+        if (rowShown) { updateBtn.Text = text; updateBtn.Icon = icon; updateBtn.Invalidate(); }
+        labelShown = label != null;
+        readyText.Text = label ?? "";
+        readyText.Visible = labelShown;
+        FitList();
+    }
+
+    void FitList()
+    {
+        int bottom = labelShown ? navTop - 40 - 24 : rowShown ? navTop - 40 - 8 : navTop - 8;
+        deviceList.Height = S(bottom - 78);
+    }
+
+    void Ready(string v)
+    {
+        ready = v;
+        available = null;
+        ShowRow("Restart G-Lite", "refresh", "Version " + v + " installed");
+        updatePage.Ready(v);
+    }
+
+    void Restart()
+    {
+        if (demo) { updatePage.Note("Demo: G-Lite would restart now", false); return; }
+        try { Updater.Restart(true); }
+        catch (Exception ex) { updatePage.Note("Couldn't restart: " + ex.Message + ". Quit G-Lite and open it again.", true); ShowUpdatePage(false); return; }
+        HidePanel();
+        WaitAll();
+        if (Tray != null) Tray.Visible = false;
+        Application.Exit();
+    }
+
+    void Install(string v)
+    {
+        available = v;
+        ShowRow("Downloading…", "download", null);
+        updatePage.Progress(v, -1);
+        if (demo) { DemoInstall(v); return; }
         Task.Run(() =>
         {
             try
             {
-                Updater.Install(v, show);
-                BeginInvoke((Action)(() => { HidePanel(); WaitAll(); if (Tray != null) Tray.Visible = false; Application.Exit(); }));
+                Updater.Install(v, percent => BeginInvoke((Action)(() => { ShowRow(percent < 0 ? "Downloading…" : "Downloading " + percent + "%", "download", null); updatePage.Progress(v, percent); })));
+                BeginInvoke((Action)(() => Ready(v)));
             }
-            catch (Exception ex) { BeginInvoke((Action)(() => { ShowUpdate(v); updText.Text = "Update failed: " + ex.Message; })); }
+            catch (Exception ex) { BeginInvoke((Action)(() => { ShowRow("Update failed", "download", null); updatePage.Failed(v, ex.Message); })); }
         });
+    }
+
+    static string DemoVersion()
+    {
+        var current = Application.ProductVersion;
+        int dash = current.IndexOf('-');
+        var core = new Version(dash < 0 ? current : current.Substring(0, dash));
+        return new Version(core.Major, core.Minor, core.Build + 1) + (dash < 0 ? "" : current.Substring(dash));
+    }
+
+    static string DemoChangelog(string version)
+    {
+        string real = "";
+        try
+        {
+            real = Updater.Changelog(Application.ProductVersion);
+            int start = real.IndexOf("\n## ");
+            real = start < 0 ? "" : real.Substring(start + 1);
+        }
+        catch (Exception) { }
+        return "## [" + version + "] - " + DateTime.Today.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) + "\n\n### Added\n\n- A pretend version, so the update screen can be tried in the demo. Nothing is downloaded or installed.\n\n### Fixed\n\n- The first try fails on purpose, to show what a failed update looks like. Try again works.\n\n" + real;
+    }
+
+    int demoTries;
+
+    void DemoInstall(string v)
+    {
+        bool fail = demoTries++ == 0;
+        int percent = 0;
+        var timer = new System.Windows.Forms.Timer { Interval = 50 };
+        timer.Tick += (s, e) =>
+        {
+            percent += 2;
+            if (fail && percent >= 60)
+            {
+                timer.Dispose();
+                ShowRow("Update failed", "download", null);
+                updatePage.Failed(v, "the download doesn't match its checksum, so nothing was changed (demo)");
+                return;
+            }
+            if (percent >= 100)
+            {
+                timer.Dispose();
+                Ready(v);
+                return;
+            }
+            ShowRow("Downloading " + percent + "%", "download", null);
+            updatePage.Progress(v, percent);
+        };
+        timer.Start();
     }
 
     public void SetNote(string n) { note = n; }

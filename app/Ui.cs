@@ -250,6 +250,7 @@ static class Icons
                 case "lines": g.DrawLine(p, 5, 7, 19, 7); g.DrawLine(p, 5, 12, 19, 12); g.DrawLine(p, 5, 17, 13, 17); break;
                 case "power": g.DrawArc(p, 5, 5.5f, 14, 14, -60, 300); g.DrawLine(p, 12, 3.5f, 12, 11); break;
                 case "close": g.DrawLine(p, 6.5f, 6.5f, 17.5f, 17.5f); g.DrawLine(p, 17.5f, 6.5f, 6.5f, 17.5f); break;
+                case "download": g.DrawLine(p, 12, 4, 12, 15); g.DrawLines(p, new[] { new PointF(7.5f, 10.5f), new PointF(12, 15), new PointF(16.5f, 10.5f) }); g.DrawLine(p, 5, 19.5f, 19, 19.5f); break;
                 case "plus": g.DrawLine(p, 12, 5, 12, 19); g.DrawLine(p, 5, 12, 19, 12); break;
                 case "chevron": g.DrawLines(p, new[] { new PointF(7, 10), new PointF(12, 15), new PointF(17, 10) }); break;
                 case "check": g.DrawLines(p, new[] { new PointF(5, 12.5f), new PointF(10, 17.5f), new PointF(19, 7) }); break;
@@ -443,7 +444,7 @@ class Box : Control
     }
 }
 
-enum Look { Normal, Primary, Ghost }
+enum Look { Normal, Primary, Ghost, Solid }
 
 class Btn : Ctl
 {
@@ -458,13 +459,17 @@ class Btn : Ctl
         var g = Begin(e);
         Color fill, edge, fore;
         bool lit = Enabled && hover;
-        if (Look == Look.Primary) { fill = edge = Pressed ? Ui.Mix(Theme.Accent, Color.Black, 0.18) : lit ? Ui.Mix(Theme.Accent, Theme.Text, 0.12) : Theme.Accent; fore = Theme.OnAccent; }
+        if (Look == Look.Primary || Look == Look.Solid) { fill = edge = Pressed ? Ui.Mix(Theme.Accent, Color.Black, 0.18) : lit ? Ui.Mix(Theme.Accent, Theme.Text, 0.12) : Theme.Accent; fore = Theme.OnAccent; }
         else if (Look == Look.Ghost) { fill = edge = Pressed ? Theme.BtnDown : On ? Theme.AccentBg : lit ? Theme.Btn : Under; fore = On || lit ? Theme.Text : Theme.Dim; }
         else { fill = Pressed ? Theme.BtnDown : lit ? Theme.BtnHover : Theme.Btn; edge = Theme.Border; fore = Theme.Text; }
         if (!Enabled) { fill = Ui.Mix(Under, fill, 0.5); edge = Ui.Mix(Under, edge, 0.5); fore = Ui.Mix(Under, fore, 0.45); }
         Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * K, fill, edge);
+        if (Look == Look.Solid && On)
+            using (var p = new Pen(Theme.OnAccent, 1.5f * K))
+            using (var path = Ui.Round(new RectangleF(2.5f * K, 2.5f * K, Width - 5 * K - 1, Height - 5 * K - 1), 4.5f * K))
+                g.DrawPath(p, path);
         Ring(g, 6 * K);
-        var font = Ui.Get(9.75f, Look == Look.Primary ? Ui.Semi : Ui.Regular);
+        var font = Ui.Get(9.75f, Look == Look.Primary || Look == Look.Solid ? Ui.Semi : Ui.Regular);
         float icon = 16 * K;
         if (Text == "")
         {
@@ -472,7 +477,7 @@ class Btn : Ctl
             return;
         }
         float tw = TextRenderer.MeasureText(g, Text, font, Size.Empty, TextFormatFlags.NoPadding).Width;
-        float x = Look == Look.Ghost && Icon != null ? 10 * K : (Width - tw - (Icon != null ? icon + 8 * K : 0)) / 2;
+        float x = (Look == Look.Ghost || Look == Look.Solid) && Icon != null ? 10 * K : (Width - tw - (Icon != null ? icon + 8 * K : 0)) / 2;
         if (Icon != null) { Icons.Draw(g, Icon, new RectangleF(x, (Height - icon) / 2, icon, icon), fore); x += icon + 8 * K; }
         Ui.Draw(g, Text, font, new RectangleF(x, 0, Width - x - 4 * K, Height), fore, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
     }
@@ -850,6 +855,110 @@ class StatusLine : Ctl
     }
 }
 
+class DeviceList : Control
+{
+    int offset, content, target;
+    readonly Timer glide = new Timer { Interval = 15 };
+
+    public DeviceList()
+    {
+        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+        Ui.Style(this, () => BackColor = Theme.Side);
+        glide.Tick += (s, e) => Glide();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) glide.Dispose();
+        base.Dispose(disposing);
+    }
+
+    public int Offset { get { return offset; } }
+
+    public void Watch(Control item)
+    {
+        item.MouseWheel += (s, e) => Wheel(e.Delta);
+        item.GotFocus += (s, e) => Reveal(item);
+    }
+
+    public void Fit(int height)
+    {
+        content = height;
+        ScrollTo(offset);
+    }
+
+    public void Reveal(Control item)
+    {
+        if (item.Top < 0) ScrollTo(offset + item.Top);
+        else if (item.Bottom > Height) ScrollTo(offset + item.Bottom - Height);
+    }
+
+    void Wheel(int delta)
+    {
+        target = Clamp(target - delta * (int)Math.Round(50 * Ui.K) / 120);
+        if (target != offset) glide.Start();
+    }
+
+    void Glide()
+    {
+        int gap = target - offset;
+        if (gap == 0) { glide.Stop(); return; }
+        int step = (int)Math.Round(gap * 0.25);
+        if (step == 0) step = Math.Sign(gap);
+        Shift(offset + step);
+    }
+
+    int Clamp(int to) { return Math.Max(0, Math.Min(to, content - Height)); }
+
+    protected override void OnMouseWheel(MouseEventArgs e) { Wheel(e.Delta); base.OnMouseWheel(e); }
+
+    protected override void OnResize(EventArgs e) { base.OnResize(e); ScrollTo(offset); }
+
+    protected override void ScaleControl(SizeF factor, BoundsSpecified specified)
+    {
+        offset = (int)Math.Round(offset * factor.Height);
+        target = (int)Math.Round(target * factor.Height);
+        content = (int)Math.Round(content * factor.Height);
+        base.ScaleControl(factor, specified);
+    }
+
+    void ScrollTo(int to)
+    {
+        glide.Stop();
+        target = Clamp(to);
+        Shift(target);
+    }
+
+    void Shift(int to)
+    {
+        to = Clamp(to);
+        if (to != offset)
+        {
+            SuspendLayout();
+            foreach (Control c in Controls) c.Top += offset - to;
+            ResumeLayout();
+            offset = to;
+        }
+        foreach (Control c in Controls) c.Invalidate();
+    }
+
+    public void Fade(Graphics g, Control item)
+    {
+        float zone = 32 * Ui.K;
+        if (offset < content - Height) Shade(g, item, Height - zone, zone, false);
+        if (offset > 0) Shade(g, item, 0, zone, true);
+    }
+
+    static void Shade(Graphics g, Control item, float top, float height, bool fromTop)
+    {
+        var area = new RectangleF(0, top - item.Top, item.Width, height);
+        if (area.Bottom <= 0 || area.Top >= item.Height) return;
+        Color clear = Color.FromArgb(0, Theme.Side), solid = Theme.Side;
+        using (var brush = new LinearGradientBrush(new RectangleF(0, area.Top - 1, 1, area.Height + 2), fromTop ? solid : clear, fromTop ? clear : solid, LinearGradientMode.Vertical))
+            g.FillRectangle(brush, area);
+    }
+}
+
 class DevItem : Ctl
 {
     public string Title = "", Sub = "", Icon = "keyboard", Value = "";
@@ -884,6 +993,8 @@ class DevItem : Ctl
             right -= 6 * K;
         }
         Ui.Draw(g, Sub, font, new RectangleF(x, top, right - x, Height / 2f), Theme.Dim, TextFormatFlags.Top | TextFormatFlags.EndEllipsis);
+        var list = Parent as DeviceList;
+        if (list != null) list.Fade(g, this);
     }
 }
 

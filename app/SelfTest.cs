@@ -196,6 +196,9 @@ static class SelfTest
         Check(mines.Near(0) == 1 && mines.Near(2) == 0, "neighbours follow the keys, not the grid");
         Check(Updater.Newer("0.0.2-alpha", "0.0.1-alpha") && Updater.Newer("0.0.1", "0.0.1-alpha") && Updater.Newer("0.0.1-beta", "0.0.1-alpha") && Updater.Newer("v0.1.0", "0.0.9")
             && !Updater.Newer("0.0.1-alpha", "0.0.1-alpha") && !Updater.Newer("0.0.1-alpha", "0.0.1") && !Updater.Newer("0.0.9", "0.0.10"), "versions compare");
+        var releases = Updater.Releases("# Changelog\r\n\r\n## [Unreleased]\r\n\r\n## [0.0.3-alpha] - 2026-11-12\r\n\r\n### Added\r\n\r\n- One\r\n- Two\r\n\r\n## [0.0.2-alpha] - 2026-11-01\r\n\r\n### Fixed\r\n\r\n- Three\r\n\r\n## [0.0.1-alpha] - 2026-10-20\r\n\r\n- Four\r\n");
+        var newer = Updater.Between(releases, "0.0.1-alpha", "0.0.3-alpha");
+        Check(releases.Count == 4 && newer.Count == 2 && newer[0].Version == "0.0.3-alpha" && newer[0].Date == "12 November 2026" && string.Join("|", newer[0].Lines) == "### Added|- One|- Two" && newer[1].Version == "0.0.2-alpha", "changelog sections between two versions");
         Check(Updater.TagFrom("https://github.com/csmarvz/g-lite/releases/tag/v0.0.2-alpha") == "v0.0.2-alpha" && Updater.TagFrom("https://github.com/csmarvz/g-lite/releases") == null, "latest tag read from the redirect");
         Settings.Location = System.IO.Path.GetTempFileName();
         Settings.Init();
