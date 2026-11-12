@@ -13,7 +13,7 @@ class Found
     public byte Index;
     public int Wpid, Battery = -1, Millivolts, BatteryId;
     public byte BatteryFeature;
-    public bool Approx, Charging, Asleep, Hidpp10, PlainHid;
+    public bool Approx, Charging, Asleep, Hidpp10, PlainHid, Coarse;
     public int[] Features = new int[0];
 
     public bool Has(int f) { return Features.Contains(f); }
@@ -31,9 +31,11 @@ class Found
 
     public string Short { get { return Regex.Replace(Regex.Replace(Name, @"(\s+Wireless\s+RGB\s+Mechanical)?\s+Gaming\s+(Mouse|Headset|Keyboard)$", "", RegexOptions.IgnoreCase), @"\s+LIGHTSPEED\b", "", RegexOptions.IgnoreCase); } }
 
-    public string BatteryText { get { return Battery < 0 ? "" : Battery + "%"; } }
+    public string BatteryText { get { return Battery < 0 || Coarse ? "" : Battery + "%"; } }
 
-    public int Level { get { return Asleep ? Ui.Asleep : Battery < 0 ? -1 : Battery + (Charging ? Ui.Charging : 0); } }
+    public string BatteryWords { get { return Battery < 0 ? "–" : Coarse ? (Battery >= 30 ? "Good" : "Low") + " (it only reports good or low)" : BatteryText; } }
+
+    public int Level { get { return Asleep ? Ui.Asleep : Battery < 0 ? -1 : (Coarse && Battery >= 30 ? 100 : Battery) + (Charging ? Ui.Charging : 0); } }
 
     public static string ModelText(byte[] info)
     {
@@ -180,6 +182,8 @@ static class Devices
 
     public static Dictionary<string, string> Shorts = new Dictionary<string, string>();
 
+    static readonly Dictionary<int, string> Others = new Dictionary<int, string> { { 0x4023, "K270/K295" } };
+
     public static List<Found> Scan()
     {
         var ports = Ports();
@@ -190,8 +194,9 @@ static class Devices
         try { all.AddRange(Plain()); } catch (Exception) { }
         all.RemoveAll(f => f.Asleep && f.Wpid != 0 && all.Any(o => !o.Asleep && Regex.IsMatch(o.Models, @"\b" + f.Wpid.ToString("X4") + @"\b")));
         foreach (var f in all.Where(f => !f.Asleep && f.Approx && f.Battery >= 0)) Remember(f, DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute);
+        foreach (var f in all.Where(f => Others.ContainsKey(f.Wpid))) { f.Name = Others[f.Wpid]; f.Coarse = true; }
         foreach (var f in all.Where(f => !f.Asleep && f.Wpid != 0)) Settings.Set("seen." + f.Wpid.ToString("X4"), f.Name + "|" + f.Kind);
-        return all.Where(f => f.PlainHid || Found.LooksG(f.Name)).OrderBy(f => f.Kind == "keyboard" ? 0 : f.Kind == "mouse" ? 1 : f.Kind == "headset" ? 2 : 3).ThenBy(f => f.Name).ToList();
+        return all.Where(f => f.PlainHid || Found.LooksG(f.Name) || Others.ContainsKey(f.Wpid)).OrderBy(f => f.Kind == "keyboard" ? 0 : f.Kind == "mouse" ? 1 : f.Kind == "headset" ? 2 : 3).ThenBy(f => f.Name).ToList();
     }
 
     public static void Remember(Found f, long minute)
@@ -309,7 +314,7 @@ static class Devices
                 if (part == null) break;
                 name += new string(part.Take(16).TakeWhile(b => b != 0).Select(b => (char)b).ToArray());
             }
-            f.Name = len == null ? name : name.Substring(0, Math.Min(name.Length, len[0]));
+            f.Name = (len == null ? name : name.Substring(0, Math.Min(name.Length, len[0]))).Trim();
             var type = pr.Call(idx, nm, 2);
             if (type != null && type[0] < Kinds.Length) f.Kind = Kinds[type[0]];
         }

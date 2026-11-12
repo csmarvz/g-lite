@@ -544,7 +544,7 @@ class InfoPage : Control
         create.Visible = reportBtn.Visible = !f.Asleep;
         if (f.Asleep && report.Visible) report.Close();
         link.Text = f.Link + f.Slot + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "");
-        battery.Text = f.Battery < 0 ? "–" : f.BatteryText + (f.Charging ? ", charging" : "") + (f.Approx ? " (estimated from the voltage)" : "");
+        battery.Text = f.Battery < 0 ? "–" : f.BatteryWords + (f.Charging ? ", charging" : "") + (f.Approx ? " (estimated from the voltage)" : "");
         firmware.Text = f.Firmware == "" ? "–" : f.Firmware;
         var known = f.Features.Where(x => x >= 0x0100 && x != 0x1D4B && (x < 0x1000 || x > 0x1004) && Report.Name(x) != "").ToList();
         var named = known.Select(x => Report.Name(x)).Select(n => char.ToUpper(n[0]) + n.Substring(1)).Distinct().ToList();

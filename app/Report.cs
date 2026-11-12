@@ -81,7 +81,7 @@ static class Report
     {
         var r = new Reader { H = h };
         var s = r.S;
-        Head(s, f, screen, () => f.Battery >= 0 || !f.Has(0x1F20) ? (f.Battery < 0 ? "–" : f.BatteryText) + (f.Millivolts > 0 ? " · " + f.Millivolts + " mV" : "") + (f.Charging ? " · charging" : "") : HeadsetBattery(r));
+        Head(s, f, screen, () => f.Battery >= 0 || !f.Has(0x1F20) ? (f.Battery < 0 ? "–" : f.Battery + "%") + (f.Millivolts > 0 ? " · " + f.Millivolts + " mV" : "") + (f.Charging ? " · charging" : "") : HeadsetBattery(r));
 
         var ids = Features(r, f);
         foreach (var id in ids.Where(Reads.ContainsKey).Where(x => x != 0x0001))

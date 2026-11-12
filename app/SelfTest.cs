@@ -212,6 +212,9 @@ static class SelfTest
         var unplugged = new Found { BatteryId = 0x1001 };
         Devices.Decode(unplugged, new byte[] { 0x0F, 0x3C, 0x00 });
         Check(full.Charging && full.Battery == 100 && charging.Charging && charging.Battery == 68 && !unplugged.Charging && unplugged.Battery == 66 && unplugged.Millivolts == 3900, "battery voltage flags: charging, full, unplugged");
+        var good = new Found { Battery = 30, Coarse = true };
+        var low = new Found { Battery = 5, Coarse = true };
+        Check(good.Level == 100 && good.BatteryText == "" && low.Level == 5 && low.BatteryText == "", "a battery that only reports good or low shows a full or low icon, without a percentage");
         var pro = new Found { Name = "G Pro Wireless Gaming Mouse", Battery = 95 };
         Devices.Remember(pro, 1000);
         pro = new Found { Name = "G Pro Wireless Gaming Mouse", Battery = 68, Charging = true };
