@@ -24,7 +24,7 @@ class ScreenSetup
     public List<Zone> Zones = Defaults();
     public Dictionary<int, int> Keys = new Dictionary<int, int>();
     public const int BatteryLimit = 20;
-    public int Boost = 33, Interval = 100;
+    public int Boost = 33, Interval = 100, Bright = 100;
     public bool Smooth = true, PauseOnBattery = true, PauseWhenLocked = true;
 
     public static List<Zone> Defaults()
@@ -74,6 +74,7 @@ class ScreenSetup
             "mon:" + Monitor,
             "boost:" + Boost,
             "ms:" + Interval,
+            "bright:" + Bright,
             "smooth:" + (Smooth ? 1 : 0),
             "bat:" + (PauseOnBattery ? 1 : 0),
             "lock:" + (PauseWhenLocked ? 1 : 0),
@@ -97,6 +98,7 @@ class ScreenSetup
                 {
                     case "mon": s.Monitor = value; break;
                     case "boost": s.Boost = Clamp(int.Parse(value), 0, 100); break;
+                    case "bright": s.Bright = Clamp(int.Parse(value), 1, 100); break;
                     case "ms": s.Interval = Clamp(int.Parse(value) / 100 * 100, 100, 1000); break;
                     case "smooth": s.Smooth = value == "1"; break;
                     case "bat": s.PauseOnBattery = bits[0] == "1"; break;

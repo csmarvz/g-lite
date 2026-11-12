@@ -244,6 +244,8 @@ static class SelfTest
         Check(new Found { Name = "G512 X 75", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8101 } }.IsG512X && !new Found { Name = "G512 X 98", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8101 } }.IsG512X && !new Found { Name = "G512 X 75", Features = new[] { 0x8071 } }.IsG512X, "the G512 X 75 is told apart, with its features");
         Check(new Found { Name = "G560 Gaming Speaker", Features = new[] { 0x8070, 0x8040 } }.IsG560 && !new Found { Name = "G560 Gaming Speaker", Features = new[] { 0x8040 } }.IsG560, "the G560 needs its lighting feature");
         var breathe = new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 4800, Bright = 50 };
+        var speakerScreen = GSpeaker.Screen("");
+        Check(speakerScreen.Zones.Count == 4 && GSpeaker.Screen(speakerScreen.ToText()).Zones[3].Area == speakerScreen.Zones[3].Area && GSpeaker.Screen(new ScreenSetup().ToText()).Zones.Count == 4, "the speakers' screen effect has one area per zone and keeps it");
         var speakerLights = GSpeaker.FromText(GSpeaker.ToText(new[] { breathe, null, new MouseLight(), breathe }), 4);
         var oneForAll = GSpeaker.FromText("1,FF0000,5000,100", 4);
         Check(speakerLights != null && speakerLights[0].Same(breathe) && speakerLights[1] == null && speakerLights[2].Same(new MouseLight()) && speakerLights[3].Same(breathe)
