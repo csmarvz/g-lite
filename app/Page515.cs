@@ -351,11 +351,12 @@ class Page515 : DevicePage
             ScreenChanged();
             Snap();
         };
-        preview = Ui.Add(light, new ScreenPreview(), 14, 152, 200, 112);
+        var frame = Ui.Add(light, new Box(), 14, 152, 200, 110);
+        screenLight.Add(frame);
+        preview = Ui.Add(frame, new ScreenPreview(), 6, 6, 188, 98);
         preview.Picked += PickZone;
         preview.Done += ScreenChanged;
         screenLight.Add(monitorDrop);
-        screenLight.Add(preview);
         screenLight.Add(Ui.Text(light, "Zones", 226, 98, () => Theme.Dim, 9f));
         zoneList = Ui.Add(light, new ZoneList(), 226, 116, 140, 110);
         zoneList.Picked += PickZone;
@@ -409,9 +410,8 @@ class Page515 : DevicePage
             debounce.Start();
         };
         smoothToggle = Option(screenBox, "Smooth changes", 166, () => setup.Smooth = !setup.Smooth);
-        Ui.Text(screenBox, "Pause", 14, 194, () => Theme.Dim, 9f);
-        batteryToggle = Option(screenBox, "On battery below " + ScreenSetup.BatteryLimit + "%", 214, () => setup.PauseOnBattery = !setup.PauseOnBattery);
-        lockToggle = Option(screenBox, "Screen off or locked", 242, () => setup.PauseWhenLocked = !setup.PauseWhenLocked);
+        batteryToggle = Option(screenBox, "Pause on low battery", 194, () => setup.PauseOnBattery = !setup.PauseOnBattery);
+        lockToggle = Option(screenBox, "Pause when screen off or locked", 222, () => setup.PauseWhenLocked = !setup.PauseWhenLocked, 36);
 
         screenTimer.Tick += (s, e) => Tick();
         snapTimer.Tick += (s, e) => Snap();
@@ -446,11 +446,13 @@ class Page515 : DevicePage
         if (live) Load();
     }
 
-    Toggle Option(Control parent, string text, int y, Action flip)
+    Toggle Option(Control parent, string text, int y, Action flip, int tall = 20)
     {
         var toggle = Ui.Add(parent, new Toggle { AccessibleName = text }, 14, y, 34, 18);
         toggle.Changed += () => { flip(); ScreenChanged(); };
         var label = Ui.Text(parent, text, 56, y, () => Theme.Text, 9f);
+        label.AutoSize = false;
+        label.Size = new Size(156, tall);
         label.Click += (s, e) => { toggle.Checked = !toggle.Checked; flip(); ScreenChanged(); };
         return toggle;
     }
