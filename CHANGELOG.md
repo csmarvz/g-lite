@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.0.23-alpha] - 2026-11-12
+
+### Added
+
+- An Update screen with the new version, its date and what changed since yours. An Update available row in the sidebar opens it, and so does Check for updates in Settings.
+- Updates show their progress, and a failed one says why and offers Try again.
+- With `--demo`, the update check finds a pretend version, so the Update screen can be tried without installing anything.
+
+### Changed
+
+- G-Lite no longer restarts by itself after an update, automatic ones included. The sidebar shows Restart G-Lite, and until you click it the old version keeps running. The next start runs the new one anyway.
+- The device list scrolls when it doesn't fit, and fades at an edge with more devices beyond it.
+
 ## [0.0.22-alpha] - 2026-11-12
 
 ### Added
