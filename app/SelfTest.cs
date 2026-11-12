@@ -355,7 +355,7 @@ static class SelfTest
             int keys = board.Rows.Sum(r => r.Split('|').Count(t => !t.StartsWith("_")));
             var keyIds = board.KeyIds();
             Check(keyIds.Count == keys && board.Ids.Length == board.Rows.Length, file + " has one key id per key");
-            Check(keyIds.Where(i => i >= 0).All(i => i >= 0x01 && i <= 0x6F), file + " key ids are lighting ids");
+            Check(keyIds.Where(i => i >= 0).All(i => (i >= 0x01 && i <= 0x6F) || (i >= 0xA0 && i <= 0xFE)), file + " key ids are lighting ids");
         }
         var isoIds = Model.Load("g515-tkl-iso.json").KeyIds();
         var ansiIds = Model.Load("g515-tkl.json").KeyIds();

@@ -480,18 +480,19 @@ class KeyboardView : Form
         Win.Round(this);
         foreach (var row in model.Rows)
         {
-            float x = 0, y = height;
-            int before = keys.Count;
+            float x = 0, y = height, tall = 0;
             foreach (var t in row.Split('|'))
             {
                 if (t.StartsWith("_")) { x += float.Parse(t.Substring(1), System.Globalization.CultureInfo.InvariantCulture) * U; continue; }
                 var parts = t.Split(':');
                 float w = parts.Length > 1 ? float.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture) * U : U;
-                keys.Add(Tuple.Create(new RectangleF(Pad + x, Head + Pad + y, w - 4, U - 4), parts[0]));
+                float h = parts.Length > 2 ? float.Parse(parts[2], System.Globalization.CultureInfo.InvariantCulture) * U : U;
+                keys.Add(Tuple.Create(new RectangleF(Pad + x, Head + Pad + y, w - 4, h - 4), parts[0]));
                 x += w;
+                tall = Math.Max(tall, h);
                 width = Math.Max(width, x);
             }
-            height += keys.Count > before ? U : x;
+            height += tall > 0 ? tall : x;
         }
         var rows = keys.Select(k => k.Item1.Y).Distinct().OrderBy(v => v).ToList();
         cells = keys.Select(k =>

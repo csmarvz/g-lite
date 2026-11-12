@@ -46,18 +46,19 @@ class KeyPicture : Ctl
         AccessibleName = m.Name + " lighting";
         foreach (var row in m.Rows)
         {
-            float x = 0;
-            int before = keys.Count;
+            float x = 0, tall = 0;
             foreach (var t in row.Split('|'))
             {
                 if (t.StartsWith("_")) { x += float.Parse(t.Substring(1), CultureInfo.InvariantCulture); continue; }
                 var parts = t.Split(':');
                 float w = parts.Length > 1 ? float.Parse(parts[1], CultureInfo.InvariantCulture) : 1;
-                keys.Add(new RectangleF(x, uh, w, 1));
+                float h = parts.Length > 2 ? float.Parse(parts[2], CultureInfo.InvariantCulture) : 1;
+                keys.Add(new RectangleF(x, uh, w, h));
                 x += w;
+                tall = Math.Max(tall, h);
                 uw = Math.Max(uw, x);
             }
-            uh += keys.Count > before ? 1 : x;
+            uh += tall > 0 ? tall : x;
         }
         ids = m.KeyIds();
         liveColors = null;
@@ -89,7 +90,7 @@ class KeyPicture : Ctl
         Invalidate();
     }
 
-    RectangleF Cap(RectangleF r) { return new RectangleF(ox + r.X * unit + 1.5f * K, oy + r.Y * unit + 1.5f * K, r.Width * unit - 3 * K, unit - 3 * K); }
+    RectangleF Cap(RectangleF r) { return new RectangleF(ox + r.X * unit + 1.5f * K, oy + r.Y * unit + 1.5f * K, r.Width * unit - 3 * K, r.Height * unit - 3 * K); }
 
     Rectangle Marquee { get { return Rectangle.FromLTRB(Math.Min(dragFrom.X, dragTo.X), Math.Min(dragFrom.Y, dragTo.Y), Math.Max(dragFrom.X, dragTo.X), Math.Max(dragFrom.Y, dragTo.Y)); } }
 

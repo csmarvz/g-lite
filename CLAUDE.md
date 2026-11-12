@@ -66,7 +66,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/SelfTest.cs`: self-checks with golden bytes from the real keyboard. Add a check here whenever the encoding or rules change.
 - `app/Traces.cs`: traces, run by the self-test. Each one drives a real screen (`Page515`, `PageMouse`, `PageHeadset`) on a fake device through a script of clicks, and records every message sent (`Hidpp.Tap`) and the state of the screen after each step. They're compared with `app/tests/<device>.txt`, and the build stops at the first line that differs. A change that's meant to change what's sent: run `build\selftest.exe --record` from `app`, check the diff of `app/tests`, and commit it with the change. A failing run writes `app/tests/<device>.fail.txt`. The screens get test hooks: `Ctl.Press`, `Seg.Pick`, `Drop.Pick`, `Slider.Put`, `Ui.Popped` for menus, `Win.TestIdle`, `Presence.Set`, `Page515.Manual` (no watch timer; the script calls `Watch`). `FakeMouse.G305()` is built from the bytes of a real G305.
 - `app/models/g515-tkl.json`, `g515-tkl-iso.json`, `g915-tkl.json`, `g915.json`, `g512-x-75.json`: the key layouts. The G515 page picks ISO when 0x4540 reports a layout above 2.
-  - A row is written `Label:width|...`.
+  - A row is written `Label:width|...`, or `Label:width:height` for a key less than a row tall (the G512 X 75's light bar).
   - `_n` is a gap of n units.
   - A row made only of gaps adds vertical space.
   - `ids` has one row per row: the 0x8081 lighting id of each key in hex (USB key code minus 3, modifiers 0x68–0x6F), `--` for a key with no known LED.
