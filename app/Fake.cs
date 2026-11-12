@@ -191,7 +191,7 @@ class FakeG915 : Hidpp
     {
         return new FakeG915
         {
-            Index = new Dictionary<int, byte> { { 0x8071, 6 }, { 0x8040, 8 }, { 0x8101, 9 } },
+            Index = new Dictionary<int, byte> { { 0x8071, 6 }, { 0x8081, 7 }, { 0x8040, 8 }, { 0x8101, 9 } },
             Ids = new[] { new byte[] { 0x00, 0x01, 0x0A, 0x15, 0x16, 0x17, 0x18 }, new byte[] { 0x00, 0x01, 0x0A, 0x15, 0x16, 0x18 } }
         };
     }
@@ -217,6 +217,12 @@ class FakeG915 : Hidpp
                 else Live[p[0]] = p.Take(13).ToArray();
             }
             if (fn == 5) Claimed = p[1];
+        }
+        else if (Index.ContainsKey(0x8081) && feat == Index[0x8081] && fn == 0)
+        {
+            r[1] = p[1];
+            for (int id = p[1] * 112; id < p[1] * 112 + 112; id++)
+                if (id <= 0x6F || id >= 0xA0 && id <= 0xC0 || id >= 0xF2 && id <= 0xFE) r[2 + (id - p[1] * 112) / 8] |= (byte)(1 << ((id - p[1] * 112) % 8));
         }
         else if (!Index.ContainsValue(feat)) throw new HidppError(2, "invalid argument");
         return r;
