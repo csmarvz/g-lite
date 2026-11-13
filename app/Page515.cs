@@ -230,8 +230,27 @@ class Keyboards
 {
     public Model Keys, Iso;
     public string Prefix;
-    public bool Saves;
+    public bool Saves, Guessed;
     public int[] Bar;
+
+    public static string File(string name)
+    {
+        name = name.ToUpper();
+        bool small = name.Contains("TKL");
+        return name.Contains("G915 X") ? (small ? "g915-tkl.json" : "g915.json") : name.Contains(" 60") ? "g-60.json" : name.Contains(" 75") ? "g512-x-75.json" : name.Contains(" 98") ? "g-full.json" : "g515-tkl.json";
+    }
+
+    public static Keyboards For(Found found)
+    {
+        string file = File(found.Name);
+        var keys = Named(file, found.Short);
+        if (file == "g512-x-75.json")
+        {
+            keys.Rows = keys.Rows.Take(7).ToArray();
+            keys.Ids = keys.Ids.Take(7).ToArray();
+        }
+        return new Keyboards { Keys = keys, Prefix = "profile." + found.Slug + ".", Guessed = true };
+    }
 
     static Model Named(string file, string name)
     {
@@ -483,7 +502,7 @@ class Page515 : DevicePage
         var idle = Ui.Add(this, new Box(), 412, 339, 224, Parts ? 316 : 272);
         idleArea = idle;
         Ui.Text(idle, live ? "Saving" : "When idle", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
-        var note = Ui.Text(idle, "G-Lite can't save to this keyboard yet. It keeps your lighting and sets it again when G-Lite starts and when you open this screen. Picking None gives the keyboard its own lighting back.", 14, 40, () => Theme.Dim, 9f);
+        var note = Ui.Text(idle, "G-Lite can't save to this keyboard yet. It keeps your lighting and sets it again when G-Lite starts and when you open this screen. Picking None gives the keyboard its own lighting back." + (kind.Guessed ? " The key picture is a guess for this model." : ""), 14, 40, () => Theme.Dim, 9f);
         note.AutoSize = false;
         note.Size = new Size(196, 200);
         note.Visible = live;

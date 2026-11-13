@@ -18,9 +18,10 @@ class Found
 
     public bool Has(int f) { return Features.Contains(f); }
     public string Slot { get { return Index == 0xFF || Hidpp10 ? "" : " · slot " + Index; } }
-    public bool IsG515 { get { return Name.ToUpper().Contains("G515") && Has(0x8071) && Has(0x8040) && Has(0x8101); } }
+    public bool IsG515 { get { var n = Name.ToUpper(); return n.Contains("G515") && !n.Contains("RAPID") && Has(0x8071) && Has(0x8040) && Has(0x8101); } }
     public bool IsG915 { get { var n = Name.ToUpper(); return (n.Contains("G915") || n.Contains("G815")) && !n.Contains("G915 X") && Has(0x8071) && Has(0x8040) && Has(0x8100) && !Has(0x8101); } }
     public bool IsG512X { get { return Name.ToUpper().Contains("G512 X 75") && Has(0x8071) && Has(0x8040) && Has(0x8081); } }
+    public bool IsRgbKeyboard { get { return Kind == "keyboard" && Has(0x8071) && Has(0x8040); } }
     public bool IsLedKeyboard { get { return Kind == "keyboard" && Has(0x8070) && !Has(0x8071); } }
     public bool IsG560 { get { return Name.ToUpper().Contains("G560") && Has(0x8070); } }
     public bool IsMouse { get { return Kind == "mouse" && (Has(0x2201) || Has(0x2202)); } }
@@ -105,6 +106,7 @@ static class Devices
     [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)] static extern int CM_Get_Device_Interface_List(ref Guid interfaceClass, string deviceId, char[] buffer, int length, int flags);
 
     static readonly Regex PlainModels = new Regex(@"PID_(C22D|C22E|C216|C218|C219)", RegexOptions.IgnoreCase);
+    static readonly Regex AudioModels = new Regex(@"VID_046D&PID_(0[AB][0-9A-F]{2})", RegexOptions.IgnoreCase);
     static readonly Dictionary<string, string[]> PlainNames = new Dictionary<string, string[]>
     {
         { "C22D", new[] { "G510 Gaming Keyboard", "keyboard" } },
@@ -138,15 +140,29 @@ static class Devices
 
     public static string[] PlainIds(string pid) { return pid == "" ? new string[0] : HidIds().Where(id => id.Contains("PID_" + pid.ToUpperInvariant())).OrderBy(id => id).ToArray(); }
 
-    static List<Found> Plain()
+    public static string AudioModel(string id, IEnumerable<string> foundPaths)
     {
-        return HidIds().Select(id => PlainModels.Match(id)).Where(m => m.Success).Select(m => m.Groups[1].Value.ToUpperInvariant()).Distinct().Select(pid =>
+        var match = AudioModels.Match(id);
+        if (!match.Success) return null;
+        string pid = match.Groups[1].Value.ToUpperInvariant();
+        return foundPaths.Any(path => path != null && path.IndexOf("PID_" + pid, StringComparison.OrdinalIgnoreCase) >= 0) ? null : pid;
+    }
+
+    static List<Found> Plain(string[] ids, List<Found> found)
+    {
+        var foundPaths = found.Select(f => f.Path).ToList();
+        var plain = new List<Found>();
+        foreach (var pid in ids.Select(id => PlainModels.Match(id)).Where(m => m.Success).Select(m => m.Groups[1].Value.ToUpperInvariant()).Concat(ids.Select(id => AudioModel(id, foundPaths)).Where(pid => pid != null)).Distinct())
         {
-            var paths = PlainIds(pid).Select(PathOf).ToList();
-            var known = PlainNames[pid];
-            var name = Regex.Replace(paths.Select(Product).FirstOrDefault(Found.LooksG) ?? known[0], @"^Logitech\s+", "", RegexOptions.IgnoreCase);
-            return new Found { Key = "plain|" + pid, Path = paths[0], Name = name, Kind = known[1], Link = "USB", Index = 0xFF, Models = "USB " + pid, PlainHid = true };
-        }).ToList();
+            var paths = ids.Where(id => id.Contains("PID_" + pid)).OrderBy(id => id).Select(PathOf).ToList();
+            string[] known;
+            PlainNames.TryGetValue(pid, out known);
+            var name = paths.Select(Product).Select(product => Regex.Replace(product ?? "", @"^Logitech\s+", "", RegexOptions.IgnoreCase)).FirstOrDefault(Found.LooksG) ?? (known != null ? known[0] : null);
+            if (name == null) continue;
+            string kind = known != null ? known[1] : name.ToUpper().Contains("SPEAKER") ? "device" : "headset";
+            plain.Add(new Found { Key = "plain|" + pid, Path = paths[0], Name = name, Kind = kind, Link = "USB", Index = 0xFF, Models = "USB " + pid, PlainHid = true });
+        }
+        return plain;
     }
 
     class Port { public string Id, Group, Long, Short; }
@@ -167,10 +183,10 @@ static class Devices
         }
     }
 
-    static List<Port> Ports()
+    static List<Port> Ports(string[] ids)
     {
         var groups = new Dictionary<string, Port>();
-        foreach (var id in HidIds())
+        foreach (var id in ids)
             {
                 int col = id.IndexOf("&COL", StringComparison.OrdinalIgnoreCase), slash = id.LastIndexOf('\\'), amp = id.LastIndexOf('&');
                 if (col < 0 || slash < 0 || amp < slash || PlainModels.IsMatch(id)) continue;
@@ -192,12 +208,13 @@ static class Devices
 
     public static List<Found> Scan()
     {
-        var ports = Ports();
+        var ids = HidIds();
+        var ports = Ports(ids);
         Shorts = ports.Where(p => p.Short != null).GroupBy(p => p.Long).ToDictionary(g => g.Key, g => g.First().Short);
         var tasks = ports.Select(p => Task.Run(() => { try { return ScanPort(p); } catch (Exception) { return new List<Found>(); } })).ToArray();
         Task.WaitAll(tasks, 20000);
         var all = tasks.Where(t => t.IsCompleted).SelectMany(t => t.Result).ToList();
-        try { all.AddRange(Plain()); } catch (Exception) { }
+        try { all.AddRange(Plain(ids, all)); } catch (Exception) { }
         all.RemoveAll(f => f.Asleep && f.Wpid != 0 && all.Any(o => !o.Asleep && Regex.IsMatch(o.Models, @"\b" + f.Wpid.ToString("X4") + @"\b")));
         foreach (var f in all.Where(f => !f.Asleep && f.Approx && f.Battery >= 0)) Remember(f, DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute);
         foreach (var f in all.Where(f => Others.ContainsKey(f.Wpid))) { f.Name = Others[f.Wpid]; f.Coarse = true; }

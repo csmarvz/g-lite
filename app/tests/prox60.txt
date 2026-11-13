@@ -1,0 +1,67 @@
+open
+  8071 fn0
+  8071 fn0  00 01
+  8071 fn0  00 02
+  8071 fn0  00 03
+  8071 fn0  00 04
+  8071 fn0  00 05
+  8071 fn0  00 06
+  8071 fn0  00 07
+  8071 fn0  01
+  8071 fn0  01 01
+  8071 fn0  01 02
+  8071 fn0  01 03
+  8071 fn0  01 04
+  8071 fn0  01 05
+  8071 fn0  01 06
+  8071 fn0  02
+  8040 fn1
+  8071 fn0
+  8071 fn0  00 01
+  8071 fn0  00 02
+  8071 fn0  00 03
+  8071 fn0  00 04
+  8071 fn0  00 05
+  8071 fn0  00 06
+  8071 fn0  00 07
+  8071 fn0  01
+  8071 fn0  01 01
+  8071 fn0  01 02
+  8071 fn0  01 03
+  8071 fn0  01 04
+  8071 fn0  01 05
+  8071 fn0  01 06
+  8071 fn0  02
+  8040 fn1
+  = status "" [Report] Preset=None [Update (off)] […] Effect=- Direction=- (off) Brightness=80 Speed=0 (off) [Revert (off)]
+pick Effect Static
+  8040 fn1
+  8101 fn6  05
+  8071 fn5  01 03 04
+  8071 fn1  00 01 FF FF FF 02 00 00 00 00 00 00 01
+  8071 fn1  01 01 FF FF FF 02 00 00 00 00 00 00 01
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Effect=Static <Color FFFFFF> Direction=- (off) Brightness=80 Speed=0 (off) [Revert]
+press Color 30D050
+  8040 fn1
+  8101 fn6  05
+  8071 fn5  01 03 04
+  8071 fn1  00 01 30 D0 50 02 00 00 00 00 00 00 01
+  8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Effect=Static <Color 30D050> Direction=- (off) Brightness=80 Speed=0 (off) [Revert]
+pick Effect Wave
+  8040 fn1
+  8101 fn6  05
+  8071 fn5  01 03 04
+  8071 fn1  00 04 00 FF 00 00 00 00 13 88 64 01 01
+  8071 fn1  01 04 00 FF 00 00 00 00 13 88 64 01 01
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Effect=Wave Direction=Right Brightness=80 Speed=78 [Revert]
+slide Brightness 50
+  8040 fn1
+  8040 fn2  00 32
+  8101 fn6  05
+  8071 fn5  01 03 04
+  8071 fn1  00 04 00 FF 00 00 00 00 13 88 64 01 01
+  8071 fn1  01 04 00 FF 00 00 00 00 13 88 64 01 01
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Effect=Wave Direction=Right Brightness=50 Speed=78 [Revert]
+quit
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Effect=Wave Direction=Right Brightness=50 Speed=78 [Revert]
