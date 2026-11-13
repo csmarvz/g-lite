@@ -135,6 +135,7 @@ static class Updater
         using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(bin)).Replace("-", "").ToLowerInvariant();
         if (!sums.Split('\n').Any(l => l.Contains("GLite.exe") && l.Trim().StartsWith(hash)))
             throw new Exception("the download doesn't match its checksum, so nothing was changed");
+        Log.Add("", "update", "Downloaded " + version + ", " + bin.Length / 1024 + " KB, checksum ok");
         try
         {
             File.WriteAllBytes(exe + ".new", bin);
@@ -142,8 +143,14 @@ static class Updater
             File.Move(exe, exe + ".old");
             try { File.Move(exe + ".new", exe); }
             catch { File.Move(exe + ".old", exe); throw; }
+            Log.Add("", "update", "Replaced GLite.exe with " + version + ", the old one is GLite.exe.old until the next start");
         }
-        catch (UnauthorizedAccessException) { Elevated(exe, bin); }
+        catch (UnauthorizedAccessException)
+        {
+            Log.Add("", "update", "The folder isn't writable, asking for administrator rights");
+            Elevated(exe, bin);
+            Log.Add("", "update", "Replaced GLite.exe with " + version + " with administrator rights");
+        }
     }
 
     public static void Restart()
@@ -177,7 +184,8 @@ static class Updater
 
     public static void Cleanup()
     {
-        try { if (File.Exists(Exe + ".old")) File.Delete(Exe + ".old"); } catch { }
+        try { if (File.Exists(Exe + ".old")) { File.Delete(Exe + ".old"); Log.Add("", "update", "Removed the previous version, GLite.exe.old"); } }
+        catch (Exception ex) { Log.Add("", "update", "Couldn't remove GLite.exe.old: " + ex.Message); }
         try { if (File.Exists(Temp)) File.Delete(Temp); } catch { }
     }
 }

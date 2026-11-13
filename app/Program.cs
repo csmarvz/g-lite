@@ -150,6 +150,7 @@ class MainWindow : Form
         updatePage.SkipClicked = () =>
         {
             if (!demo) Updater.Skipped = available;
+            Log.Add("", "you", "Skip version " + available);
             checkText.Text = "Version " + available + " skipped";
             ShowUpdate(null);
             if (updatePage.FromSettings) ShowSettings(); else Pick(selected);
@@ -624,6 +625,8 @@ class MainWindow : Form
 
     void GotVersion(string v, string err, bool manual)
     {
+        if (err != null) Log.Add("", "update", "Couldn't check for updates: " + err);
+        else if (v != null) Log.Add("", "update", !Updater.Newer(v, Application.ProductVersion) ? "Checked for updates: " + v + " is the latest" : "Version " + v + " is available" + (!manual && !demo && v == Updater.Skipped ? ", skipped" : ""));
         if (ready != null) { if (manual) { checkText.Text = "Version " + ready + " installed. Restart G-Lite to use it."; updatePage.Ready(ready); } return; }
         if (err != null) { if (manual) { checkText.Text = "Couldn't check for updates: " + err; updatePage.CheckFailed(err); } return; }
         if (v == null || !Updater.Newer(v, Application.ProductVersion)) { if (manual) { checkText.Text = "G-Lite is up to date"; updatePage.Current(); } return; }
@@ -661,8 +664,9 @@ class MainWindow : Form
     void Restart()
     {
         if (demo) { updatePage.Note("Demo: G-Lite would restart now", false); return; }
+        Log.Add("", "you", "Restart G-Lite to use " + ready);
         try { Updater.Restart(); }
-        catch (Exception ex) { updatePage.Note("Couldn't restart: " + ex.Message + ". Quit G-Lite and open it again.", true); ShowUpdatePage(false); return; }
+        catch (Exception ex) { Log.Add("", "error", "Couldn't restart: " + ex.Message); updatePage.Note("Couldn't restart: " + ex.Message + ". Quit G-Lite and open it again.", true); ShowUpdatePage(false); return; }
         HidePanel();
         WaitAll();
         if (Tray != null) Tray.Visible = false;
@@ -672,6 +676,7 @@ class MainWindow : Form
     void Install(string v)
     {
         available = v;
+        Log.Add("", "update", "Downloading " + v + (demo ? " (demo, nothing is downloaded)" : ""));
         ShowRow("Downloading…", "download", null);
         updatePage.Progress(v, -1);
         if (demo) { DemoInstall(v); return; }
@@ -682,7 +687,7 @@ class MainWindow : Form
                 Updater.Install(v, percent => BeginInvoke((Action)(() => { ShowRow(percent < 0 ? "Downloading…" : "Downloading " + percent + "%", "download", null); updatePage.Progress(v, percent); })));
                 BeginInvoke((Action)(() => Ready(v)));
             }
-            catch (Exception ex) { BeginInvoke((Action)(() => { ShowRow("Update failed", "download", null); updatePage.Failed(v, ex.Message); })); }
+            catch (Exception ex) { Log.Add("", "error", "Update to " + v + " failed: " + ex.Message); BeginInvoke((Action)(() => { ShowRow("Update failed", "download", null); updatePage.Failed(v, ex.Message); })); }
         });
     }
 
@@ -720,6 +725,7 @@ class MainWindow : Form
             if (fail && percent >= 60)
             {
                 timer.Dispose();
+                Log.Add("", "error", "Update to " + v + " failed: the download doesn't match its checksum (demo)");
                 ShowRow("Update failed", "download", null);
                 updatePage.Failed(v, "the download doesn't match its checksum, so nothing was changed (demo)");
                 return;
@@ -727,6 +733,7 @@ class MainWindow : Form
             if (percent >= 100)
             {
                 timer.Dispose();
+                Log.Add("", "update", "Installed " + v + " (demo, nothing changed)");
                 Ready(v);
                 return;
             }
@@ -792,13 +799,13 @@ class MainWindow : Form
             if (!fresh && args.Contains("--restart"))
                 try { fresh = mutex.WaitOne(15000); } catch (AbandonedMutexException) { fresh = true; }
             if (!fresh) return;
-            Updater.Cleanup();
             Settings.Init();
             Theme.Apply();
             Application.EnableVisualStyles();
             if (demo) Backups.Root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "GLite demo backups");
             if (demo) Log.File = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "GLite demo log.txt");
             Log.Add("", "start", "G-Lite " + Application.ProductVersion + (demo ? " demo" : "") + " · " + Report.Windows());
+            if (!demo) Updater.Cleanup();
             var fake = demo ? new FakeHidpp() : null;
             var panel = new MainWindow(fake);
             var tray = new NotifyIcon { Visible = true };

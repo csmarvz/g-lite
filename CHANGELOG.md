@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- The log shows the updates: each check's result, the download and its checksum, replacing the exe, failures, Skip and Restart, and removing the old exe at the next start.
+
 ## [0.0.24-alpha] - 2026-11-13
 
 ### Added
