@@ -510,6 +510,9 @@ class MainWindow : Form
             new Found { Key = "demo|g9x", Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04", Firmware = "58.02 · build 0018" },
             new Found { Key = "demo|g560", Name = "G560 Gaming Speaker", Kind = "device", Link = "Demo", Index = 0xFF, Firmware = "U1 22.03 · build 0023", Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 } },
             new Found { Key = "demo|litra", Name = "Litra Beam LX", Kind = "light", Link = "Demo", Index = 0xFF, Firmware = "U1 03.02 · build 0011", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1990, 0x8040, 0x8071, 0x8081 } },
+            new Found { Key = "demo|mxmaster", Name = "MX Master 3S", Kind = "mouse", Link = "Demo", Index = 2, Wpid = 0xB034, Battery = 70, Firmware = "RBM 21.00 · build 0013", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x2110, 0x2121, 0x2150, 0x2201 } },
+            new Found { Key = "demo|mxkeys", Name = "MX Keys S", Kind = "keyboard", Link = "Demo", Index = 3, Wpid = 0xB378, Battery = 55, Firmware = "RBK 74.00 · build 0024", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x1982, 0x40A3 } },
+            new Found { Key = "demo|keypad", Name = "MX Creative Keypad", Kind = "device", Link = "Demo", Index = 0xFF, Firmware = "U1 66.00 · build 0017", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1B04, 0x8040 } },
             new Found { Key = "demo|g915full", Name = "G915 LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "Demo", Index = 2, Wpid = 0x407C, Battery = 46, Approx = true, Millivolts = 3780, Firmware = "MPK 12.01 · build 0019", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 } },
             new Found { Key = "demo|g502", Name = "G502 LIGHTSPEED Wireless Gaming Mouse", Kind = "mouse", Link = "Demo", Index = 3, Wpid = 0x407F, Battery = 88, Approx = true, Millivolts = 4020, Firmware = "MPM 16.01 · build 0020", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
             new Found { Key = "demo|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "Demo", Index = 0xFF, Battery = 71, Approx = true, Millivolts = 3926, Firmware = "U1 12.01 · build 0203", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300 } },
@@ -911,5 +914,12 @@ class Support
         new Support { Matches = f => f.IsHeadset, Screen = typeof(PageHeadset), Make = (f, d, drag) => new PageHeadset(f, d, drag), Fake = () => new FakeHeadset() },
     };
 
-    public static Support For(Found f) { return f.Asleep || !f.IsG ? null : All.FirstOrDefault(s => s.Matches(f)); }
+    public static readonly Support Other = new Support { Matches = global::Other.Fits, Screen = typeof(PageOther), Make = (f, d, drag) => new PageOther(f, d, drag), Fake = () => new FakeOther() };
+
+    public static Support For(Found f)
+    {
+        if (f.Asleep) return null;
+        if (!f.IsG) return Other.Matches(f) ? Other : null;
+        return All.FirstOrDefault(s => s.Matches(f));
+    }
 }

@@ -552,6 +552,76 @@ class FakeHeadset : Hidpp
     }
 }
 
+// Answers like the MX Master 3S, MX Keys S and MX Creative Keypad in OpenLogi's captures and the keypad's report: a device only calls the features its Found lists.
+class FakeOther : Hidpp
+{
+    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8040, 2 }, { 0x2201, 3 }, { 0x2110, 4 }, { 0x2121, 5 }, { 0x2150, 6 }, { 0x1982, 7 }, { 0x1814, 8 }, { 0x1815, 9 } };
+    static readonly string[] Names = { "Desk PC", "MacBook" };
+    public int Bright = 100, Dpi = 1000, Shift = 10, Wheel, ThumbInvert, Level, Host;
+    public bool RefuseDpi;
+    public byte[] Backlight = { 0x01, 0x1D, 0x3D, 0x03, 0x00, 0x00, 0x03, 0x00, 0x06, 0x00, 0x3C, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+    public FakeOther() : base(false) { }
+
+    public override void Dispose() { }
+
+    protected override void Write(byte feat, int fn, byte[] parameters) { if (feat == Index[0x1814] && fn == 1) Host = parameters[0]; }
+
+    protected override byte[] Send(byte feat, int fn, byte[] parameters)
+    {
+        System.Threading.Thread.Sleep(5);
+        var reply = new byte[16];
+        if (feat == 0) { byte index; reply[0] = Index.TryGetValue(parameters[0] << 8 | parameters[1], out index) ? index : (byte)0; return reply; }
+        int id = Index.First(pair => pair.Value == feat).Key;
+        switch (id)
+        {
+            case 0x8040:
+                if (fn == 0) { reply[1] = 100; reply[2] = 0x65; reply[3] = 0x10; }
+                if (fn == 1) { reply[0] = (byte)(Bright >> 8); reply[1] = (byte)Bright; }
+                if (fn == 2) Bright = parameters[0] << 8 | parameters[1];
+                break;
+            case 0x2201:
+                if (fn == 1) { reply[1] = 0x00; reply[2] = 0xC8; reply[3] = 0xE0; reply[4] = 0x32; reply[5] = 0x1F; reply[6] = 0x40; }
+                if (fn == 2) { reply[1] = (byte)(Dpi >> 8); reply[2] = (byte)Dpi; reply[3] = 0x03; reply[4] = 0xE8; }
+                if (fn == 3 && RefuseDpi) throw new HidppError(5, "refused");
+                if (fn == 3) Dpi = parameters[1] << 8 | parameters[2];
+                break;
+            case 0x2110:
+                if (fn == 1 && parameters[1] != 0) Shift = parameters[1];
+                reply[0] = 2; reply[1] = (byte)Shift; reply[2] = 10;
+                break;
+            case 0x2121:
+                if (fn == 0) { reply[0] = 15; reply[1] = 0x0C; reply[2] = 24; reply[3] = 26; }
+                if (fn == 2) Wheel = parameters[0];
+                if (fn == 1 || fn == 2) reply[0] = (byte)Wheel;
+                break;
+            case 0x2150:
+                if (fn == 2) ThumbInvert = parameters[1] & 1;
+                if (fn == 1 || fn == 2) reply[1] = (byte)ThumbInvert;
+                break;
+            case 0x1982:
+                if (fn == 0) Array.Copy(Backlight, reply, 16);
+                if (fn == 1) { Backlight[0] = parameters[0]; Backlight[1] = parameters[1]; Backlight[5] = parameters[3]; if ((parameters[1] >> 3 & 3) == 3) Level = parameters[3]; }
+                if (fn == 2) { reply[0] = 8; reply[1] = (byte)Level; reply[2] = (byte)((Backlight[0] & 1) == 0 ? 0 : (Backlight[1] >> 3 & 3) == 1 ? 2 : 5); }
+                break;
+            case 0x1814:
+                if (fn == 0) { reply[0] = 3; reply[1] = (byte)Host; reply[2] = 1; }
+                break;
+            case 0x1815:
+                if (fn == 0) { reply[0] = 0x1F; reply[1] = 0x0E; reply[2] = 3; reply[3] = 0xFF; }
+                if (fn == 1) { reply[0] = parameters[0]; reply[1] = (byte)(parameters[0] < Names.Length ? 1 : 0); reply[2] = 5; reply[4] = (byte)(parameters[0] < Names.Length ? Names[parameters[0]].Length : 0); reply[5] = 32; }
+                if (fn == 3 && parameters[0] < Names.Length)
+                {
+                    reply[0] = parameters[0]; reply[1] = parameters[1];
+                    var name = System.Text.Encoding.UTF8.GetBytes(Names[parameters[0]]);
+                    for (int offset = 0; offset < 14 && parameters[1] + offset < name.Length; offset++) reply[2 + offset] = name[parameters[1] + offset];
+                }
+                break;
+        }
+        return reply;
+    }
+}
+
 class KeyboardView : Form
 {
     const float U = 40, Pad = 16, Head = 40;

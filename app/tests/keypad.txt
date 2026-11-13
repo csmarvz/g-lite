@@ -1,0 +1,10 @@
+open
+  8040 fn0
+  8040 fn1
+  = status "Everything else stays in Logi Options+." [Report] Preset=None [Update (off)] […] Brightness=100 [Revert (off)]
+slide Brightness 40
+  8040 fn2  00 28
+  = status "Applied to the device. Everything else stays in Logi Options+." [Report] Preset=None [Update (off)] […] Brightness=40 [Revert]
+press Revert changes
+  8040 fn2  00 64
+  = status "Everything else stays in Logi Options+." [Report] Preset=None [Update (off)] […] Brightness=100 [Revert (off)]

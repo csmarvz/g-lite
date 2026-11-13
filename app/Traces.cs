@@ -400,6 +400,56 @@ static class Traces
         }
     }
 
+    static string MxMaster()
+    {
+        var found = new Found { Key = "trace|mxmaster", Name = "MX Master 3S", Kind = "mouse", Link = "Bolt receiver", Index = 2, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x2110, 0x2121, 0x2150, 0x2201 } };
+        string first;
+        using (var s = Begin(() => Support.For(found).Make(found, new FakeOther(), null)))
+        {
+            s.Slide("Speed", 36);
+            s.Slide("Switch to free spin at", 19);
+            s.Press("SmartShift");
+            s.Press("Invert scrolling");
+            s.Press("Invert the thumb wheel");
+            s.Menu("More preset actions", "Save as new preset…");
+            s.Type("Work");
+            s.Press("Save");
+            s.Press("SmartShift");
+            s.Press("Revert changes");
+            s.Pick("Computer", "3 · –");
+            s.Pick("Computer", "2 · MacBook");
+            s.Press("Switch");
+            first = s.Text;
+        }
+        using (var s = Begin(() => Support.For(found).Make(found, new FakeOther(), null)))
+            return first + "reopen on a device that forgot\n" + s.Text;
+    }
+
+    static string MxKeys()
+    {
+        var found = new Found { Key = "trace|mxkeys", Name = "MX Keys S", Kind = "keyboard", Link = "Bolt receiver", Index = 3, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x1982, 0x40A3 } };
+        using (var s = Begin(() => Support.For(found).Make(found, new FakeOther(), null)))
+        {
+            s.Slide("Level", 5);
+            s.Press("Automatic");
+            s.Press("Backlight");
+            s.Press("Backlight");
+            s.Press("Automatic");
+            return s.Text;
+        }
+    }
+
+    static string Keypad()
+    {
+        var found = new Found { Key = "trace|keypad", Name = "MX Creative Keypad", Kind = "device", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1B04, 0x8040 } };
+        using (var s = Begin(() => Support.For(found).Make(found, new FakeOther(), null)))
+        {
+            s.Slide("Brightness", 40);
+            s.Press("Revert changes");
+            return s.Text;
+        }
+    }
+
     static string Mouse(string name, FakeMouse device, int[] features)
     {
         var found = new Found { Key = "trace|" + name, Name = name, Kind = "mouse", Link = "LIGHTSPEED", Index = 1, Wpid = 0x4079, Features = features };
@@ -537,6 +587,9 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("buttons", Buttons);
         yield return new KeyValuePair<string, Func<string>>("g9x", G9x);
         yield return new KeyValuePair<string, Func<string>>("headset", Headset);
+        yield return new KeyValuePair<string, Func<string>>("mxmaster", MxMaster);
+        yield return new KeyValuePair<string, Func<string>>("mxkeys", MxKeys);
+        yield return new KeyValuePair<string, Func<string>>("keypad", Keypad);
     }
 
     static void Clean()

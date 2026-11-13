@@ -73,7 +73,13 @@ If Windows says it protected your PC, click **More info**, then **Run anyway**. 
 
 **Works** means tried on the real device. **Untested** means built from documentation and owners' reports, and not yet confirmed by an owner. Devices that aren't saved to are set again by G-Lite each time it starts.
 
-Other Logitech devices show up in the sidebar with their connection, battery and firmware, but G-Lite can't change their settings yet. Devices that could come next are listed in [#11](https://github.com/csmarvz/g-lite/issues/11).
+### Other Logitech devices
+
+| Device | Connection | Status | What G-Lite can do |
+|---|---|---|---|
+| MX Master, MX Anywhere, MX Keys, MX Mechanical, MX Creative Keypad and other Logitech devices | Bolt or Unifying receiver, or USB | Untested | Pointer speed, SmartShift, inverted scrolling, the thumb wheel's direction, the backlight, brightness, and switching computers (Easy-Switch), when the device has them. G-Lite sets your changes again when the device comes back. Buttons, gestures and per-app settings stay in Logi Options+. See [docs/other-devices.md](docs/other-devices.md). |
+
+Logitech devices with none of these settings show up in the sidebar with their connection, battery and firmware. Devices that could come next are listed in [#11](https://github.com/csmarvz/g-lite/issues/11).
 
 ## FAQ
 

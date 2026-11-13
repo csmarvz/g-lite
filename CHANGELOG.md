@@ -5,6 +5,8 @@
 ### Added
 
 - The log shows the updates: each check's result, the download and its checksum, replacing the exe, failures, Skip and Restart, and removing the old exe at the next start.
+- Logitech devices that aren't G devices (MX mice and keyboards, the MX Creative Keypad and others) get a screen for their settings: pointer speed, SmartShift, inverted scrolling, the thumb wheel's direction, the backlight, brightness and Easy-Switch, which asks before it switches. What you change is set again when the device comes back. Untested on a real device.
+- Reports read SmartShift (0x2110, 0x2111), the thumb wheel (0x2150), the backlight (0x1982) and Easy-Switch (0x1814, and 0x1815 without the computers' names).
 - Devices paired to a Bolt receiver are listed: its pairings are read the way Bolt keeps them. Untested on a real Bolt receiver.
 
 ## [0.0.24-alpha] - 2026-11-13

@@ -178,12 +178,28 @@ class Hidpp : IDisposable
 
     public byte[] Quiet(byte feat, int fn, params byte[] p) { Record(feat, fn, p); return Send(feat, fn, p); }
 
-    protected virtual byte[] Send(byte feat, int fn, byte[] p)
+    // For a call the device doesn't answer, like 0x1814 fn 1: it switches to another computer first.
+    public void Fire(byte feat, int fn, params byte[] p)
+    {
+        Record(feat, fn, p);
+        Write(feat, fn, p);
+        if (Who != null) Log.Sent(Who, features.Where(pair => pair.Value == feat).Select(pair => pair.Key).FirstOrDefault(), fn, p, "sent");
+    }
+
+    protected virtual void Write(byte feat, int fn, byte[] p) { Message(feat, fn, p); }
+
+    byte[] Message(byte feat, int fn, byte[] p)
     {
         var msg = new byte[20];
         msg[0] = 0x11; msg[1] = Idx; msg[2] = feat; msg[3] = (byte)(fn << 4 | 1 + (System.Threading.Interlocked.Increment(ref calls) & 0x7FFFFFFF) % 12);
         Array.Copy(p, 0, msg, 4, p.Length);
         fs.Write(msg, 0, 20);
+        return msg;
+    }
+
+    protected virtual byte[] Send(byte feat, int fn, byte[] p)
+    {
+        var msg = Message(feat, fn, p);
         var deadline = DateTime.UtcNow.AddSeconds(3);
         while (true)
         {

@@ -263,7 +263,20 @@ static class SelfTest
         Check(GMouse.WideStages(FakeHidpp.Hex("03030100" + "9001900102" + "FFFF") .Concat(new byte[40]).ToArray(), new[] { 100, 32000 }).SequenceEqual(new[] { 400 }) && GMouse.WideStages(FakeHidpp.Hex("03030100" + "0A00000002").Concat(new byte[40]).ToArray(), new[] { 100, 32000 }).Length == 0, "DPI stages outside the mouse's range mean the profile isn't the layout we know");
         Check(new Found { Name = "G560 Gaming Speaker", Features = new[] { 0x8070, 0x8040 } }.IsG560 && !new Found { Name = "G560 Gaming Speaker", Features = new[] { 0x8040 } }.IsG560, "the G560 needs its lighting feature");
         Check(new Found { Name = "Litra Beam LX", Features = new[] { 0x1990 } }.IsLight && new Found { Path = @"\?\hid#vid_046d&pid_c903&col02", Features = new[] { 0x1990 } }.IsLight && !new Found { Name = "Litra Beam LX" }.IsLight, "a Litra is found by its name or product id, with its light feature");
-        Check(Support.For(new Found { Name = "MX Master 3", Kind = "mouse", Features = new[] { 0x2201, 0x8100 } }) == null && Support.For(new Found { Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Features = new[] { 0x2201 } }) != null, "a device that isn't a G device only gets the info page");
+        Check(Support.For(new Found { Name = "MX Master 3", Kind = "mouse", Features = new[] { 0x2201, 0x8100 } }) == Support.Other && Support.For(new Found { Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Features = new[] { 0x2201 } }).Screen == typeof(PageMouse)
+            && Support.For(new Found { Name = "M720 Triathlon", Kind = "mouse", Features = new[] { 0x8100, 0x1B04 } }) == null && Support.For(new Found { Name = "K295 Silent Wireless Keyboard", Coarse = true, Features = new[] { 0x40A0, 0x1814 } }) == null,
+            "a device that isn't a G device gets the other devices' screen only with a setting it can change, and one with media keys keeps the info page");
+        Check(OtherSet.FromText("dpi:1600,shift:255,invert:1,level:3,bogus:2").ToText() == "dpi:1600,shift:255,invert:1,level:3" && OtherSet.FromText("").ToText() == "", "other devices' settings read back as written, skipping what isn't known");
+        {
+            var mx = new Found { Name = "MX Master 3S", Kind = "mouse", Features = new[] { 0x2110, 0x2121, 0x2201 } };
+            var device = new FakeOther { RefuseDpi = true };
+            var read = Other.Read(device, mx);
+            var want = read.Set.Clone();
+            want.Merge(Other.Limit(OtherSet.FromText("dpi:1625,invert:1,shift:120,thumb:1,bright:30,level:2"), read));
+            var refusedSettings = Other.Apply(device, read, want, read.Set);
+            Check(want.ToText() == "dpi:1600,shift:10,invert:1" && refusedSettings.SequenceEqual(new[] { OtherSet.Dpi }) && device.Wheel == 0x04 && device.Shift == 10,
+                "other devices: a setting the device lacks or out of range isn't sent, and a refused one doesn't stop the others");
+        }
         var lightState = new LightState { FrontOn = true, Lumen = 120, Kelvin = 5000, BackOn = false, BackLevel = 40, Colors = new[] { 1, 2, 3, 4, 5, 6, 0xFF0000 } };
         var lightCopy = new LightState();
         Check(lightCopy.ReadFront(lightState.FrontText()) && lightCopy.ReadBack(lightState.BackText()) && lightCopy.FrontText() == lightState.FrontText() && lightCopy.BackText() == lightState.BackText() && !lightCopy.ReadBack("1,50,FFFFFF"), "the light's settings round-trip through text, with all seven zones");
