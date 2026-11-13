@@ -5,6 +5,7 @@
 ### Added
 
 - The log shows the updates: each check's result, the download and its checksum, replacing the exe, failures, Skip and Restart, and removing the old exe at the next start.
+- Devices paired to a Bolt receiver are listed: its pairings are read the way Bolt keeps them. Untested on a real Bolt receiver.
 
 ## [0.0.24-alpha] - 2026-11-13
 

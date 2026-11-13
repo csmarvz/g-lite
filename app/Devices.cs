@@ -265,9 +265,16 @@ static class Devices
             for (byte n = 1; n <= 6; n++)
             {
                 var pair = pr.Register(0xFF, 0x83, 0xB5, (byte)(0x20 + n - 1));
-                if (pair == null) continue;
-                int wpid = pair[3] << 8 | pair[4];
-                int kind = pair[7];
+                int wpid, kind;
+                if (pair != null) { wpid = pair[3] << 8 | pair[4]; kind = pair[7]; }
+                else
+                {
+                    // Bolt receivers keep pairings in 0x5N, with the wireless id's bytes swapped (Solaar's BoltReceiver).
+                    pair = link == "Bolt" ? pr.Register(0xFF, 0x83, 0xB5, (byte)(0x50 + n)) : null;
+                    if (pair == null) continue;
+                    wpid = pair[3] << 8 | pair[2];
+                    kind = pair[1] & 0x0F;
+                }
                 Found f;
                 if (pr.Ping(n, 3500) >= 2) f = Describe(pr, p, n, link);
                 else
