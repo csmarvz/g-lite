@@ -8,6 +8,10 @@
 - The G815 opens on the G915's screen.
 - The G915's logo, brightness key, media keys and G keys have their light ids, so the key picture and the Screen effect reach them.
 
+### Changed
+
+- The G560's zones are named Bottom left, Bottom right, Top left and Top right, as an owner found them.
+
 ## [0.0.23-alpha] - 2026-11-12
 
 ### Added

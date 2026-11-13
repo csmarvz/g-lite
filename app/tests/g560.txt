@@ -62,14 +62,14 @@ type Green
   = status "Set by G-Lite · not saved to the speakers" [Report] [Save] [Cancel] Zone=All Effect=Breathe <Color 30D050> Brightness=50 Speed=80 [Revert (off)]
 press Save
   = status "Saved the preset Green" [Report] Preset=Green [Update (off)] […] Zone=All Effect=Breathe <Color 30D050> Brightness=50 Speed=80 [Revert (off)]
-pick Zone Zone 2
-  = status "Saved the preset Green" [Report] Preset=Green [Update (off)] […] Zone=Zone 2 Effect=Breathe <Color 30D050> Brightness=50 Speed=80 [Revert (off)]
+pick Zone Bottom right
+  = status "Saved the preset Green" [Report] Preset=Green [Update (off)] […] Zone=Bottom right Effect=Breathe <Color 30D050> Brightness=50 Speed=80 [Revert (off)]
 pick Effect Static
   8070 fn3  01 01 18 68 28
-  = status "Set by G-Lite · not saved to the speakers" [Report] Preset=Green • [Update] […] Zone=Zone 2 Effect=Static <Color 30D050> Brightness=50 Speed=80 (off) [Revert]
+  = status "Set by G-Lite · not saved to the speakers" [Report] Preset=Green • [Update] […] Zone=Bottom right Effect=Static <Color 30D050> Brightness=50 Speed=80 (off) [Revert]
 press Color 3080FF
   8070 fn3  01 01 18 40 7F
-  = status "Set by G-Lite · not saved to the speakers" [Report] Preset=Green • [Update] […] Zone=Zone 2 Effect=Static <Color 3080FF> Brightness=50 Speed=80 (off) [Revert]
+  = status "Set by G-Lite · not saved to the speakers" [Report] Preset=Green • [Update] […] Zone=Bottom right Effect=Static <Color 3080FF> Brightness=50 Speed=80 (off) [Revert]
 pick Zone All
   = status "Set by G-Lite · not saved to the speakers" [Report] Preset=Green • [Update] […] Zone=All Effect=Breathe <Color 30D050> Brightness=50 Speed=80 [Revert]
 pick Effect Cycle

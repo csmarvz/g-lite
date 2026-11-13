@@ -343,7 +343,7 @@ static class Traces
             s.Menu("More preset actions", "Save as new preset…");
             s.Type("Green");
             s.Press("Save");
-            s.Pick("Zone", "Zone 2");
+            s.Pick("Zone", "Bottom right");
             s.Pick("Effect", "Static");
             s.Press("Color 3080FF");
             s.Pick("Zone", "All");

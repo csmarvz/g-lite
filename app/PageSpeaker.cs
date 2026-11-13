@@ -10,6 +10,7 @@ using Timer = System.Windows.Forms.Timer;
 static class GSpeaker
 {
     public const int Place = -1;
+    public static readonly string[] Names = { "Bottom left", "Bottom right", "Top left", "Top right" };
 
     public static List<Dictionary<int, int>> Zones(Hidpp h)
     {
@@ -49,13 +50,14 @@ static class GSpeaker
     public static List<Zone> ScreenZones()
     {
         var areas = new[] { new RectangleF(0.05f, 0.55f, 0.4f, 0.35f), new RectangleF(0.55f, 0.55f, 0.4f, 0.35f), new RectangleF(0.05f, 0.1f, 0.4f, 0.35f), new RectangleF(0.55f, 0.1f, 0.4f, 0.35f) };
-        return areas.Select((area, i) => new Zone { Name = "Zone " + (i + 1), Mark = ScreenSetup.Marks[i], Area = area }).ToList();
+        return areas.Select((area, i) => new Zone { Name = Names[i], Mark = ScreenSetup.Marks[i], Area = area }).ToList();
     }
 
     public static ScreenSetup Screen(string text)
     {
         var setup = ScreenSetup.FromText(text);
         if (string.IsNullOrEmpty(text) || setup.Zones.Count != 4) setup.Zones = ScreenZones();
+        for (int i = 0; i < 4; i++) setup.Zones[i].Name = Names[i];
         return setup;
     }
 
@@ -92,10 +94,11 @@ class PageSpeaker : DevicePage
     readonly bool keyboard;
     readonly string noun;
     MouseLight[] cur, sent;
-    List<Dictionary<int, int>> zones;
+    volatile List<Dictionary<int, int>> zones;
     bool loading, screening, capturing, framing, snapping;
     int seq, picked, selectedZone;
-    int[] shown, framed;
+    int[] shown;
+    volatile int[] framed;
     DateTime nextRefresh;
     ScreenSetup setup;
     readonly Timer debounce = new Timer { Interval = 120 }, screenTimer = new Timer { Interval = 100 }, snapTimer = new Timer { Interval = 1000 };
@@ -128,7 +131,7 @@ class PageSpeaker : DevicePage
         light = Ui.Add(this, new Box(), 20, 118, 616, 330);
         lightHead = Ui.Text(light, "Lighting", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
         zoneHead = Ui.Text(light, "Zone", 14, 40, () => Theme.Dim, 9f);
-        zoneSeg = Ui.Add(light, new Seg { Items = keyboard ? new[] { "All" } : new[] { "All", "Zone 1", "Zone 2", "Zone 3", "Zone 4" }, AccessibleName = "Zone", Index = 0 }, 14, 58, 440, 32);
+        zoneSeg = Ui.Add(light, new Seg { Items = keyboard ? new[] { "All" } : new[] { "All" }.Concat(GSpeaker.Names).ToArray(), AccessibleName = "Zone", Index = 0 }, 14, 58, 440, 32);
         zoneSeg.Picked += i => { picked = i; Sync(); };
         Ui.Text(light, "Effect", 14, 98, () => Theme.Dim, 9f);
         var names = GMouse.Effects.Select(d => d.Name).ToList();
@@ -162,7 +165,7 @@ class PageSpeaker : DevicePage
             int period = d.MaxP - (d.MaxP - d.MinP) * speed.Value / 100;
             Edit(l => l.Period = period, false);
         };
-        note = Ui.Text(light, "G-Lite sets the lighting again when it starts and when you open the " + noun + "." + (keyboard ? "" : " Which zone is which isn't known yet."), 14, 272, () => Theme.Dim, 9f);
+        note = Ui.Text(light, "G-Lite sets the lighting again when it starts and when you open the " + noun + ".", 14, 272, () => Theme.Dim, 9f);
         note.AutoSize = false;
         note.Size = new Size(588, 40);
         plainLight.AddRange(new Control[] { colorHead, brightHead, brightValue, bright, speedHead, speedValue, speed, note });
@@ -293,7 +296,8 @@ class PageSpeaker : DevicePage
         screening = true;
         Settings.Set(Active, "1");
         Settings.Set(Saved, setup.ToText());
-        shown = framed = null;
+        shown = null;
+        framed = null;
         Did("Screen effect on");
         screenTimer.Interval = setup.Interval;
         screenTimer.Start();
@@ -309,7 +313,8 @@ class PageSpeaker : DevicePage
         screenTimer.Stop();
         snapTimer.Stop();
         Settings.Remove(Active);
-        shown = framed = null;
+        shown = null;
+        framed = null;
         sent = new MouseLight[Count];
         Did("Screen effect off");
         Sync();
@@ -347,17 +352,19 @@ class PageSpeaker : DevicePage
         if (fresh) shown = new int[sampled.Length];
         bool refresh = DateTime.UtcNow >= nextRefresh;
         if (refresh) nextRefresh = DateTime.UtcNow.AddSeconds(2);
-        bool changed = refresh || fresh || framed == null;
+        var last = framed;
+        bool changed = refresh || fresh || last == null || last.Length != sampled.Length;
         for (int z = 0; z < sampled.Length; z++)
         {
             int target = ScreenCapture.Boost(sampled[z], setup.Boost);
             shown[z] = setup.Smooth && !fresh ? ScreenCapture.Blend(shown[z], target, 0.45) : target;
-            if (!changed && ScreenCapture.Distance(shown[z], framed[z]) > 6) changed = true;
+            if (!changed && ScreenCapture.Distance(shown[z], last[z]) > 6) changed = true;
         }
         if (!changed) return;
         var frame = (int[])shown.Clone();
         int level = setup.Bright;
         var z0 = zones;
+        if (z0 == null) return;
         framing = true;
         Do(h =>
         {
@@ -398,12 +405,13 @@ class PageSpeaker : DevicePage
     void Sync()
     {
         loading = true;
-        bool ready = zones != null && zones.Count > 0;
+        var listed = zones;
+        bool ready = listed != null && listed.Count > 0;
         var l = Displayed();
         bool known = l != null && !screening;
         var d = known ? GMouse.Def(l.Effect) : null;
         bool mixed = picked == 0 && cur != null && cur.Any(z => z == null || !z.Same(cur[0]));
-        lightHead.Text = zones != null && zones.Count == 0 ? "Lighting · not found on " + (keyboard ? "this keyboard" : "these speakers") : screening ? "Lighting" : !known ? "Lighting · as on the " + noun : mixed ? "Lighting · zones differ, a change sets all of them" : "Lighting";
+        lightHead.Text = listed != null && listed.Count == 0 ? "Lighting · not found on " + (keyboard ? "this keyboard" : "these speakers") : screening ? "Lighting" : !known ? "Lighting · as on the " + noun : mixed ? "Lighting · zones differ, a change sets all of them" : "Lighting";
         zoneSeg.Enabled = ready && !screening;
         Shade(zoneHead, !screening);
         zoneSeg.Index = picked;
@@ -453,7 +461,8 @@ class PageSpeaker : DevicePage
 
     protected override void Calm()
     {
-        if (zones != null && zones.Count == 0) { Say(keyboard ? "This keyboard lists no lighting zones" : "These speakers list no lighting zones", true); return; }
+        var listed = zones;
+        if (listed != null && listed.Count == 0) { Say(keyboard ? "This keyboard lists no lighting zones" : "These speakers list no lighting zones", true); return; }
         if (screening) { Say("Screen effect · not saved to the speakers"); return; }
         Say(cur == null ? "" : "Set by G-Lite · not saved to the " + noun);
     }
