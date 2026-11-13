@@ -33,21 +33,43 @@ If Windows says it protected your PC, click **More info**, then **Run anyway**. 
 
 ## Supported devices
 
+### Keyboards
+
 | Device | Connection | Status | What G-Lite can do |
 |---|---|---|---|
 | G515 LIGHTSPEED TKL | LIGHTSPEED receiver | Works | Lighting effects, colour, speed, direction, brightness, idle dimming and turn-off, profiles, saving to the keyboard, backups and restoring them, factory lighting |
-| G Pro Wireless | LIGHTSPEED receiver | Works | DPI and DPI stage, logo lighting, report rate, profiles, saving to the mouse, backups and restoring them, factory profile |
-| G305 LIGHTSPEED | LIGHTSPEED receiver | Works | DPI and DPI stage, lighting of the status light, report rate, profiles, saving to the mouse (the first save adds a profile next to the factory one), backups and restoring them, factory profile |
-| G502 LIGHTSPEED | LIGHTSPEED receiver | Partial | DPI and DPI stage, lighting (both zones get the same effect), report rate, profiles, saving to the mouse, backups and restoring them, factory profile, invert scrolling, what each button does. Not yet: macros and the G-shift layer. |
-| PRO X Wireless | Its own LIGHTSPEED receiver | Works | Sidetone, turning off when idle, battery, profiles |
 | G915, G915 TKL and G815 | LIGHTSPEED receiver or USB | Untested | Lighting effects, colour, speed, direction, brightness and profiles. G-Lite sets your lighting again when it starts, but can't save it to the keyboard yet. See [docs/G915.md](docs/G915.md). |
 | G512 X 75 | USB | Untested | Lighting effects, colour, speed, direction, brightness and profiles, on the keys and the light bar, together or each with its own effect. Not yet: saving to the keyboard, the knobs and actuation. See [docs/G512X.md](docs/G512X.md). |
 | G915 X, G713, G715, PRO X TKL, PRO X 60, G515 RAPID TKL, G512 X 98 and other newer G keyboards | LIGHTSPEED receiver or USB | Untested | Lighting effects, colour, speed, direction, brightness, the Screen effect and profiles. Not saved to the keyboard. The key picture is picked from the keyboard's name (TKL, 60%, 75%, full size) and may not match. |
 | G512, G513, G PRO keyboard, G810, G910, G410, G413, G213 and other older G keyboards | USB | Untested | Off, Static, Breathe and Cycle with colour, speed and brightness, on all zones or each one (keys, logo), and profiles. Not saved to the keyboard. Not yet: Wave, per-key colours, a key picture. See [docs/keyboards-8070.md](docs/keyboards-8070.md). |
+
+### Mice
+
+| Device | Connection | Status | What G-Lite can do |
+|---|---|---|---|
+| G Pro Wireless | LIGHTSPEED receiver | Works | DPI and DPI stage, logo lighting, report rate, profiles, saving to the mouse, backups and restoring them, factory profile |
+| G305 LIGHTSPEED | LIGHTSPEED receiver | Works | DPI and DPI stage, lighting of the status light, report rate, profiles, saving to the mouse (the first save adds a profile next to the factory one), backups and restoring them, factory profile |
+| G502 LIGHTSPEED | LIGHTSPEED receiver | Partial | DPI and DPI stage, lighting (both zones get the same effect), report rate, profiles, saving to the mouse, backups and restoring them, factory profile, invert scrolling, what each button does. Not yet: macros and the G-shift layer. |
 | PRO X SUPERLIGHT 2, PRO X 2, G502 X and other newer G mice | LIGHTSPEED receiver or USB | Untested | DPI, switching between the DPI stages saved on the mouse, and the report rate up to 8000 Hz. Some of these mice only accept their saved DPI stages. Not yet: saving to the mouse, buttons. See [docs/newer-mice.md](docs/newer-mice.md). |
-| G560 Gaming Speaker | USB | Untested | Lighting effects, colour, speed, brightness and profiles, on all four zones or each one (bottom left, bottom right, top left, top right). Not saved to the speaker. Not yet: the audio visualizer effect, the equalizer. See [docs/G560.md](docs/G560.md). |
-| Litra Beam LX, Beam and Glow | USB | Untested | Front light on and off, brightness and colour temperature. On the Beam LX, the back light: on and off, brightness, Static, Breathe, Cycle, Wave and the Screen effect, with a colour for all seven zones or each one, and a live picture of the light. Profiles. See [docs/Litra.md](docs/Litra.md). |
+
+### Headsets
+
+| Device | Connection | Status | What G-Lite can do |
+|---|---|---|---|
+| PRO X Wireless | Its own LIGHTSPEED receiver | Works | Sidetone, turning off when idle, battery, profiles |
 | G735, PRO X 2 LIGHTSPEED, G522, A50 X and other G headsets | USB | Report only | Listed in the sidebar so their owner can send a report. Nothing can be changed yet. |
+
+### Speakers
+
+| Device | Connection | Status | What G-Lite can do |
+|---|---|---|---|
+| G560 Gaming Speaker | USB | Untested | Lighting effects, colour, speed, brightness and profiles, on all four zones or each one (bottom left, bottom right, top left, top right). Not saved to the speaker. Not yet: the audio visualizer effect, the equalizer. See [docs/G560.md](docs/G560.md). |
+
+### Lights
+
+| Device | Connection | Status | What G-Lite can do |
+|---|---|---|---|
+| Litra Beam LX, Beam and Glow | USB | Untested | Front light on and off, brightness and colour temperature. On the Beam LX, the back light: on and off, brightness, Static, Breathe, Cycle, Wave and the Screen effect, with a colour for all seven zones or each one, and a live picture of the light. Profiles. See [docs/Litra.md](docs/Litra.md). |
 
 **Works** means tried on the real device. **Untested** means built from documentation and owners' reports, and not yet confirmed by an owner. Devices that aren't saved to are set again by G-Lite each time it starts.
 
