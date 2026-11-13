@@ -403,7 +403,7 @@ static class Report
         var b = r.Ask(0x1F20, 0);
         if (b == null) return "–";
         int mv = b[0] << 8 | b[1];
-        return "~" + Found.FromVolts(mv) + "% · " + mv + " mV" + (b[2] == 3 ? " · charging" : "");
+        return "~" + (b[2] == 3 ? Found.FromChargingVolts(mv) : Found.FromVolts(mv)) + "% · " + mv + " mV" + (b[2] == 3 ? " · charging" : "");
     }
 
     static void Profiles(Reader r)

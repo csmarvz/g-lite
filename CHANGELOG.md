@@ -5,6 +5,7 @@
 ### Fixed
 
 - A headset charging over USB is no longer listed a second time as its "Battery Charger".
+- While a headset charges, its screen and its report show the same battery estimate as the sidebar, instead of a higher one read from the voltage alone.
 
 ## [0.0.25-alpha] - 2026-11-13
 

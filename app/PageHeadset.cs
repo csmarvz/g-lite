@@ -196,7 +196,8 @@ class PageHeadset : DevicePage
         Shade(offHead, hasOff);
         firmware.Text = found.Firmware == "" ? "–" : found.Firmware;
         int mv = ready && state.Millivolts > 0 ? state.Millivolts : found.Millivolts;
-        int pct = mv > 0 ? Found.FromVolts(mv) : found.Battery;
+        bool charging = ready && state.Charging;
+        int pct = !charging ? (mv > 0 ? Found.FromVolts(mv) : found.Battery) : found.Battery >= 0 ? found.Battery : Found.FromChargingVolts(mv);
         picture.Display(pct, mv > 0 || found.Approx, mv, ready && state.Charging,
             hasOff ? (cur.Off == 0 ? "Stays on when idle" : "Turns off after " + cur.Off + " min idle") : "");
         loading = false;
