@@ -20,11 +20,16 @@ You need Windows 10 (version 1903 or later) or Windows 11.
 2. On Windows 11, turn off **Dynamic Lighting** (Settings > Personalization > Dynamic Lighting), for the same reason. G-Lite warns you if it's on.
 3. Download `GLite.exe` from the [latest release](https://github.com/csmarvz/g-lite/releases/latest) and double-click it.
 4. G-Lite finds your Logitech G devices and lists them on the left. Click one to change its settings.
-5. Some devices and some effects will run as long as G-Lite runs (even with the app minimized in the tray), some effects will persist when you quit G-Lite but stop when the devices sleep or turn off, some effects will need to be saved to the devices.
-6. Click **Save to keyboard** or **Save to mouse** to keep your changes on the device.
-7. To go back to the factory settings, or to an earlier save, use **Backups** at the top of a keyboard or mouse screen.
+5. Click **Save to keyboard** or **Save to mouse** to keep your changes on the device.
+6. To go back to the factory settings, or to an earlier save, use **Backups** at the top of a keyboard or mouse screen.
 
 If Windows says it protected your PC, click **More info**, then **Run anyway**. G-Lite isn't signed yet. To check that your copy is the one GitHub built, run `Get-FileHash GLite.exe` in PowerShell and compare the result with `checksums.txt` on the release page.
+
+**How long your changes last.** The line at the bottom of each screen tells you. There are three cases:
+
+- **Saved to the device** (the G515 and mice, with **Save to keyboard** or **Save to mouse**): stays on the device, even without G-Lite or on another PC.
+- **Set on the device, not saved** (the G915, G560, Litra colours and the untested keyboards): stays until the device sleeps or turns off. G-Lite sets it again when it starts.
+- **Run by G-Lite** (the Screen effect, and the Litra's Breathe, Cycle and Wave): keeps going while G-Lite runs, in the tray too, and stops if you quit it.
 
 ## Supported devices
 
