@@ -169,7 +169,7 @@ static class GMouse
     {
         public int Dpi, Stage = -1, Rate;
         public int[] Dpis = new int[0], Stages = new int[0], Rates = new int[0];
-        public bool Onboard, ProfileOk, Flash, Fresh, CanInvert, Inverted;
+        public bool Onboard, ProfileOk = true, Flash, Fresh, CanInvert, Inverted;
         public MouseLight Light;
         public EffectDef[] Effects = GMouse.Effects;
         public Dictionary<int, Dictionary<int, int>> Zones = new Dictionary<int, Dictionary<int, int>>();
@@ -217,6 +217,32 @@ static class GMouse
     public static int[] StagesOf(byte[] p)
     {
         return Enumerable.Range(0, 5).Select(i => p[3 + 2 * i] | p[4 + 2 * i] << 8).TakeWhile(x => x != 0 && x != 0xFFFF).ToArray();
+    }
+
+    public static int[] WideStages(byte[] p, int[] dpis)
+    {
+        var stages = Enumerable.Range(0, 5).Select(i => p[4 + 5 * i] | p[5 + 5 * i] << 8).TakeWhile(x => x != 0 && x != 0xFFFF).ToArray();
+        return dpis.Length > 0 && stages.All(x => x >= dpis[0] && x <= dpis[dpis.Length - 1]) ? stages : new int[0];
+    }
+
+    public static int[] WideRates(byte bits)
+    {
+        return Enumerable.Range(0, 7).Where(i => (bits >> i & 1) != 0).Select(i => 125 << i).ToArray();
+    }
+
+    static void ReadWideDpi(Hidpp h, State s)
+    {
+        byte d = h.F(0x2202);
+        var list = new List<byte> { 0 };
+        bool ended = false;
+        for (int page = 0; page < 16 && !ended; page++)
+        {
+            list.AddRange(h.Call(d, 2, 0, 0, (byte)page).Skip(3).Take(13));
+            for (int o = 1; o + 1 < list.Count; o += 2) ended |= list[o] == 0 && list[o + 1] == 0;
+        }
+        s.Dpis = DpiList(list.ToArray());
+        if (s.Dpis.Length > 1000) s.Dpis = s.Dpis.Where(x => x % 50 == 0).ToArray();
+        s.Dpi = U16(h.Call(d, 5, 0), 1);
     }
 
     public static string Describe(byte[] p)
@@ -400,9 +426,13 @@ static class GMouse
     public static State Read(Hidpp h)
     {
         var s = new State();
-        byte d = h.F(0x2201);
-        s.Dpis = DpiList(h.Call(d, 1, 0));
-        s.Dpi = U16(h.Call(d, 2, 0), 1);
+        try
+        {
+            byte d = h.F(0x2201);
+            s.Dpis = DpiList(h.Call(d, 1, 0));
+            s.Dpi = U16(h.Call(d, 2, 0), 1);
+        }
+        catch (NotSupportedException) { ReadWideDpi(h, s); }
         try
         {
             byte r = h.F(0x8060);
@@ -410,7 +440,18 @@ static class GMouse
             int ms = h.Call(r, 1)[0];
             s.Rate = ms > 0 ? 1000 / ms : 0;
         }
-        catch (NotSupportedException) { }
+        catch (NotSupportedException)
+        {
+            try
+            {
+                byte r = h.F(0x8061);
+                s.Rates = WideRates(h.Call(r, 1)[1]);
+                int index = h.Call(r, 2, (byte)(h.Direct ? 0 : 1))[0];
+                s.Rate = index < 7 ? 125 << index : 0;
+            }
+            catch (NotSupportedException) { }
+            catch (HidppError) { }
+        }
         catch (HidppError) { }
         int logo = -1;
         try
@@ -444,6 +485,7 @@ static class GMouse
             if (s.Onboard)
             {
                 var desc = h.Call(o, 0);
+                s.ProfileOk = false;
                 s.ButtonCount = Math.Min(16, (int)desc[5]);
                 s.Format = desc[1];
                 s.SectorSize = U16(desc, 7);
@@ -454,9 +496,18 @@ static class GMouse
                 {
                     s.Profile = ReadSector(h, s.Sector, s.SectorSize);
                     s.ProfileOk = Valid(s.Profile) || s.Sector >= 0x100;
-                    s.Stages = StagesOf(s.Profile);
-                    s.Buttons = Enumerable.Range(0, s.ButtonCount).Select(i => s.Profile.Skip(0x20 + 4 * i).Take(4).ToArray()).ToArray();
-                    if (logo >= 0 && logo < 2) s.Light = Decode(s.Profile.Skip(0xD0 + 11 * logo).Take(11).ToArray());
+                    if (s.Format >= 6)
+                    {
+                        if (s.ProfileOk) s.Stages = WideStages(s.Profile, s.Dpis);
+                        s.Profile = null;
+                        s.ProfileOk = true;
+                    }
+                    else
+                    {
+                        s.Stages = StagesOf(s.Profile);
+                        s.Buttons = Enumerable.Range(0, s.ButtonCount).Select(i => s.Profile.Skip(0x20 + 4 * i).Take(4).ToArray()).ToArray();
+                        if (logo >= 0 && logo < 2) s.Light = Decode(s.Profile.Skip(0xD0 + 11 * logo).Take(11).ToArray());
+                    }
                 }
                 if (s.Sector >= 0x100 && s.Format == 3 && desc[3] >= 1 && s.SectorSize >= 0xF0 && s.SectorSize <= 0x1000)
                 {
@@ -476,7 +527,17 @@ static class GMouse
         return s;
     }
 
-    public static void SetDpi(Hidpp h, int dpi) { h.Call(h.F(0x2201), 3, 0, (byte)(dpi >> 8), (byte)dpi); }
+    public static void SetDpi(Hidpp h, int dpi)
+    {
+        byte high = (byte)(dpi >> 8), low = (byte)dpi;
+        try { h.Call(h.F(0x2201), 3, 0, high, low); return; }
+        catch (NotSupportedException) { }
+        byte d = h.F(0x2202);
+        bool both = (h.Call(d, 1, 0)[2] & 1) != 0;
+        byte lift = h.Call(d, 5, 0)[9];
+        try { h.Call(d, 6, 0, high, low, both ? high : (byte)0, both ? low : (byte)0, lift); }
+        catch (HidppError) { throw new Refused("The mouse refused this DPI. It may only take its saved DPI stages."); }
+    }
 
     public static void SetInvert(Hidpp h, bool on)
     {
@@ -489,7 +550,12 @@ static class GMouse
 
     public static void SetStage(Hidpp h, int i) { h.Call(h.F(0x8100), 0xC, (byte)i); }
 
-    public static void SetRate(Hidpp h, int hz) { h.Call(h.F(0x8060), 2, (byte)(1000 / hz)); }
+    public static void SetRate(Hidpp h, int hz)
+    {
+        try { h.Call(h.F(0x8060), 2, (byte)(1000 / hz)); return; }
+        catch (NotSupportedException) { }
+        h.Call(h.F(0x8061), 3, (byte)Math.Max(0, Array.IndexOf(new[] { 125, 250, 500, 1000, 2000, 4000, 8000 }, hz)));
+    }
 
     public static void SetLight(Hidpp h, State s, MouseLight l)
     {

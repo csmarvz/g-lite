@@ -407,6 +407,18 @@ static class Traces
         }
     }
 
+    static string Wide()
+    {
+        var found = new Found { Key = "trace|superlight2", Name = "PRO X SUPERLIGHT 2", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, Wpid = 0x40A9, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2202, 0x8061, 0x8100 } };
+        using (var s = Begin(() => Support.For(found).Make(found, FakeMouse.ProX2(), null)))
+        {
+            s.Slide("DPI", 20);
+            s.Pick("DPI stage", "1600");
+            s.Pick("DPI stage", "400");
+            return s.Text;
+        }
+    }
+
     static string Wheel()
     {
         var device = new FakeMouse { Wheel = true };
@@ -499,6 +511,7 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("g560", G560);
         yield return new KeyValuePair<string, Func<string>>("g512", G512);
         yield return new KeyValuePair<string, Func<string>>("litra", Litra);
+        yield return new KeyValuePair<string, Func<string>>("superlight2", Wide);
         yield return new KeyValuePair<string, Func<string>>("gpro", () => Mouse("G Pro Wireless Gaming Mouse", new FakeMouse(), new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("g305", () => Mouse("G305 Lightspeed Wireless Gaming Mouse", FakeMouse.G305(), new[] { 0x0001, 0x0003, 0x0005, 0x1000, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("wheel", Wheel);

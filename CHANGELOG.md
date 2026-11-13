@@ -5,12 +5,20 @@
 ### Added
 
 - Older G keyboards that light up through 0x8070 (G512, G513, G PRO keyboard, G810, G910, G410, G413, G213) get a lighting screen: Off, Static, Breathe and Cycle, on all zones or each one, with presets. Live only, and untested on a real keyboard.
+- Newer G mice (PRO X SUPERLIGHT 2, PRO X 2, G502 X and others with 0x2202) open on the mouse screen: DPI, the DPI stages saved on the mouse and the report rate up to 8000 Hz. Nothing is saved to them yet. Untested on a real mouse.
 - The G815 opens on the G915's screen.
 - The G915's logo, brightness key, media keys and G keys have their light ids, so the key picture and the Screen effect reach them.
+- Reports read the newer mice's DPI (0x2202) and report rate (0x8061).
 
 ### Changed
 
 - The G560's zones are named Bottom left, Bottom right, Top left and Top right, as an owner found them.
+- Report rates of 1000 Hz and up read 1k, 2k, 4k and 8k.
+- A selected option that is greyed out is easier to read.
+
+### Fixed
+
+- On a mouse G-Lite can't save to, moving the DPI slider renamed the current DPI stage button.
 
 ## [0.0.23-alpha] - 2026-11-12
 

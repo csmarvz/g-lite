@@ -1,0 +1,37 @@
+open
+  2202 fn2
+  2202 fn5
+  8061 fn1
+  8061 fn2  01
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fnB
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] Effect=- (off) DPI stage=800 DPI=14 Report rate=1k (off) Brightness=100 (off) Speed=0 (off) [Revert (off)]
+slide DPI 20
+  2202 fn1
+  2202 fn5
+  2202 fn6  00 04 4C 04 4C 02
+  = status "The mouse refused this DPI. It may only take its saved DPI stages." [Report] [Backups] Preset=None [Update (off)] […] Effect=- (off) DPI stage=- DPI=20 Report rate=1k (off) Brightness=100 (off) Speed=0 (off) [Revert]
+pick DPI stage 1600
+  8100 fnC  02
+  = status "Applied to the mouse · not saved on it" [Report] [Backups] Preset=None [Update (off)] […] Effect=- (off) DPI stage=1600 DPI=30 Report rate=1k (off) Brightness=100 (off) Speed=0 (off) [Revert]
+pick DPI stage 400
+  8100 fnC
+  = status "Applied to the mouse · not saved on it" [Report] [Backups] Preset=None [Update (off)] […] Effect=- (off) DPI stage=400 DPI=6 Report rate=1k (off) Brightness=100 (off) Speed=0 (off) [Revert]

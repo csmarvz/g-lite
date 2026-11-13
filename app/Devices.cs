@@ -23,7 +23,7 @@ class Found
     public bool IsG512X { get { return Name.ToUpper().Contains("G512 X 75") && Has(0x8071) && Has(0x8040) && Has(0x8081); } }
     public bool IsLedKeyboard { get { return Kind == "keyboard" && Has(0x8070) && !Has(0x8071); } }
     public bool IsG560 { get { return Name.ToUpper().Contains("G560") && Has(0x8070); } }
-    public bool IsMouse { get { return Kind == "mouse" && Has(0x2201); } }
+    public bool IsMouse { get { return Kind == "mouse" && (Has(0x2201) || Has(0x2202)); } }
     public bool IsG9x { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_(C066|C249)", RegexOptions.IgnoreCase); } }
     public bool IsLitra { get { return Name.ToUpper().Contains("LITRA") || Path != null && Regex.IsMatch(Path, @"PID_C90[0-3]", RegexOptions.IgnoreCase); } }
     public bool IsLight { get { return IsLitra && Has(0x1990); } }

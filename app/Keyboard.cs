@@ -26,6 +26,7 @@ class Hidpp : IDisposable
 {
     int calls = new Random().Next(12);
     readonly byte Idx = 1;
+    public bool Direct { get { return Idx == 0xFF; } }
     FileStream fs, shortStream;
     byte[] rbuf = new byte[20], shortBuffer = new byte[7];
     Task<int> pending, shortPending;
@@ -209,10 +210,9 @@ class Hidpp : IDisposable
         byte i;
         if (!features.TryGetValue(id, out i))
         {
-            i = Call(0, 0, (byte)(id >> 8), (byte)id)[0];
-            if (i == 0) throw new NotSupportedException(string.Format("The device lacks feature {0:x4}", id));
-            features[id] = i;
+            features[id] = i = Call(0, 0, (byte)(id >> 8), (byte)id)[0];
         }
+        if (i == 0) throw new NotSupportedException(string.Format("The device lacks feature {0:x4}", id));
         return i;
     }
 }

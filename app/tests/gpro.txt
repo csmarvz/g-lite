@@ -34,25 +34,25 @@ open
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8100 fnB
-  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 [Revert (off)] [Save to mouse (off)]
 slide DPI 20
   2201 fn3  00 04 4C
-  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1100 DPI=20 Report rate=1000 Brightness=100 Speed=63 [Revert] [Save to mouse]
+  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1100 DPI=20 Report rate=1k Brightness=100 Speed=63 [Revert] [Save to mouse]
 pick DPI stage 400
   8100 fnC
-  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=400 DPI=6 Report rate=1000 Brightness=100 Speed=63 [Revert] [Save to mouse]
+  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=400 DPI=6 Report rate=1k Brightness=100 Speed=63 [Revert] [Save to mouse]
 pick Effect Static
   8070 fn3  00 01 FF FF FF
   8070 fn3  01 01 FF FF FF
-  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Static DPI stage=400 <Color FFFFFF> DPI=6 Report rate=1000 Brightness=100 Speed=63 (off) [Revert] [Save to mouse]
+  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Static DPI stage=400 <Color FFFFFF> DPI=6 Report rate=1k Brightness=100 Speed=63 (off) [Revert] [Save to mouse]
 press Color FFD000
   8070 fn3  00 01 FF D0
   8070 fn3  01 01 FF D0
-  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Static DPI stage=400 <Color FFD000> DPI=6 Report rate=1000 Brightness=100 Speed=63 (off) [Revert] [Save to mouse]
+  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Static DPI stage=400 <Color FFD000> DPI=6 Report rate=1k Brightness=100 Speed=63 (off) [Revert] [Save to mouse]
 slide Brightness 60
   8070 fn3  00 01 99 7C
   8070 fn3  01 01 99 7C
-  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Static DPI stage=400 <Color FFD000> DPI=6 Report rate=1000 Brightness=60 Speed=63 (off) [Revert] [Save to mouse]
+  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Static DPI stage=400 <Color FFD000> DPI=6 Report rate=1k Brightness=60 Speed=63 (off) [Revert] [Save to mouse]
 pick Report rate 500
   = status "Report rate changes when saved to the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Static DPI stage=400 <Color FFD000> DPI=6 Report rate=500 Brightness=60 Speed=63 (off) [Revert] [Save to mouse]
 press Save to mouse
@@ -270,4 +270,4 @@ menu Backups > Restore the factory profile
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8100 fnB
-  = status "Restored the factory profile" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 [Revert (off)] [Save to mouse (off)]
+  = status "Restored the factory profile" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 [Revert (off)] [Save to mouse (off)]

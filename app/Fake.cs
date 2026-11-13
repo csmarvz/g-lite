@@ -280,7 +280,7 @@ class FakeMouse : Hidpp
 {
     public int Dpi = 1600, Stage = 2, Reloads, Rate = 1, ZoneCount = 2;
     public string Info = "0103010501081000ff0a04";
-    public bool Wheel;
+    public bool Wheel, Wide;
     public byte WheelMode;
     public readonly byte[][] Zones = { new byte[12], new byte[12] };
     public readonly Dictionary<int, byte[]> Sectors = new Dictionary<int, byte[]>();
@@ -333,7 +333,18 @@ class FakeMouse : Hidpp
         return mouse;
     }
 
-    int[] Stages { get { return GMouse.StagesOf(Sectors[current]); } }
+    public static FakeMouse ProX2()
+    {
+        var mouse = new FakeMouse { Wide = true, ZoneCount = 0, Info = "0106010501051000ff0a04", Dpi = 800, Stage = 1, Rate = 3 };
+        var profile = Enumerable.Repeat((byte)0xFF, 255).ToArray();
+        FakeHidpp.Hex("03030100" + "9001900102" + "2003200302" + "4006400602" + "800C800C02" + "0000000000").CopyTo(profile, 0);
+        GMouse.Seal(profile);
+        mouse.Sectors[0x0001] = profile;
+        mouse.Sectors[0x0101] = (byte[])profile.Clone();
+        return mouse;
+    }
+
+    int[] Stages { get { return Wide ? GMouse.WideStages(Sectors[current], new[] { 100, 32000 }) : GMouse.StagesOf(Sectors[current]); } }
 
     public override void Dispose() { }
 
@@ -347,6 +358,23 @@ class FakeMouse : Hidpp
             case 0:
                 int id = u16(0);
                 r[0] = (byte)(id == 0x2201 ? 1 : id == 0x8060 ? 2 : id == 0x8070 ? 3 : id == 0x8100 ? 4 : id == 0x2121 && Wheel ? 5 : 0);
+                if (Wide) r[0] = (byte)(id == 0x2202 ? 6 : id == 0x8061 ? 7 : id == 0x8100 ? 4 : 0);
+                break;
+            case 6:
+                if (fn == 1) { r[1] = 5; r[2] = 3; }
+                if (fn == 2) { r[2] = p[2]; if (p[2] == 0) FakeHidpp.Hex("0064e0327d000000").CopyTo(r, 3); }
+                if (fn == 5) { r[1] = r[5] = (byte)(Dpi >> 8); r[2] = r[6] = (byte)Dpi; r[3] = 0x03; r[4] = 0x20; r[9] = 2; }
+                if (fn == 6)
+                {
+                    if (Array.IndexOf(Stages, u16(1)) < 0) throw new HidppError(5, "HID++ error 0x05");
+                    Dpi = u16(1);
+                    Stage = Array.IndexOf(Stages, Dpi);
+                }
+                break;
+            case 7:
+                if (fn == 1) r[1] = 0x7F;
+                if (fn == 2) r[0] = (byte)(p[0] == 1 ? Rate : 0);
+                if (fn == 3) throw new HidppError(5, "HID++ error 0x05");
                 break;
             case 1:
                 if (fn == 1) FakeHidpp.Hex("000064e0326400").CopyTo(r, 0);

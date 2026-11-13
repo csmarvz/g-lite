@@ -36,7 +36,7 @@ open
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8100 fnB
-  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
 pick View Buttons
   = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Buttons Left button=Left click Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Forward Sniper=DPI shift G7=DPI down G8=DPI up G9=Next profile Wheel tilt right=Scroll right Wheel tilt left=Scroll left [Revert (off)] [Save to mouse (off)]
 G7 pressed on the mouse
@@ -151,13 +151,13 @@ press Save
 pick G9 Mute
   = status "Buttons change when saved to the mouse" [Report] [Backups] Preset=Keys • [Update] […] View=Buttons Left button=Left click Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Ctrl + Shift + M Sniper=DPI shift G7=Next profile G8=DPI up G9=Mute Wheel tilt right=Scroll right Wheel tilt left=Scroll left [Revert] [Save to mouse]
 pick View Settings
-  = status "Buttons change when saved to the mouse" [Report] [Backups] Preset=Keys • [Update] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=off [Revert] [Save to mouse]
+  = status "Buttons change when saved to the mouse" [Report] [Backups] Preset=Keys • [Update] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 Invert scrolling=off [Revert] [Save to mouse]
 pick Report rate 250
   = status "Buttons and report rate change when saved to the mouse" [Report] [Backups] Preset=Keys • [Update] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=250 Brightness=100 Speed=63 Invert scrolling=off [Revert] [Save to mouse]
 press Revert changes
-  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=Keys [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse]
+  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=Keys [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse]
 pick Preset None
-  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
 pick Report rate 500
   = status "Report rate changes when saved to the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=500 Brightness=100 Speed=63 Invert scrolling=off [Revert] [Save to mouse]
 press Save to mouse
@@ -251,7 +251,7 @@ press Save to mouse
   8100 fnB
   = status "Saved to the mouse" [Report] [Backups] Preset=None [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=500 Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
 pick Preset Keys
-  = status "Report rate changes when saved to the mouse" [Report] [Backups] Preset=Keys [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1000 Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse]
+  = status "Report rate changes when saved to the mouse" [Report] [Backups] Preset=Keys [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse]
 pick View Buttons
   = status "Report rate changes when saved to the mouse" [Report] [Backups] Preset=Keys [Update (off)] […] View=Buttons Left button=Left click Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Ctrl + Shift + M Sniper=DPI shift G7=Next profile G8=DPI up G9=Next profile Wheel tilt right=Scroll right Wheel tilt left=Scroll left [Revert (off)] [Save to mouse]
 pick Left button Back

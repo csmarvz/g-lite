@@ -569,18 +569,15 @@ class Seg : Ctl
         var g = Begin(e);
         Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * K, Theme.Btn, Theme.Border);
         if (hot >= 0 && hot != index && Enabled) Ui.Fill(g, Cell(hot), 4 * K, Theme.BtnHover, Theme.BtnHover);
-        if (index >= 0 && index < Items.Length)
-        {
-            var fill = Enabled ? Theme.Accent : Ui.Mix(Theme.Btn, Theme.Accent, 0.35);
-            Ui.Fill(g, Cell(Now), 4 * K, fill, fill);
-        }
+        var fill = Enabled ? Theme.Accent : Ui.Mix(Theme.Btn, Theme.Accent, 0.35);
+        if (index >= 0 && index < Items.Length) Ui.Fill(g, Cell(Now), 4 * K, fill, fill);
         Ring(g, 6 * K);
         for (int i = 0; i < Items.Length; i++)
         {
             var r = Cell(i);
             bool lit = Math.Abs(Now - i) < 0.5f && index >= 0;
             Color fore = lit ? Theme.OnAccent : Theme.Text;
-            if (!Enabled || i == Off) fore = Ui.Mix(lit ? Theme.Accent : Theme.Btn, fore, 0.45);
+            if (!Enabled || i == Off) fore = Ui.Mix(lit ? fill : Theme.Btn, fore, lit ? 0.7 : 0.45);
             Ui.Draw(g, Items[i], Ui.Get(9.4f, lit ? Ui.Semi : Ui.Regular), r, fore,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
         }

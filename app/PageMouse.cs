@@ -307,9 +307,9 @@ class PageMouse : DevicePage
         speed.Invalidate();
 
         bool hasStages = ready && state.Stages.Length > 0;
-        int stage = hasStages && cur.Stage >= 0 && cur.Stage < state.Stages.Length ? cur.Stage : -1;
+        int stage = !hasStages ? -1 : !state.Writable ? Array.IndexOf(state.Stages, cur.Dpi) : cur.Stage >= 0 && cur.Stage < state.Stages.Length ? cur.Stage : -1;
         var view = hasStages ? (int[])state.Stages.Clone() : new int[0];
-        if (stage >= 0) view[stage] = cur.Dpi;
+        if (stage >= 0 && state.Writable) view[stage] = cur.Dpi;
         stages.Items = hasStages ? view.Select(x => x.ToString()).ToArray() : new[] { "–" };
         stages.Enabled = hasStages;
         stages.Index = stage;
@@ -321,7 +321,7 @@ class PageMouse : DevicePage
         dpiValue.Text = ready ? cur.Dpi.ToString() : "";
         bool rateOn = ready && state.Rates.Length > 0 && (!state.Onboard || state.Savable);
         int rate = ready ? (cur.Rate > 0 ? cur.Rate : state.Rate) : 0;
-        rates.Items = ready && state.Rates.Length > 0 ? state.Rates.Select(x => x.ToString()).ToArray() : new[] { "–" };
+        rates.Items = ready && state.Rates.Length > 0 ? state.Rates.Select(x => x >= 1000 ? x / 1000 + "k" : x.ToString()).ToArray() : new[] { "–" };
         rates.Index = ready ? Array.IndexOf(state.Rates, rate) : -1;
         rates.Enabled = rateOn;
         rates.Invalidate();
