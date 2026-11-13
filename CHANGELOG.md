@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- A headset charging over USB is no longer listed a second time as its "Battery Charger".
+
 ## [0.0.25-alpha] - 2026-11-13
 
 ### Added

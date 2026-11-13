@@ -158,7 +158,8 @@ static class Devices
             string[] known;
             PlainNames.TryGetValue(pid, out known);
             var name = paths.Select(Product).Select(product => Regex.Replace(product ?? "", @"^Logitech\s+", "", RegexOptions.IgnoreCase)).FirstOrDefault(Found.LooksG) ?? (known != null ? known[0] : null);
-            if (name == null) continue;
+            // A headset charging over USB also shows its charging port, like the PRO X Wireless's 0ABB "Battery Charger": it has nothing to read or change.
+            if (name == null || name.EndsWith("Charger", StringComparison.OrdinalIgnoreCase)) continue;
             string kind = known != null ? known[1] : name.ToUpper().Contains("SPEAKER") ? "device" : "headset";
             plain.Add(new Found { Key = "plain|" + pid, Path = paths[0], Name = name, Kind = kind, Link = "USB", Index = 0xFF, Models = "USB " + pid, PlainHid = true });
         }
