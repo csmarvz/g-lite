@@ -96,7 +96,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 
 - The repo is MIT. Don't bring in code from GPL projects.
 - `backup-*/` and `lighting-backup.reg` stay untracked.
-- No code comments unless asked.
+- Comments only for what the code can't say: why, a decision and what it ruled out, or the source of a fact (a report, a doc in `docs/`, another project). Short, and kept up to date: change or remove them with the code. No comments that repeat what the code does.
 - The version is set by the three assembly attributes at the top of `app/Program.cs`. Change all three together.
 - To release: set the version, add its section to `CHANGELOG.md`, commit, then push a tag `v<version>`. `.github/workflows/release.yml` checks the tag matches the version, builds and publishes `GLite.exe` with `checksums.txt`. Releases are not marked as pre-releases, so `/releases/latest` finds them.
 - Never commit unless explicitly asked.
