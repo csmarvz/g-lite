@@ -332,6 +332,8 @@ static class Report
             case 0x8071:
                 for (int c = 0; c < 8; c++)
                 {
+                    var where = r.Ask(id, 0, (byte)c, 0xFF, 0);
+                    if (where != null) r.S.AppendLine("cluster " + c + "=" + Hex(where, " "));
                     int n = 0;
                     for (int e = 0; e < 32; e++)
                     {

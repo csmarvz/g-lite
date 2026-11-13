@@ -11,6 +11,8 @@
 - The G815 opens on the G915's screen.
 - The G915's logo, brightness key, media keys and G keys have their light ids, so the key picture and the Screen effect reach them.
 - Reports read the newer mice's DPI (0x2202) and report rate (0x8061).
+- The Litra screen has a Live on the light picture, like the keyboards and mice: the front light's warmth and brightness and the back light's seven zones, with the running effect. A click on a zone picks it.
+- The Litra Beam LX has Try effect, which runs the light's own effects one at a time, so an owner can tell which ones light the back light. Reports read where each of its lighting groups sits.
 
 ### Changed
 
@@ -18,9 +20,11 @@
 - The G515 RAPID TKL no longer gets Save to keyboard: its onboard profile isn't known to match the G515's, so it gets live lighting.
 - Report rates of 1000 Hz and up read 1k, 2k, 4k and 8k.
 - A selected option that is greyed out is easier to read.
+- The Litra's status line says its effects stop if you quit G-Lite, not when you close it: closing only hides G-Lite in the tray.
 
 ### Fixed
 
+- The Litra and speaker screens could hit an error when the device dropped out while a colour was being sent.
 - On a mouse G-Lite can't save to, moving the DPI slider renamed the current DPI stage button.
 
 ## [0.0.23-alpha] - 2026-11-12

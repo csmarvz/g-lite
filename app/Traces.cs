@@ -372,7 +372,7 @@ static class Traces
 
     static string Litra()
     {
-        var found = new Found { Key = "trace|litra", Name = "Litra Beam LX", Kind = "light", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1990, 0x8040, 0x8081 } };
+        var found = new Found { Key = "trace|litra", Name = "Litra Beam LX", Kind = "light", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1990, 0x8040, 0x8071, 0x8081 } };
         using (var s = Begin(() => Support.For(found).Make(found, new FakeLight(), null)))
         {
             s.Press("Front light on");
@@ -392,6 +392,9 @@ static class Traces
             s.Pick("Effect", "Breathe");
             s.Slide("Speed", 80);
             s.Pick("Effect", "Wave");
+            s.Menu("Try the light's own effects", "Group 0 · Breathe");
+            s.Menu("Try the light's own effects", "Group 1 · Smooth colour wave");
+            s.Menu("Try the light's own effects", "Back to G-Lite's colours");
             s.Pick("Effect", "Static");
             return s.Text;
         }

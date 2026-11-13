@@ -181,8 +181,10 @@ class FakeSpeaker : Hidpp
 
 class FakeLight : Hidpp
 {
-    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x1990, 6 }, { 0x8040, 0x0A }, { 0x8081, 0x0C } };
+    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x1990, 6 }, { 0x8040, 0x0A }, { 0x8071, 0x0B }, { 0x8081, 0x0C } };
+    static readonly byte[][] Groups = { new byte[] { 0x01, 0x0A, 0x15 }, new byte[] { 0x13, 0x16, 0x18 } };
     public bool FrontOn = true, BackOn = true;
+    public byte[] Effect;
     public int Lumen = 200, Kelvin = 4000, BackLevel = 80, Frames;
     public readonly int[] Colors = new int[7];
 
@@ -213,6 +215,18 @@ class FakeLight : Hidpp
             else if (fn == 2) BackLevel = p[1];
             else if (fn == 3) r[0] = (byte)(BackOn ? 1 : 0);
             else if (fn == 4) BackOn = p[0] == 1;
+        }
+        else if (feat == Index[0x8071])
+        {
+            if (fn == 0)
+            {
+                if (p[0] >= Groups.Length || p[1] != 0xFF && p[1] >= Groups[p[0]].Length) throw new HidppError(2, "invalid argument");
+                r[0] = p[0];
+                r[1] = p[1];
+                if (p[1] == 0xFF) r[4] = (byte)Groups[p[0]].Length; else r[3] = Groups[p[0]][p[1]];
+            }
+            else if (fn == 1) Effect = p.Take(13).ToArray();
+            else throw new HidppError(7, "invalid function");
         }
         else if (feat == Index[0x8081])
         {
