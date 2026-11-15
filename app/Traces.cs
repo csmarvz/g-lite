@@ -305,6 +305,8 @@ static class Traces
             s.Menu("More preset actions", "Save as new preset…");
             s.Type("Split");
             s.Press("Save");
+            s.Slide("Brightness", 70);
+            s.Press("Revert changes");
             s.Press("Lighting per zone");
             s.Press("Revert changes");
             s.Do("quit", () => page.Exiting());
@@ -368,6 +370,10 @@ static class Traces
             s.Pick("Effect", "Breathe");
             s.Pick("Zone", "Zone 4");
             s.Pick("Effect", "Off");
+            s.Pick("Zone", "All");
+            s.Pick("Effect", "Breathe");
+            s.Pick("Zone", "Zone 2");
+            s.Press("Color 3080FF");
             s.Menu("More preset actions", "Save as new preset…");
             s.Type("Wave");
             s.Press("Save");

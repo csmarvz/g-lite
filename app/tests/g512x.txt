@@ -109,6 +109,22 @@ type Split
   = status "Set by G-Lite · not saved to the keyboard" [Report] [Save] [Cancel] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=78 [Revert]
 press Save
   = status "Saved the preset Split" [Report] Preset=Split [Update (off)] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=78 [Revert (off)]
+slide Brightness 70
+  8040 fn1
+  8040 fn2  00 46
+  8101 fn6  05
+  8071 fn5  01 03 04
+  8071 fn1  00 03 00 FF 00 00 00 00 13 88 64 00 01
+  8071 fn1  01 02 FF 20 20 13 88 00 64 00 00 00 01
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=Split • [Update] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=70 Speed=78 [Revert]
+press Revert changes
+  8040 fn1
+  8040 fn2  00 32
+  8101 fn6  05
+  8071 fn5  01 03 04
+  8071 fn1  00 03 00 FF 00 00 00 00 13 88 64 00 01
+  8071 fn1  01 02 FF 20 20 13 88 00 64 00 00 00 01
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=Split [Update (off)] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=78 [Revert (off)]
 press Lighting per zone
   8040 fn1
   8101 fn6  05

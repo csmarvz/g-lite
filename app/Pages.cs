@@ -387,7 +387,7 @@ abstract class DevicePage : Control, IPage
         if (name == "") { Say("Type a name for the preset first", true); nameField.Box.Focus(); return; }
         if (name.Contains("=")) { Say("A preset name can't contain =", true); nameField.Box.Focus(); return; }
         if (name == renaming) { EndName(); return; }
-        if (profiles.Items.Any(item => string.Equals(item, name, StringComparison.OrdinalIgnoreCase))) { Say("There's already a preset called " + name, true); nameField.Box.Focus(); return; }
+        if (profiles.Items.Any(item => string.Equals(item, name, StringComparison.OrdinalIgnoreCase))) { Say("There's already a preset called " + name + ". Pick it and press Update to change it.", true); nameField.Box.Focus(); return; }
         if (renaming != null)
         {
             var old = renaming;

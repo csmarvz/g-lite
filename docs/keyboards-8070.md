@@ -2,9 +2,9 @@
 
 The G512 and similar G keyboards light up through 0x8070, the feature `GMouse` already uses, not through 0x8071 like the G515 and G915. Supporting them is mostly a new screen around code G-Lite has. From OpenLogi's G512 recording (see [openlogi.md](openlogi.md)) and [lighting-control.md](lighting-control.md).
 
-Status: a first version is built on the G560's screen (`PageSpeaker`, for `Found.IsLedKeyboard`: kind keyboard, 0x8070, no 0x8071) and tested against `FakeSpeaker` with two zones only. It sets Off, Static, Breathe and Cycle live on all zones or each one, names zones from their location (1 Keys, 2 Logo, else Zone n), keeps the lighting as `lighting.<device>` and sets it again on load. No Wave, no per-key colours, no key picture, no Save. The plan below (its own page, a shared `Led` class) is kept for when a real keyboard's report is in.
+Status: built on the G560's screen (`PageSpeaker`, for `Found.IsLedKeyboard`: kind keyboard, 0x8070, no 0x8071). It sets Off, Static, Breathe, Cycle and Wave live on all zones or each one, greys out the effects a zone doesn't list, names zones from their location (`GSpeaker.ZoneName`: 1 Keys, 2 Logo, 6–11 Zone 1–6, else Zone n), keeps the lighting as `lighting.<device>` and sets it again on load. A keyboard with a zone key map (`GSpeaker.Picture`, only the G213 so far) gets a live key picture. No per-key colours, no Save.
 
-To check on a real keyboard: that 0x8070 fn 3 without a persistence byte lights it (the G560 path), the zone locations, and which effects each zone lists.
+Tested on a real G213 (see [G213.md](G213.md)): fn 3 without a persistence byte lights it, Wave works with OpenRGB's layout, and the persistence byte stores nothing. The G512 and the others are still untested. The plan below (its own page, a shared `Led` class) is kept for when one of them reports.
 
 ## Per-key colours (0x8080), not built
 
@@ -26,7 +26,7 @@ Features that matter:
 No 0x8071, 0x8040 (brightness), 0x8100 or 0x8101. So:
 
 - No brightness feature. Brightness has to be in the effect: Static scales the colour, Breathe and Cycle take an intensity byte, as `GMouse.Encode` does.
-- No onboard profiles. Saving is the 0x8070 persistence byte: send the effect with 1 (RAM and EEPROM). Only on Save, never on each preview, because EEPROM wears.
+- No onboard profiles. Saving would be the 0x8070 persistence byte: send the effect with 1 (RAM and EEPROM). Only on Save, never on each preview, because EEPROM wears. The G213 accepts 1 but forgets it at the next power cycle, and lists persistency capabilities 0; check a keyboard's capabilities before offering Save.
 
 ## Probably the same family
 
@@ -76,4 +76,4 @@ Without onboard profiles, G-Lite needs another way to show what's set:
 1. Ask for a G512 or G513 report. The report already reads 0x8070 fn 0–2. Add fn 9 and fn 14 with source 1 to `Reads` (they only read).
 2. Share the 0x8070 code between mouse and keyboard.
 3. Build the page against the fake, live only.
-4. On a real keyboard: confirm persistence 1 survives a power cycle, then add Save.
+4. On a real keyboard: confirm persistence 1 survives a power cycle, then add Save. It doesn't on the G213.

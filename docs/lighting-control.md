@@ -80,6 +80,7 @@ What could go wrong with 1: in onboard mode, the active profile's lighting may w
 | 2 | EEPROM only |
 
 - `GMouse.SetLight` sends 12 bytes, so the persistence is 0: live only. Save to mouse writes the profile instead. That's right.
+- The G213 accepts 1 without an error but comes back with its factory Cycle after a power cycle; its zones list persistency capabilities 0 (see [G213.md](G213.md)).
 - On a device without onboard profiles, like the G512, 1 is how to save. See [keyboards-8070.md](keyboards-8070.md).
 
 ### Information
@@ -107,11 +108,11 @@ What could go wrong with 1: in onboard mode, the active profile's lighting may w
 | 0x0A | Breathe |
 | 0x0B | Ripple |
 
-These are the same ids the G915 uses on 0x8071. OpenLogi only encodes Static (colour in params 0–2). `GMouse.Encode` has Static, Breathe and Cycle.
+These are the same ids the G915 uses on 0x8071. OpenLogi only encodes Static (colour in params 0–2). `GMouse.Encode` has Static, Breathe and Cycle; `GSpeaker.Encode` adds Wave (0x04) for keyboards, checked on the G213.
 
 ### Reading back (no need to remember the lighting)
 
-- fn 9 `<zone> <source> 00` reads the effect settings: colour at 1–3, period at 4–5, brightness at 6, a parameter at 7. Source 0 is RAM, 1 EEPROM. Not supported when extended capability bit 1 is set.
+- fn 9 `<zone> <source> 00` reads the effect settings: colour at 1–3, period at 4–5, brightness at 6, a parameter at 7. Source 0 is RAM, 1 EEPROM. Not supported when extended capability bit 1 is set. The G213 (bit 1 clear) answers all zeros for both sources, even for the lighting it shows.
 - fn 14 `<zone> <source> 00` reads the current effect: zone at 0, effect index at 1, the 10 params at 2–11. Needs extended capability bit 0.
 - fn 12 `<zone> 00 00` reads the colour shown now, at 1–3.
 - fn 10 `<zone> 00 00` clears a zone back to its default.

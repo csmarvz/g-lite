@@ -470,7 +470,7 @@ class Page515 : DevicePage
         Ui.Text(screenBox, "Color boost", 14, 36, () => Theme.Dim, 9f);
         boostValue = Value(screenBox, 14, 36, 196);
         boostSlider = Ui.Add(screenBox, new Slider { AccessibleName = "Color boost" }, 14, 54, 196, 20);
-        boostSlider.Changed += (s, e) => { setup.Boost = boostSlider.Value; boostValue.Text = setup.Boost + "%"; force = true; debounce.Stop(); debounce.Start(); };
+        boostSlider.Changed += (s, e) => { setup.Boost = boostSlider.Value; boostValue.Text = setup.Boost + "%"; force = true; Edited(); debounce.Stop(); debounce.Start(); };
         Ui.Text(screenBox, "Brightness", 14, 78, () => Theme.Dim, 9f);
         screenBrightValue = Value(screenBox, 14, 78, 196);
         screenBright = Ui.Add(screenBox, new Slider { AccessibleName = "Brightness" }, 14, 96, 196, 20);
@@ -483,6 +483,7 @@ class Page515 : DevicePage
             setup.Interval = 1000 - rateSlider.Value * 100;
             rateValue.Text = setup.Interval + " ms";
             screenTimer.Interval = setup.Interval;
+            Edited();
             debounce.Stop();
             debounce.Start();
         };
@@ -573,6 +574,7 @@ class Page515 : DevicePage
         if (screenBright.Value != value) { screenBright.Value = value; screenBright.Invalidate(); }
         dirty = true;
         edits++;
+        Edited();
         saveBtn.Enabled = !broken && !Screening;
         picture.Display(Known() ? cur : null, Known() ? bar : null, brightness);
         Calm();
@@ -622,6 +624,7 @@ class Page515 : DevicePage
     {
         Settings.Set(Saved, setup.ToText());
         force = true;
+        Edited();
         SyncScreen();
         Calm();
     }

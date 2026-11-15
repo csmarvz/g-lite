@@ -13,7 +13,7 @@ class MouseLight
 
     public bool Same(MouseLight o)
     {
-        return o != null && Effect == o.Effect && Color == o.Color && Period == o.Period && Bright == o.Bright && Direction == o.Direction;
+        return o != null && Effect == o.Effect && Color == o.Color && Period == o.Period && Bright == o.Bright && (Effect != 0x04 || Direction == o.Direction);
     }
 }
 

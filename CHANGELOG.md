@@ -2,10 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- The G213 gets Wave, with its direction, and a key picture that shows each zone's lighting. Click a key to pick its zone. It can't store lighting, so G-Lite sets it again at each start.
+
 ### Fixed
 
+- On the keyboards with a key picture, a preset now shows it was changed, and Update turns on, after changing the brightness or the Screen effect's settings (monitor, areas, color boost, update rate, smoothing, pauses). Trying to save a preset under a name that's taken now says to use Update.
 - The G213 ("Gaming Keyboard G213") is recognised as a G keyboard and gets the lighting screen: the whole keyboard, or each of its five areas (left to right) in Static. Effects a zone can't do are greyed out. Tested on a real G213.
-- The G213 gets Wave, with its direction, and a key picture that shows each zone's lighting. Click a key to pick its zone.
 
 ## [0.0.26-alpha] - 2026-11-13
 

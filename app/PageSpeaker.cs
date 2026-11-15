@@ -157,6 +157,7 @@ class PageSpeaker : DevicePage
     readonly KeyPicture picture;
     readonly Model iso;
     bool isoShown;
+    volatile bool wholeAgain;
     volatile int layout = -1;
     List<int> keyZones;
 
@@ -331,7 +332,17 @@ class PageSpeaker : DevicePage
     MouseLight Displayed()
     {
         if (cur == null) return null;
-        return cur[Zone];
+        return Own(Zone, cur[Zone]);
+    }
+
+    // An area showing zone 0's effect, which it can't take itself, is shown and edited as Static.
+    MouseLight Own(int zone, MouseLight light)
+    {
+        var listed = zones;
+        if (light == null || zone == 0 || listed == null || zone >= listed.Count || !GSpeaker.IsArea(listed[zone][GSpeaker.Place]) || listed[zone].ContainsKey(light.Effect)) return light;
+        var shown = light.Clone();
+        shown.Effect = 0x01;
+        return shown;
     }
 
     void Edit(Action<MouseLight> change, bool now)
@@ -340,6 +351,7 @@ class PageSpeaker : DevicePage
         if (cur == null) cur = Enumerable.Range(0, Count).Select(i => new MouseLight()).ToArray();
         if (picked == 0)
         {
+            wholeAgain = true;
             var all = (cur[0] ?? new MouseLight()).Clone();
             change(all);
             for (int zone = 0; zone < Count; zone++) cur[zone] = all.Clone();
@@ -347,12 +359,12 @@ class PageSpeaker : DevicePage
         else
         {
             int zone = Zone;
-            var one = (cur[zone] ?? new MouseLight()).Clone();
+            var one = (Own(zone, cur[zone]) ?? new MouseLight()).Clone();
             change(one);
             cur[zone] = one;
             var listed = zones;
             // On the G213, setting one area ends the whole keyboard's effect on all of them (docs/G213.md): the areas that followed it get its colour.
-            if (GSpeaker.IsArea(listed[zone][GSpeaker.Place]))
+            if (zone < listed.Count && GSpeaker.IsArea(listed[zone][GSpeaker.Place]))
                 for (int area = 0; area < listed.Count && area < Count; area++)
                     if (area != zone && GSpeaker.IsArea(listed[area][GSpeaker.Place]) && (cur[area] == null || !listed[area].ContainsKey(cur[area].Effect)))
                     {
@@ -378,6 +390,7 @@ class PageSpeaker : DevicePage
         if (lights == null) return;
         if (screening) ScreenOff();
         cur = lights;
+        wholeAgain = true;
         seq++;
         Edited();
         Sync();
@@ -519,8 +532,6 @@ class PageSpeaker : DevicePage
         effects.Off = offered == null ? new int[0] : Enumerable.Range(0, GSpeaker.Effects.Length).Where(i => !offered.Any(zone => zone.ContainsKey(GSpeaker.Effects[i].Id))).ToArray();
         effects.Invalidate();
         bool color = known && d.Color, spd = known && d.Speed, br = known && l.Effect != 0;
-        Shade(colorHead, color);
-        colors.Sync(known ? l.Color : 0xFFFFFF, color);
         Shade(brightHead, br);
         bright.Enabled = br;
         bright.Value = known ? l.Bright : 100;
@@ -532,16 +543,16 @@ class PageSpeaker : DevicePage
         speedValue.Text = spd ? speed.Value + "%" : "";
         speed.Invalidate();
         foreach (var c in plainLight) c.Visible = !screening;
+        if (!screening) colors.Sync(known ? l.Color : 0xFFFFFF, color);
         bool wave = known && d.Direction;
         colorHead.Text = wave ? "Direction" : "Color";
         Shade(colorHead, color || wave);
-        foreach (var c in light.Controls.OfType<Swatch>()) c.Visible = !screening && !wave;
+        if (wave) foreach (var c in light.Controls.OfType<Swatch>()) c.Visible = false;
         dirs.Visible = !screening && wave;
         dirs.Index = wave ? Array.IndexOf(GSpeaker.Directions, l.Direction) : -1;
         dirs.Invalidate();
         if (picture != null) ShowFrame();
         areas.Visible = settingsBox.Visible = screening;
-        if (!screening) colors.Sync(known ? l.Color : 0xFFFFFF, color);
         light.Height = light.Width * (screening ? 162 : picture != null ? 310 : 330) / 616;
         var all = Screen.AllScreens;
         var chosen = ScreenCapture.Find(setup.Monitor);
@@ -617,12 +628,18 @@ class PageSpeaker : DevicePage
         Do(h =>
         {
             if (n != seq || z == null) return;
-            Apply(h, z, want);
+            bool whole = wholeAgain;
+            wholeAgain = false;
+            Apply(h, z, want, whole);
         }, () => { if (n == seq) Calm(); });
     }
 
-    void Apply(Hidpp h, List<Dictionary<int, int>> z, MouseLight[] want)
+    void Apply(Hidpp h, List<Dictionary<int, int>> z, MouseLight[] want, bool whole = false)
     {
+        // An area write ends the whole-keyboard effect on the G213 (docs/G213.md), so All and presets send it again even when it looks unchanged.
+        if (whole)
+            for (int zone = 0; zone < z.Count && zone < Count; zone++)
+                if (z[zone][GSpeaker.Place] == 1 && z.Any(other => GSpeaker.IsArea(other[GSpeaker.Place]))) sent[zone] = null;
         for (int zone = 0; zone < z.Count && zone < Count; zone++)
         {
             if (want[zone] == null || (sent[zone] != null && sent[zone].Same(want[zone]))) continue;
