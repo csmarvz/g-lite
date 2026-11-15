@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Older G mice and keyboards are listed even when they don't answer G-Lite's usual protocol, so their owners can send a report: the G5, G9, G9x, G500, G500s, G700, G700s, G300, G400, G400s, G100s, G600 and MX518 mice, and the G11, G13, G15, G19, G103, G105, G110 and G710 keyboards. They get the info page for now. Untested on real devices.
+
 ## [0.0.27-alpha] - 2026-11-15
 
 ### Added

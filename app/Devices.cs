@@ -113,7 +113,9 @@ static class Devices
     [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)] static extern int CM_Get_Device_Interface_List(ref Guid interfaceClass, string deviceId, char[] buffer, int length, int flags);
 
     static readonly Regex PlainModels = new Regex(@"PID_(C22D|C22E|C216|C218|C219)", RegexOptions.IgnoreCase);
-    static readonly Regex AudioModels = new Regex(@"VID_046D&PID_(0[AB][0-9A-F]{2})", RegexOptions.IgnoreCase);
+    // Audio devices, and old devices that may not speak HID++ (or answer it): listed for their report when the HID++ scan didn't find them.
+    // Ids from docs/research/device-map.md and usb-id-registry.md. Each keyboard by its G-key or LCD component, so it's listed once.
+    static readonly Regex UnfoundModels = new Regex(@"VID_046D&PID_(0[AB][0-9A-F]{2}|C01E|C041|C048|C049|C051|C066|C068|C06B|C07C|C21C|C222|C225|C227|C229|C22B|C245|C246|C247|C248|C249|C24A|C24B|C24C|C24D|C24E|C531)", RegexOptions.IgnoreCase);
     static readonly Dictionary<string, string[]> PlainNames = new Dictionary<string, string[]>
     {
         { "C22D", new[] { "G510 Gaming Keyboard", "keyboard" } },
@@ -121,6 +123,32 @@ static class Devices
         { "C216", new[] { "Gamepad F310", "gamepad" } },
         { "C218", new[] { "Rumble Gamepad F510", "gamepad" } },
         { "C219", new[] { "Wireless Gamepad F710", "gamepad" } },
+        { "C01E", new[] { "MX518 Optical Mouse", "mouse" } },
+        { "C051", new[] { "MX518 Optical Mouse", "mouse" } },
+        { "C041", new[] { "G5 Laser Mouse", "mouse" } },
+        { "C049", new[] { "G5 Laser Mouse", "mouse" } },
+        { "C048", new[] { "G9 Laser Mouse", "mouse" } },
+        { "C066", new[] { "G9x Laser Mouse", "mouse" } },
+        { "C249", new[] { "G9x Laser Mouse", "mouse" } },
+        { "C068", new[] { "G500 Laser Mouse", "mouse" } },
+        { "C24E", new[] { "G500s Laser Gaming Mouse", "mouse" } },
+        { "C06B", new[] { "G700 Wireless Gaming Mouse", "mouse" } },
+        { "C07C", new[] { "G700s Rechargeable Gaming Mouse", "mouse" } },
+        { "C531", new[] { "G700 / G700s", "mouse" } },
+        { "C246", new[] { "G300 Gaming Mouse", "mouse" } },
+        { "C245", new[] { "G400 Optical Mouse", "mouse" } },
+        { "C24C", new[] { "G400s Optical Mouse", "mouse" } },
+        { "C247", new[] { "G100s Optical Gaming Mouse", "mouse" } },
+        { "C24A", new[] { "G600 Gaming Mouse", "mouse" } },
+        { "C225", new[] { "G11 Gaming Keyboard", "keyboard" } },
+        { "C21C", new[] { "G13 Advanced Gameboard", "keyboard" } },
+        { "C222", new[] { "G15 Gaming Keyboard", "keyboard" } },
+        { "C227", new[] { "G15 Gaming Keyboard", "keyboard" } },
+        { "C229", new[] { "G19 Gaming Keyboard", "keyboard" } },
+        { "C24B", new[] { "G103 Gaming Keyboard", "keyboard" } },
+        { "C248", new[] { "G105 Gaming Keyboard", "keyboard" } },
+        { "C22B", new[] { "G110 Gaming Keyboard", "keyboard" } },
+        { "C24D", new[] { "G710 Gaming Keyboard", "keyboard" } },
     };
 
     public static string[] HidIds()
@@ -147,9 +175,9 @@ static class Devices
 
     public static string[] PlainIds(string pid) { return pid == "" ? new string[0] : HidIds().Where(id => id.Contains("PID_" + pid.ToUpperInvariant())).OrderBy(id => id).ToArray(); }
 
-    public static string AudioModel(string id, IEnumerable<string> foundPaths)
+    public static string Unfound(string id, IEnumerable<string> foundPaths)
     {
-        var match = AudioModels.Match(id);
+        var match = UnfoundModels.Match(id);
         if (!match.Success) return null;
         string pid = match.Groups[1].Value.ToUpperInvariant();
         return foundPaths.Any(path => path != null && path.IndexOf("PID_" + pid, StringComparison.OrdinalIgnoreCase) >= 0) ? null : pid;
@@ -159,7 +187,7 @@ static class Devices
     {
         var foundPaths = found.Select(f => f.Path).ToList();
         var plain = new List<Found>();
-        foreach (var pid in ids.Select(id => PlainModels.Match(id)).Where(m => m.Success).Select(m => m.Groups[1].Value.ToUpperInvariant()).Concat(ids.Select(id => AudioModel(id, foundPaths)).Where(pid => pid != null)).Distinct())
+        foreach (var pid in ids.Select(id => PlainModels.Match(id)).Where(m => m.Success).Select(m => m.Groups[1].Value.ToUpperInvariant()).Concat(ids.Select(id => Unfound(id, foundPaths)).Where(pid => pid != null)).Distinct())
         {
             var paths = ids.Where(id => id.Contains("PID_" + pid)).OrderBy(id => id).Select(PathOf).ToList();
             string[] known;

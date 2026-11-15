@@ -262,9 +262,11 @@ static class SelfTest
         Check(!rapid.IsG515 && rapid.IsRgbKeyboard && Support.For(rapid).Screen == typeof(Page515) && Keyboards.For(rapid).Guessed && !Keyboards.For(rapid).Saves && Keyboards.For(rapid).Keys.Name == "G515 RAPID TKL"
             && Keyboards.File("PRO X 60") == "g-60.json" && Keyboards.File("G512 X 98") == "g-full.json" && Keyboards.File("G915 X LIGHTSPEED TKL") == "g915-tkl.json" && Keyboards.File("G915 X") == "g915.json" && Keyboards.File("G715") == "g515-tkl.json"
             && bigBoard.Keys.Rows.Length == 7 && Keyboards.For(new Found { Name = "G915 X LIGHTSPEED TKL" }).Keys.Rows.Length == 9 && bigBoard.Bar == null && bigBoard.Prefix == "profile.g316x75.", "other G keyboards with 0x8071 get live lighting with a picture picked by their name, and never save");
-        Check(Devices.AudioModel(@"HID\VID_046D&PID_0AD8&MI_03\8&1A2B3C&0&0000", new string[] { null, @"\\?\hid#vid_046d&pid_c547&mi_02&col02#x" }) == "0AD8"
-            && Devices.AudioModel(@"HID\VID_046D&PID_0ABA&MI_03&COL02\8&1A2B3C&0&0001", new[] { @"\\?\hid#vid_046d&pid_0aba&mi_03&col02#x" }) == null
-            && Devices.AudioModel(@"HID\VID_046D&PID_C547&MI_02&COL02\8&1A2B3C&0&0001", new string[0]) == null, "a Logitech audio device the HID++ scan didn't find is listed for its report, others aren't");
+        Check(Devices.Unfound(@"HID\VID_046D&PID_0AD8&MI_03\8&1A2B3C&0&0000", new string[] { null, @"\\?\hid#vid_046d&pid_c547&mi_02&col02#x" }) == "0AD8"
+            && Devices.Unfound(@"HID\VID_046D&PID_0ABA&MI_03&COL02\8&1A2B3C&0&0001", new[] { @"\\?\hid#vid_046d&pid_0aba&mi_03&col02#x" }) == null
+            && Devices.Unfound(@"HID\VID_046D&PID_C24C&MI_01&COL02\8&1A2B3C&0&0001", new string[0]) == "C24C"
+            && Devices.Unfound(@"HID\VID_046D&PID_C066&MI_01&COL04\8&1A2B3C&0&0003", new[] { @"\\?\hid#vid_046d&pid_c066&mi_01&col04#x" }) == null
+            && Devices.Unfound(@"HID\VID_046D&PID_C547&MI_02&COL02\8&1A2B3C&0&0001", new string[0]) == null, "a Logitech audio device or old G device the HID++ scan didn't find is listed for its report, others aren't");
         var proX2 = GMouse.Read(FakeMouse.ProX2());
         Check(new Found { Name = "PRO X SUPERLIGHT 2", Kind = "mouse", Features = new[] { 0x2202, 0x8061 } }.IsMouse && proX2.Dpi == 800 && proX2.Dpis.First() == 100 && proX2.Dpis.Last() == 32000 && proX2.Dpis.Length == 639
             && proX2.Stages.SequenceEqual(new[] { 400, 800, 1600, 3200 }) && proX2.Stage == 1 && proX2.Rate == 1000 && proX2.Rates.SequenceEqual(new[] { 125, 250, 500, 1000, 2000, 4000, 8000 })
