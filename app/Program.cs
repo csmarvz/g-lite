@@ -831,7 +831,7 @@ class MainWindow : Form
                 return percent;
             };
             Func<Found, string> state = f => f.Asleep ? "" : f.Battery >= 0 ? f.BatteryText : "";
-            var tip = new TrayTip();
+            var tip = new TrayTip { Tray = tray };
             tip.Rows = () =>
             {
                 var rows = new List<string[]>();

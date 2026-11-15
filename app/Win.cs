@@ -97,11 +97,12 @@ static class Win
         catch (DllNotFoundException) { return false; }
     }
 
-    public static void Round(Form f)
+    // corners: 2 rounds like a window, 3 like a tooltip or menu (DWMWCP_ROUNDSMALL).
+    public static void Round(Form f, int corners = 2)
     {
         f.HandleCreated += (s, e) =>
         {
-            int round = 2, border = 0x3A3A3A;
+            int round = corners, border = 0x3A3A3A;
             try { Rounded = DwmSetWindowAttribute(f.Handle, 33, ref round, 4) == 0 && DwmSetWindowAttribute(f.Handle, 34, ref border, 4) == 0; }
             catch (DllNotFoundException) { }
         };

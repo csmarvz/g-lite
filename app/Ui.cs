@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -44,7 +45,7 @@ static class Theme
         if (Changed != null) Changed();
     }
 
-    static Color C(int v) { return Color.FromArgb(v >> 16 & 0xFF, v >> 8 & 0xFF, v & 0xFF); }
+    public static Color C(int v) { return Color.FromArgb(v >> 16 & 0xFF, v >> 8 & 0xFF, v & 0xFF); }
 
     static void Set(bool light)
     {
@@ -1138,14 +1139,20 @@ class MenuLook : ToolStripProfessionalRenderer
 class TrayTip : Form
 {
     public Func<List<string[]>> Rows;
+    public NotifyIcon Tray;
     List<string[]> rows = new List<string[]>();
-    Point anchor;
+    Point anchor, shownAt;
     DateTime firstAt, movedAt, filledAt;
     bool hovering;
     float scale = 1;
     Font font;
     int nameWidth, rowHeight;
+    Color back, edge, nameColor, valueColor;
     readonly Timer watch = new Timer { Interval = 100 };
+
+    struct IconId { public int Size; public IntPtr Window; public int Id; public Guid Item; }
+    struct IconRect { public int Left, Top, Right, Bottom; }
+    [DllImport("shell32.dll")] static extern int Shell_NotifyIconGetRect(ref IconId id, out IconRect rect);
 
     public TrayTip()
     {
@@ -1154,8 +1161,24 @@ class TrayTip : Form
         StartPosition = FormStartPosition.Manual;
         TopMost = true;
         DoubleBuffered = true;
-        Win.Round(this);
+        Win.Round(this, 3);
         watch.Tick += (s, e) => Tick();
+    }
+
+    // NotifyIcon keeps its window and id private; .NET Framework 4.8 doesn't change any more, so the field names hold.
+    Rectangle IconBounds()
+    {
+        try
+        {
+            var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+            var window = (NativeWindow)typeof(NotifyIcon).GetField("window", flags).GetValue(Tray);
+            var id = new IconId { Window = window.Handle, Id = (int)typeof(NotifyIcon).GetField("id", flags).GetValue(Tray) };
+            id.Size = Marshal.SizeOf(id);
+            IconRect rect;
+            if (Shell_NotifyIconGetRect(ref id, out rect) == 0) return Rectangle.FromLTRB(rect.Left, rect.Top, rect.Right, rect.Bottom);
+        }
+        catch (Exception) { }
+        return new Rectangle(shownAt, Size.Empty);
     }
 
     protected override bool ShowWithoutActivation { get { return true; } }
@@ -1192,13 +1215,16 @@ class TrayTip : Form
         if (!Visible && (now - firstAt).TotalMilliseconds < 400) return;
         if (Visible && (now - filledAt).TotalMilliseconds < 1000) return;
         filledAt = now;
+        if (!Visible) shownAt = anchor;
         Fill();
     }
 
     void Fill()
     {
         rows = Rows();
-        scale = Win.At(anchor);
+        var icon = IconBounds();
+        var center = new Point(icon.X + icon.Width / 2, icon.Y + icon.Height / 2);
+        scale = Win.At(center);
         if (font != null) font.Dispose();
         font = Win.Px(9, scale);
         int pad = S(10), gap = S(24), valueWidth = 0;
@@ -1213,14 +1239,26 @@ class TrayTip : Form
                 valueWidth = Math.Max(valueWidth, TextRenderer.MeasureText(g, r[1], font, Size.Empty, flags).Width + (HasIcon(r) ? S(18) + (r[1] == "" ? 0 : S(5)) : 0));
             }
         var size = new Size(pad * 2 + nameWidth + gap + valueWidth, S(8) * 2 + rowHeight * rows.Count);
-        var area = Screen.FromPoint(anchor).WorkingArea;
-        int x = Math.Max(area.Left, Math.Min(area.Right - size.Width, anchor.X - size.Width / 2));
-        int y = anchor.Y - size.Height - S(16);
-        if (y < area.Top) y = anchor.Y + S(24);
+        // Placed from the icon, not the cursor, so it stays put while the mouse moves over the icon, like the system's tray tooltips.
+        var area = Screen.FromPoint(center).WorkingArea;
+        int margin = S(8), x = center.X - size.Width / 2, y;
+        if (center.Y >= area.Bottom) y = area.Bottom - size.Height - margin;
+        else if (center.Y < area.Top) y = area.Top + margin;
+        else if (center.X < area.Left) { x = area.Left + margin; y = center.Y - size.Height / 2; }
+        else if (center.X >= area.Right) { x = area.Right - size.Width - margin; y = center.Y - size.Height / 2; }
+        else y = icon.Top - size.Height - margin;
+        x = Math.Max(area.Left, Math.Min(area.Right - size.Width, x));
         y = Math.Max(area.Top, Math.Min(area.Bottom - size.Height, y));
         Bounds = new Rectangle(new Point(x, y), size);
-        BackColor = Theme.Card;
-        if (!Visible) { Show(); Win.Border(this, Theme.Border); }
+        // The system's tray tooltips follow the taskbar's theme; colours from the Tooltip and DarkMode_Explorer::Tooltip theme parts.
+        bool light = Theme.TaskbarLight();
+        back = Theme.C(light ? 0xF9F9F9 : 0x2B2B2B);
+        edge = Theme.C(light ? 0xE5E5E5 : 0x767676);
+        nameColor = Theme.C(light ? 0x575757 : 0xABABAB);
+        valueColor = Theme.C(light ? 0x1A1A1A : 0xFFFFFF);
+        BackColor = back;
+        if (!Visible) Show();
+        Win.Border(this, edge);
         Invalidate();
     }
 
@@ -1231,20 +1269,20 @@ class TrayTip : Form
     void DrawBattery(Graphics g, int x, int y, string level)
     {
         int percent;
-        if (int.TryParse(level, out percent)) Ui.Battery(g, x, y, percent, scale);
+        if (int.TryParse(level, out percent)) Ui.Battery(g, x, y, percent, scale, valueColor);
     }
 
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = e.Graphics;
-        g.Clear(Theme.Card);
+        g.Clear(back);
         if (font == null) return;
         int pad = S(10), top = S(8) + S(2);
         var flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine;
         for (int i = 0; i < rows.Count; i++)
         {
             int y = top + i * rowHeight;
-            TextRenderer.DrawText(g, rows[i][0], font, new Point(pad, y), Theme.Dim, flags);
+            TextRenderer.DrawText(g, rows[i][0], font, new Point(pad, y), nameColor, flags);
             var width = TextRenderer.MeasureText(g, rows[i][1], font, Size.Empty, flags).Width;
             int right = Width - pad;
             if (HasIcon(rows[i]))
@@ -1252,9 +1290,9 @@ class TrayTip : Form
                 DrawBattery(g, right - S(18), y + (font.Height - S(9)) / 2, rows[i][2]);
                 right -= S(18) + S(5);
             }
-            TextRenderer.DrawText(g, rows[i][1], font, new Point(right - width, y), Theme.Text, flags);
+            TextRenderer.DrawText(g, rows[i][1], font, new Point(right - width, y), valueColor, flags);
         }
-        if (!Win.Rounded) using (var pen = new Pen(Theme.Border)) g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+        if (!Win.Rounded) using (var pen = new Pen(edge)) g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
     }
 }
 
