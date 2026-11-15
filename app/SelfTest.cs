@@ -247,6 +247,8 @@ static class SelfTest
         Check(new Found { Name = "G512 X 75", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8101 } }.IsG512X && !new Found { Name = "G512 X 98", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8101 } }.IsG512X && !new Found { Name = "G512 X 75", Features = new[] { 0x8071 } }.IsG512X, "the G512 X 75 is told apart, with its features");
         var g512 = new Found { Name = "G512 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Features = new[] { 0x8070, 0x8080 } };
         var g213 = new Found { Name = "Gaming Keyboard G213", Kind = "keyboard", Features = new[] { 0x8070 } };
+        Check(new Found { Link = "USB", Kind = "keyboard" }.Level == Ui.Usb && new Found { Link = "USB", Kind = "keyboard", Battery = 80 }.Level == 80 && new Found { Link = "LIGHTSPEED" }.Level == -1
+            && new Found { Link = "USB", Kind = "headset", PlainHid = true }.Level == -1 && new Found { Link = "USB", Asleep = true }.Level == Ui.Asleep, "a wired device without a battery shows the USB mark, a wireless one without a level shows nothing");
         Check(g213.IsG && g213.Short == "G213" && Support.For(g213).Screen == typeof(PageSpeaker) && !Found.LooksG("Gaming Keyboard") && !Found.LooksG("Wireless Keyboard K270")
             && GSpeaker.ZoneName(1, 0) == "Keys" && GSpeaker.ZoneName(8, 3) == "Zone 3" && GSpeaker.ZoneName(0, 1) == "Zone 2", "the G213 counts as a G device with its model last, and its zones are named from their location");
         var wave = new MouseLight { Effect = 0x04, Period = 0x1388, Bright = 80, Direction = 3 };

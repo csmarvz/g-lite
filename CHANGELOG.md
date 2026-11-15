@@ -4,6 +4,7 @@
 
 ### Added
 
+- Devices on a USB cable without a battery, like the G213, show a USB symbol where the battery goes: in the sidebar, the tray menu, the tray popup and on the device's screen.
 - The G213 gets Wave, with its direction, and a key picture that shows each zone's lighting. Click a key to pick its zone. It can't store lighting, so G-Lite sets it again at each start.
 
 ### Fixed

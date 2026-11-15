@@ -109,7 +109,8 @@ static class Ui
         return l;
     }
 
-    public const int Charging = 1000, Asleep = -2;
+    public const int Charging = 1000, Asleep = -2, Usb = -3;
+
     static readonly string[] Moon =
     {
         "..###......#....",
@@ -127,6 +128,27 @@ static class Ui
     public static int BatteryWidth(float k) { return (int)Math.Round(16 * k) + (int)Math.Round(2 * k); }
     public static int BatteryHeight(float k) { return (int)Math.Round(9 * k); }
 
+    // The USB symbol in the battery's 18 x 9 box, antialiased: whole pixels made it look rough.
+    static void UsbMark(Graphics g, int x, int y, float k, Color ink)
+    {
+        var offset = g.PixelOffsetMode;
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+        Func<float, float, PointF> at = (px, py) => new PointF(x + px * k, y + py * k);
+        using (var pen = new Pen(ink, 1.1f * k) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round })
+        using (var brush = new SolidBrush(ink))
+        {
+            g.FillEllipse(brush, x + 0.2f * k, y + 3.1f * k, 2.8f * k, 2.8f * k);
+            g.DrawLine(pen, at(2.5f, 4.5f), at(14, 4.5f));
+            g.FillPolygon(brush, new[] { at(13.3f, 2.4f), at(18, 4.5f), at(13.3f, 6.6f) });
+            g.DrawLines(pen, new[] { at(4.8f, 4.5f), at(7.4f, 1.6f), at(10, 1.6f) });
+            g.FillEllipse(brush, x + 9.6f * k, y + 0.3f * k, 2.6f * k, 2.6f * k);
+            g.DrawLines(pen, new[] { at(6.6f, 4.5f), at(9.4f, 7.4f), at(11, 7.4f) });
+            g.FillRectangle(brush, x + 10.6f * k, y + 6.1f * k, 2.6f * k, 2.6f * k);
+        }
+        g.PixelOffsetMode = offset;
+    }
+
     public static void Battery(Graphics g, float left, float top, int percent, float k, Color? color = null)
     {
         int x = (int)Math.Round(left), y = (int)Math.Round(top);
@@ -134,6 +156,12 @@ static class Ui
         var ink = color ?? Theme.Text;
         var smoothing = g.SmoothingMode;
         g.SmoothingMode = SmoothingMode.None;
+        if (percent == Usb)
+        {
+            UsbMark(g, x, y, k, ink);
+            g.SmoothingMode = smoothing;
+            return;
+        }
         if (percent == Asleep)
         {
             using (var brush = new SolidBrush(ink))

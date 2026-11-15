@@ -42,7 +42,10 @@ class Found
 
     public string BatteryWords { get { return Battery < 0 ? "–" : Coarse ? (Battery >= 30 ? "Good" : "Low") + " (it only reports good or low)" : BatteryText; } }
 
-    public int Level { get { return Asleep ? Ui.Asleep : Battery < 0 ? -1 : (Coarse && Battery >= 30 ? 100 : Battery) + (Charging ? Ui.Charging : 0); } }
+    // The audio-only headsets are listed through their wireless dongle, so they don't count as on a cable.
+    public bool Wired { get { return Link == "USB" && !(PlainHid && Kind == "headset"); } }
+
+    public int Level { get { return Asleep ? Ui.Asleep : Battery < 0 ? (Wired ? Ui.Usb : -1) : (Coarse && Battery >= 30 ? 100 : Battery) + (Charging ? Ui.Charging : 0); } }
 
     public static string ModelText(byte[] info)
     {
