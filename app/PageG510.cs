@@ -68,6 +68,7 @@ class PageG510 : DevicePage
     bool loading, ready, framing;
     int seq;
     volatile int framed = -1;
+    DateTime pausedUntil;
     readonly Stopwatch clock = Stopwatch.StartNew();
     readonly Timer debounce = new Timer { Interval = 120 }, animTimer = new Timer { Interval = 50 };
 
@@ -107,6 +108,7 @@ class PageG510 : DevicePage
 
         cur = G510Set.FromText(Settings.Get(Remembered));
         Sync();
+        if (cur != null) Load();
     }
 
     protected override void Dispose(bool disposing)
@@ -195,7 +197,7 @@ class PageG510 : DevicePage
 
     void Animate()
     {
-        if (IsDisposed || !Animated || framing) return;
+        if (IsDisposed || !Animated || framing || DateTime.UtcNow < pausedUntil) return;
         int frame = G510.Frame(cur, clock.Elapsed.TotalMilliseconds);
         if (frame == framed) return;
         framing = true;
@@ -203,7 +205,14 @@ class PageG510 : DevicePage
         {
             try { G510.Set(h, frame, true); framed = frame; }
             finally { framing = false; }
-        }, null, msg => { framed = -1; });
+        }, null, msg =>
+        {
+            // A refused frame would otherwise fail, and be logged, 20 times a second.
+            framing = false;
+            framed = -1;
+            pausedUntil = DateTime.UtcNow.AddSeconds(10);
+            Say("The keyboard refused the effect's colors: " + msg, true);
+        });
     }
 
     protected override void Calm()
@@ -224,7 +233,8 @@ class PageG510 : DevicePage
     {
         int n = ++seq;
         framed = -1;
-        if (want.On && want.Effect != G510Set.Static) { sent = null; Calm(); return; }
+        pausedUntil = DateTime.MinValue;
+        if (want.On && want.Effect != G510Set.Static) { Do(h => sent = null, () => { if (n == seq) Calm(); }); return; }
         Do(h =>
         {
             if (n != seq || want.Same(sent)) return;

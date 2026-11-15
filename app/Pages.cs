@@ -205,6 +205,19 @@ abstract class DevicePage : Control, IPage
 
     void Collect(Action<string, string> done)
     {
+        if (found.PlainHid)
+        {
+            var f = found;
+            var screen = GetType().Name;
+            Task.Run(() =>
+            {
+                string plain = null, err = null;
+                try { plain = Report.Plain(f, screen); }
+                catch (Exception ex) { err = ex.Message; }
+                if (IsHandleCreated) BeginInvoke((Action)(() => done(plain, err)));
+            });
+            return;
+        }
         string text = null;
         Do(h => text = found.Hidpp10 ? Report.Registers(h, found, GetType().Name) : Report.Build(h, found, GetType().Name), () => done(text, null), msg => done(null, msg));
     }

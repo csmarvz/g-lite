@@ -65,7 +65,7 @@ Firmware ILL 01.02 build 0073, USB 046D:C903, Bluetooth B903. 0x8040 and 0x8081 
 
 ## Try effect
 
-On a light with 0x8071, the back light box has Try effect. Its menu lists every effect of every cluster, read when the screen loads (0x8071 fn 0 `<cluster> <effect> 00`, byte 3 the id). Picking one stops G-Lite's own animation, takes software control of the clusters (0x8071 fn 5 `01 01 00`) and sends 0x8071 fn 1 `<cluster> <effect index> <10 parameter bytes> 01`, with the parameters from Lghub's notes. Without fn 5 the light answers fn 1 with error 0x05 for every effect (the owner's first try, 2026-11). Back to G-Lite's colours, or any change on the screen, gives control back (fn 5 `01 00 00`):
+On a light with 0x8071, the back light box has Try effect. Its menu lists every effect of every cluster, read when the screen loads (0x8071 fn 0 `<cluster> <effect> 00`, byte 3 the id). Picking one stops G-Lite's own animation, takes software control of the clusters (0x8071 fn 5 `01 01 00`) and sends 0x8071 fn 1 `<cluster> <effect index> <10 parameter bytes> 01`, with the parameters from Lghub's notes. Without fn 5 the light answers fn 1 with error 0x05 for every effect (the owner's first try, 2026-11). Back to G-Lite's colours, any change on the screen, a preset, the Screen effect or reading the light again gives control back (fn 5 `01 00 00`):
 
 - Static: `R G B 02`
 - Breathe: `R G B <period u16> 00 64`
@@ -74,7 +74,7 @@ On a light with 0x8071, the back light box has Try effect. Its menu lists every 
 - Two colours: `R G B R2 G2 B2 00 32 64 00` (zone 1's colour and zone 7's, 50 ms as G HUB sends it, 100%)
 - Others: `R G B`, the rest zeros
 
-The colour is zone 1's and the period is the Speed slider's. The status line asks what lit up, and each pick is logged. Back to G-Lite's colours, or any change on the screen, sends G-Lite's own colours again and restarts its animation.
+The colour is zone 1's and the period is the Speed slider's. The status line asks what lit up, and each pick is logged. Back to G-Lite's colours, any change on the screen, a preset, the Screen effect or reading the light again gives back control (`PageLight.EndTrying`), sends G-Lite's own colours again and restarts its animation.
 
 The last byte is the persist flag G-Lite sends to the G915. Whether the light keeps the effect after a power cycle isn't known; G-Lite sets its own colours again when the screen loads anyway. Reports read each cluster's location (fn 0 `<cluster> FF 00`, bytes 2–3).
 

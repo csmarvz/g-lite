@@ -515,10 +515,19 @@ class PageLight : DevicePage
         Send();
     }
 
+    // Every way out of Try effect gives back the software control it took, so G-Lite's own colours show again.
+    void EndTrying()
+    {
+        if (!trying) return;
+        trying = false;
+        framed = null;
+        Do(h => { Litra.Release(h); var was = sent; if (was != null) was.Colors = Enumerable.Repeat(-1, LightState.Zones).ToArray(); });
+    }
+
     void Edit(Action<LightState> change, bool now)
     {
         if (loading || !ready) return;
-        if (trying) { trying = false; framed = null; Do(h => { Litra.Release(h); var was = sent; if (was != null) was.Colors = Enumerable.Repeat(-1, LightState.Zones).ToArray(); }); }
+        EndTrying();
         change(cur);
         seq++;
         Edited();
@@ -543,6 +552,7 @@ class PageLight : DevicePage
         next.Lumen = lumens.Snap(next.Lumen);
         next.Kelvin = kelvins.Snap(next.Kelvin);
         if (screening) ScreenOff();
+        EndTrying();
         colorsChosen = true;
         cur = next;
         seq++;
@@ -557,6 +567,7 @@ class PageLight : DevicePage
 
     void ScreenOn()
     {
+        EndTrying();
         screening = true;
         Settings.Set(Active, "1");
         Settings.Set(Saved, setup.ToText());
@@ -836,9 +847,10 @@ class PageLight : DevicePage
         bool canTry = tryBtn != null;
         var remembered = new LightState();
         bool hasRemembered = back && remembered.ReadBack(Settings.Get(Remembered));
-        bool screen = screening;
+        bool screen = screening, wasTrying = trying;
         Do(h =>
         {
+            if (wasTrying) Litra.Release(h);
             readLumens = Litra.Lumens(h);
             readKelvins = Litra.Kelvins(h);
             read = new LightState { FrontOn = Litra.FrontOn(h), Lumen = Litra.Get(h, 3), Kelvin = Litra.Get(h, 8) };

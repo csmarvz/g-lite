@@ -4,15 +4,15 @@
 
 ### Added
 
+- The G213 ("Gaming Keyboard G213") is recognised and gets a lighting screen: the whole keyboard, or each of its five areas (left to right) in Static. Effects a zone can't do are greyed out. Tested on a real G213.
+- The G213 gets Wave, with its direction, and a key picture that shows each zone's lighting. Click a key to pick its zone. It can't store lighting, so G-Lite sets it again at each start.
 - The G510 and G510s get a screen: the backlight Off, Static, Breathe or Cycle, its colour, brightness and speed, and presets. Breathe and Cycle are run by G-Lite, so they stop when it quits. Built from an owner's report, untested on a real keyboard.
 - Devices on a USB cable without a battery, like the G213, show a USB symbol where the battery goes: in the sidebar, the tray menu, the tray popup and on the device's screen.
-- The G213 gets Wave, with its direction, and a key picture that shows each zone's lighting. Click a key to pick its zone. It can't store lighting, so G-Lite sets it again at each start.
 
 ### Fixed
 
 - Try effect on the Litra Beam LX no longer fails with HID++ error 0x05: G-Lite now takes control of the light's effects before sending one, and gives it back on Back to G-Lite's colours.
 - On the G515, G915, G512 X and other per-key keyboards, a preset now shows it was changed, and Update turns on, after changing the brightness or the Screen effect's settings (monitor, areas, color boost, update rate, smoothing, pauses). Trying to save a preset under a name that's taken now says to use Update.
-- The G213 ("Gaming Keyboard G213") is recognised as a G keyboard and gets the lighting screen: the whole keyboard, or each of its five areas (left to right) in Static. Effects a zone can't do are greyed out. Tested on a real G213.
 
 ## [0.0.26-alpha] - 2026-11-13
 

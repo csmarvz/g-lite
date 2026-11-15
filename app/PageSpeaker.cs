@@ -347,7 +347,8 @@ class PageSpeaker : DevicePage
 
     void Edit(Action<MouseLight> change, bool now)
     {
-        if (loading || zones == null) return;
+        var known = zones;
+        if (loading || known == null) return;
         if (cur == null) cur = Enumerable.Range(0, Count).Select(i => new MouseLight()).ToArray();
         if (picked == 0)
         {
@@ -362,7 +363,7 @@ class PageSpeaker : DevicePage
             var one = (Own(zone, cur[zone]) ?? new MouseLight()).Clone();
             change(one);
             cur[zone] = one;
-            var listed = zones;
+            var listed = known;
             // On the G213, setting one area ends the whole keyboard's effect on all of them (docs/G213.md): the areas that followed it get its colour.
             if (zone < listed.Count && GSpeaker.IsArea(listed[zone][GSpeaker.Place]))
                 for (int area = 0; area < listed.Count && area < Count; area++)
