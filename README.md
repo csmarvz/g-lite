@@ -43,6 +43,7 @@ If Windows says it protected your PC, click **More info**, then **Run anyway**. 
 | G915 X, G713, G715, PRO X TKL, PRO X 60, G515 RAPID TKL, G512 X 98 and other newer G keyboards | LIGHTSPEED receiver or USB | Untested | Lighting effects, colour, speed, direction, brightness, the Screen effect and profiles. Not saved to the keyboard. The key picture is picked from the keyboard's name (TKL, 60%, 75%, full size) and may not match. |
 | G213 | USB | Partial | Off, Static, Breathe, Cycle and Wave on the whole keyboard, Off and Static on each of its five areas, with colour, speed, direction and brightness, a live key picture, and profiles. The keyboard can't store lighting (G HUB can't either), so G-Lite sets it again at each start. See [docs/G213.md](docs/G213.md). |
 | G512, G513, G PRO keyboard, G810, G910, G410, G413 and other older G keyboards | USB | Untested | Off, Static, Breathe and Cycle with colour, speed and brightness, on all zones or each one (keys, logo), and profiles. Wave where the keyboard lists it. Not saved to the keyboard. Not yet: per-key colours, a key picture. See [docs/keyboards-8070.md](docs/keyboards-8070.md). |
+| G510 and G510s | USB | Untested | Backlight Off, Static, Breathe and Cycle, with colour, brightness and speed, and profiles. Breathe and Cycle are run by G-Lite, so they stop when it quits. Not saved to the keyboard. Not yet: the M-key lights, the G-keys and the LCD. See [docs/G510.md](docs/G510.md). |
 
 ### Mice
 

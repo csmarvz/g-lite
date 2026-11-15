@@ -349,6 +349,13 @@ static class SelfTest
         Check(g9xRefused && !g9xDirectory.Writable && g9xSaver.Writes.Count == 3, "the G9x never writes the directory page");
         Check(Found.FirmwareText(new byte[] { 0x00, 0x55, 0x31, 0x00, 0x12, 0x01, 0x00, 0x05 }) == "U1 12.01 · build 0005" && Found.FirmwareText(new byte[] { 0x00, 0x4D, 0x50, 0x4D, 0x17, 0x00, 0x00, 0x08 }) == "MPM 17.00 · build 0008", "a zero byte in the firmware name doesn't end the report");
         Check(new Found { Name = "G510 Gaming Keyboard" }.Short == "G510" && Found.LooksG("G510 Gaming Keyboard"), "the G510 gets a short name and counts as a G device");
+        var g510 = new Found { Name = "G510s Gaming Keyboard", Kind = "keyboard", Link = "USB", PlainHid = true, Vendor = true, Path = @"\\?\hid#vid_046d&pid_c22d&mi_01&col02" };
+        Check(g510.IsG510 && Support.For(g510).Screen == typeof(PageG510) && !new Found { Name = "G510s Gaming Keyboard", PlainHid = true, Path = g510.Path }.IsG510
+            && G510.Frame(new G510Set { Color = 0xFF2020, Bright = 50 }, 0) == 0x7F1010 && G510.Frame(new G510Set { On = false }, 0) == 0
+            && G510.Frame(new G510Set { Effect = G510Set.Breathe, Period = 2000 }, 1000) == 0xFFFFFF && G510.Frame(new G510Set { Effect = G510Set.Breathe, Period = 2000 }, 0) == 0 && G510.Frame(new G510Set { Effect = G510Set.Cycle }, 0) == 0xFF0000
+            && G510Set.FromText(new G510Set { Color = 0x3080FF, Bright = 40, On = false }.ToText()).Same(new G510Set { Color = 0x3080FF, Bright = 40, On = false })
+            && G510Set.FromText(new G510Set { Effect = G510Set.Cycle, Period = 3000 }.ToText()).Same(new G510Set { Effect = G510Set.Cycle, Period = 3000 }) && G510Set.FromText("1,FF0000,100").Effect == G510Set.Static,
+            "the G510 gets its screen only when its vendor collection was found, and its backlight is the colour scaled by brightness");
         var g9xReport = Report.Registers(new FakeG9x(), new Found { Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Hidpp10 = true }, "PageMouse");
         Check(g9xReport.Contains("long 63=22 00 22 00 80 01") && g9xReport.Contains("page 02 · current") && g9xReport.Contains("page 04"), "the G9x report has its registers and profile pages");
         Check(new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json" }.All(x => Model.Load(x).Rows.Length > 5), "the key layouts load");

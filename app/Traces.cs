@@ -381,6 +381,28 @@ static class Traces
         }
     }
 
+    static string G510()
+    {
+        var found = new Found { Key = "trace|g510", Name = "G510s Gaming Keyboard", Kind = "keyboard", Link = "USB", Index = 0xFF, PlainHid = true, Vendor = true, Path = @"\\?\hid#vid_046d&pid_c22d&mi_01&col02" };
+        using (var s = Begin(() => Support.For(found).Make(found, new FakeG510(), null)))
+        {
+            s.Press("Color FF2020");
+            s.Slide("Brightness", 50);
+            s.Pick("Effect", "Off");
+            s.Pick("Effect", "Static");
+            s.Menu("More preset actions", "Save as new preset…");
+            s.Type("Red");
+            s.Press("Save");
+            s.Press("Color 3080FF");
+            s.Pick("Effect", "Breathe");
+            s.Slide("Speed", 50);
+            s.Pick("Effect", "Cycle");
+            s.Pick("Effect", "Static");
+            s.Pick("Preset", "None");
+            return s.Text;
+        }
+    }
+
     static string G560()
     {
         var found = new Found { Key = "trace|g560", Name = "G560 Gaming Speaker", Kind = "device", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 } };
@@ -615,6 +637,7 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("g560", G560);
         yield return new KeyValuePair<string, Func<string>>("g512", G512);
         yield return new KeyValuePair<string, Func<string>>("g213", G213);
+        yield return new KeyValuePair<string, Func<string>>("g510", G510);
         yield return new KeyValuePair<string, Func<string>>("prox60", Generic);
         yield return new KeyValuePair<string, Func<string>>("litra", Litra);
         yield return new KeyValuePair<string, Func<string>>("superlight2", Wide);

@@ -33,6 +33,14 @@ class Hidpp : IDisposable
     Dictionary<int, byte> features = new Dictionary<int, byte>();
     public string Who;
     public static Action<string> Tap;
+    readonly string path;
+    int featureLength;
+
+    [DllImport("hid.dll", SetLastError = true)] static extern bool HidD_GetFeature(SafeFileHandle handle, byte[] buffer, int length);
+    [DllImport("hid.dll", SetLastError = true)] static extern bool HidD_SetFeature(SafeFileHandle handle, byte[] buffer, int length);
+    [DllImport("hid.dll")] static extern bool HidD_GetPreparsedData(SafeFileHandle handle, out IntPtr data);
+    [DllImport("hid.dll")] static extern bool HidD_FreePreparsedData(IntPtr data);
+    [DllImport("hid.dll")] static extern int HidP_GetCaps(IntPtr data, short[] caps);
 
     static string Bytes(byte[] p, int most)
     {
@@ -57,6 +65,7 @@ class Hidpp : IDisposable
     public Hidpp(string path, byte index)
     {
         Idx = index;
+        this.path = path;
         var h = CreateFile(path, 0xC0000000, 3, IntPtr.Zero, 3, 0x40000000, IntPtr.Zero);
         if (h.IsInvalid) throw new IOException("Can't open the device (error " + Marshal.GetLastWin32Error() + ")");
         fs = new FileStream(h, FileAccess.ReadWrite, 1, true);
@@ -219,6 +228,64 @@ class Hidpp : IDisposable
         if (ms <= 0 || !pending.Wait(ms)) return null;
         pending = null;
         return (byte[])rbuf.Clone();
+    }
+
+    // Feature reports, for the devices that don't speak HID++ (the G510). Each call opens the collection without overlapped I/O, which HidD_GetFeature and HidD_SetFeature need.
+    public byte[] GetFeature(byte id)
+    {
+        if (Tap != null) Tap("get feature " + id.ToString("X2"));
+        return ReadFeature(id);
+    }
+
+    public void SetFeature(params byte[] report)
+    {
+        if (Tap != null) Tap("set feature" + Bytes(report, 16));
+        try
+        {
+            WriteFeature(report);
+            if (Who != null) Log.Add(Who, "sent", "feature" + Bytes(report, 16), "ok");
+        }
+        catch (IOException) { if (Who != null) Log.Add(Who, "sent", "feature" + Bytes(report, 16), "error"); throw; }
+    }
+
+    // For animation frames: tapped for traces but kept out of the log, like Quiet.
+    public void QuietFeature(params byte[] report)
+    {
+        if (Tap != null) Tap("set feature" + Bytes(report, 16));
+        WriteFeature(report);
+    }
+
+    protected virtual byte[] ReadFeature(byte id)
+    {
+        using (var handle = CreateFile(path, 0xC0000000, 3, IntPtr.Zero, 3, 0, IntPtr.Zero))
+        {
+            var buffer = new byte[FeatureLength(handle)];
+            buffer[0] = id;
+            if (handle.IsInvalid || !HidD_GetFeature(handle, buffer, buffer.Length)) throw new IOException("Couldn't read feature report " + id.ToString("X2") + " (error " + Marshal.GetLastWin32Error() + ")");
+            return buffer;
+        }
+    }
+
+    protected virtual void WriteFeature(byte[] report)
+    {
+        using (var handle = CreateFile(path, 0xC0000000, 3, IntPtr.Zero, 3, 0, IntPtr.Zero))
+        {
+            var buffer = new byte[Math.Max(report.Length, FeatureLength(handle))];
+            Array.Copy(report, buffer, report.Length);
+            if (handle.IsInvalid || !HidD_SetFeature(handle, buffer, buffer.Length)) throw new IOException("Couldn't set feature report " + report[0].ToString("X2") + " (error " + Marshal.GetLastWin32Error() + ")");
+        }
+    }
+
+    int FeatureLength(SafeFileHandle handle)
+    {
+        if (featureLength > 0 || handle.IsInvalid) return Math.Max(1, featureLength);
+        IntPtr data;
+        if (!HidD_GetPreparsedData(handle, out data)) return 1;
+        var caps = new short[32];
+        HidP_GetCaps(data, caps);
+        HidD_FreePreparsedData(data);
+        featureLength = caps[4];
+        return Math.Max(1, featureLength);
     }
 
     public byte F(int id)

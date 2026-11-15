@@ -13,7 +13,7 @@ class Found
     public byte Index;
     public int Wpid, Battery = -1, Millivolts, BatteryId;
     public byte BatteryFeature;
-    public bool Approx, Charging, Asleep, Hidpp10, PlainHid, Coarse;
+    public bool Approx, Charging, Asleep, Hidpp10, PlainHid, Coarse, Vendor;
     public int[] Features = new int[0];
 
     public bool Has(int f) { return Features.Contains(f); }
@@ -23,6 +23,7 @@ class Found
     public bool IsG512X { get { return Name.ToUpper().Contains("G512 X 75") && Has(0x8071) && Has(0x8040) && Has(0x8081); } }
     public bool IsRgbKeyboard { get { return Kind == "keyboard" && Has(0x8071) && Has(0x8040); } }
     public bool IsLedKeyboard { get { return Kind == "keyboard" && Has(0x8070) && !Has(0x8071); } }
+    public bool IsG510 { get { return PlainHid && Vendor && Path != null && Regex.IsMatch(Path, @"PID_C22[DE]", RegexOptions.IgnoreCase); } }
     public bool IsG560 { get { return Name.ToUpper().Contains("G560") && Has(0x8070); } }
     public bool IsMouse { get { return Kind == "mouse" && (Has(0x2201) || Has(0x2202)); } }
     public bool IsG9x { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_(C066|C249)", RegexOptions.IgnoreCase); } }
@@ -167,7 +168,9 @@ static class Devices
             // A headset charging over USB also shows its charging port, like the PRO X Wireless's 0ABB "Battery Charger": it has nothing to read or change.
             if (name == null || name.EndsWith("Charger", StringComparison.OrdinalIgnoreCase)) continue;
             string kind = known != null ? known[1] : name.ToUpper().Contains("SPEAKER") ? "device" : "headset";
-            plain.Add(new Found { Key = "plain|" + pid, Path = paths[0], Name = name, Kind = kind, Link = "USB", Index = 0xFF, Models = "USB " + pid, PlainHid = true });
+            // The G510 takes its feature reports on its vendor collection (usage page FF00, MI_01&COL02 in an owner's report).
+            var vendor = pid == "C22D" || pid == "C22E" ? paths.FirstOrDefault(path => { int page, outLen; Caps(path, out page, out outLen); return page == 0xFF00; }) : null;
+            plain.Add(new Found { Key = "plain|" + pid, Path = vendor ?? paths[0], Vendor = vendor != null, Name = name, Kind = kind, Link = "USB", Index = 0xFF, Models = "USB " + pid, PlainHid = true });
         }
         return plain;
     }

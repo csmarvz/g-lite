@@ -184,6 +184,40 @@ class FakeSpeaker : Hidpp
     }
 }
 
+// A G510s with the feature reports from an owner's report (docs/G510.md).
+class FakeG510 : Hidpp
+{
+    public readonly Dictionary<byte, byte[]> Features = new Dictionary<byte, byte[]>
+    {
+        { 0x04, new byte[] { 0x04, 0x80 } },
+        { 0x05, new byte[] { 0x05, 0xFF, 0xFF, 0xFF } },
+        { 0x06, new byte[] { 0x06, 0xFF, 0xFF, 0xFF } },
+        { 0x07, new byte[] { 0x07, 0x03, 0x00 } },
+    };
+
+    public FakeG510() : base(false) { }
+
+    public override void Dispose() { }
+
+    protected override byte[] ReadFeature(byte id)
+    {
+        Thread.Sleep(5);
+        byte[] report;
+        if (!Features.TryGetValue(id, out report)) throw new System.IO.IOException("Couldn't read feature report " + id.ToString("X2") + " (error 31)");
+        var reply = new byte[258];
+        Array.Copy(report, reply, report.Length);
+        return reply;
+    }
+
+    protected override void WriteFeature(byte[] report)
+    {
+        Thread.Sleep(5);
+        byte[] old;
+        if (!Features.TryGetValue(report[0], out old)) throw new System.IO.IOException("Couldn't set feature report " + report[0].ToString("X2") + " (error 31)");
+        Features[report[0]] = report.Take(old.Length).ToArray();
+    }
+}
+
 class FakeLight : Hidpp
 {
     static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x1990, 6 }, { 0x8040, 0x0A }, { 0x8071, 0x0B }, { 0x8081, 0x0C } };
