@@ -9,7 +9,8 @@
 
 ### Fixed
 
-- On the keyboards with a key picture, a preset now shows it was changed, and Update turns on, after changing the brightness or the Screen effect's settings (monitor, areas, color boost, update rate, smoothing, pauses). Trying to save a preset under a name that's taken now says to use Update.
+- Try effect on the Litra Beam LX no longer fails with HID++ error 0x05: G-Lite now takes control of the light's effects before sending one, and gives it back on Back to G-Lite's colours.
+- On the G515, G915, G512 X and other per-key keyboards, a preset now shows it was changed, and Update turns on, after changing the brightness or the Screen effect's settings (monitor, areas, color boost, update rate, smoothing, pauses). Trying to save a preset under a name that's taken now says to use Update.
 - The G213 ("Gaming Keyboard G213") is recognised as a G keyboard and gets the lighting screen: the whole keyboard, or each of its five areas (left to right) in Static. Effects a zone can't do are greyed out. Tested on a real G213.
 
 ## [0.0.26-alpha] - 2026-11-13

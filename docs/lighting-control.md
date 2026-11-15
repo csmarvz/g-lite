@@ -49,6 +49,7 @@ All two-byte fields are big endian.
 
 - `G515.Claim` and `G915.Claim` send `01 03 04`: clusters and power modes, and the no-activity event. OpenRGB sends `01 03 07` on the G915, which only adds events. Either should work.
 - Release sends `01 00 00`.
+- Without it, fn 1 is refused: the Litra Beam LX answers error 0x05 (Logitech internal) to every effect until fn 5 `01 01 00` has been sent.
 - OpenLogi reads the flags first (`00 00 00`), adds bit 0, and on exit puts back what it read. That's the polite way, in case G HUB or something else held control. G-Lite could do the same: read in `Claim`, keep the bytes, send them back in `Release`. It's not urgent.
 
 ### Power modes (fn 7, fn 8)

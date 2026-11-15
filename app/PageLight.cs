@@ -160,7 +160,18 @@ static class Litra
         return b;
     }
 
-    public static void TryEffect(Hidpp h, int group, int index, byte id, LightState state) { h.Call(h.F(0x8071), 1, EffectBytes(group, index, id, state)); }
+    // 0x8071 fn 1 needs software control of the clusters (fn 5 bit 0) first: without it the Beam LX answers 0x05 (an owner's report, docs/lighting-control.md).
+    public static void TryEffect(Hidpp h, int group, int index, byte id, LightState state)
+    {
+        h.Call(h.F(0x8071), 5, 0x01, 0x01, 0x00);
+        h.Call(h.F(0x8071), 1, EffectBytes(group, index, id, state));
+    }
+
+    public static void Release(Hidpp h)
+    {
+        try { h.Call(h.F(0x8071), 5, 0x01, 0x00, 0x00); }
+        catch (HidppError) { }
+    }
 
     public static int[] Frame(LightState state, double ms)
     {
@@ -499,7 +510,7 @@ class PageLight : DevicePage
         colorsChosen = true;
         framed = null;
         Did("Back to G-Lite's colours");
-        Do(h => { var was = sent; if (was != null) was.Colors = Enumerable.Repeat(-1, LightState.Zones).ToArray(); });
+        Do(h => { Litra.Release(h); var was = sent; if (was != null) was.Colors = Enumerable.Repeat(-1, LightState.Zones).ToArray(); });
         Sync();
         Send();
     }
@@ -507,7 +518,7 @@ class PageLight : DevicePage
     void Edit(Action<LightState> change, bool now)
     {
         if (loading || !ready) return;
-        if (trying) { trying = false; framed = null; Do(h => { var was = sent; if (was != null) was.Colors = Enumerable.Repeat(-1, LightState.Zones).ToArray(); }); }
+        if (trying) { trying = false; framed = null; Do(h => { Litra.Release(h); var was = sent; if (was != null) was.Colors = Enumerable.Repeat(-1, LightState.Zones).ToArray(); }); }
         change(cur);
         seq++;
         Edited();

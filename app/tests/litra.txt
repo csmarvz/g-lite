@@ -71,14 +71,17 @@ pick Effect Wave
   = status "Wave · G-Lite runs it, so it stops if you quit G-Lite" [Report] Preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=80 Back light on=on Effect=Wave Zone=All (off) [Revert]
 menu Try the light's own effects > Group 0 · Breathe
   menu: Group 0 · Static | Group 0 · Breathe | Group 0 · Smooth colour cycle | Group 1 · Streaming | Group 1 · Smooth colour wave | Group 1 · Two colours | Back to G-Lite's colours
+  8071 fn5  01 01
   8071 fn1  00 01 FF 20 20 12 C0 00 64 00 00 00 01
   = status "Sent Group 0 · Breathe. What lit up? Please say in your issue." [Report] Preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=80 Back light on=on Effect=Wave Zone=All (off) [Revert]
 menu Try the light's own effects > Group 1 · Smooth colour wave
   menu: Group 0 · Static | Group 0 · Breathe | Group 0 · Smooth colour cycle | Group 1 · Streaming | Group 1 · Smooth colour wave | Group 1 · Two colours | Back to G-Lite's colours
+  8071 fn5  01 01
   8071 fn1  01 01 00 00 00 00 00 00 C0 01 64 12 01
   = status "Sent Group 1 · Smooth colour wave. What lit up? Please say in your issue." [Report] Preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=80 Back light on=on Effect=Wave Zone=All (off) [Revert]
 menu Try the light's own effects > Back to G-Lite's colours
   menu: Group 0 · Static | Group 0 · Breathe | Group 0 · Smooth colour cycle | Group 1 · Streaming | Group 1 · Smooth colour wave | Group 1 · Two colours | Back to G-Lite's colours
+  8071 fn5  01
   = status "Wave · G-Lite runs it, so it stops if you quit G-Lite" [Report] Preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=80 Back light on=on Effect=Wave Zone=All (off) [Revert]
 pick Effect Static
   8081 fn1  01 FF 20 20 02 FF 20 20 03 30 80 FF 04 FF 20 20
