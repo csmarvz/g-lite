@@ -78,21 +78,21 @@ press Lighting per zone
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
   = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Part=Keys Lighting per zone=on Effect=Ripple <Color 30D050> Direction=- (off) Brightness=50 Speed=90 [Revert]
 pick Part Light bar
-  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Part=Light bar Lighting per zone=on Effect=Static <Color 30D050> Direction=- (off) Brightness=50 Speed=90 (off) [Revert]
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Part=Light bar Lighting per zone=on Effect=Static (no Ripple) <Color 30D050> Direction=- (off) Brightness=50 Speed=90 (off) [Revert]
 pick Effect Breathe
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 05 30 D0 50 FF 00 00 00 14 00 00 01
   8071 fn1  01 02 30 D0 50 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Part=Light bar Lighting per zone=on Effect=Breathe <Color 30D050> Direction=- (off) Brightness=50 Speed=78 [Revert]
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Part=Light bar Lighting per zone=on Effect=Breathe (no Ripple) <Color 30D050> Direction=- (off) Brightness=50 Speed=78 [Revert]
 press Color FF2020
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 05 30 D0 50 FF 00 00 00 14 00 00 01
   8071 fn1  01 02 FF 20 20 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Part=Light bar Lighting per zone=on Effect=Breathe <Color FF2020> Direction=- (off) Brightness=50 Speed=78 [Revert]
+  = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Part=Light bar Lighting per zone=on Effect=Breathe (no Ripple) <Color FF2020> Direction=- (off) Brightness=50 Speed=78 [Revert]
 pick Part Keys
   = status "Set by G-Lite · not saved to the keyboard" [Report] Preset=None [Update (off)] […] Part=Keys Lighting per zone=on Effect=Ripple <Color 30D050> Direction=- (off) Brightness=50 Speed=90 [Revert]
 pick Effect Cycle

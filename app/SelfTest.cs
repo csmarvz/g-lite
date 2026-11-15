@@ -246,6 +246,13 @@ static class SelfTest
         Check(new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071, 0x8040, 0x8101 } }.IsG515 && !new Found { Name = "G515 LIGHTSPEED TKL", Features = new[] { 0x8071 } }.IsG515, "the G515 needs its three features");
         Check(new Found { Name = "G512 X 75", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8101 } }.IsG512X && !new Found { Name = "G512 X 98", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8101 } }.IsG512X && !new Found { Name = "G512 X 75", Features = new[] { 0x8071 } }.IsG512X, "the G512 X 75 is told apart, with its features");
         var g512 = new Found { Name = "G512 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Features = new[] { 0x8070, 0x8080 } };
+        var g213 = new Found { Name = "Gaming Keyboard G213", Kind = "keyboard", Features = new[] { 0x8070 } };
+        Check(g213.IsG && g213.Short == "G213" && Support.For(g213).Screen == typeof(PageSpeaker) && !Found.LooksG("Gaming Keyboard") && !Found.LooksG("Wireless Keyboard K270")
+            && GSpeaker.ZoneName(1, 0) == "Keys" && GSpeaker.ZoneName(8, 3) == "Zone 3" && GSpeaker.ZoneName(0, 1) == "Zone 2", "the G213 counts as a G device with its model last, and its zones are named from their location");
+        var wave = new MouseLight { Effect = 0x04, Period = 0x1388, Bright = 80, Direction = 3 };
+        Check(GSpeaker.Encode(wave).SequenceEqual(new byte[] { 0, 0, 0, 0, 0, 0, 0x88, 3, 80, 0x13 }) && GSpeaker.FromText(GSpeaker.ToText(new[] { wave }), 1)[0].Same(wave)
+            && GSpeaker.FromText("1,FF0000,5000,100", 1)[0].Direction == 6 && Model.Load("g213.json").KeyIds().All(zone => zone >= 1 && zone <= 5) && Model.Load("g213-iso.json").KeyIds().All(zone => zone >= 1 && zone <= 5),
+            "0x8070 Wave is encoded with its direction and kept in text, and every G213 key has a zone");
         Check(g512.IsLedKeyboard && g512.Short == "G512" && Support.For(g512).Screen == typeof(PageSpeaker) && !new Found { Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Features = new[] { 0x8070, 0x8071 } }.IsLedKeyboard && !new Found { Name = "G502 HERO Gaming Mouse", Kind = "mouse", Features = new[] { 0x8070 } }.IsLedKeyboard, "a keyboard with 0x8070 and no 0x8071 gets the zone lighting screen");
         Check(new Found { Name = "G815 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8100 } }.IsG915, "the G815 is taken as a wired G915");
         var rapid = new Found { Name = "G515 RAPID TKL", Kind = "keyboard", Features = new[] { 0x8071, 0x8040, 0x8101 } };

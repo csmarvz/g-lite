@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 class MouseLight
 {
     public byte Effect = 0x01;
-    public int Color = 0xFFFFFF, Period = 5000, Bright = 100;
+    public int Color = 0xFFFFFF, Period = 5000, Bright = 100, Direction = 6;
     public MouseLight Clone() { return (MouseLight)MemberwiseClone(); }
 
     public bool Same(MouseLight o)
     {
-        return o != null && Effect == o.Effect && Color == o.Color && Period == o.Period && Bright == o.Bright;
+        return o != null && Effect == o.Effect && Color == o.Color && Period == o.Period && Bright == o.Bright && Direction == o.Direction;
     }
 }
 

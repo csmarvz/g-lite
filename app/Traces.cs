@@ -178,7 +178,7 @@ class Script : IDisposable
         {
             string off = c.Enabled ? "" : " (off)";
             if (c is Btn && c.Text != "") parts.Add("[" + c.Text + off + "]");
-            else if (c is Seg) { var s = (Seg)c; parts.Add(c.AccessibleName + "=" + (s.Index >= 0 && s.Index < s.Items.Length ? s.Items[s.Index] : "-") + off); }
+            else if (c is Seg) { var s = (Seg)c; parts.Add(c.AccessibleName + "=" + (s.Index >= 0 && s.Index < s.Items.Length ? s.Items[s.Index] : "-") + off + (s.Off.Length == 0 ? "" : " (no " + string.Join(", ", s.Off.Where(i => i >= 0 && i < s.Items.Length).Select(i => s.Items[i])) + ")")); }
             else if (c is Drop) parts.Add(c.AccessibleName + "=" + (c.Text == "" ? "-" : c.Text) + off);
             else if (c is Slider) parts.Add(c.AccessibleName + "=" + ((Slider)c).Value + off);
             else if (c is Toggle) parts.Add(c.AccessibleName + "=" + (((Toggle)c).Checked ? "on" : "off") + off);
@@ -341,6 +341,36 @@ static class Traces
             s.Pick("Zone", "All");
             s.Pick("Effect", "Cycle");
             s.Pick("Effect", "Off");
+            return s.Text;
+        }
+    }
+
+    static string G213()
+    {
+        var found = new Found { Key = "trace|g213", Name = "Gaming Keyboard G213", Kind = "keyboard", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x1E00, 0x4540, 0x1EB0, 0x8060, 0x00C2, 0x1801, 0x1802, 0x8070, 0x1821, 0x1BC0, 0x1806 } };
+        using (var s = Begin(() => Support.For(found).Make(found, new FakeSpeaker { Count = 6, G213 = true }, null)))
+        {
+            s.Pick("Effect", "Static");
+            s.Press("Color 30D050");
+            s.Pick("Zone", "Zone 3");
+            s.Press("Color 3080FF");
+            s.Pick("Effect", "Off");
+            s.Pick("Zone", "All");
+            s.Pick("Effect", "Breathe");
+            s.Pick("Effect", "Cycle");
+            s.Pick("Effect", "Wave");
+            s.Pick("Direction", "Center out");
+            s.Slide("Speed", 50);
+            s.Pick("Zone", "Zone 2");
+            s.Pick("Effect", "Static");
+            s.Press("Color FF2020");
+            s.Pick("Zone", "All");
+            s.Pick("Effect", "Breathe");
+            s.Pick("Zone", "Zone 4");
+            s.Pick("Effect", "Off");
+            s.Menu("More preset actions", "Save as new preset…");
+            s.Type("Wave");
+            s.Press("Save");
             return s.Text;
         }
     }
@@ -578,6 +608,7 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("g512x", G512X);
         yield return new KeyValuePair<string, Func<string>>("g560", G560);
         yield return new KeyValuePair<string, Func<string>>("g512", G512);
+        yield return new KeyValuePair<string, Func<string>>("g213", G213);
         yield return new KeyValuePair<string, Func<string>>("prox60", Generic);
         yield return new KeyValuePair<string, Func<string>>("litra", Litra);
         yield return new KeyValuePair<string, Func<string>>("superlight2", Wide);

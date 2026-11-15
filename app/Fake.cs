@@ -153,12 +153,16 @@ class FakeHidpp : Hidpp
 
 class FakeSpeaker : Hidpp
 {
-    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8070, 4 }, { 0x8040, 8 } };
+    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8070, 4 }, { 0x8040, 8 }, { 0x4540, 9 } };
     static readonly byte[] Effects = { 0x00, 0x01, 0x03, 0x07, 0x0A };
-    public readonly byte[][] Live = new byte[4][];
+    public readonly byte[][] Live = new byte[6][];
     public int Count = 4;
+    public bool G213;
 
     public FakeSpeaker() : base(false) { }
+
+    // From a G213's report: zone 0 is the whole keyboard, zones 1–5 (locations 6–10) take Off and Static only.
+    byte[] ZoneEffects(int zone) { return !G213 ? Effects : zone == 0 ? new byte[] { 0x00, 0x01, 0x0A, 0x03, 0x04 } : new byte[] { 0x00, 0x01 }; }
 
     public override void Dispose() { }
 
@@ -170,10 +174,11 @@ class FakeSpeaker : Hidpp
         else if (feat == Index[0x8070])
         {
             if (fn == 0) r[0] = (byte)Count;
-            else if (fn == 1) { r[0] = p[0]; r[2] = (byte)(p[0] + 1); r[3] = (byte)Effects.Length; }
-            else if (fn == 2) { if (p[1] >= Effects.Length) throw new HidppError(2, "invalid argument"); r[0] = p[0]; r[1] = p[1]; r[3] = Effects[p[1]]; }
-            else if (fn == 3) { if (p[0] >= Count) throw new HidppError(2, "invalid argument"); Live[p[0]] = p.Take(12).ToArray(); }
+            else if (fn == 1) { r[0] = p[0]; r[2] = (byte)(G213 ? (p[0] == 0 ? 1 : p[0] + 5) : p[0] + 1); r[3] = (byte)ZoneEffects(p[0]).Length; }
+            else if (fn == 2) { var listed = ZoneEffects(p[0]); if (p[1] >= listed.Length) throw new HidppError(2, "invalid argument"); r[0] = p[0]; r[1] = p[1]; r[3] = listed[p[1]]; }
+            else if (fn == 3) { if (p[0] >= Count || p[1] >= ZoneEffects(p[0]).Length) throw new HidppError(2, "invalid argument"); Live[p[0]] = p.Take(12).ToArray(); }
         }
+        else if (feat == Index[0x4540] && G213) r[0] = 0x0D;
         else if (feat != Index[0x8040]) throw new HidppError(2, "invalid argument");
         return r;
     }

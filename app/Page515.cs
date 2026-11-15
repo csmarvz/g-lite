@@ -947,7 +947,7 @@ class Page515 : DevicePage
         bool color = known && d != null && d.Color, dir = known && d != null && d.Direction, spd = known && d != null && d.Speed;
         lightHead.Text = known ? "Lighting" : broken ? "Lighting · half written on the keyboard" : live ? "Lighting · as on the keyboard" : "Lighting · factory animation";
         effects.Index = known ? Array.FindIndex(G515.Effects, e => e.Id == view.Effect) : -1;
-        effects.Off = part == 2 ? Array.FindIndex(G515.Effects, e => e.Id == Ripple) : -1;
+        effects.Off = part == 2 ? new[] { Array.FindIndex(G515.Effects, e => e.Id == Ripple) } : new int[0];
         effects.Invalidate();
         if (partSeg != null)
         {

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- The G213 ("Gaming Keyboard G213") is recognised as a G keyboard and gets the lighting screen: the whole keyboard, or each of its five areas (left to right) in Static. Effects a zone can't do are greyed out. Tested on a real G213.
+- The G213 gets Wave, with its direction, and a key picture that shows each zone's lighting. Click a key to pick its zone.
+
 ## [0.0.26-alpha] - 2026-11-13
 
 ### Fixed

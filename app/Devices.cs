@@ -34,7 +34,7 @@ class Found
 
     public string Slug { get { return new string(Short.ToLower().Where(char.IsLetterOrDigit).ToArray()); } }
 
-    public string Short { get { return Regex.Replace(Regex.Replace(Name, @"(\s+(Wireless\s+)?RGB\s+Mechanical)?\s+Gaming\s+(Mouse|Headset|Keyboard)$", "", RegexOptions.IgnoreCase), @"\s+LIGHTSPEED\b", "", RegexOptions.IgnoreCase); } }
+    public string Short { get { return Regex.Replace(Regex.Replace(Regex.Replace(Name, "^" + GamingFirst, "", RegexOptions.IgnoreCase),@"(\s+(Wireless\s+)?RGB\s+Mechanical)?\s+Gaming\s+(Mouse|Headset|Keyboard)$", "", RegexOptions.IgnoreCase), @"\s+LIGHTSPEED\b", "", RegexOptions.IgnoreCase); } }
 
     public bool MediaKeys { get { return Coarse && Has(0x40A0); } }
 
@@ -65,9 +65,12 @@ class Found
         }
     }
 
+    // Some older devices put the model last: "Gaming Keyboard G213".
+    const string GamingFirst = @"((\w+\s+)*?Gaming\s+(Keyboard|Mouse|Headset)\s+(?=G\s?\d))";
+
     public static bool LooksG(string name)
     {
-        return Regex.IsMatch(name ?? "", @"^(Logitech\s+)?(G\s?\d|G\s+PRO|PRO\b|ASTRO|A\d0\b)", RegexOptions.IgnoreCase);
+        return Regex.IsMatch(name ?? "", @"^(Logitech\s+)?" + GamingFirst + @"?(G\s?\d|G\s+PRO|PRO\b|ASTRO|A\d0\b)", RegexOptions.IgnoreCase);
     }
 
     public static string FirmwareText(byte[] info)
