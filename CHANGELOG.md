@@ -2,8 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- Save to mouse on the G502 HERO, G303 and G502 Proteus Spectrum. Their onboard profiles have the same layout as the G Pro Wireless's, so G-Lite saves them the same way, with a backup first and a read-back after. A HERO that has only ever run its factory profile gets its first profile set up, as the G305 does. Untested on a real mouse.
+
 ### Fixed
 
+- On a mouse running its factory profile, buttons set to DPI shift, DPI up, DPI down or other built-in functions show their name instead of "Special 07". Cycle profile, Default DPI, Scroll up and Scroll down are named too, and the G502 HERO's buttons get their names (Sniper, G7, G8…).
 - Try effect on the Litra Beam LX sends the smooth colour cycle and smooth colour wave the way the keyboards take them. Before, the light ignored them. Untested on a real light.
 
 ## [0.0.29-alpha] - 2026-11-16

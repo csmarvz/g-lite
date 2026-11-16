@@ -147,6 +147,18 @@ static class SelfTest
         var dir = fresh.Sectors[0x0000];
         Check(fs2.Sector == 1 && !fs2.Fresh && fs2.Savable && fs2.Dpi == 3200 && fs2.Rate == 500 && fresh.Reloads == 1 && GMouse.Valid(dir) && dir.Take(8).SequenceEqual(FakeHidpp.Hex("00010100FFFF0000")) && dir.Skip(8).Take(245).All(x => x == 0xFF) && fresh.Sectors[0x0101].SequenceEqual(freshFactory), "the first save writes the profile and the directory, and leaves the factory profile as it was");
 
+        var hero = new FakeMouse { Info = "01020105050B1000FF0A01" };
+        var heroState = GMouse.Read(hero);
+        GMouse.Store(hero, heroState, GMouse.Build(heroState.Profile, new MouseSet { Dpi = 3200 }, 2));
+        var heroFresh = new FakeMouse(true) { Info = "01020105050B1000FF0A01" };
+        heroFresh.Sectors[0x0000] = new byte[255];
+        var heroFreshState = GMouse.Read(heroFresh);
+        GMouse.Setup(heroFresh, heroFreshState, GMouse.Build(heroFreshState.Profile, new MouseSet { Dpi = 800 }, 2));
+        Check(heroState.Savable && GMouse.Read(hero).Dpi == 3200 && heroFreshState.Fresh && heroFreshState.Savable && GMouse.Valid(heroFresh.Sectors[0x0000]) && GMouse.Read(heroFresh).Sector == 1
+            && !GMouse.Read(new FakeMouse { Info = "01010105050B1000FF0A01" }).Writable && !GMouse.Read(new FakeMouse { Info = "01040105020B1000FF0A01" }).Writable
+            && GMouse.Unwritten(Enumerable.Repeat((byte)0xFF, 255).ToArray()) && !GMouse.Unwritten(st3.Profile),
+            "profile format 2 (G502 HERO) saves like format 3, a directory of zeros counts as none, formats 1 and 4 stay read-only");
+
         var headset = new FakeHeadset();
         var hs = GHeadset.Read(headset, true);
         Check(hs.HasSidetone && hs.HasOff && hs.Set.Sidetone == 30 && hs.Set.Off == 30 && hs.Millivolts == 3926 && !hs.Charging, "headset sidetone, auto-off and battery are read");
@@ -255,6 +267,10 @@ static class SelfTest
         Check(GSpeaker.Encode(wave).SequenceEqual(new byte[] { 0, 0, 0, 0, 0, 0, 0x88, 3, 80, 0x13 }) && GSpeaker.FromText(GSpeaker.ToText(new[] { wave }), 1)[0].Same(wave)
             && GSpeaker.FromText("1,FF0000,5000,100", 1)[0].Direction == 6 && Model.Load("g213.json").KeyIds().All(zone => zone >= 1 && zone <= 5) && Model.Load("g213-iso.json").KeyIds().All(zone => zone >= 1 && zone <= 5),
             "0x8070 Wave is encoded with its direction and kept in text, and every G213 key has a zone");
+        int dpiShift = Array.FindIndex(Bindings.Actions, a => a.Name == "DPI shift"), disabled = Array.FindIndex(Bindings.Actions, a => a.Name == "Disabled");
+        Check(Bindings.Find(Hex("9007FFFF")) == dpiShift && Bindings.Find(Hex("9007FF00")) == dpiShift && Bindings.Find(Hex("8000FFFF")) == disabled && Bindings.Find(Hex("80010005")) < 0
+            && Bindings.Describe(Hex("900AFFFF")) == "Cycle profile" && Bindings.Describe(Hex("900D0003")) == "Profile 3"
+            && Bindings.Names(new Found { Models = "USB C08B" }, 11)[5] == "Sniper", "factory special bindings (90 xx FF FF) are named, and the G502 HERO gets the G502's button names");
         Check(g512.IsLedKeyboard && g512.Short == "G512" && Support.For(g512).Screen == typeof(PageSpeaker) && !new Found { Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Features = new[] { 0x8070, 0x8071 } }.IsLedKeyboard && !new Found { Name = "G502 HERO Gaming Mouse", Kind = "mouse", Features = new[] { 0x8070 } }.IsLedKeyboard, "a keyboard with 0x8070 and no 0x8071 gets the zone lighting screen");
         Check(new Found { Name = "G815 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8100 } }.IsG915, "the G815 is taken as a wired G915");
         var rapid = new Found { Name = "G515 RAPID TKL", Kind = "keyboard", Features = new[] { 0x8071, 0x8040, 0x8101 } };

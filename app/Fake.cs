@@ -382,6 +382,19 @@ class FakeMouse : Hidpp
         return mouse;
     }
 
+    // A G502 HERO that has only run its factory profile: the 0x8100 fn 0 reply, the factory bindings (specials end FF FF)
+    // and the directory of zeros are from g502-hub's docs/protocol.md and Solaar #2313.
+    public static FakeMouse Hero()
+    {
+        var mouse = new FakeMouse(true) { Info = "01020105050B1000FF0A01" };
+        var bindings = new[] { "80010001", "80010002", "80010004", "80010008", "80010010", "9007FFFF", "9004FFFF", "9003FFFF", "900AFFFF", "9002FFFF", "9001FFFF" };
+        for (int i = 0; i < bindings.Length; i++) FakeHidpp.Hex(bindings[i]).CopyTo(mouse.Sectors[0x0101], 0x20 + 4 * i);
+        mouse.Sectors[0x0000] = new byte[255];
+        return mouse;
+    }
+
+    public static FakeMouse For(Found f) { return f.Models.Contains("C08B") ? Hero() : f.Wpid == 0x407F ? G502() : new FakeMouse(); }
+
     public static FakeMouse G305()
     {
         var mouse = new FakeMouse(true) { ZoneCount = 1, Info = "0103010101060600ff0a02", Dpi = 800, Stage = 1 };

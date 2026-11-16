@@ -471,7 +471,7 @@ class PageMouse : DevicePage
     void SyncButtons()
     {
         int count = state == null || state.Buttons == null || cur.Buttons == null ? 0 : Math.Min(state.ButtonCount, cur.Buttons.Length);
-        var names = Bindings.Names(found.Wpid, count);
+        var names = Bindings.Names(found, count);
         bool can = state != null && state.Savable;
         for (int i = 0; i < 16; i++)
         {

@@ -42,7 +42,20 @@ static class Bindings
 
     public static bool HasLeft(byte[][] buttons, int count) { return buttons != null && buttons.Take(count).Any(b => b != null && b.SequenceEqual(Actions[0].Bytes)); }
 
-    public static int Find(byte[] b) { return b == null ? -1 : Array.FindIndex(Actions, a => a.Bytes.SequenceEqual(b)); }
+    // Factory profiles store a special's last two bytes as FF FF (G502 HERO) or FF 00 (G502 X LIGHTSPEED), G HUB as 00 00,
+    // and "no action" as 80 00 FF FF (Solaar): only the first two bytes say what the button does (g502-hub's docs/protocol.md, facts only).
+    public static int Find(byte[] b)
+    {
+        if (b == null) return -1;
+        int exact = Array.FindIndex(Actions, a => a.Bytes.SequenceEqual(b));
+        if (exact >= 0 || b.Length < 2 || !(b[0] == 0x90 || b[0] == 0x80 && b[1] == 0x00)) return exact;
+        return Array.FindIndex(Actions, a => a.Bytes[0] == b[0] && a.Bytes[1] == b[1]);
+    }
+
+    static readonly Dictionary<int, string> Specials = new Dictionary<int, string>
+    {
+        { 0x06, "Default DPI" }, { 0x0A, "Cycle profile" }, { 0x0E, "Mode switch" }, { 0x0F, "Host button" }, { 0x10, "Scroll down" }, { 0x11, "Scroll up" },
+    };
 
     public static byte[] Key(int modifiers, int usage) { return new byte[] { 0x80, 0x02, (byte)modifiers, (byte)usage }; }
 
@@ -75,6 +88,9 @@ static class Bindings
         }
         if (b[0] == 0x80 && b[1] == 0x01) return "Mouse button " + (b[2] << 8 | b[3]).ToString("X4");
         if (b[0] == 0x80 && b[1] == 0x03) return "Media key " + (b[2] << 8 | b[3]).ToString("X4");
+        string special;
+        if (b[0] == 0x90 && Specials.TryGetValue(b[1], out special)) return special;
+        if (b[0] == 0x90 && b[1] == 0x0D) return "Profile " + b[3];
         if (b[0] == 0x90) return "Special " + b[1].ToString("X2");
         if (b[0] == 0x00) return "Macro";
         if (b[0] == 0xFF) return "Not set";
@@ -89,8 +105,10 @@ static class Bindings
 
     public static byte[][] Copy(byte[][] a) { return a == null ? null : a.Select(x => (byte[])x.Clone()).ToArray(); }
 
-    public static string[] Names(int wpid, int count)
+    // The G502 HERO (USB C08B) has the G502 LIGHTSPEED's slots (g502-hub's docs/hardware-notes.md, from its button spy).
+    public static string[] Names(Found f, int count)
     {
+        int wpid = f.Models.Contains("C08B") ? 0x407F : f.Wpid;
         var known = wpid == 0x407F ? new[] { "Left button", "Right button", "Wheel click", "Thumb, back", "Thumb, front", "Sniper", "G7", "G8", "G9", "Wheel tilt right", "Wheel tilt left" }
             : wpid == 0x4079 ? new[] { "Left button", "Right button", "Wheel click", "Left side, back", "Left side, front", "DPI, underneath", "Right side, back", "Right side, front" }
             : new[] { "Left button", "Right button", "Wheel click" };
@@ -182,9 +200,13 @@ static class GMouse
             get
             {
                 if (Flash) return Sector >= 2 && Sector < 32 && SectorSize == 512 && Current != null;
-                return Onboard && Format == 3 && SectorSize >= 0xF0 && (Sector > 0 && Sector < 0x100 || Fresh);
+                return Onboard && KnownFormat(Format) && SectorSize >= 0xF0 && (Sector > 0 && Sector < 0x100 || Fresh);
             }
         }
+
+        // Format 2 (G502 HERO, G303, G502 Proteus Spectrum) has format 3's layout up to the LED blocks at 0xD0 and 0xDB:
+        // libratbag, Solaar and cvuchener's hidpp agree (summed up in g502-hub's docs/protocol.md). Format 1 ends at 0xD0, 4 and 5 differ in the LED area.
+        public static bool KnownFormat(int format) { return format == 2 || format == 3; }
         public bool Savable { get { return Writable && ProfileOk; } }
         public string Key { get { return Sector.ToString("X4"); } }
     }
@@ -324,6 +346,13 @@ static class GMouse
         if (!ReadSector(h, sector, p.Length).SequenceEqual(p)) throw new IOException("The profile on the mouse didn't read back the same after saving");
     }
 
+    // An empty directory, or a sector never written: all 00 on a G502 HERO (Solaar #2313), all FF on a G502 X LIGHTSPEED (omalogi).
+    // Solaar treats both as no directory, and the mouse runs its factory profiles.
+    public static bool Unwritten(byte[] directory)
+    {
+        return Valid(directory) && U16(directory, 0) == 0xFFFF || directory.All(b => b == 0x00) || directory.All(b => b == 0xFF);
+    }
+
     public static byte[] Directory(int size, int profiles)
     {
         if (profiles < 1 || profiles > 8 || size < 0xF0) throw new Refused("Refusing to build that profile directory");
@@ -337,7 +366,7 @@ static class GMouse
 
     public static void Setup(Hidpp h, State s, byte[] p)
     {
-        if (!s.Fresh || s.Format != 3 || p.Length != s.SectorSize) throw new Refused("Saving isn't supported on this mouse");
+        if (!s.Fresh || !State.KnownFormat(s.Format) || p.Length != s.SectorSize) throw new Refused("Saving isn't supported on this mouse");
         WriteSector(h, 1, p);
         var directory = Directory(s.SectorSize, 1);
         Write(h, 0x0000, directory);
@@ -509,13 +538,9 @@ static class GMouse
                         if (logo >= 0 && logo < 2) s.Light = Decode(s.Profile.Skip(0xD0 + 11 * logo).Take(11).ToArray());
                     }
                 }
-                if (s.Sector >= 0x100 && s.Format == 3 && desc[3] >= 1 && s.SectorSize >= 0xF0 && s.SectorSize <= 0x1000)
+                if (s.Sector >= 0x100 && State.KnownFormat(s.Format) && desc[3] >= 1 && s.SectorSize >= 0xF0 && s.SectorSize <= 0x1000)
                 {
-                    try
-                    {
-                        var directory = ReadSector(h, 0x0000, s.SectorSize);
-                        s.Fresh = Valid(directory) && U16(directory, 0) == 0xFFFF;
-                    }
+                    try { s.Fresh = Unwritten(ReadSector(h, 0x0000, s.SectorSize)); }
                     catch (HidppError e) { s.Fresh = e.Code == 2; }
                 }
                 s.Stage = h.Call(o, 0xB)[0];

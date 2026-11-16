@@ -54,6 +54,7 @@ The preset you picked on each device is picked again when G-Lite starts, and set
 | G Pro Wireless | LIGHTSPEED receiver | Works | DPI and DPI stage, logo lighting, report rate, profiles, saving to the mouse, backups and restoring them, factory profile |
 | G305 LIGHTSPEED | LIGHTSPEED receiver | Works | DPI and DPI stage, lighting of the status light, report rate, profiles, saving to the mouse (the first save adds a profile next to the factory one), backups and restoring them, factory profile |
 | G502 LIGHTSPEED | LIGHTSPEED receiver | Partial | DPI and DPI stage, lighting (both zones get the same effect), report rate, profiles, saving to the mouse, backups and restoring them, factory profile, invert scrolling, what each button does. Not yet: macros and the G-shift layer. |
+| G502 HERO, G303 and G502 Proteus Spectrum | USB | Untested | DPI and DPI stage, lighting, report rate, profiles, saving to the mouse, backups and restoring them, factory profile, what each button does. Built from the protocol notes of libratbag, Solaar and g502-hub. |
 | PRO X SUPERLIGHT 2, PRO X 2, G502 X and other newer G mice | LIGHTSPEED receiver or USB | Untested | DPI, switching between the DPI stages saved on the mouse, and the report rate up to 8000 Hz. Some of these mice only accept their saved DPI stages. Not yet: saving to the mouse, buttons. See [docs/newer-mice.md](docs/newer-mice.md). |
 
 ### Headsets
