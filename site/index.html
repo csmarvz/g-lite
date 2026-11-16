@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>G-Lite: a lightweight G HUB alternative for Logitech G devices</title>
+<meta name="description" content="A free, open-source G HUB alternative for Windows. Lighting, DPI, buttons and sidetone for Logitech G keyboards, mice, headsets and lights.">
+<link rel="canonical" href="https://g-lite.org/">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#161616">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://g-lite.org/">
+<meta property="og:title" content="G-Lite: a lightweight G HUB alternative">
+<meta property="og:description" content="Lighting, DPI, buttons and sidetone for Logitech G devices, without G HUB. One file under 500 KB.">
+<meta property="og:image" content="https://g-lite.org/img/keyboard.png">
+<meta property="og:image:width" content="868">
+<meta property="og:image:height" content="730">
+<meta property="og:image:alt" content="G-Lite showing a G515 TKL keyboard with the Wave effect">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"G-Lite","operatingSystem":"Windows 10, Windows 11","applicationCategory":"UtilitiesApplication","description":"A lightweight alternative to Logitech G HUB for Logitech G keyboards, mice, headsets and lights.","url":"https://g-lite.org/","downloadUrl":"https://github.com/csmarvz/g-lite/releases/latest/download/GLite.exe","license":"https://opensource.org/licenses/MIT","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+</script>
+<style>
+:root {
+  --bg: #1C1C1C; --side: #161616; --card: #232323; --btn: #2B2B2B; --border: #3A3A3A;
+  --text: #E8E8E8; --dim: #A3A3A3; --accent: #3FA98A; --accent-bg: #26302D; --on-accent: #0C1A15;
+  --wide: 1080px; --radius: 10px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.6 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3 { line-height: 1.2; margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+p { margin: 0; }
+code { font: 0.9em Consolas, ui-monospace, monospace; background: var(--btn); padding: 1px 6px; border-radius: 4px; }
+.wrap { max-width: var(--wide); margin: 0 auto; padding: 0 16px; }
+
+/* Nav */
+nav { position: sticky; top: 0; z-index: 10; background: rgba(22,22,22,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid #262626; }
+nav .wrap { display: flex; align-items: center; gap: 28px; height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text); font-weight: 600; font-size: 17px; }
+.brand:hover { text-decoration: none; }
+.brand img { width: 28px; height: 28px; }
+.links { display: flex; align-items: center; gap: 22px; margin-left: auto; }
+.links a { color: var(--dim); font-size: 15px; }
+.links a:hover { color: var(--text); text-decoration: none; }
+
+/* Buttons */
+.button { display: inline-flex; align-items: center; gap: 10px; padding: 11px 22px; border-radius: 8px; font-weight: 600; font-size: 16px; border: 1px solid var(--border); background: var(--btn); color: var(--text); }
+.button:hover { text-decoration: none; background: #353535; }
+.button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.button.primary:hover { background: #4CB898; }
+.button.small { padding: 7px 16px; font-size: 14px; }
+.button svg { width: 18px; height: 18px; }
+
+/* Hero */
+.hero { text-align: center; padding-top: 72px; }
+.badge { display: inline-flex; align-items: center; gap: 0.3em; font-size: clamp(34px, 6vw, 56px); line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; color: var(--text); margin-bottom: 18px; }
+.badge img { width: 0.9em; height: 0.9em; }
+.hero h1 { font-size: clamp(34px, 6vw, 56px); max-width: 820px; margin: 0 auto; }
+.hero h1 span { color: var(--accent); }
+.hero .lead { color: var(--dim); font-size: 19px; max-width: 640px; margin: 20px auto 0; }
+.actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 32px; }
+.meta { color: var(--dim); font-size: 14px; margin-top: 14px; }
+.shot { display: block; width: 100%; height: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+.hero .shot { max-width: 868px; margin: 56px auto 0; box-shadow: 0 0 0 1px #000, 0 30px 80px -20px rgba(63,169,138,0.28), 0 20px 50px rgba(0,0,0,0.5); }
+
+/* Facts */
+.facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #262626; border: 1px solid #262626; border-radius: var(--radius); overflow: hidden; margin-top: 72px; }
+.fact { background: var(--side); padding: 22px 20px; }
+.fact b { display: block; font-size: 20px; font-weight: 600; }
+.fact span { color: var(--dim); font-size: 14px; }
+
+section { padding: 96px 0 0; }
+.kicker { color: var(--accent); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+section > .wrap > h2 { font-size: clamp(28px, 4vw, 38px); }
+.intro { color: var(--dim); font-size: 18px; max-width: 640px; margin-top: 14px; }
+
+/* Features */
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 40px; }
+.card { background: var(--card); border: 1px solid #2E2E2E; border-radius: var(--radius); padding: 24px; }
+.card svg { width: 26px; height: 26px; stroke: var(--accent); fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 14px; }
+.card h3 { font-size: 18px; margin-bottom: 6px; }
+.card p { color: var(--dim); font-size: 15px; }
+
+/* Split */
+.split { display: grid; grid-template-columns: 1fr 1.35fr; gap: 56px; align-items: center; margin-top: 72px; }
+.split.flip > :first-child { order: 2; }
+.split h3 { font-size: 26px; margin-bottom: 12px; }
+.split p { color: var(--dim); }
+.split ul { list-style: none; padding: 0; margin: 18px 0 0; }
+.split li { padding-left: 24px; position: relative; margin: 6px 0; }
+.split li::before { content: ""; position: absolute; left: 2px; top: 9px; width: 10px; height: 6px; border-left: 2px solid var(--accent); border-bottom: 2px solid var(--accent); transform: rotate(-45deg); }
+
+/* Devices */
+.legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 18px; color: var(--dim); font-size: 14px; }
+.group { margin-top: 40px; }
+.group h3 { font-size: 15px; color: var(--dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+.rows { border: 1px solid #2E2E2E; border-radius: var(--radius); overflow: hidden; }
+.row { display: grid; grid-template-columns: 270px 96px 1fr; gap: 20px; padding: 14px 20px; background: var(--card); align-items: baseline; }
+.row + .row { border-top: 1px solid #2E2E2E; }
+.row b { font-weight: 600; }
+.row small { display: block; color: var(--dim); font-size: 13px; }
+.row p { color: var(--dim); font-size: 15px; }
+.pill { justify-self: start; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 99px; border: 1px solid var(--border); color: var(--dim); white-space: nowrap; }
+.pill.works { background: var(--accent-bg); border-color: transparent; color: var(--accent); }
+.pill.partial { border-color: var(--accent); color: var(--accent); }
+
+/* Notice, steps */
+.notice { margin-top: 40px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius); background: var(--side); padding: 18px 22px; color: var(--dim); }
+.notice b { color: var(--text); }
+.steps { counter-reset: step; display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 40px; }
+.step { counter-increment: step; background: var(--card); border: 1px solid #2E2E2E; border-radius: var(--radius); padding: 22px 24px 22px 66px; position: relative; color: var(--dim); }
+.step::before { content: counter(step); position: absolute; left: 22px; top: 21px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-bg); color: var(--accent); font-weight: 600; font-size: 14px; display: grid; place-items: center; }
+.step b { color: var(--text); display: block; margin-bottom: 4px; }
+
+.aside { display: flex; gap: 10px; align-items: flex-start; color: var(--dim); font-size: 15px; margin-top: 18px; max-width: 820px; }
+.aside svg { flex: none; width: 18px; height: 18px; margin-top: 3px; fill: none; stroke: var(--dim); stroke-width: 1.8; stroke-linecap: round; }
+
+/* FAQ */
+.faq { margin-top: 32px; max-width: 820px; }
+details { border-bottom: 1px solid #2E2E2E; }
+summary { cursor: pointer; list-style: none; padding: 18px 36px 18px 0; font-weight: 600; font-size: 17px; position: relative; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; position: absolute; right: 6px; top: 14px; font-size: 22px; font-weight: 400; color: var(--accent); }
+details[open] summary::after { content: "\2212"; }
+details p { color: var(--dim); padding: 0 0 20px; }
+
+/* End */
+.end { text-align: center; padding: 120px 0 0; }
+.end h2 { font-size: clamp(28px, 4vw, 38px); }
+.end p { color: var(--dim); margin-top: 12px; }
+footer { margin-top: 120px; border-top: 1px solid #262626; background: var(--side); padding: 36px 0 44px; color: var(--dim); font-size: 14px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 20px 40px; justify-content: space-between; }
+footer nav { position: static; background: none; border: 0; backdrop-filter: none; display: flex; flex-wrap: wrap; gap: 8px 22px; }
+footer nav a { color: var(--dim); }
+footer nav a:hover { color: var(--text); }
+footer p { max-width: 460px; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+  .split, .split.flip { grid-template-columns: 1fr; gap: 28px; }
+  .split.flip > :first-child { order: 0; }
+  .facts { grid-template-columns: repeat(2, 1fr); }
+  .row { grid-template-columns: 1fr auto; gap: 6px 16px; }
+  .row p { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .links a:not(.button) { display: none; }
+  .hero { padding-top: 48px; }
+  .hero .lead { font-size: 17px; }
+  .grid, .steps { grid-template-columns: 1fr; }
+  .facts { margin-top: 48px; }
+  section { padding-top: 72px; }
+  .row { padding: 14px 16px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="img/logo.svg" alt="">G-Lite</a>
+    <div class="links">
+      <a href="#features">Features</a>
+      <a href="#devices">Devices</a>
+      <a href="#start">Get started</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/csmarvz/g-lite">GitHub</a>
+      <a class="button primary small" href="https://github.com/csmarvz/g-lite/releases/latest/download/GLite.exe">Download</a>
+    </div>
+  </div>
+</nav>
+
+<main id="top">
+  <header class="hero wrap">
+    <div class="badge"><img src="img/logo.svg" alt="">G-Lite</div>
+    <h1>Lightweight control for Logitech&nbsp;G devices. <span>No G&nbsp;HUB.</span></h1>
+    <p class="lead">Lighting, DPI, report rate, buttons and sidetone for your Logitech G keyboard, mouse, headset or light. One file, nothing to install, next to no CPU when idle.</p>
+    <div class="actions">
+      <a class="button primary" href="https://github.com/csmarvz/g-lite/releases/latest/download/GLite.exe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>
+        Download GLite.exe
+      </a>
+      <a class="button" href="https://github.com/csmarvz/g-lite">View on GitHub</a>
+    </div>
+    <p class="meta" id="meta">For Windows 10 and 11, under 500 KB</p>
+    <img class="shot" src="img/keyboard.png" width="868" height="730" fetchpriority="high" alt="G-Lite showing a G515 LIGHTSPEED TKL with the Wave effect on its live key picture, and the other devices in the sidebar">
+
+    <div class="facts">
+      <div class="fact"><b>Lightweight</b><span>Low RAM and low CPU</span></div>
+      <div class="fact"><b>No installer</b><span>One exe, runs from any folder, sits in the tray</span></div>
+      <div class="fact"><b>No account</b><span>No analytics, no tracking</span></div>
+      <div class="fact"><b>MIT licence</b><span>Every line is on GitHub</span></div>
+    </div>
+  </header>
+
+  <section id="features">
+    <div class="wrap">
+      <p class="kicker">Features</p>
+      <h2>The settings you use, without the suite.</h2>
+      <p class="intro">A lightweight alternative to Logitech G HUB and Logitech Gaming Software (LGS). G-Lite talks to your devices directly over Logitech's HID++ protocol. No service, no driver, no background updater.</p>
+      <div class="grid">
+        <div class="card">
+          <svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M9 10h.01M12 10h.01M15 10h.01M18 10h.01M7 14h10"/></svg>
+          <h3>Lighting</h3>
+          <p>Effects, colours, speed, direction and brightness, shown live on a picture of your keys.</p>
+        </div>
+        <div class="card">
+          <svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg>
+          <h3>Saved on the device</h3>
+          <p>Save to the keyboard or mouse, and your settings stay on it, with no app running, even on another PC, if the device supports it.</p>
+        </div>
+        <div class="card">
+          <svg viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="6"/><path d="M12 6.5v4"/></svg>
+          <h3>DPI, rate and buttons</h3>
+          <p>DPI stages, report rate up to 8000 Hz, and what each mouse button does.</p>
+        </div>
+        <div class="card">
+          <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="16" r="3"/></svg>
+          <h3>Presets on your PC</h3>
+          <p>Name your setups per device. The one you picked is set again when G-Lite starts, in the tray too.</p>
+        </div>
+        <div class="card">
+          <svg viewBox="0 0 24 24"><rect x="2.5" y="3.5" width="19" height="13" rx="1.5"/><path d="M8 20.5h8M12 16.5v4"/></svg>
+          <h3>Screen effect</h3>
+          <p>Your keys, speakers or light follow the colours on your screen, in up to five zones.</p>
+        </div>
+        <div class="card">
+          <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
+          <h3>Backups</h3>
+          <p>A copy of the device is kept before every save. The factory profile is never written.</p>
+        </div>
+      </div>
+
+      <div class="split">
+        <div>
+          <h3>Every key, live.</h3>
+          <p>Pick an effect and watch it on the key picture as it plays on the keyboard. Full-size, TKL, 75% and 60% layouts, ANSI and ISO.</p>
+          <ul>
+            <li>Static, Breathe, Cycle, Wave, Ripple and Screen</li>
+            <li>Dim and turn off when idle</li>
+            <li>Separate effects for the keys and the light bar</li>
+          </ul>
+        </div>
+        <img class="shot" src="img/keyboard.png" width="868" height="730" loading="lazy" alt="The G515 TKL screen with its effects, colours and idle settings">
+      </div>
+
+      <div class="split flip">
+        <div>
+          <h3>Mice, from the G5 to the PRO X SUPERLIGHT 2.</h3>
+          <p>Set your DPI stages and report rate live, then save them into the mouse's onboard profile.</p>
+          <ul>
+            <li>Five DPI stages and the default one</li>
+            <li>Logo and DPI lights</li>
+            <li>Button bindings, invert scrolling</li>
+          </ul>
+        </div>
+        <img class="shot" src="img/mouse.png" width="868" height="730" loading="lazy" alt="The G Pro Wireless screen with its DPI stages, report rate and lighting">
+      </div>
+
+      <div class="split">
+        <div>
+          <h3>Headsets, speakers and lights.</h3>
+          <p>Sidetone and auto-off on the PRO X Wireless, the G560's four zones, and both lights of the Litra Beam LX. Every battery shows in the tray.</p>
+          <ul>
+            <li>Litra brightness and colour temperature</li>
+            <li>MX mice and keyboards: pointer speed, SmartShift, backlight, Easy-Switch</li>
+          </ul>
+        </div>
+        <img class="shot" src="img/light.png" width="868" height="730" loading="lazy" alt="The Litra Beam LX screen with its front light and back light zones">
+      </div>
+    </div>
+  </section>
+
+  <section id="devices">
+    <div class="wrap">
+      <p class="kicker">Devices</p>
+      <h2>Does it work with mine?</h2>
+      <p class="intro">Open G-Lite: if your device shows a screen of settings, it does. If it only shows its info, click Report and <a href="https://github.com/csmarvz/g-lite/issues">open an issue</a> with it.</p>
+      <div class="legend">
+        <span><span class="pill works">Works</span>&nbsp; tried on the real device</span>
+        <span><span class="pill partial">Partial</span>&nbsp; tried, some features missing</span>
+        <span><span class="pill">Untested</span>&nbsp; built from specs, waiting for an owner</span>
+      </div>
+
+      <div class="group">
+        <h3>Keyboards</h3>
+        <div class="rows">
+          <div class="row"><div><b>G515 LIGHTSPEED TKL</b><small>LIGHTSPEED</small></div><span class="pill works">Works</span><p>Lighting, idle dimming, saving to the keyboard, backups, factory lighting.</p></div>
+          <div class="row"><div><b>G213</b><small>USB</small></div><span class="pill works">Works</span><p>Effects on the whole keyboard, a colour per area, a live picture. Set again at each start: the keyboard can't store lighting.</p></div>
+          <div class="row"><div><b>G915, G915 TKL, G815</b><small>LIGHTSPEED or USB</small></div><span class="pill">Untested</span><p>Lighting and brightness, set again at each start.</p></div>
+          <div class="row"><div><b>G512 X 75</b><small>USB</small></div><span class="pill partial">Partial</span><p>Lighting on the keys and the light bar, together or apart, and the Screen effect. Not yet: saving to the keyboard, the knobs and actuation.</p></div>
+          <div class="row"><div><b>G915 X, G713, G715, PRO X TKL, PRO X 60 and newer</b><small>LIGHTSPEED or USB</small></div><span class="pill">Untested</span><p>Lighting, brightness and the Screen effect.</p></div>
+          <div class="row"><div><b>G512, G513, G810, G910, G410, G413 and older</b><small>USB</small></div><span class="pill">Untested</span><p>Off, Static, Breathe and Cycle on all zones or each one.</p></div>
+          <div class="row"><div><b>G510, G510s</b><small>USB</small></div><span class="pill">Untested</span><p>Backlight colour, brightness and effects.</p></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Mice</h3>
+        <div class="rows">
+          <div class="row"><div><b>G Pro Wireless</b><small>LIGHTSPEED</small></div><span class="pill works">Works</span><p>DPI, lighting, report rate, saving to the mouse, backups.</p></div>
+          <div class="row"><div><b>G305 LIGHTSPEED</b><small>LIGHTSPEED</small></div><span class="pill works">Works</span><p>DPI, status light, report rate, saving to the mouse, backups.</p></div>
+          <div class="row"><div><b>G9x Laser Mouse</b><small>USB</small></div><span class="pill works">Works</span><p>DPI, colour, report rate, saving to the mouse, backups.</p></div>
+          <div class="row"><div><b>G502 LIGHTSPEED</b><small>LIGHTSPEED</small></div><span class="pill partial">Partial</span><p>DPI, lighting, report rate, buttons, invert scrolling, saving. No macros yet.</p></div>
+          <div class="row"><div><b>G502 HERO, G303, G502 Proteus Spectrum</b><small>USB</small></div><span class="pill">Untested</span><p>DPI, lighting, report rate, buttons, saving to the mouse.</p></div>
+          <div class="row"><div><b>G500, G500s</b><small>USB</small></div><span class="pill">Untested</span><p>DPI stages, report rate, saving to the mouse.</p></div>
+          <div class="row"><div><b>G5, G9, G700, G700s</b><small>USB or receiver</small></div><span class="pill">Untested</span><p>DPI and report rate, set while G-Lite runs.</p></div>
+          <div class="row"><div><b>PRO X SUPERLIGHT 2, PRO X 2, G502 X and newer</b><small>LIGHTSPEED or USB</small></div><span class="pill">Untested</span><p>DPI, DPI stages, report rate up to 8000 Hz.</p></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Headsets, speakers and lights</h3>
+        <div class="rows">
+          <div class="row"><div><b>PRO X Wireless</b><small>Its own receiver</small></div><span class="pill works">Works</span><p>Sidetone, auto-off, battery.</p></div>
+          <div class="row"><div><b>G560 Gaming Speaker</b><small>USB</small></div><span class="pill">Untested</span><p>Lighting on all four zones or each one.</p></div>
+          <div class="row"><div><b>Litra Beam LX, Beam, Glow</b><small>USB</small></div><span class="pill">Untested</span><p>Front light brightness and warmth; the Beam LX's back light and its effects.</p></div>
+          <div class="row"><div><b>MX Master, MX Anywhere, MX Keys, MX Mechanical and others</b><small>Bolt, Unifying or USB</small></div><span class="pill">Untested</span><p>Pointer speed, SmartShift, scrolling, backlight, Easy-Switch.</p></div>
+        </div>
+      </div>
+
+      <div class="notice"><b>G-Lite is in alpha.</b> It writes to your device's onboard memory. It never touches the factory profile, checks every write and backs up the device before each save, but it has been tried on few devices. Use it at your own risk.</div>
+    </div>
+  </section>
+
+  <section id="start">
+    <div class="wrap">
+      <p class="kicker">Get started</p>
+      <h2>Two steps.</h2>
+      <div class="steps">
+        <div class="step"><b><a href="https://github.com/csmarvz/g-lite/releases/latest/download/GLite.exe">Download</a> and run GLite.exe</b>If Windows says it protected your PC, click More info, then Run anyway: G-Lite isn't code-signed yet.</div>
+        <div class="step"><b>Pick a device</b>G-Lite lists what it finds. Change a setting, then Save to keyboard or Save to mouse to keep it on the device.</div>
+      </div>
+      <p class="aside"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>Quit G HUB or Logitech Gaming Software, and turn off Dynamic Lighting on Windows 11 (Settings, Personalization, Dynamic Lighting). They control the same devices and would undo G-Lite's changes.</p>
+      <p class="aside"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>To check your copy is the one GitHub built, run <code>Get-FileHash GLite.exe</code> in PowerShell and compare it with <code>checksums.txt</code> on the <a href="https://github.com/csmarvz/g-lite/releases/latest">release page</a>.</span></p>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <p class="kicker">FAQ</p>
+      <h2>Questions</h2>
+      <div class="faq">
+        <details><summary>Can I use G-Lite and G HUB at the same time?</summary><p>Not well. Both control the same devices, so each undoes the other's changes. Quit G HUB, or Logitech Gaming Software, while you use G-Lite.</p></details>
+        <details><summary>What if my device isn't supported yet?</summary><p>Open G-Lite anyway: it lists every Logitech device it finds, with its connection, battery and firmware. Click Report on its screen, then Open GitHub issue, and the report is filled in for you. It holds what G-Lite needs to add the device, and nothing personal.</p></details>
+        <details><summary>What happens to my settings if I stop using G-Lite?</summary><p>Whatever you saved to a keyboard or mouse stays on it and works without any app. Settings that aren't saved to the device go back to the device's own when it restarts.</p></details>
+        <details><summary>What if a save goes wrong?</summary><p>G-Lite backs up the device before every save and reads back everything it writes. If a save stops halfway, it offers to restore the backup. Any backup, or the factory profile, can be restored from Backups.</p></details>
+        <details><summary>Does G-Lite send any data?</summary><p>No. It goes online only to check GitHub for a new version, which you can turn off in Settings. A device report leaves your PC only when you paste or submit it yourself.</p></details>
+        <details><summary>Why does Windows warn me about it?</summary><p>The exe isn't code-signed yet, so SmartScreen doesn't know it. The source and the build are public, and each release lists the file's checksum.</p></details>
+        <details><summary>How do I remove it?</summary><p>Quit it from the tray, turn off Run on startup in Settings, and delete GLite.exe with its settings.txt and log.txt. Backups are in %LOCALAPPDATA%\GLite\backups.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="end">
+    <div class="wrap">
+      <h2>Take back your Logitech G gear.</h2>
+      <p>Free, open source and light.</p>
+      <div class="actions">
+        <a class="button primary" href="https://github.com/csmarvz/g-lite/releases/latest/download/GLite.exe">Download GLite.exe</a>
+        <a class="button" href="https://github.com/csmarvz/g-lite/blob/main/CHANGELOG.md">What's new</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <nav aria-label="Footer">
+      <a href="https://github.com/csmarvz/g-lite">GitHub</a>
+      <a href="https://github.com/csmarvz/g-lite/releases">Releases</a>
+      <a href="https://github.com/csmarvz/g-lite/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/csmarvz/g-lite/issues">Report an issue</a>
+      <a href="https://github.com/csmarvz/g-lite/blob/main/LICENSE">MIT licence</a>
+    </nav>
+    <p>G-Lite isn't made, endorsed or supported by Logitech. Logitech, Logitech G, G HUB, LIGHTSPEED and Litra are trademarks of Logitech.</p>
+  </div>
+</footer>
+
+<script>
+fetch("https://api.github.com/repos/csmarvz/g-lite/releases/latest").then(function (r) { return r.ok ? r.json() : null; }).then(function (release) {
+  if (!release) return;
+  var exe = (release.assets || []).filter(function (a) { return a.name === "GLite.exe"; })[0];
+  document.getElementById("meta").textContent = release.tag_name + " for Windows 10 and 11" + (exe ? ", " + Math.round(exe.size / 1024) + " KB" : "");
+}).catch(function () {});
+</script>
+</body>
+</html>
