@@ -51,18 +51,23 @@ abstract class DevicePage : Control, IPage
         reportBtn = Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Report", AccessibleName = "Report of the " + noun }, 572 - 80, 10, 80, 28);
 
         Ui.Text(this, "Preset", 20, 79, () => Theme.Dim, 9.75f);
-        profiles = Ui.Add(this, new Drop { AccessibleName = "Preset" }, 74, 72, 210, 32);
+        profiles = Ui.Add(this, new Drop { AccessibleName = "Preset" }, 74, 72, 180, 32);
         profiles.Picked += PickSet;
         profiles.Label = name => name + (drafts.ContainsKey(name) || name == loaded && Changed() ? " •" : "");
-        nameField = Ui.Add(this, new Field { Visible = false }, 74, 72, 210, 32);
+        nameField = Ui.Add(this, new Field { Visible = false }, 74, 72, 180, 32);
         nameField.Box.KeyDown += (s, e) =>
         {
             if (e.KeyCode == Keys.Enter) { SaveSet(nameField.Box.Text.Trim()); e.SuppressKeyPress = true; }
             if (e.KeyCode == Keys.Escape) { EndName(); e.SuppressKeyPress = true; }
         };
-        updateBtn = Ui.Add(this, new Btn { Text = "Update" }, 292, 72, 76, 32);
-        updateBtn.Click += (s, e) => { if (naming) SaveSet(nameField.Box.Text.Trim()); else UpdateSet(); };
-        moreBtn = Ui.Add(this, new Btn { Text = "…", AccessibleName = "More preset actions" }, 376, 72, 36, 32);
+        updateBtn = Ui.Add(this, new Btn { Text = "Update" }, 262, 72, 76, 32);
+        updateBtn.Click += (s, e) =>
+        {
+            if (naming) SaveSet(nameField.Box.Text.Trim());
+            else if (profiles.Index <= 0) StartName(null);
+            else UpdateSet();
+        };
+        moreBtn = Ui.Add(this, new Btn { Text = "…", AccessibleName = "More preset actions" }, 346, 72, 36, 32);
         moreBtn.Click += (s, e) => { if (naming) EndName(); else PresetMenu(); };
 
         var line = Ui.Add(this, new Control(), 0, 673, 656, 1);
@@ -316,11 +321,11 @@ abstract class DevicePage : Control, IPage
     {
         profiles.Visible = !naming;
         nameField.Visible = naming;
-        updateBtn.Text = naming ? "Save" : "Update";
-        moreBtn.Text = naming ? "Cancel" : "…";
         bool picked = profiles.Index > 0;
+        updateBtn.Text = naming ? "Save" : picked ? "Update" : "New…";
+        moreBtn.Text = naming ? "Cancel" : "…";
         bool changed = picked && Changed();
-        updateBtn.Enabled = (naming || changed) && Keepable;
+        updateBtn.Enabled = (naming || !picked || changed) && Keepable;
         if (picked) profiles.Text = profiles.Items[profiles.Index] + (changed ? " •" : "");
         profiles.Invalidate();
         undoBtn.Enabled = picked ? changed : Unsaved;

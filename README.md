@@ -31,6 +31,8 @@ If Windows says it protected your PC, click **More info**, then **Run anyway**. 
 - **Set on the device, not saved** (the G915, G560, Litra colours and the untested keyboards): stays until the device sleeps or turns off. G-Lite sets it again when it starts.
 - **Run by G-Lite** (the Screen effect, and the Litra's Breathe, Cycle and Wave): keeps going while G-Lite runs, in the tray too, and stops if you quit it.
 
+The preset you picked on each device is picked again when G-Lite starts, and set on the device if it no longer has it, like a G515 or mouse whose preset wasn't saved to it.
+
 ## Supported devices
 
 ### Keyboards
@@ -105,7 +107,7 @@ Open an [issue](https://github.com/csmarvz/g-lite/issues). Say what you did and 
 
 G-Lite has no installer. Everything it keeps is in plain text files you can open, copy or delete:
 
-- **`settings.txt`**, next to `GLite.exe`: your presets, the lighting it sets again on each start, and your choices in Settings. If that folder can't be written to, it goes in `%LOCALAPPDATA%\GLite` instead.
+- **`settings.txt`**, next to `GLite.exe`: your presets and the one picked on each device, the lighting it sets again on each start, and your choices in Settings. If that folder can't be written to, it goes in `%LOCALAPPDATA%\GLite` instead.
 - **`log.txt`**, next to `settings.txt`: what G-Lite did and when, like the devices it found, what it sent to them and updates. **Logs** in the sidebar shows it. When it reaches 512 KB, it becomes `log.old.txt` and a new one starts.
 - **Backups**, in `%LOCALAPPDATA%\GLite\backups`: a copy of what was on your keyboard or mouse before each save, one folder per device. G-Lite keeps the first one and the last ten. **Backups** on a device's screen restores them.
 

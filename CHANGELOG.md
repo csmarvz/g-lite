@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- With no preset picked, the button next to the presets is now **New…**, which saves the current settings as a new preset, instead of a disabled Update. The preset list is a little narrower, so on a mouse Cancel no longer runs into the Settings and Buttons switch while you name a preset.
+
+### Fixed
+
+- The preset you picked on a device is no longer forgotten when G-Lite quits. It's picked again at the next start, in the tray too, and set on the device if it no longer has it: a G515 or mouse goes back to the lighting saved on it when the preset wasn't saved.
+
 ## [0.0.28-alpha] - 2026-11-15
 
 ### Added

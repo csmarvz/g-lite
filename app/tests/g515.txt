@@ -13,10 +13,10 @@ open
   8101 fn8  00 08 00 63
   8101 fn8  00 00 00 10
   8040 fn1
-  = status "Matches the keyboard" [Report] [Backups] Preset=None [Update (off)] […] Effect=- Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=0 (off) [Revert (off)] [Save to keyboard (off)]
+  = status "Matches the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=- Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=0 (off) [Revert (off)] [Save to keyboard (off)]
 pick Effect Static
   8040 fn1
-  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static Dim after=1 min <Color FFFFFF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=0 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Static Dim after=1 min <Color FFFFFF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=0 (off) [Revert] [Save to keyboard]
 press Color FF2020
   8040 fn1
   8101 fn6  05
@@ -24,36 +24,36 @@ press Color FF2020
   8071 fn0
   8071 fn0  00 01
   8071 fn1  00 01 FF 20 20 02 00 00 00 00 00 00 01
-  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static Dim after=1 min <Color FF2020> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=0 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Static Dim after=1 min <Color FF2020> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=0 (off) [Revert] [Save to keyboard]
 slide Brightness 40
   8040 fn1
   8040 fn2  00 28
   8071 fn0
   8071 fn0  00 01
   8071 fn1  00 01 FF 20 20 02 00 00 00 00 00 00 01
-  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static Dim after=1 min <Color FF2020> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=40 Speed=0 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Static Dim after=1 min <Color FF2020> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=40 Speed=0 (off) [Revert] [Save to keyboard]
 pick Effect Breathe
   8040 fn1
   8071 fn0
   8071 fn0  00 01
   8071 fn0  00 02
   8071 fn1  00 02 FF 20 20 13 88 00 64 00 00 00 01
-  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [Update (off)] […] Effect=Breathe Dim after=1 min <Color FF2020> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=40 Speed=78 [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Breathe Dim after=1 min <Color FF2020> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=40 Speed=78 [Revert] [Save to keyboard]
 slide Speed 30
   8040 fn1
   8071 fn0
   8071 fn0  00 01
   8071 fn0  00 02
   8071 fn1  00 02 FF 20 20 37 DC 00 64 00 00 00 01
-  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [Update (off)] […] Effect=Breathe Dim after=1 min <Color FF2020> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=40 Speed=30 [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Breathe Dim after=1 min <Color FF2020> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=40 Speed=30 [Revert] [Save to keyboard]
 press Revert changes
   8040 fn2  00 64
   8071 fn5  01
   8101 fn6  03
-  = status "Matches the keyboard" [Report] [Backups] Preset=None [Update (off)] […] Effect=- Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) [Revert (off)] [Save to keyboard (off)]
+  = status "Matches the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=- Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) [Revert (off)] [Save to keyboard (off)]
 pick Effect Static
   8040 fn1
-  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static Dim after=1 min <Color FFFFFF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Static Dim after=1 min <Color FFFFFF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) [Revert] [Save to keyboard]
 press Color 3080FF
   8040 fn1
   8101 fn6  05
@@ -61,13 +61,13 @@ press Color 3080FF
   8071 fn0
   8071 fn0  00 01
   8071 fn1  00 01 30 80 FF 02 00 00 00 00 00 00 01
-  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static Dim after=1 min <Color 3080FF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Static Dim after=1 min <Color 3080FF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) [Revert] [Save to keyboard]
 pick Dim after 1 min
   8040 fn1
   8071 fn0
   8071 fn0  00 01
   8071 fn1  00 01 30 80 FF 02 00 00 00 00 00 00 01
-  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static Dim after=1 min <Color 3080FF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Static Dim after=1 min <Color 3080FF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) [Revert] [Save to keyboard]
 press Save to keyboard
   8101 fn8  01 01 00 63
   8101 fnC
@@ -115,7 +115,7 @@ press Save to keyboard
   8101 fn6  0B
   8101 fn9  81 01 01 00 01 00 63 F4 45 0D E4
   8101 fn6
-  = status "Saved to the keyboard" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static Dim after=1 min <Color 3080FF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) [Revert (off)] [Save to keyboard (off)]
+  = status "Saved to the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Static Dim after=1 min <Color 3080FF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) [Revert (off)] [Save to keyboard (off)]
 menu More preset actions > Save as new preset…
   menu: Save as new preset… | Rename… (off) | Delete (off)
   = status "Saved to the keyboard" [Report] [Backups] [Save] [Cancel] Effect=Static Dim after=1 min <Color 3080FF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) [Revert (off)] [Save to keyboard (off)]
@@ -138,7 +138,7 @@ pick Preset None
   8071 fn1  00 01 30 80 FF 02 00 00 00 00 00 00 01
   8071 fn5  01
   8101 fn6  03
-  = status "Matches the keyboard" [Report] [Backups] Preset=None [Update (off)] […] Effect=Static Dim after=1 min <Color 3080FF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) [Revert (off)] [Save to keyboard (off)]
+  = status "Matches the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Static Dim after=1 min <Color 3080FF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) [Revert (off)] [Save to keyboard (off)]
 pick Preset Night
   8040 fn1
   8101 fn6  05
