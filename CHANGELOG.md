@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Try effect on the Litra Beam LX sends the smooth colour cycle and smooth colour wave the way the keyboards take them. Before, the light ignored them. Untested on a real light.
+
 ## [0.0.29-alpha] - 2026-11-16
 
 ### Changed

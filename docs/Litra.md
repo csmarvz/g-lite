@@ -61,16 +61,19 @@ Firmware ILL 01.02 build 0073, USB 046D:C903, Bluetooth B903. 0x8040 and 0x8081 
 ```
 
 - Front light: 30 to 400 lumen in steps of 1, 2700 to 6500 K in steps of 100.
-- 0x8071 has two clusters. With G HUB's effect ids (Lghub's `docs/protocol.md`), cluster 0 lists Static (0x01), Breathe (0x0A) and smooth colour cycle (0x15, 21); cluster 1 lists streaming (0x13, 19), smooth colour wave (0x16, 22) and a two-colour signature effect (0x18, 24). Streaming is the mode for setting zones one by one, which is what 0x8081 does, so cluster 1 is probably the seven back zones. What cluster 0 lights isn't known.
+- 0x8071 has two clusters. With G HUB's effect ids (Lghub's `docs/protocol.md`), cluster 0 lists Static (0x01), Breathe (0x0A) and smooth colour cycle (0x15, 21); cluster 1 lists streaming (0x13, 19), smooth colour wave (0x16, 22) and a two-colour signature effect (0x18, 24). Streaming is the mode for setting zones one by one, which is what 0x8081 does, so cluster 1 was thought to be the seven back zones. The owner's tries (0.0.28, 2026-11) say otherwise: cluster 0 is the back light (Static and Breathe light it and look like G-Lite's own), and nothing in cluster 1 lit up anything, without errors. What cluster 1 is for isn't known.
 
 ## Try effect
 
 On a light with 0x8071, the back light box has Try effect. Its menu lists every effect of every cluster, read when the screen loads (0x8071 fn 0 `<cluster> <effect> 00`, byte 3 the id). Picking one stops G-Lite's own animation, takes software control of the clusters (0x8071 fn 5 `01 01 00`) and sends 0x8071 fn 1 `<cluster> <effect index> <10 parameter bytes> 01`, with the parameters from Lghub's notes. Without fn 5 the light answers fn 1 with error 0x05 for every effect (the owner's first try, 2026-11). Back to G-Lite's colours, any change on the screen, a preset, the Screen effect or reading the light again gives control back (fn 5 `01 00 00`):
 
+The parameters are the keyboards' (`G915.Encode`):
+
 - Static: `R G B 02`
 - Breathe: `R G B <period u16> 00 64`
-- Colour cycle and smooth colour cycle: `00 × 5 <period u16> 64`
-- Colour wave and smooth colour wave: `00 × 6 <period low> 01 64 <period high>`
+- Colour cycle (0x03): `00 × 5 <period u16> 64`
+- Colour wave (0x04): `00 × 6 <period low> 01 64 <period high>`
+- Smooth colour cycle (0x15): `00 FF 00 00 00 00 <period u16> 64`, and smooth colour wave (0x16) the same with the direction (`01`) after it. Until 0.0.29 they were sent with the older 0x03 and 0x04 layouts, and the owner saw nothing for either.
 - Two colours: `R G B R2 G2 B2 00 32 64 00` (zone 1's colour and zone 7's, 50 ms as G HUB sends it, 100%)
 - Others: `R G B`, the rest zeros
 
@@ -80,8 +83,8 @@ The last byte is the persist flag G-Lite sends to the G915. Whether the light ke
 
 ## Next
 
-- Ask the owner to try each entry and say what lit up: the back light, the front light, something else or nothing, and whether Back to G-Lite's colours brings the colours back.
-- Then run Breathe, Cycle and Wave with the light's own effects on the cluster that is the back light, as on the G915. They would keep running without G-Lite and need no frames. Try effect goes away then.
+- Ask the owner to try Group 0's smooth colour cycle and Group 1's smooth colour wave again with the keyboards' layout.
+- Then run Breathe and Cycle with the light's own effects on cluster 0, as on the G915. They would keep running without G-Lite and need no frames, but have one colour for the whole bar, so G-Lite's own frames stay for colours per zone. Try effect goes away then.
 
 ## Sources
 

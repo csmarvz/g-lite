@@ -147,14 +147,14 @@ static class Litra
         b[0] = (byte)group;
         b[1] = (byte)index;
         int color = state.Colors[0], other = state.Colors[LightState.Zones - 1], period = state.Period;
-        if (id != 0x03 && id != 0x04 && id != 0x15 && id != 0x16) { b[2] = (byte)(color >> 16); b[3] = (byte)(color >> 8); b[4] = (byte)color; }
-        switch (id)
+        // The keyboards' encoding: smooth cycle and wave (0x15, 0x16) take 00 FF, the period at bytes 6–7 and the intensity at 8,
+        // not the older cycle's layout, which the Beam LX ignored (owner's report, 2026-11).
+        if (id == 0x01 || id == 0x03 || id == 0x04 || id == 0x0A || id == 0x0B || id == 0x15 || id == 0x16)
+            Array.Copy(G915.Encode(id, new Lighting { Effect = id, Color = color, Period = period }), 0, b, 2, 10);
+        else
         {
-            case 0x01: b[5] = 2; break;
-            case 0x0A: b[5] = (byte)(period >> 8); b[6] = (byte)period; b[8] = 100; break;
-            case 0x03: case 0x15: b[7] = (byte)(period >> 8); b[8] = (byte)period; b[9] = 100; break;
-            case 0x04: case 0x16: b[8] = (byte)period; b[9] = 1; b[10] = 100; b[11] = (byte)(period >> 8); break;
-            case 0x18: b[5] = (byte)(other >> 16); b[6] = (byte)(other >> 8); b[7] = (byte)other; b[9] = 50; b[10] = 100; break;
+            b[2] = (byte)(color >> 16); b[3] = (byte)(color >> 8); b[4] = (byte)color;
+            if (id == 0x18) { b[5] = (byte)(other >> 16); b[6] = (byte)(other >> 8); b[7] = (byte)other; b[9] = 50; b[10] = 100; }
         }
         b[12] = 1;
         return b;
