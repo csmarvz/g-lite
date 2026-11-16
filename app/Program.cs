@@ -519,6 +519,7 @@ class MainWindow : Form
             new Found { Key = "demo|keypad", Name = "MX Creative Keypad", Kind = "device", Link = "Demo", Index = 0xFF, Firmware = "U1 66.00 · build 0017", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1B04, 0x8040 } },
             new Found { Key = "demo|g915full", Name = "G915 LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "Demo", Index = 2, Wpid = 0x407C, Battery = 46, Approx = true, Millivolts = 3780, Firmware = "MPK 12.01 · build 0019", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 } },
             new Found { Key = "demo|g502", Name = "G502 LIGHTSPEED Wireless Gaming Mouse", Kind = "mouse", Link = "Demo", Index = 3, Wpid = 0x407F, Battery = 88, Approx = true, Millivolts = 4020, Firmware = "MPM 16.01 · build 0020", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
+            new Found { Key = "demo|g500s", Name = "G500s Laser Gaming Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c24e&mi_01&col04", Firmware = "86.01 · build 0003" },
             new Found { Key = "demo|g502hero", Name = "G502 HERO Gaming Mouse", Kind = "mouse", Link = "USB", Index = 0xFF, Models = "USB C08B", Firmware = "U1 69.00 · build 0009", Features = new[] { 0x0001, 0x0003, 0x0005, 0x2201, 0x8060, 0x8070, 0x8100 } },
             new Found { Key = "demo|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "Demo", Index = 0xFF, Battery = 71, Approx = true, Millivolts = 3926, Firmware = "U1 12.01 · build 0203", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300 } },
         };
@@ -912,7 +913,8 @@ class Support
         new Support { Matches = f => f.IsRgbKeyboard, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, Keyboards.For(f)), Fake = f => FakeG915.G512X() },
         new Support { Matches = f => f.IsLedKeyboard, Screen = typeof(PageSpeaker), Make = (f, d, drag) => new PageSpeaker(f, d, drag), Fake = f => new FakeSpeaker { Count = 2 } },
         new Support { Matches = f => f.IsG510, Screen = typeof(PageG510), Make = (f, d, drag) => new PageG510(f, d, drag), Fake = f => new FakeG510() },
-        new Support { Matches = f => f.IsG9x, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new G9xMouse()), Fake = f => new FakeG9x() },
+        new Support { Matches = f => f.IsG9x, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new G9xMouse(G9xModel.G9x)), Fake = f => new FakeG9x() },
+        new Support { Matches = f => f.IsG500, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new G9xMouse(f.G500Model)), Fake = f => FakeG9x.G500s() },
         new Support { Matches = f => f.IsMouse && f.Has(0x2202), Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new HidppMouse()), Fake = f => FakeMouse.ProX2() },
         new Support { Matches = f => f.IsMouse, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new HidppMouse()), Fake = f => FakeMouse.For(f) },
         new Support { Matches = f => f.IsG560, Screen = typeof(PageSpeaker), Make = (f, d, drag) => new PageSpeaker(f, d, drag), Fake = f => new FakeSpeaker() },

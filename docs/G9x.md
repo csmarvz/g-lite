@@ -136,6 +136,17 @@ From libratbag's device files:
 
 The G700 is wireless behind its own receiver, so it isn't at index 0x00. Leave it for later.
 
+cvuchener's hidpp (GPL-3.0, facts only: `src/libhidpp/hidpp/DeviceInfo.cpp`, `hidpp10/Sensor.cpp`, `profile_format.md`) agrees on the G9x, G500 and G500s sharing the G500 profile layout and adds their sensors:
+
+| Mouse | 0x63 unit | DPI |
+|---|---|---|
+| G9x, G500 | 400/17 DPI (`RangeSensor (200, 5700, 50, 17, 400)`) | 200–5700 |
+| G500s, G700s | 50 DPI (`RangeSensor (200, 8200, 50, 1, 50)`) | 200–8200 |
+| G9 | short 0x63, `0x80 | index` into 0–3200 in steps of 200 | 0–3200 |
+| G5 | short 0x63, `0x80 | index` into 400, 800, 1600, 2000; no profiles | 400–2000 |
+
+It disagrees with libratbag on the G5: no profiles. So the G500 (C068) and G500s (C24E) get the G9x's screen (`Found.IsG500`, `G9xModel`), with their own DPI unit and range and no colour light (they have no 0x57). Untested on real mice. The G9 and G5 would need their own short DPI register and, for the G9, its 3-byte modes.
+
 ## Code
 
 | File | Change |

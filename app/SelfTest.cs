@@ -374,6 +374,16 @@ static class SelfTest
             && G510Set.FromText(new G510Set { Color = 0x3080FF, Bright = 40, On = false }.ToText()).Same(new G510Set { Color = 0x3080FF, Bright = 40, On = false })
             && G510Set.FromText(new G510Set { Effect = G510Set.Cycle, Period = 3000 }.ToText()).Same(new G510Set { Effect = G510Set.Cycle, Period = 3000 }) && G510Set.FromText("1,FF0000,100").Effect == G510Set.Static,
             "the G510 gets its screen only when its vendor collection was found, and its backlight is the colour scaled by brightness");
+        var g500s = FakeG9x.G500s();
+        var g500sState = G9x.Read(g500s, G9xModel.G500s);
+        G9x.SetDpi(g500s, 8200, G9xModel.G500s);
+        var g500sPage = G9x.Build(g500s.Pages[2], new MouseSet { Dpi = 6400, Stage = 3, Light = new MouseLight { Effect = 0x01, Color = 0x00FF00, Bright = 100 } }, 1000, G9xModel.G500s);
+        G9x.Store(g500s, g500sState, g500sPage);
+        var g500sAfter = G9x.Read(g500s, G9xModel.G500s);
+        Check(g500sState.Dpi == 800 && g500sState.Light == null && g500sState.Stages.SequenceEqual(new[] { 400, 800, 1600, 3200 }) && g500sState.Dpis.Last() == 8200
+            && g500s.Registers[0x63][0] == 164 && g500sAfter.Stages.SequenceEqual(new[] { 400, 800, 1600, 6400 }) && g500s.Pages[2][0x23] == 3 && g500s.Pages[2].Take(3).All(b => b == 0)
+            && new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c24e&mi_01&col04" }.G500Model == G9xModel.G500s && new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c068" }.IsG500,
+            "the G500s reads and saves its DPI in units of 50 up to 8200, and has no colour light to read or save");
         var g9xReport = Report.Registers(new FakeG9x(), new Found { Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Hidpp10 = true }, "PageMouse");
         Check(g9xReport.Contains("long 63=22 00 22 00 80 01") && g9xReport.Contains("page 02 · current") && g9xReport.Contains("page 04"), "the G9x report has its registers and profile pages");
         Check(new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json" }.All(x => Model.Load(x).Rows.Length > 5), "the key layouts load");

@@ -517,6 +517,16 @@ class FakeG9x : Hidpp
         Pages[4] = Page("0000FF800011001122110022002222120044004422220000000012220000000012210101101002");
     }
 
+    // A G500s: no colour light (0x57), DPI in units of 50 (cvuchener's hidpp), stages 400, 800, 1600, 3200 on page 2.
+    public static FakeG9x G500s()
+    {
+        var mouse = new FakeG9x();
+        mouse.Registers.Remove(0x57);
+        mouse.Registers[0x63] = FakeHidpp.Hex("10001000800100000000000000000000");
+        mouse.Pages[2] = Page("000000800008000822110010001022120020002022220040004012220000000012210101101002");
+        return mouse;
+    }
+
     public static byte[] Page(string start)
     {
         var page = Enumerable.Repeat((byte)0xFF, 512).ToArray();

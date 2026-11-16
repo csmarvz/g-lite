@@ -635,23 +635,51 @@ class HidppMouse : IMouse
     public int DefaultStage(byte[] profile) { return profile[1]; }
 }
 
+// The mice that share the G9x's profile page and registers. From cvuchener's hidpp (GPL-3.0, facts only): the G500 has the G9x's sensor
+// (0x63 in units of 400/17 DPI, 200–5700), the G500s another (units of 50 DPI, 200–8200), and neither has the G9x's colour light (0x57).
+class G9xModel
+{
+    public static readonly G9xModel G9x = new G9xModel(17, 400, 5700, true), G500 = new G9xModel(17, 400, 5700, false), G500s = new G9xModel(1, 50, 8200, false);
+
+    readonly int rawPerStep, dpiPerStep;
+    public readonly int Max;
+    public readonly bool Light;
+
+    G9xModel(int rawPerStep, int dpiPerStep, int max, bool light) { this.rawPerStep = rawPerStep; this.dpiPerStep = dpiPerStep; Max = max; Light = light; }
+
+    public int Dpi(int raw) { return (int)Math.Round(raw * (double)dpiPerStep / rawPerStep / 50) * 50; }
+
+    public int Raw(int dpi) { return (int)Math.Round(Math.Max(200, Math.Min(Max, dpi)) * (double)rawPerStep / dpiPerStep); }
+
+    public int[] Dpis() { return Enumerable.Range(0, (Max - 200) / 50 + 1).Select(step => 200 + 50 * step).ToArray(); }
+}
+
 class G9xMouse : IMouse
 {
+    readonly G9xModel model;
+
+    public G9xMouse(G9xModel model) { this.model = model; }
+
     public EffectDef[] Effects { get { return G9x.Effects; } }
     public bool HasFactory { get { return false; } }
-    public GMouse.State Read(Hidpp h) { return G9x.Read(h); }
+    public GMouse.State Read(Hidpp h) { return G9x.Read(h, model); }
 
     public void SendDpi(Hidpp h, GMouse.State s, MouseSet want, MouseSet sent)
     {
-        if (sent == null || want.Dpi != sent.Dpi) G9x.SetDpi(h, want.Dpi);
+        if (sent == null || want.Dpi != sent.Dpi) G9x.SetDpi(h, want.Dpi, model);
     }
 
-    public void SetLight(Hidpp h, GMouse.State s, MouseLight light) { G9x.SetLight(h, light); }
+    public void SetLight(Hidpp h, GMouse.State s, MouseLight light)
+    {
+        if (!model.Light) throw new Refused("This mouse has no colour light");
+        G9x.SetLight(h, light);
+    }
+
     public void SetRate(Hidpp h, int hz) { G9x.SetRate(h, hz); }
     public void SetInvert(Hidpp h, bool on) { throw new Refused("This mouse can't invert its wheel"); }
     public byte[] ReadProfile(Hidpp h, GMouse.State s) { return G9x.ReadPage(h, s.Sector); }
     public void Setup(Hidpp h, GMouse.State s, MouseSet want) { throw new Refused("Saving isn't supported on this mouse"); }
-    public void Save(Hidpp h, GMouse.State s, byte[] now, MouseSet want) { G9x.Store(h, s, G9x.Build(now, want, s.Rate)); }
+    public void Save(Hidpp h, GMouse.State s, byte[] now, MouseSet want) { G9x.Store(h, s, G9x.Build(now, want, s.Rate, model)); }
 
     public void Restore(Hidpp h, GMouse.State s, byte[] now, byte[] data)
     {
@@ -659,7 +687,7 @@ class G9xMouse : IMouse
         G9x.Store(h, s, data);
     }
 
-    public string Describe(byte[] profile) { return G9x.Describe(profile); }
+    public string Describe(byte[] profile) { return G9x.Describe(profile, model); }
     public int DefaultStage(byte[] profile) { return profile[0x23]; }
 }
 
@@ -668,11 +696,9 @@ static class G9x
     public static readonly EffectDef[] Effects = GMouse.Effects.Where(effect => effect.Id <= 0x01).ToArray();
     public static readonly int[] Rates = { 125, 200, 250, 333, 500, 1000 };
 
-    public static int Dpi(int raw) { return (int)Math.Round(raw * 400 / 17.0 / 50) * 50; }
+    public static int Dpi(int raw) { return G9xModel.G9x.Dpi(raw); }
 
-    public static int Raw(int dpi) { return (int)Math.Round(dpi * 17 / 400.0); }
-
-    public static int[] Dpis() { return Enumerable.Range(0, 111).Select(step => 200 + 50 * step).ToArray(); }
+    public static int Raw(int dpi) { return G9xModel.G9x.Raw(dpi); }
 
     public static bool Valid(byte[] page) { return page.Length == 512 && GMouse.Valid(page); }
 
@@ -684,9 +710,10 @@ static class G9x
         return page;
     }
 
-    public static int[] StagesOf(byte[] page)
+    public static int[] StagesOf(byte[] page, G9xModel model = null)
     {
-        return Enumerable.Range(0, 5).Select(stage => page[4 + 6 * stage] << 8 | page[5 + 6 * stage]).TakeWhile(raw => raw != 0 && raw != 0xFFFF).Select(Dpi).ToArray();
+        model = model ?? G9xModel.G9x;
+        return Enumerable.Range(0, 5).Select(stage => page[4 + 6 * stage] << 8 | page[5 + 6 * stage]).TakeWhile(raw => raw != 0 && raw != 0xFFFF).Select(model.Dpi).ToArray();
     }
 
     public static MouseLight Light(byte[] color)
@@ -701,15 +728,19 @@ static class G9x
         };
     }
 
-    public static GMouse.State Read(Hidpp device)
+    public static GMouse.State Read(Hidpp device, G9xModel model = null)
     {
-        var state = new GMouse.State { ProfileOk = true, Flash = true, Effects = Effects, Rates = Rates, Dpis = Dpis() };
+        model = model ?? G9xModel.G9x;
+        var state = new GMouse.State { ProfileOk = true, Flash = true, Effects = Effects, Rates = Rates, Dpis = model.Dpis() };
         var resolution = device.Register(0x83, 0x63);
-        state.Dpi = Dpi(resolution[0] | resolution[1] << 8);
+        state.Dpi = model.Dpi(resolution[0] | resolution[1] << 8);
         int interval = device.Register(0x81, 0x64)[0];
         state.Rate = interval > 0 ? 1000 / interval : 0;
-        state.Light = Light(device.Register(0x81, 0x57));
-        state.Zones[0] = new Dictionary<int, int> { { 0x00, 0 }, { 0x01, 1 } };
+        if (model.Light)
+        {
+            state.Light = Light(device.Register(0x81, 0x57));
+            state.Zones[0] = new Dictionary<int, int> { { 0x00, 0 }, { 0x01, 1 } };
+        }
         try
         {
             var current = device.Register(0x81, 0x0F);
@@ -723,7 +754,7 @@ static class G9x
                 state.Current = new[] { current[1] };
                 state.Profile = profile;
                 state.ProfileOk = Valid(profile);
-                if (state.ProfileOk) state.Stages = StagesOf(profile);
+                if (state.ProfileOk) state.Stages = StagesOf(profile, model);
             }
         }
         catch (HidppError) { }
@@ -731,9 +762,9 @@ static class G9x
         return state;
     }
 
-    public static void SetDpi(Hidpp device, int dpi)
+    public static void SetDpi(Hidpp device, int dpi, G9xModel model = null)
     {
-        int raw = Raw(Math.Max(200, Math.Min(5700, dpi)));
+        int raw = (model ?? G9xModel.G9x).Raw(dpi);
         var resolution = new byte[16];
         Array.Copy(device.Register(0x83, 0x63), resolution, 6);
         resolution[0] = resolution[2] = (byte)raw;
@@ -743,27 +774,28 @@ static class G9x
 
     public static void SetRate(Hidpp device, int hz) { device.Register(0x80, 0x64, (byte)(1000 / hz)); }
 
-    public static string Describe(byte[] page)
+    public static string Describe(byte[] page, G9xModel model = null)
     {
         if (!Valid(page)) return "damaged, can't be restored";
-        var stages = StagesOf(page);
+        var stages = StagesOf(page, model);
         var dpi = page[0x23] < stages.Length ? stages[page[0x23]] + " DPI" : "DPI stages";
         return page[0x26] > 0 ? dpi + " · " + 1000 / page[0x26] + " Hz" : dpi;
     }
 
-    public static byte[] Build(byte[] old, MouseSet want, int hz)
+    public static byte[] Build(byte[] old, MouseSet want, int hz, G9xModel model = null)
     {
+        model = model ?? G9xModel.G9x;
         var page = (byte[])old.Clone();
-        var stages = StagesOf(page);
+        var stages = StagesOf(page, model);
         if (stages.Length == 0) throw new Refused("The profile on the mouse has no DPI stages, not touching it");
         int stage = want.Stage >= 0 && want.Stage < stages.Length ? want.Stage : Array.IndexOf(stages, want.Dpi);
         if (stage < 0) stage = Math.Min((int)page[0x23], stages.Length - 1);
-        int raw = Raw(Math.Max(200, Math.Min(5700, want.Dpi)));
+        int raw = model.Raw(want.Dpi);
         page[4 + 6 * stage] = page[6 + 6 * stage] = (byte)(raw >> 8);
         page[5 + 6 * stage] = page[7 + 6 * stage] = (byte)raw;
         page[0x23] = (byte)stage;
         if (hz > 0) page[0x26] = (byte)(1000 / hz);
-        if (want.Light != null)
+        if (want.Light != null && model.Light)
         {
             var color = want.Light.Effect == 0x01 ? GMouse.Encode(want.Light) : new byte[3];
             Array.Copy(color, page, 3);
