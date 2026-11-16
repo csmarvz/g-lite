@@ -384,6 +384,23 @@ static class SelfTest
             && g500s.Registers[0x63][0] == 164 && g500sAfter.Stages.SequenceEqual(new[] { 400, 800, 1600, 6400 }) && g500s.Pages[2][0x23] == 3 && g500s.Pages[2].Take(3).All(b => b == 0)
             && new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c24e&mi_01&col04" }.G500Model == G9xModel.G500s && new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c068" }.IsG500,
             "the G500s reads and saves its DPI in units of 50 up to 8200, and has no colour light to read or save");
+        var g5Mouse = FakeG9x.Short(0x82);
+        var g5State = G5Mouse.G5().Read(g5Mouse);
+        G5Mouse.G5().SendDpi(g5Mouse, g5State, new MouseSet { Dpi = 2000 }, null);
+        var g9Mouse = FakeG9x.Short(0x84);
+        var g9State = G5Mouse.G9().Read(g9Mouse);
+        G5Mouse.G9().SendDpi(g9Mouse, g9State, new MouseSet { Dpi = 3200 }, null);
+        bool g5Refused = false;
+        try { G5Mouse.G5().SendDpi(g5Mouse, g5State, new MouseSet { Dpi = 1000 }, null); } catch (Refused) { g5Refused = true; }
+        Check(g5State.Dpi == 1600 && g5State.Rate == 500 && !g5State.Writable && g5State.Light == null && g5Mouse.Registers[0x63][0] == 0x83 && g5Refused
+            && g9State.Dpi == 800 && g9State.Dpis.Length == 16 && g9Mouse.Registers[0x63][0] == 0x90 && G5Mouse.G9().Raw(200) == 0x81
+            && new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c049&mi_00" }.IsG5 && new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c048&mi_00" }.IsG9,
+            "the G5 and G9 read and set their DPI as 0x80 + an index into their list (the G9's 200 DPI is 0x81), live only");
+        var g700s = FakeG9x.G500s();
+        var g700sState = G9x.Read(g700s, new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c07c&mi_01" }.G500Model);
+        Check(g700sState.Dpi == 800 && g700sState.Dpis.Last() == 8200 && g700sState.Profile == null && !g700sState.Writable && g700sState.Stages.Length == 0
+            && new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c06b" }.G500Model == G9xModel.G700,
+            "the G700 and G700s on a cable read their DPI with the G500's and G500s's units, and never read or write a profile page");
         var g9xReport = Report.Registers(new FakeG9x(), new Found { Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Hidpp10 = true }, "PageMouse");
         Check(g9xReport.Contains("long 63=22 00 22 00 80 01") && g9xReport.Contains("page 02 · current") && g9xReport.Contains("page 04"), "the G9x report has its registers and profile pages");
         Check(new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json" }.All(x => Model.Load(x).Rows.Length > 5), "the key layouts load");

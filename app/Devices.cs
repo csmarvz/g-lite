@@ -27,8 +27,17 @@ class Found
     public bool IsG560 { get { return Name.ToUpper().Contains("G560") && Has(0x8070); } }
     public bool IsMouse { get { return Kind == "mouse" && (Has(0x2201) || Has(0x2202)); } }
     public bool IsG9x { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_(C066|C249)", RegexOptions.IgnoreCase); } }
-    public bool IsG500 { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_(C068|C24E)", RegexOptions.IgnoreCase); } }
-    public G9xModel G500Model { get { return Regex.IsMatch(Path ?? "", "PID_C24E", RegexOptions.IgnoreCase) ? G9xModel.G500s : G9xModel.G500; } }
+    public bool IsG500 { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_(C068|C24E|C06B|C07C)", RegexOptions.IgnoreCase); } }
+    public bool IsG5 { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_(C041|C049)", RegexOptions.IgnoreCase); } }
+    public bool IsG9 { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_C048", RegexOptions.IgnoreCase); } }
+    public G9xModel G500Model
+    {
+        get
+        {
+            var pid = Regex.Match(Path ?? "", "PID_([0-9A-F]{4})", RegexOptions.IgnoreCase).Groups[1].Value.ToUpperInvariant();
+            return pid == "C24E" ? G9xModel.G500s : pid == "C06B" ? G9xModel.G700 : pid == "C07C" ? G9xModel.G700s : G9xModel.G500;
+        }
+    }
     public bool IsLitra { get { return Name.ToUpper().Contains("LITRA") || Path != null && Regex.IsMatch(Path, @"PID_C90[0-3]", RegexOptions.IgnoreCase); } }
     public bool IsLight { get { return IsLitra && Has(0x1990); } }
     public bool IsG { get { return LooksG(Name) || IsLitra; } }

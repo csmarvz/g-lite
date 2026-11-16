@@ -5,6 +5,7 @@
 ### Added
 
 - Save to mouse on the G502 HERO, G303 and G502 Proteus Spectrum. Their onboard profiles have the same layout as the G Pro Wireless's, so G-Lite saves them the same way, with a backup first and a read-back after. A HERO that has only ever run its factory profile gets its first profile set up, as the G305 does. Untested on a real mouse.
+- The G5, G9, G700 and G700s get the mouse screen: DPI and report rate, set while G-Lite runs, not saved to the mouse. The G700 and G700s only on their cable. Untested on real mice.
 - The G500 and G500s get the mouse screen: DPI and DPI stage (up to 8200 on the G500s), report rate, profiles and Save to mouse, the same way as the G9x. Untested on a real mouse.
 
 ### Fixed

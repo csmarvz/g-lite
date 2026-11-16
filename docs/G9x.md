@@ -145,7 +145,11 @@ cvuchener's hidpp (GPL-3.0, facts only: `src/libhidpp/hidpp/DeviceInfo.cpp`, `hi
 | G9 | short 0x63, `0x80 | index` into 0–3200 in steps of 200 | 0–3200 |
 | G5 | short 0x63, `0x80 | index` into 400, 800, 1600, 2000; no profiles | 400–2000 |
 
-It disagrees with libratbag on the G5: no profiles. So the G500 (C068) and G500s (C24E) get the G9x's screen (`Found.IsG500`, `G9xModel`), with their own DPI unit and range and no colour light (they have no 0x57). Untested on real mice. The G9 and G5 would need their own short DPI register and, for the G9, its 3-byte modes.
+It disagrees with libratbag on the G5: no profiles. So the G500 (C068) and G500s (C24E) get the G9x's screen (`Found.IsG500`, `G9xModel`), with their own DPI unit and range and no colour light (they have no 0x57). Untested on real mice.
+
+The G5 and G9 get `G5Mouse`: short 0x63 read and set as `0x80 +` an index (G5: 400, 800, 1600, 2000; G9: index 1 to 16 for 200 to 3200), short 0x64 the interval in ms. Live only. The G5 has no profile registers. The G9's 78-byte profile is documented (g500 `doc/profile/g9.md`: colour 0–2, five 3-byte modes from 4 with `0x80 | dpi/200` then LEDs, default mode at 19, 1-based, interval at 22, ten 3-byte buttons from 23), but no source lists its memory registers, so G-Lite doesn't write it.
+
+The G700 and G700s on their cable get the G9x screen with `G9xModel.G700` and `G700s`: long 0x63 in the G500's and G500s's units, live only. Their profile (g500 `doc/profile/g700s.md`, hidpp's `ProfileFormatG700`) is 74 bytes: five 4-byte modes (X byte, Y byte, LEDs), default at 20, angle snap at 22, interval at 24, energy mode at 29, thirteen buttons from 35; factory profiles on pages 25 and 26. The g500 docs mark 0xA0 and 0xA1 "?" for them, so nothing is written. Through their receiver (C531) they'd be at device index 1 to 6, which `Devices.Scan` doesn't reach for HID++ 1.0 devices yet.
 
 ## Code
 

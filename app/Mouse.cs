@@ -642,13 +642,17 @@ class HidppMouse : IMouse
 // (0x63 in units of 400/17 DPI, 200–5700), the G500s another (units of 50 DPI, 200–8200), and neither has the G9x's colour light (0x57).
 class G9xModel
 {
-    public static readonly G9xModel G9x = new G9xModel(17, 400, 5700, true), G500 = new G9xModel(17, 400, 5700, false), G500s = new G9xModel(1, 50, 8200, false);
+    public static readonly G9xModel G9x = new G9xModel(17, 400, 5700, true, true), G500 = new G9xModel(17, 400, 5700, false, true), G500s = new G9xModel(1, 50, 8200, false, true);
+
+    // The G700 and G700s have the G500's and G500s's sensors, but another profile layout (4-byte modes, 13 buttons from 35) and memory commands
+    // nobody has confirmed (g500 doc/hidpp10.md marks 0xA0 and 0xA1 "?"): live DPI and rate only, no pages read or written.
+    public static readonly G9xModel G700 = new G9xModel(17, 400, 5700, false, false), G700s = new G9xModel(1, 50, 8200, false, false);
 
     readonly int rawPerStep, dpiPerStep;
     public readonly int Max;
-    public readonly bool Light;
+    public readonly bool Light, Pages;
 
-    G9xModel(int rawPerStep, int dpiPerStep, int max, bool light) { this.rawPerStep = rawPerStep; this.dpiPerStep = dpiPerStep; Max = max; Light = light; }
+    G9xModel(int rawPerStep, int dpiPerStep, int max, bool light, bool pages) { this.rawPerStep = rawPerStep; this.dpiPerStep = dpiPerStep; Max = max; Light = light; Pages = pages; }
 
     public int Dpi(int raw) { return (int)Math.Round(raw * (double)dpiPerStep / rawPerStep / 50) * 50; }
 
@@ -692,6 +696,61 @@ class G9xMouse : IMouse
 
     public string Describe(byte[] profile) { return G9x.Describe(profile, model); }
     public int DefaultStage(byte[] profile) { return profile[0x23]; }
+}
+
+// The G5 and G9: short register 0x63 holds 0x80 + an index into the mouse's DPI list, 0x64 the report interval in ms.
+// From cvuchener's g500 docs (commands/63-resolution.md, 64-usbrate.md) and hidpp's sensors (GPL-3.0, facts only).
+// Live only: the G5 has no profile memory, and nobody has confirmed how a G9 writes its pages.
+class G5Mouse : IMouse
+{
+    // The G9's index 0 is "off", so its 200 DPI is index 1.
+    public static G5Mouse G5() { return new G5Mouse(new[] { 400, 800, 1600, 2000 }, 0); }
+    public static G5Mouse G9() { return new G5Mouse(Enumerable.Range(1, 16).Select(step => 200 * step).ToArray(), 1); }
+
+    readonly int[] dpis;
+    readonly int firstIndex;
+
+    G5Mouse(int[] dpis, int firstIndex) { this.dpis = dpis; this.firstIndex = firstIndex; }
+
+    public int Dpi(int raw)
+    {
+        int index = (raw & 0x7F) - firstIndex;
+        return (raw & 0x80) != 0 && index >= 0 && index < dpis.Length ? dpis[index] : 0;
+    }
+
+    public int Raw(int dpi)
+    {
+        int index = Array.IndexOf(dpis, dpi);
+        if (index < 0) throw new Refused("This mouse has no " + dpi + " DPI setting");
+        return 0x80 | index + firstIndex;
+    }
+
+    public EffectDef[] Effects { get { return G9x.Effects; } }
+    public bool HasFactory { get { return false; } }
+
+    public GMouse.State Read(Hidpp h)
+    {
+        var state = new GMouse.State { ProfileOk = true, Effects = G9x.Effects, Rates = G9x.Rates, Dpis = dpis };
+        state.Dpi = Dpi(h.Register(0x81, 0x63)[0]);
+        int interval = h.Register(0x81, 0x64)[0];
+        state.Rate = interval > 0 ? 1000 / interval : 0;
+        return state;
+    }
+
+    public void SendDpi(Hidpp h, GMouse.State s, MouseSet want, MouseSet sent)
+    {
+        if (sent == null || want.Dpi != sent.Dpi) h.Register(0x80, 0x63, (byte)Raw(want.Dpi));
+    }
+
+    public void SetLight(Hidpp h, GMouse.State s, MouseLight light) { throw new Refused("G-Lite can't set this mouse's light yet"); }
+    public void SetRate(Hidpp h, int hz) { G9x.SetRate(h, hz); }
+    public void SetInvert(Hidpp h, bool on) { throw new Refused("This mouse can't invert its wheel"); }
+    public byte[] ReadProfile(Hidpp h, GMouse.State s) { return null; }
+    public void Setup(Hidpp h, GMouse.State s, MouseSet want) { throw new Refused("Saving isn't supported on this mouse"); }
+    public void Save(Hidpp h, GMouse.State s, byte[] now, MouseSet want) { throw new Refused("Saving isn't supported on this mouse"); }
+    public void Restore(Hidpp h, GMouse.State s, byte[] now, byte[] data) { throw new Refused("Saving isn't supported on this mouse"); }
+    public string Describe(byte[] profile) { return ""; }
+    public int DefaultStage(byte[] profile) { return 0; }
 }
 
 static class G9x
@@ -742,7 +801,7 @@ static class G9x
     public static GMouse.State Read(Hidpp device, G9xModel model = null)
     {
         model = model ?? G9xModel.G9x;
-        var state = new GMouse.State { ProfileOk = true, Flash = true, Effects = Effects, Rates = Rates, Dpis = model.Dpis() };
+        var state = new GMouse.State { ProfileOk = true, Flash = model.Pages, Effects = Effects, Rates = Rates, Dpis = model.Dpis() };
         var resolution = device.Register(0x83, 0x63);
         state.Dpi = model.Dpi(resolution[0] | resolution[1] << 8);
         int interval = device.Register(0x81, 0x64)[0];
@@ -752,7 +811,7 @@ static class G9x
             state.Light = Light(device.Register(0x81, 0x57));
             state.Zones[0] = new Dictionary<int, int> { { 0x00, 0 }, { 0x01, 1 } };
         }
-        try
+        if (model.Pages) try
         {
             var current = device.Register(0x81, 0x0F);
             var directory = current[0] == 0x00 && current[1] < 16 ? ReadPage(device, 1) : null;

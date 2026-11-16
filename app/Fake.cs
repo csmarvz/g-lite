@@ -527,6 +527,17 @@ class FakeG9x : Hidpp
         return mouse;
     }
 
+    // A G5 or G9: a one-byte 0x63 (0x80 + index), no colour light and no profile memory.
+    public static FakeG9x Short(byte resolution)
+    {
+        var mouse = new FakeG9x();
+        mouse.Registers.Remove(0x57);
+        mouse.Registers.Remove(0x0F);
+        mouse.Registers[0x63] = new byte[] { resolution, 0, 0 };
+        mouse.Pages.Clear();
+        return mouse;
+    }
+
     public static byte[] Page(string start)
     {
         var page = Enumerable.Repeat((byte)0xFF, 512).ToArray();
