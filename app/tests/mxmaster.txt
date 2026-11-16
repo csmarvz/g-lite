@@ -17,10 +17,10 @@ slide Speed 36
   2201 fn3  00 07 D0
   = status "Applied to the mouse. Buttons, gestures and per-app settings stay in Logi Options+." [Report] Preset=None [New…] […] Speed=36 SmartShift=on Invert the thumb wheel=off Switch to free spin at=9 Invert scrolling=off Computer=1 · Desk PC [Revert]
 slide Switch to free spin at 19
-  2110 fn1  00 14
+  2110 fn1  00 14 14
   = status "Applied to the mouse. Buttons, gestures and per-app settings stay in Logi Options+." [Report] Preset=None [New…] […] Speed=36 SmartShift=on Invert the thumb wheel=off Switch to free spin at=19 Invert scrolling=off Computer=1 · Desk PC [Revert]
 press SmartShift
-  2110 fn1  00 FF
+  2110 fn1  00 FF FF
   = status "Applied to the mouse. Buttons, gestures and per-app settings stay in Logi Options+." [Report] Preset=None [New…] […] Speed=36 SmartShift=off Invert the thumb wheel=off Switch to free spin at=9 (off) Invert scrolling=off Computer=1 · Desk PC [Revert]
 press Invert scrolling
   2121 fn1
@@ -38,10 +38,10 @@ type Work
 press Save
   = status "Saved the preset Work" [Report] Preset=Work [Update (off)] […] Speed=36 SmartShift=off Invert the thumb wheel=on Switch to free spin at=9 (off) Invert scrolling=on Computer=1 · Desk PC [Revert (off)]
 press SmartShift
-  2110 fn1  00 0A
+  2110 fn1  00 0A 0A
   = status "Applied to the mouse. Buttons, gestures and per-app settings stay in Logi Options+." [Report] Preset=Work • [Update] […] Speed=36 SmartShift=on Invert the thumb wheel=on Switch to free spin at=9 Invert scrolling=on Computer=1 · Desk PC [Revert]
 press Revert changes
-  2110 fn1  00 FF
+  2110 fn1  00 FF FF
   = status "Applied to the mouse. Buttons, gestures and per-app settings stay in Logi Options+." [Report] Preset=Work [Update (off)] […] Speed=36 SmartShift=off Invert the thumb wheel=on Switch to free spin at=9 (off) Invert scrolling=on Computer=1 · Desk PC [Revert (off)]
 pick Computer 3 · –
   = status "Nothing is paired on computer 3 yet. Pair it with the Easy-Switch button first." [Report] Preset=Work [Update (off)] […] Speed=36 SmartShift=off Invert the thumb wheel=on Switch to free spin at=9 (off) Invert scrolling=on Computer=1 · Desk PC [Revert (off)]
@@ -66,7 +66,7 @@ open
   1815 fn3  01
   1815 fn1  02
   2201 fn3  00 07 D0
-  2110 fn1  00 FF
+  2110 fn1  00 FF FF
   2121 fn1
   2121 fn2  04
   2150 fn1

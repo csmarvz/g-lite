@@ -199,7 +199,8 @@ static class GMouse
         {
             get
             {
-                if (Flash) return Sector >= 2 && Sector < 32 && SectorSize == 512 && Current != null;
+                // Pages 1–16 are the flash; 17 and up hold the G500's and G700s's factory profiles (cvuchener's g500 doc/memory.md).
+                if (Flash) return Sector >= 2 && Sector <= 16 && SectorSize == 512 && Current != null;
                 return Onboard && KnownFormat(Format) && SectorSize >= 0xF0 && (Sector > 0 && Sector < 0x100 || Fresh);
             }
         }
@@ -579,7 +580,9 @@ static class GMouse
     {
         try { h.Call(h.F(0x8060), 2, (byte)(1000 / hz)); return; }
         catch (NotSupportedException) { }
-        h.Call(h.F(0x8061), 3, (byte)Math.Max(0, Array.IndexOf(new[] { 125, 250, 500, 1000, 2000, 4000, 8000 }, hz)));
+        int index = Array.IndexOf(new[] { 125, 250, 500, 1000, 2000, 4000, 8000 }, hz);
+        if (index < 0) throw new Refused("This mouse has no " + hz + " Hz rate");
+        h.Call(h.F(0x8061), 3, (byte)index);
     }
 
     public static void SetLight(Hidpp h, State s, MouseLight l)
@@ -710,6 +713,14 @@ static class G9x
         return page;
     }
 
+    // The directory's entries are 3 bytes (page, offset in words, LEDs), ended by one 0xFF; past it page 1 holds macros and names.
+    public static int Entry(byte[] directory, int index)
+    {
+        for (int entry = 0; entry * 3 + 2 < directory.Length - 2 && directory[entry * 3] != 0xFF; entry++)
+            if (entry == index) return directory[entry * 3];
+        return 0xFF;
+    }
+
     public static int[] StagesOf(byte[] page, G9xModel model = null)
     {
         model = model ?? G9xModel.G9x;
@@ -745,7 +756,7 @@ static class G9x
         {
             var current = device.Register(0x81, 0x0F);
             var directory = current[0] == 0x00 && current[1] < 16 ? ReadPage(device, 1) : null;
-            int pageNumber = directory != null && Valid(directory) ? directory[current[1] * 3] : 0xFF;
+            int pageNumber = directory != null && Valid(directory) ? Entry(directory, current[1]) : 0xFF;
             var profile = pageNumber >= 2 && pageNumber < 32 ? ReadPage(device, pageNumber) : null;
             if (profile != null)
             {
@@ -810,6 +821,7 @@ static class G9x
         if (page.Length != 512 || !Valid(page)) throw new Refused("Refusing to write a profile with a bad checksum");
         byte pageNumber = (byte)state.Sector;
         device.Register(0x80, 0x0F, 0xFF);
+        bool erased = false;
         try
         {
             for (int half = 0; half < 2; half++)
@@ -817,14 +829,16 @@ static class G9x
                 var data = new byte[256];
                 Array.Copy(page, 256 * half, data, 0, 256);
                 Upload(device, data);
-                if (half == 0) device.Register(0x82, 0xA0, 0x02, 0, 0, 0, 0, 0, pageNumber, 0, 0, 0, 0x01, 0x00);
+                if (half == 0) { erased = true; device.Register(0x82, 0xA0, 0x02, 0, 0, 0, 0, 0, pageNumber, 0, 0, 0, 0x01, 0x00); }
                 device.Register(0x82, 0xA0, 0x03, 0, 0, 0, 0, 0, pageNumber, (byte)(0x80 * half), 0, 0, 0x01, 0x00);
             }
         }
         catch
         {
-            try { device.Register(0x80, 0x0F, 0x00, state.Current[0]); }
-            catch (Exception) { }
+            // Once the erase may have run, the page can be half written: stay on the factory profile (0x0F FF) until a backup is restored.
+            if (!erased)
+                try { device.Register(0x80, 0x0F, 0x00, state.Current[0]); }
+                catch (Exception) { }
             throw;
         }
         device.Register(0x80, 0x0F, 0x00, state.Current[0]);

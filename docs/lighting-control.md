@@ -49,7 +49,7 @@ All two-byte fields are big endian.
 
 - `G515.Claim` and `G915.Claim` send `01 03 04`: clusters and power modes, and the no-activity event. OpenRGB sends `01 03 07` on the G915, which only adds events. Either should work.
 - Release sends `01 00 00`.
-- Without it, fn 1 is refused: the Litra Beam LX answers error 0x05 (Logitech internal) to every effect until fn 5 `01 01 00` has been sent.
+- Without it, fn 1 is refused: the Litra Beam LX answers error 0x05 to every effect until fn 5 `01 01 00` has been sent. Logitech's spec (x8071 v4) names it: NOT_ALLOWED "if the enableSWControlOfAllRgbClusters is not enabled". fn 5's bytes are get/set, then the control flags (0x01 all RGB clusters, 0x02 power modes: "disables all FW power modes handling"), then event flags (0x01 effect sync, 0x02 user activity, 0x04 no-activity timeout). So the keyboards' `01 03 04` also turns off the firmware's own idle dimming, which G-Lite does itself. fn 1's last byte: bit 0 RAM, bit 1 EEPROM, bits 2–3 the power mode (0 full, 1 power save).
 - OpenLogi reads the flags first (`00 00 00`), adds bit 0, and on exit puts back what it read. That's the polite way, in case G HUB or something else held control. G-Lite could do the same: read in `Claim`, keep the bytes, send them back in `Release`. It's not urgent.
 
 ### Power modes (fn 7, fn 8)

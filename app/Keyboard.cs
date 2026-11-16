@@ -146,8 +146,10 @@ class Hidpp : IDisposable
             if (reply == null) throw new TimeoutException("The mouse didn't take the upload");
             if (reply[1] != Idx) continue;
             if (reply[2] == 0x8F && reply[3] == subId) throw new HidppError(reply[5], string.Format("HID++ 1.0 error 0x{0:x2} (upload)", reply[5]));
-            if (reply[2] != 0x50 || reply[4] != sequence) continue;
+            if (reply[2] != 0x50) continue;
+            // An error ack doesn't repeat the sequence number (cvuchener's g500 doc/hidpp10.md: byte 4 "if there was no error").
             if (reply[3] != 0x01) throw new HidppError(reply[3], string.Format("The mouse refused the upload (0x{0:x2})", reply[3]));
+            if (reply[4] != sequence) continue;
             return;
         }
     }

@@ -393,11 +393,12 @@ static class Devices
         byte fw = pr.Feature(idx, 0x0003);
         var entities = fw == 0 ? null : pr.Call(idx, fw, 0);
         f.Models = Found.ModelText(entities);
+        // The running firmware is the main application (type 0) marked active, byte 8 bit 0: "exactly one entity will return 1" (spec x0003 v4).
         byte[] info = null;
-        for (int e = 0; entities != null && e < entities[0] && info == null; e++)
+        for (int e = 0; entities != null && e < entities[0] && (info == null || (info[8] & 1) == 0); e++)
         {
             var r = pr.Call(idx, fw, 1, (byte)e);
-            if (r != null && r[0] == 0) info = r;
+            if (r != null && r[0] == 0 && (info == null || (r[8] & 1) != 0)) info = r;
         }
         if (info != null)
             f.Firmware = Found.FirmwareText(info);

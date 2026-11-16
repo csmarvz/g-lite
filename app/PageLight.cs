@@ -154,7 +154,8 @@ static class Litra
         else
         {
             b[2] = (byte)(color >> 16); b[3] = (byte)(color >> 8); b[4] = (byte)color;
-            if (id == 0x18) { b[5] = (byte)(other >> 16); b[6] = (byte)(other >> 8); b[7] = (byte)other; b[9] = 50; b[10] = 100; }
+            // Two colours, the period at parameters 7–8 and the intensity at 9 (spec x8071 v4, effect 24); the light's own default period is 3000 ms.
+            if (id == 0x18) { b[5] = (byte)(other >> 16); b[6] = (byte)(other >> 8); b[7] = (byte)other; b[8] = (byte)(period >> 8); b[9] = (byte)period; b[10] = 100; }
         }
         b[12] = 1;
         return b;

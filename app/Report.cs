@@ -121,7 +121,7 @@ static class Report
         var pageNumbers = new List<int> { 1 };
         for (int entry = 0; entry + 2 < 510 && directory[entry] != 0xFF && pageNumbers.Count < 17; entry += 3)
             if (directory[entry] >= 2 && directory[entry] < 32) pageNumbers.Add(directory[entry]);
-        int currentPage = current != null && current[0] == 0 && current[1] < 16 ? directory[current[1] * 3] : -1;
+        int currentPage = current != null && current[0] == 0 && current[1] < 16 ? G9x.Entry(directory, current[1]) : -1;
         foreach (var pageNumber in pageNumbers)
         {
             var page = pageNumber == 1 ? directory : ReadPage(device, pageNumber);

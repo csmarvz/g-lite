@@ -61,7 +61,7 @@ LGS also shows: report rates 125, 200, 250, 333, 500 and 1000 (intervals 8, 5, 4
 
 ## Profiles
 
-Flash is in pages of 512 bytes. Page 0 is RAM, page 1 the directory, pages 2 to 31 profiles. Each page ends with a CRC-16 (CCITT, start 0xFFFF, big endian) over the first 510 bytes, the same as `GMouse.Crc`. Checked on pages 1 to 4.
+Flash is in pages of 512 bytes. Page 0 is RAM (only its first 400 bytes can be written), page 1 the directory, pages 2 to 16 profiles and macros; 17 and up are factory profiles on the G500 (17, 18) and G700s (25, 26) (cvuchener's g500 `doc/memory.md`), so G-Lite writes pages 2 to 16 only. The directory is 3-byte entries (page, offset in words, LEDs) ended by one `FF` (`G9x.Entry`); with a bad checksum on page 1 the mouse loads its factory profile. A profile page's CRC isn't checked by the mouse, but LGS won't overwrite a page whose CRC is bad, and neither does G-Lite. If a save fails after the erase, G-Lite leaves the mouse on its factory profile (0x0F `FF`) instead of the half-written page. Each page ends with a CRC-16 (CCITT, start 0xFFFF, big endian) over the first 510 bytes, the same as `GMouse.Crc`. Checked on pages 1 to 4.
 
 ### Directory (page 1)
 

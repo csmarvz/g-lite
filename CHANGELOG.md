@@ -9,6 +9,11 @@
 
 ### Fixed
 
+- MX keyboards: after the brightness keys had been used, G-Lite showed Automatic backlight as off, and changing the backlight could leave it dark. It now shows Automatic, and keeps the level that's lit.
+- MX mice: the SmartShift threshold is kept when the mouse turns off and on again, instead of going back to its old value (or turning SmartShift back on).
+- G9x, G500 and G500s: saving only ever writes the mouse's own profile pages, never its factory ones; a profile list is read only up to its end; and if a save fails halfway, the mouse stays on its factory profile instead of a half-written one.
+- Litra Beam LX: Try effect's two-colour effect uses the Speed slider's period instead of 50 ms.
+- A device's firmware version is the one it runs, when it has more than one.
 - On a mouse running its factory profile, buttons set to DPI shift, DPI up, DPI down or other built-in functions show their name instead of "Special 07". Cycle profile, Default DPI, Scroll up and Scroll down are named too, and the G502 HERO's buttons get their names (Sniper, G7, G8…).
 - Try effect on the Litra Beam LX sends the smooth colour cycle and smooth colour wave the way the keyboards take them. Before, the light ignored them. Untested on a real light.
 

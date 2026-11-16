@@ -120,7 +120,8 @@ static class Other
             if (config != null)
             {
                 set[OtherSet.Light] = config[0] & 1;
-                if ((config[2] & 0x08) != 0 && (config[2] & 0x20) != 0) set[OtherSet.Auto] = (config[1] >> 3 & 3) == 1 ? 1 : 0;
+                // Mode 2 (temporary manual) is automatic nudged with the keys: the keyboard goes back to automatic at the next power-on (spec x1982 v3).
+                if ((config[2] & 0x08) != 0 && (config[2] & 0x20) != 0) set[OtherSet.Auto] = (config[1] >> 3 & 3) != 3 ? 1 : 0;
                 var info = (config[2] & 0x20) != 0 ? Try(device, 0x1982, 2) : null;
                 // The level is fn 0's b5, the stored setting, like Solaar; fn 2's b1 is the level lit right now, which fades.
                 if (info != null && info[0] > 1) { state.Levels = info[0]; set[OtherSet.Level] = Math.Min(info[0] - 1, (int)config[5]); }
@@ -174,8 +175,9 @@ static class Other
         };
         send(OtherSet.Bright, () => device.Call(device.F(0x8040), 2, (byte)(want[OtherSet.Bright] >> 8), (byte)want[OtherSet.Bright]));
         send(OtherSet.Dpi, () => device.Call(device.F(0x2201), 3, 0, (byte)(want[OtherSet.Dpi] >> 8), (byte)want[OtherSet.Dpi]));
-        // 0 in a SmartShift byte leaves it, so the wheel's mode, set with its button, isn't touched.
-        send(OtherSet.Shift, () => device.Call(device.F(state.ShiftFeature), state.ShiftFeature == 0x2111 ? 2 : 1, 0, (byte)want[OtherSet.Shift], 0));
+        // 0 in a SmartShift byte leaves it, so the wheel's mode, set with its button, isn't touched. 0x2110 goes back to its third byte
+        // (autoDisengageDefault) at each reset, so it gets the threshold too; 0x2111 keeps its settings and its third byte is the torque (specs x2110, x2111).
+        send(OtherSet.Shift, () => device.Call(device.F(state.ShiftFeature), state.ShiftFeature == 0x2111 ? 2 : 1, 0, (byte)want[OtherSet.Shift], state.ShiftFeature == 0x2111 ? (byte)0 : (byte)want[OtherSet.Shift]));
         // Read just before writing: Logi Options+ may have diverted the wheel since (bit 0). Only bit 2 changes. Bit 1 (high resolution) makes Windows scroll many times too fast.
         send(OtherSet.Invert, () =>
         {
@@ -194,12 +196,15 @@ static class Other
             try
             {
                 // The keyboard stores this write. Durations go back as read; the level is sent only in mode 3, else 0, like Solaar.
+                // Mode 2 can't be set (spec x1982 v3), so a keyboard in it is written back as automatic. Outside mode 3 the stored level reads 0,
+                // so going to mode 3 without a level picked takes the level lit now (fn 2 byte 1) rather than turning the backlight off.
                 var config = device.Call(device.F(0x1982), 0);
-                int mode = want[OtherSet.Auto] == 1 ? 1 : want[OtherSet.Auto] == 0 || want[OtherSet.Level] >= 0 && want[OtherSet.Level] != sent[OtherSet.Level] ? 3 : config[1] >> 3 & 3;
+                int now = config[1] >> 3 & 3;
+                int mode = want[OtherSet.Auto] == 1 ? 1 : want[OtherSet.Auto] == 0 || want[OtherSet.Level] >= 0 && want[OtherSet.Level] != sent[OtherSet.Level] ? 3 : now == 2 ? 1 : now;
                 byte options = (byte)(config[1] & ~0x18 | mode << 3);
-                byte level = (byte)(mode != 3 ? 0 : want[OtherSet.Level] >= 0 ? want[OtherSet.Level] : config[5]);
+                int level = mode != 3 ? 0 : want[OtherSet.Level] >= 0 ? want[OtherSet.Level] : now == 3 ? config[5] : device.Call(device.F(0x1982), 2)[1];
                 bool on = want[OtherSet.Light] >= 0 ? want[OtherSet.Light] == 1 : (config[0] & 1) != 0;
-                device.Call(device.F(0x1982), 1, (byte)(on ? 1 : 0), options, 0xFF, level, config[6], config[7], config[8], config[9], config[10], config[11], config[12], config[13]);
+                device.Call(device.F(0x1982), 1, (byte)(on ? 1 : 0), options, 0xFF, (byte)level, config[6], config[7], config[8], config[9], config[10], config[11], 0, 0);
             }
             catch (HidppError) { refused.AddRange(lightSettings.Where(setting => want[setting] >= 0)); }
         }
