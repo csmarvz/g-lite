@@ -118,7 +118,7 @@ abstract class DevicePage : Control, IPage
         foreach (var b in list)
         {
             var entry = b;
-            var item = new ToolStripMenuItem(When(b) + " · " + describe(b) + (b.First ? " · first backup" : ""), null, (s, e) => restore(entry));
+            var item = new ToolStripMenuItem(When(b) + ", " + describe(b) + (b.First ? ", first backup" : ""), null, (s, e) => restore(entry));
             item.Enabled = good(b);
             m.Items.Add(item);
         }
@@ -641,7 +641,7 @@ class InfoPage : Control
         reportBtn.Visible = !f.Asleep;
         create.Visible = !f.Asleep && !keys;
         if (f.Asleep && report.Visible) report.Close();
-        link.Text = f.Link + f.Slot + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "");
+        link.Text = f.Link + f.Slot + (f.Wpid != 0 ? ", ID " + f.Wpid.ToString("X4") : "");
         battery.Text = f.Battery < 0 ? "–" : f.BatteryWords + (f.Charging ? ", charging" : "") + (f.Approx ? " (estimated from the voltage)" : "");
         firmware.Text = f.Firmware == "" ? "–" : f.Firmware;
         var known = f.Features.Where(x => x >= 0x0100 && x != 0x1D4B && (x < 0x1000 || x > 0x1004) && Report.Name(x) != "").ToList();
@@ -802,7 +802,7 @@ class ReportView : Control
             t = new string(t.Where(c => c >= ' ' || c == '\r' || c == '\n' || c == '\t').ToArray());
             text = t;
             box.Text = t;
-            size.Text = (Encoding.UTF8.GetByteCount(t) / 1024.0).ToString("0.0", CultureInfo.InvariantCulture) + " KB · " + t.TrimEnd().Split('\n').Length + " lines";
+            size.Text = (Encoding.UTF8.GetByteCount(t) / 1024.0).ToString("0.0", CultureInfo.InvariantCulture) + " KB, " + t.TrimEnd().Split('\n').Length + " lines";
             issue.Enabled = copy.Enabled = true;
             status.Set("Read only. Nothing is sent.", false, null);
         });
@@ -896,7 +896,7 @@ class LogsPage : Control
         version = Log.Version;
         var lines = Log.Read();
         shown = Log.Fold(lines);
-        count.Text = lines.Count + " lines · " + (Log.Size() / 1024.0).ToString("0.0", CultureInfo.InvariantCulture) + " KB";
+        count.Text = lines.Count + " lines, " + (Log.Size() / 1024.0).ToString("0.0", CultureInfo.InvariantCulture) + " KB";
         var rtf = new StringBuilder(@"{\rtf1\ansi\deff0{\fonttbl{\f0 Consolas;}}{\colortbl;" + Rgb(Theme.Text) + Rgb(Theme.Dim) + Rgb(Theme.Accent) + Rgb(Theme.Warn) + "}");
         foreach (var l in shown)
         {

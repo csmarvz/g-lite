@@ -90,7 +90,7 @@ static class Report
     {
         var r = new Reader { H = h };
         var s = r.S;
-        Head(s, f, screen, () => f.Battery >= 0 || !f.Has(0x1F20) ? (f.Battery < 0 ? "–" : f.Battery + "%") + (f.Millivolts > 0 ? " · " + f.Millivolts + " mV" : "") + (f.Charging ? " · charging" : "") : HeadsetBattery(r));
+        Head(s, f, screen, () => f.Battery >= 0 || !f.Has(0x1F20) ? (f.Battery < 0 ? "–" : f.Battery + "%") + (f.Millivolts > 0 ? ", " + f.Millivolts + " mV" : "") + (f.Charging ? ", charging" : "") : HeadsetBattery(r));
 
         var ids = Features(r, f);
         foreach (var id in ids.Where(Reads.ContainsKey).Where(x => x != 0x0001))
@@ -127,7 +127,7 @@ static class Report
             var page = pageNumber == 1 ? directory : ReadPage(device, pageNumber);
             if (page == null) break;
             text.AppendLine();
-            text.AppendLine("page " + pageNumber.ToString("X2") + (G9x.Valid(page) ? "" : " · bad checksum") + (pageNumber == currentPage ? " · current" : ""));
+            text.AppendLine("page " + pageNumber.ToString("X2") + (G9x.Valid(page) ? "" : ", bad checksum") + (pageNumber == currentPage ? ", current" : ""));
             for (int offset = 0; offset < 512; offset += 16)
             {
                 var row = page.Skip(offset).Take(16).ToArray();
@@ -174,7 +174,7 @@ static class Report
             {
                 var caps = new short[32];
                 HidP_GetCaps(data, caps);
-                text.AppendLine(string.Format("usage={0:X4}:{1:X4} input={2} output={3} feature={4}{5}", (ushort)caps[1], (ushort)caps[0], caps[2], caps[3], caps[4], shared ? " · held by Windows" : ""));
+                text.AppendLine(string.Format("usage={0:X4}:{1:X4} input={2} output={3} feature={4}{5}", (ushort)caps[1], (ushort)caps[0], caps[2], caps[3], caps[4], shared ? ", held by Windows" : ""));
                 var kinds = new[] { "input", "output", "feature" };
                 int inputId = -1;
                 for (int type = 0; type < 3; type++)
@@ -255,12 +255,12 @@ static class Report
     static void Head(StringBuilder s, Found f, string screen, Func<string> battery)
     {
         s.AppendLine("G-Lite device report");
-        s.AppendLine("G-Lite " + Version() + " · " + Windows());
+        s.AppendLine("G-Lite " + Version() + ", " + Windows());
         s.AppendLine(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm 'UTC'", System.Globalization.CultureInfo.InvariantCulture));
         s.AppendLine();
         Row(s, "Device", f.Name == "" ? "–" : f.Name);
         Row(s, "Kind", f.Kind);
-        Row(s, "Link", f.Link + f.Slot + (f.Hidpp10 ? " · HID++ 1.0" : "") + (f.Wpid != 0 ? " · ID " + f.Wpid.ToString("X4") : "") + Usb(f.Path));
+        Row(s, "Link", f.Link + f.Slot + (f.Hidpp10 ? ", HID++ 1.0" : "") + (f.Wpid != 0 ? ", ID " + f.Wpid.ToString("X4") : "") + Usb(f.Path));
         Row(s, "Model", f.Models == "" ? "–" : f.Models);
         Row(s, "Firmware", f.Firmware == "" ? "–" : f.Firmware);
         Row(s, "Battery", battery());
@@ -403,7 +403,7 @@ static class Report
         var b = r.Ask(0x1F20, 0);
         if (b == null) return "–";
         int mv = b[0] << 8 | b[1];
-        return "~" + (b[2] == 3 ? Found.FromChargingVolts(mv) : Found.FromVolts(mv)) + "% · " + mv + " mV" + (b[2] == 3 ? " · charging" : "");
+        return "~" + (b[2] == 3 ? Found.FromChargingVolts(mv) : Found.FromVolts(mv)) + "%, " + mv + " mV" + (b[2] == 3 ? ", charging" : "");
     }
 
     static void Profiles(Reader r)
@@ -472,7 +472,7 @@ static class Report
     static string Usb(string path)
     {
         var m = Regex.Match(path ?? "", @"VID_([0-9A-F]{4})&PID_([0-9A-F]{4})", RegexOptions.IgnoreCase);
-        return m.Success ? " · USB " + m.Groups[1].Value.ToUpper() + ":" + m.Groups[2].Value.ToUpper() : "";
+        return m.Success ? ", USB " + m.Groups[1].Value.ToUpper() + ":" + m.Groups[2].Value.ToUpper() : "";
     }
 
     static string Version()

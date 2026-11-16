@@ -41,9 +41,9 @@ The preset you picked on each device is picked again when G-Lite starts, and set
 |---|---|---|---|
 | G515 LIGHTSPEED TKL | LIGHTSPEED receiver | Works | Lighting effects, colour, speed, direction, brightness, idle dimming and turn-off, profiles, saving to the keyboard, backups and restoring them, factory lighting |
 | G915, G915 TKL and G815 | LIGHTSPEED receiver or USB | Untested | Lighting effects, colour, speed, direction, brightness and profiles. G-Lite sets your lighting again when it starts, but can't save it to the keyboard yet. See [docs/G915.md](docs/G915.md). |
-| G512 X 75 | USB | Untested | Lighting effects, colour, speed, direction, brightness and profiles, on the keys and the light bar, together or each with its own effect. Not yet: saving to the keyboard, the knobs and actuation. See [docs/G512X.md](docs/G512X.md). |
+| G512 X 75 | USB | Partial | Lighting effects, colour, speed, direction, brightness and profiles, on the keys and the light bar, together or each with its own effect. Not yet: saving to the keyboard, the knobs and actuation. See [docs/G512X.md](docs/G512X.md). |
 | G915 X, G713, G715, PRO X TKL, PRO X 60, G515 RAPID TKL, G512 X 98 and other newer G keyboards | LIGHTSPEED receiver or USB | Untested | Lighting effects, colour, speed, direction, brightness, the Screen effect and profiles. Not saved to the keyboard. The key picture is picked from the keyboard's name (TKL, 60%, 75%, full size) and may not match. |
-| G213 | USB | Partial | Off, Static, Breathe, Cycle and Wave on the whole keyboard, Off and Static on each of its five areas, with colour, speed, direction and brightness, a live key picture, and profiles. The keyboard can't store lighting (G HUB can't either), so G-Lite sets it again at each start. See [docs/G213.md](docs/G213.md). |
+| G213 | USB | Works | Off, Static, Breathe, Cycle and Wave on the whole keyboard, Off and Static on each of its five areas, with colour, speed, direction and brightness, a live key picture, and profiles. The keyboard can't store lighting (G HUB can't either), so G-Lite sets it again at each start. See [docs/G213.md](docs/G213.md). |
 | G512, G513, G PRO keyboard, G810, G910, G410, G413 and other older G keyboards | USB | Untested | Off, Static, Breathe and Cycle with colour, speed and brightness, on all zones or each one (keys, logo), and profiles. Wave where the keyboard lists it. Not saved to the keyboard. Not yet: per-key colours, a key picture. See [docs/keyboards-8070.md](docs/keyboards-8070.md). |
 | G510 and G510s | USB | Untested | Backlight Off, Static, Breathe and Cycle, with colour, brightness and speed, and profiles. Breathe and Cycle are run by G-Lite, so they stop when it quits. Not saved to the keyboard. Not yet: the M-key lights, the G-keys and the LCD. See [docs/G510.md](docs/G510.md). |
 
@@ -79,7 +79,7 @@ The preset you picked on each device is picked again when G-Lite starts, and set
 |---|---|---|---|
 | Litra Beam LX, Beam and Glow | USB | Untested | Front light on and off, brightness and colour temperature. On the Beam LX, the back light: on and off, brightness, Static, Breathe, Cycle, Wave and the Screen effect, with a colour for all seven zones or each one, and a live picture of the light. Profiles. See [docs/Litra.md](docs/Litra.md). |
 
-**Works** means tried on the real device. **Untested** means built from documentation and owners' reports, and not yet confirmed by an owner. Devices that aren't saved to are set again by G-Lite each time it starts.
+**Works** means tried on the real device. **Partial** means tried on the real device, with some of its features not done yet. **Untested** means built from documentation and owners' reports, and not yet confirmed by an owner. Devices that aren't saved to are set again by G-Lite each time it starts.
 
 ### Other Logitech devices
 

@@ -149,7 +149,7 @@ static class ScreenCapture
     public static string Label(Screen screen)
     {
         int number = Array.IndexOf(Screen.AllScreens, screen) + 1;
-        return (screen.Primary ? "Main" : "Monitor " + number) + " · " + screen.Bounds.Width + " × " + screen.Bounds.Height;
+        return (screen.Primary ? "Main" : "Monitor " + number) + ", " + screen.Bounds.Width + " × " + screen.Bounds.Height;
     }
 
     public static Bitmap Shrink(Rectangle source, int width, int height)

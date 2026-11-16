@@ -1042,7 +1042,7 @@ class SubLine : Control
         this.level = level;
         this.value = value;
         this.after = after;
-        AccessibleName = before + (level == Ui.Asleep ? " · asleep" : level >= 0 ? " · " + value : "") + after;
+        AccessibleName = before + (level == Ui.Asleep ? ", asleep" : level >= 0 ? ", " + value : "") + after;
         Invalidate();
     }
 
@@ -1076,19 +1076,13 @@ class SubLine : Control
 
 class Brand : Ctl
 {
-    public string Tag2 = "";
-
     public Brand() { Cursor = Cursors.Default; TabStop = false; }
 
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = Begin(e);
-        var font = Ui.Get(10.5f, Ui.Semi);
         float x = 8 * K;
-        Ui.Draw(g, "G-Lite", font, new RectangleF(x, 0, Width - x, Height), Theme.Text, TextFormatFlags.VerticalCenter);
-        if (Tag2 == "") return;
-        x += TextRenderer.MeasureText(g, "G-Lite", font, Size.Empty, TextFormatFlags.NoPadding).Width + 6 * K;
-        Ui.Draw(g, Tag2, Ui.Get(9f, Ui.Regular), new RectangleF(x, 0, Width - x, Height), Theme.Dim, TextFormatFlags.VerticalCenter);
+        Ui.Draw(g, "G-Lite", Ui.Get(10.5f, Ui.Semi), new RectangleF(x, 0, Width - x, Height), Theme.Text, TextFormatFlags.VerticalCenter);
     }
 }
 

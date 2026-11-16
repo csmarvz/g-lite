@@ -450,8 +450,8 @@ static class Traces
             s.Pick("Effect", "Breathe");
             s.Slide("Speed", 80);
             s.Pick("Effect", "Wave");
-            s.Menu("Try the light's own effects", "Group 0 · Breathe");
-            s.Menu("Try the light's own effects", "Group 1 · Smooth colour wave");
+            s.Menu("Try the light's own effects", "Group 0: Breathe");
+            s.Menu("Try the light's own effects", "Group 1: Smooth colour wave");
             s.Menu("Try the light's own effects", "Back to G-Lite's colours");
             s.Pick("Effect", "Static");
             return s.Text;
@@ -474,8 +474,8 @@ static class Traces
             s.Press("Save");
             s.Press("SmartShift");
             s.Press("Revert changes");
-            s.Pick("Computer", "3 · –");
-            s.Pick("Computer", "2 · MacBook");
+            s.Pick("Computer", "3: –");
+            s.Pick("Computer", "2: MacBook");
             s.Press("Switch");
             first = s.Text;
         }

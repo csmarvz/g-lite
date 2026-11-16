@@ -79,6 +79,8 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - A row made only of gaps adds vertical space.
   - `ids` has one row per row: the 0x8081 lighting id of each key in hex (USB key code minus 3, modifiers 0x68–0x6F), `--` for a key with no known LED. The other ids follow G HUB's table (from Lghub's `perkey.py`): consumer usages below 0xB8 minus 0x18, below 0xCE minus 0x32, below 0xE3 minus 0x46 (Play 0x9B, Mute 0x9C, Next 0x9D, Previous 0x9E), G keys 0xB3 plus their number, the logo 0xD2, indicators 0x98 plus their number (the G915's brightness key is 0x99).
 
+- `site/`: the website, g-lite.org, one static `index.html` (dark only, the app's colours), its screenshots from `--demo` in `site/img`, and `favicon.svg` / `favicon.ico`, the tray's slanted GL (`Logo.Slanted`). `.github/workflows/pages.yml` publishes `site/` to GitHub Pages when it changes on `main`.
+
 ## Protocol essentials
 
 - The receiver is VID 046D, PID C547. Long reports go through `MI_02&COL02`, at device index 1. The keyboard can take about 3 s to answer when it's asleep.
@@ -104,3 +106,4 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - Never commit unless explicitly asked.
 - Keep the binary small. Prefer the simplest thing that works.
 - Write plainly, without filler.
+- Never use the middle dot (`·`) between words or values, in the app, the site or the docs. Use a comma, a colon or brackets instead (a semicolon in a list whose items have commas).

@@ -1009,11 +1009,11 @@ class KeyboardView : Form
         }
         string what = def == null ? "factory animation (approximation)" : def.Name;
         if (id == 0x17) what += " — click the keys";
-        if (game != null) what = game.Over ? "game over   ·   score " + game.Score + "   ·   any key to play again" : game.Help;
+        if (game != null) what = game.Over ? "game over      score " + game.Score + "      any key to play again" : game.Help;
         using (var f = Win.Px(9, 1))
         using (var b = new SolidBrush(Color.FromArgb(150, 150, 150)))
         {
-            g.DrawString(what + "   ·   brightness " + bright + "%", f, b, Pad, bh - 26);
+            g.DrawString(what + "      brightness " + bright + "%", f, b, Pad, bh - 26);
             if (game is Mines && !game.Over)
             {
                 float lx = bw - Pad;

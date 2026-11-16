@@ -291,7 +291,7 @@ class PageMouse : DevicePage
         var d = l == null ? null : Fx.FirstOrDefault(e => e.Id == l.Effect);
         bool lit = ready && state.Zones.Count > 0, known = lit && d != null;
         bool color = known && d.Color, spd = known && d.Speed, br = known && l.Effect != 0x00;
-        lightHead.Text = !ready || lit ? (l == null && lit ? "Lighting · as saved on the mouse" : "Lighting") : "Lighting · not supported on this mouse";
+        lightHead.Text = !ready || lit ? (l == null && lit ? "Lighting (as saved on the mouse)" : "Lighting") : "Lighting (not supported on this mouse)";
         effects.Items = Fx.Select(e => e.Name).ToArray();
         effects.Enabled = lit;
         effects.Index = known ? Array.FindIndex(Fx, e => e.Id == l.Effect) : -1;
@@ -328,7 +328,7 @@ class PageMouse : DevicePage
         rates.Enabled = rateOn;
         rates.Invalidate();
         Shade(rateHead, rateOn);
-        rateHead.Text = "Report rate" + (ready && state.Rates.Length > 0 ? " (Hz)" : "") + (ready && state.Onboard && state.Savable ? " · on save" : "");
+        rateHead.Text = "Report rate" + (ready && state.Rates.Length > 0 ? " (Hz)" : "") + (ready && state.Onboard && state.Savable ? ", on save" : "");
         rateHint.Text = !ready || !state.Onboard || state.Savable ? "" : "Set by the saved profile.";
         invert.Visible = invertLabel.Visible = ready && state.CanInvert;
         invert.Checked = ready && state.Inverted;
@@ -341,7 +341,7 @@ class PageMouse : DevicePage
         backupsBtn.Visible = mouse.HasFactory || ready && state.Writable;
 
         picture.Display(lit ? l : new MouseLight { Effect = 0 }, ready ? cur.Dpi : 0,
-            !ready ? "" : stage >= 0 ? "Stage " + (stage + 1) + " of " + state.Stages.Length + (cur.Dpi != state.Stages[stage] ? " · was " + state.Stages[stage] : "") : "",
+            !ready ? "" : stage >= 0 ? "Stage " + (stage + 1) + " of " + state.Stages.Length + (cur.Dpi != state.Stages[stage] ? ", was " + state.Stages[stage] : "") : "",
             rate > 0 ? rate + " Hz report rate" + (ready && rate != state.Rate ? " after saving" : "") : "");
         loading = false;
     }
@@ -366,7 +366,7 @@ class PageMouse : DevicePage
         bool buttons = stored != null && !Bindings.Same(cur.Buttons, stored.Buttons);
         bool rate = stored != null && state.Onboard && cur.Rate > 0 && cur.Rate != stored.Rate;
         if (dirty && (buttons || rate)) { Say((buttons && rate ? "Buttons and report rate change" : buttons ? "Buttons change" : "Report rate changes") + " when saved to the mouse"); return; }
-        Say(!dirty ? "Matches the mouse" : state.Savable ? "Applied to the mouse · not saved on it yet" : "Applied to the mouse · not saved on it");
+        Say(!dirty ? "Matches the mouse" : state.Savable ? "Applied to the mouse, not saved on it yet" : "Applied to the mouse, not saved on it");
     }
 
     string BackupId { get { return found.Slug; } }

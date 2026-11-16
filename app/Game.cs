@@ -36,7 +36,7 @@ class Blocks : Game
     public Blocks() { Spawn(); }
 
     public override int Interval { get { return Math.Max(120, 650 - Score * 30); } }
-    public override string Help { get { return "↑↓ move   ← rotate   → down   Space drop   Esc stop   ·   lines " + Score; } }
+    public override string Help { get { return "↑↓ move   ← rotate   → down   Space drop   Esc stop      lines " + Score; } }
 
     public override void Key(Keys k)
     {
@@ -157,7 +157,7 @@ class Snake : KeyGame
     }
 
     public override int Interval { get { return Math.Max(110, 320 - Score * 12); } }
-    public override string Help { get { return "arrows steer   Esc stop   ·   length " + body.Count; } }
+    public override string Help { get { return "arrows steer   Esc stop      length " + body.Count; } }
 
     void Feed()
     {
@@ -224,7 +224,7 @@ class Mines : KeyGame
     }
 
     public override int Interval { get { return 400; } }
-    public override string Help { get { return "arrows move   Space open   F flag   Esc stop   ·   mines " + (Count - flags); } }
+    public override string Help { get { return "arrows move   Space open   F flag   Esc stop      mines " + (Count - flags); } }
 
     public override void Step() { blink = !blink; }
 

@@ -31,7 +31,7 @@ slide DPI 20
   = status "The mouse refused this DPI. It may only take its saved DPI stages." [Report] [Backups] Preset=None [New…] […] Effect=- (off) DPI stage=- DPI=20 Report rate=1k (off) Brightness=100 (off) Speed=0 (off) [Revert]
 pick DPI stage 1600
   8100 fnC  02
-  = status "Applied to the mouse · not saved on it" [Report] [Backups] Preset=None [New…] […] Effect=- (off) DPI stage=1600 DPI=30 Report rate=1k (off) Brightness=100 (off) Speed=0 (off) [Revert]
+  = status "Applied to the mouse, not saved on it" [Report] [Backups] Preset=None [New…] […] Effect=- (off) DPI stage=1600 DPI=30 Report rate=1k (off) Brightness=100 (off) Speed=0 (off) [Revert]
 pick DPI stage 400
   8100 fnC
-  = status "Applied to the mouse · not saved on it" [Report] [Backups] Preset=None [New…] […] Effect=- (off) DPI stage=400 DPI=6 Report rate=1k (off) Brightness=100 (off) Speed=0 (off) [Revert]
+  = status "Applied to the mouse, not saved on it" [Report] [Backups] Preset=None [New…] […] Effect=- (off) DPI stage=400 DPI=6 Report rate=1k (off) Brightness=100 (off) Speed=0 (off) [Revert]

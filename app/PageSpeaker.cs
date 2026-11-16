@@ -523,7 +523,7 @@ class PageSpeaker : DevicePage
         bool known = l != null && !screening;
         var d = known ? GSpeaker.Def(l.Effect) : null;
         bool mixed = picked == 0 && cur != null && cur.Any(z => z == null || !z.Same(cur[0]));
-        lightHead.Text = listed != null && listed.Count == 0 ? "Lighting · not found on " + (keyboard ? "this keyboard" : "these speakers") : screening ? "Lighting" : !known ? "Lighting · as on the " + noun : mixed ? "Lighting · zones differ, a change sets all of them" : "Lighting";
+        lightHead.Text = listed != null && listed.Count == 0 ? "Lighting (not found on " + (keyboard ? "this keyboard" : "these speakers") + ")" + ")" : screening ? "Lighting" : !known ? "Lighting (as on the " + noun + ")" : mixed ? "Lighting (zones differ, a change sets all of them)" : "Lighting";
         zoneSeg.Enabled = ready && !screening;
         Shade(zoneHead, !screening);
         zoneSeg.Index = picked;
@@ -616,10 +616,10 @@ class PageSpeaker : DevicePage
     {
         var listed = zones;
         if (listed != null && listed.Count == 0) { Say(keyboard ? "This keyboard lists no lighting zones" : "These speakers list no lighting zones", true); return; }
-        if (screening) { Say("Screen effect · not saved to the speakers"); return; }
+        if (screening) { Say("Screen effect, not saved to the speakers"); return; }
         // The G213's light button turns the backlight off inside the keyboard: nothing is reported, and lighting sent then stays dark (docs/G213.md).
-        if (cur != null && keyboard && found.Short.ToUpper() == "G213") { Say("Set by G-Lite · keys dark? Press the light button above Pause"); return; }
-        Say(cur == null ? "" : "Set by G-Lite · not saved to the " + noun);
+        if (cur != null && keyboard && found.Short.ToUpper() == "G213") { Say("Set by G-Lite. Keys dark? Press the light button above Pause"); return; }
+        Say(cur == null ? "" : "Set by G-Lite, not saved to the " + noun);
     }
 
     void Send()

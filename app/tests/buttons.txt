@@ -155,7 +155,7 @@ pick View Settings
 pick Report rate 250
   = status "Buttons and report rate change when saved to the mouse" [Report] [Backups] Preset=Keys • [Update] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=250 Brightness=100 Speed=63 Invert scrolling=off [Revert] [Save to mouse]
 press Revert changes
-  = status "Applied to the mouse · not saved on it yet" [Report] [Backups] Preset=Keys [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse]
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] Preset=Keys [Update (off)] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse]
 pick Preset None
   = status "Matches the mouse" [Report] [Backups] Preset=None [New…] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
 pick Report rate 500

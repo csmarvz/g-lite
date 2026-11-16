@@ -413,7 +413,7 @@ class PageOther : DevicePage
     string HostName(int host)
     {
         var name = state != null && host < state.Names.Length ? state.Names[host] : null;
-        return (host + 1) + (state != null && host < state.Paired.Length && !state.Paired[host] ? " · –" : name == null ? "" : " · " + name);
+        return (host + 1) + (state != null && host < state.Paired.Length && !state.Paired[host] ? ": –" : name == null ? "" : ": " + name);
     }
 
     void AskSwitch(int host)

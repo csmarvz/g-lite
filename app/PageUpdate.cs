@@ -237,7 +237,7 @@ class PageUpdate : Control
         if (state != "current" && list != null)
         {
             var newest = list.FirstOrDefault(r => r.Version == version);
-            if (state == "available" && newest != null && newest.Date != "") meta.Text = "Released " + newest.Date + (list.Count > 1 ? " · " + list.Count + " versions newer than yours" : "");
+            if (state == "available" && newest != null && newest.Date != "") meta.Text = "Released " + newest.Date + (list.Count > 1 ? ", " + list.Count + " versions newer than yours" : "");
             if (list.Count > 1) whatsNew.Text = "What's new since " + installed;
         }
         notes.Clear();

@@ -419,7 +419,7 @@ class Page515 : DevicePage
         dirs = Ui.Add(light, new Seg { Items = DirText, AccessibleName = "Direction" }, 14, 174, 352, 32);
         dirs.Picked += i => { Target().Direction = Directions[i]; Changed(true); };
 
-        Ui.Text(light, kind.Bar != null ? "Brightness · all" : "Brightness", 14, 214, () => Theme.Dim, 9f);
+        Ui.Text(light, kind.Bar != null ? "Brightness (all)" : "Brightness", 14, 214, () => Theme.Dim, 9f);
         brightValue = Value(light, 14, 214, 172);
         bright = Ui.Add(light, new Slider { AccessibleName = "Brightness" }, 14, 234, 172, 24);
         bright.Changed += (s, e) => BrightnessChanged(bright.Value);
@@ -982,7 +982,7 @@ class Page515 : DevicePage
         var d = G515.Def(view.Effect);
         bool known = Known();
         bool color = known && d != null && d.Color, dir = known && d != null && d.Direction, spd = known && d != null && d.Speed;
-        lightHead.Text = known ? "Lighting" : broken ? "Lighting · half written on the keyboard" : live ? "Lighting · as on the keyboard" : "Lighting · factory animation";
+        lightHead.Text = known ? "Lighting" : broken ? "Lighting (half written on the keyboard)" : live ? "Lighting (as on the keyboard)" : "Lighting (factory animation)";
         effects.Index = known ? Array.FindIndex(G515.Effects, e => e.Id == view.Effect) : -1;
         effects.Off = part == 2 ? new[] { Array.FindIndex(G515.Effects, e => e.Id == Ripple) } : new int[0];
         effects.Invalidate();
@@ -1050,7 +1050,7 @@ class Page515 : DevicePage
             else if (ScreenCapture.Missing(setup.Monitor)) Say("The chosen monitor isn't connected. Using the main monitor.", true);
             else Say("Live only.");
         }
-        else if (live) Say(Known() ? "Set by G-Lite · not saved to the keyboard" : "");
+        else if (live) Say(Known() ? "Set by G-Lite, not saved to the keyboard" : "");
         else Say(dirty ? "Not saved to the keyboard" : stored == null ? "" : "Matches the keyboard");
     }
 

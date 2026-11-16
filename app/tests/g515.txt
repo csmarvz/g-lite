@@ -210,7 +210,7 @@ power cycle
   8071 fn1  00 04 00 FF 00 00 00 00 13 88 64 01 01
   = status "Not saved to the keyboard" [Report] [Backups] Preset=Night • [Update] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=100 Speed=78 [Revert] [Save to keyboard]
 menu Backups > Restore the factory lighting
-  menu: Restore the factory lighting | Restore a backup (off) | <when> · factory lighting · first backup | Open the backups folder
+  menu: Restore the factory lighting | Restore a backup (off) | <when>, factory lighting, first backup | Open the backups folder
   8101 fn8  01 01 00 63
   8101 fnC
   8101 fnC  00 10

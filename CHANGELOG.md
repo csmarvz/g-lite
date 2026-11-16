@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- No more dots between words: headings, status lines, menus and the device report use commas, colons and brackets instead, like "Lighting (as on the keyboard)" and "Set by G-Lite, not saved to the keyboard".
+- The demo (`--demo`) shows each device's real connection (LIGHTSPEED, USB, Bolt) instead of "Demo", and no "demo" next to the title.
+- The G213 is marked Works and the G512 X 75 Partial: both were tried by their owners.
+
 ## [0.0.30-alpha] - 2026-11-16
 
 ### Added
@@ -275,7 +283,7 @@
 - The G515's picture follows its layout: ISO keyboards get the <> key, the key next to Enter and the tall Enter.
 - The tray menu shows G-Lite's CPU and memory use, updated every second while it's open, and lists your devices with their battery. Clicking one opens G-Lite on it.
 - The report lists the per-key lighting ids a keyboard has (0x8081), with its layout, so the Screen effect can be added to more keyboards.
-- The report lists the device's product IDs, read from the device (like USB C088 · LIGHTSPEED 4079).
+- The report lists the device's product IDs, read from the device (like USB C088, LIGHTSPEED 4079).
 - The G9x Laser Mouse: colour and brightness, DPI, the DPI stages of the active profile and the report rate, set live. Save to mouse writes them into the active profile, after a backup, and Backups restores one.
 
 ## [0.0.7-alpha] - 2026-11-07

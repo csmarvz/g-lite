@@ -273,7 +273,7 @@ static class GMouse
         if (!Valid(p)) return "damaged, can't be restored";
         var stages = StagesOf(p);
         var l = Decode(p.Skip(0xDB).Take(11).ToArray());
-        return (p[1] < stages.Length ? stages[p[1]] + " DPI" : "DPI stages") + " · " + (l == null ? "lighting" : Def(l.Effect).Name) + " · " + (p[0] > 0 ? 1000 / p[0] + " Hz" : "");
+        return (p[1] < stages.Length ? stages[p[1]] + " DPI" : "DPI stages") + ", " + (l == null ? "lighting" : Def(l.Effect).Name) + ", " + (p[0] > 0 ? 1000 / p[0] + " Hz" : "");
     }
 
     public static byte[] Build(byte[] old, MouseSet want, int zones)
@@ -843,7 +843,7 @@ static class G9x
         if (!Valid(page)) return "damaged, can't be restored";
         var stages = StagesOf(page, model);
         var dpi = page[0x23] < stages.Length ? stages[page[0x23]] + " DPI" : "DPI stages";
-        return page[0x26] > 0 ? dpi + " · " + 1000 / page[0x26] + " Hz" : dpi;
+        return page[0x26] > 0 ? dpi + ", " + 1000 / page[0x26] + " Hz" : dpi;
     }
 
     public static byte[] Build(byte[] old, MouseSet want, int hz, G9xModel model)

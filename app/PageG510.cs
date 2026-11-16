@@ -165,7 +165,7 @@ class PageG510 : DevicePage
         loading = true;
         var s = cur ?? read;
         bool known = ready && s != null, lit = known && s.On, color = lit && s.Effect != G510Set.Cycle, moving = lit && s.Effect != G510Set.Static;
-        lightHead.Text = ready && read == null ? "Backlight · couldn't be read" : "Backlight";
+        lightHead.Text = ready && read == null ? "Backlight (couldn't be read)" : "Backlight";
         Shade(effectHead, ready);
         effects.Enabled = ready;
         effects.Index = known ? (s.On ? s.Effect + 1 : 0) : -1;
@@ -218,7 +218,7 @@ class PageG510 : DevicePage
     protected override void Calm()
     {
         if (ready && read == null) { Say("The keyboard didn't answer. Is it plugged in?", true, Load, "Try again"); return; }
-        Say(cur == null ? "" : "Set by G-Lite · not saved to the keyboard");
+        Say(cur == null ? "" : "Set by G-Lite, not saved to the keyboard");
     }
 
     void Send()

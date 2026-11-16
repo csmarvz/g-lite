@@ -335,7 +335,7 @@ static class SelfTest
             && !new Found { Name = "G915 X LIGHTSPEED", Features = new[] { 0x8071, 0x8040, 0x8100 } }.IsG915
             && new Found { Name = "G915 WIRELESS RGB MECHANICAL GAMING KEYBOARD" }.Short == "G915"
             && new Found { Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard" }.Short == "G915 TKL", "the G915 is found, and the G915 X isn't");
-        Check(new Found { Index = 0, Hidpp10 = true }.Slot == "" && new Found { Index = 0xFF }.Slot == "" && new Found { Index = 2 }.Slot == " · slot 2"
+        Check(new Found { Index = 0, Hidpp10 = true }.Slot == "" && new Found { Index = 0xFF }.Slot == "" && new Found { Index = 2 }.Slot == ", slot 2"
             && Found.LooksG("G9x Laser Mouse") && !new Found { Name = "G9x Laser Mouse", Kind = "mouse", Hidpp10 = true }.IsMouse, "an old HID++ 1.0 device has no slot and isn't taken for a HID++ 2.0 mouse");
         Check(G9xModel.G9x.Dpi(17) == 400 && G9xModel.G9x.Dpi(136) == 3200 && G9xModel.G9x.Dpi(242) == 5700 && G9xModel.G9x.Dpi(9) == 200 && G9xModel.G9x.Dpi(85) == 2000 && G9xModel.G9x.Raw(5700) == 242 && G9xModel.G9x.Raw(800) == 34, "G9x DPI matches what LGS shows");
         var g9xMouse = new FakeG9x();
@@ -348,8 +348,8 @@ static class SelfTest
         G9x.SetLight(g9xMouse, new MouseLight { Effect = 0x00 });
         Check(g9xMouse.Registers[0x57].SequenceEqual(new byte[3]) && G9x.Read(g9xMouse, G9xModel.G9x).Light.Effect == 0x00, "the G9x light turns off");
         Check(G9x.StagesOf(g9xMouse.Pages[3], G9xModel.G9x).SequenceEqual(new[] { 200, 800, 2000 }) && new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04" }.IsG9x && !new Found { Path = @"\\?\hid#vid_046d&pid_c066" }.IsG9x, "G9x profile 2 and detection");
-        Check(Found.ModelText(FakeHidpp.Hex("0400000000000EB38940B4C35500")) == "USB C355 · LIGHTSPEED 40B4 · Bluetooth B389"
-            && Found.ModelText(FakeHidpp.Hex("0300000000000C4079C0880000")) == "USB C088 · LIGHTSPEED 4079"
+        Check(Found.ModelText(FakeHidpp.Hex("0400000000000EB38940B4C35500")) == "USB C355, LIGHTSPEED 40B4, Bluetooth B389"
+            && Found.ModelText(FakeHidpp.Hex("0300000000000C4079C0880000")) == "USB C088, LIGHTSPEED 4079"
             && Found.ModelText(FakeHidpp.Hex("01000000000003000000000ABA")) == "0ABA", "product IDs from 0x0003 as the G515, G Pro Wireless and PRO X Wireless answer");
         var g9xSaver = new FakeG9x();
         var g9xBefore = G9x.Read(g9xSaver, G9xModel.G9x);
@@ -375,7 +375,7 @@ static class SelfTest
         Check(g9xCutError != null && g9xCutError.Contains("as it was is back") && g9xCut.Pages[2].SequenceEqual(g9xKept) && g9xCut.Registers[0x0F][0] == 0x00
             && g9xCut.Writes.SequenceEqual(new[] { "erase 2:0", "copy 2:0", "erase 2:0", "copy 2:0", "copy 2:128" }),
             "a G9x save cut off after the erase puts the page back as it was and loads it, instead of leaving the mouse on its factory profile");
-        Check(Found.FirmwareText(new byte[] { 0x00, 0x55, 0x31, 0x00, 0x12, 0x01, 0x00, 0x05 }) == "U1 12.01 · build 0005" && Found.FirmwareText(new byte[] { 0x00, 0x4D, 0x50, 0x4D, 0x17, 0x00, 0x00, 0x08 }) == "MPM 17.00 · build 0008", "a zero byte in the firmware name doesn't end the report");
+        Check(Found.FirmwareText(new byte[] { 0x00, 0x55, 0x31, 0x00, 0x12, 0x01, 0x00, 0x05 }) == "U1 12.01, build 0005" && Found.FirmwareText(new byte[] { 0x00, 0x4D, 0x50, 0x4D, 0x17, 0x00, 0x00, 0x08 }) == "MPM 17.00, build 0008", "a zero byte in the firmware name doesn't end the report");
         Check(new Found { Name = "G510 Gaming Keyboard" }.Short == "G510" && Found.LooksG("G510 Gaming Keyboard"), "the G510 gets a short name and counts as a G device");
         var g510 = new Found { Name = "G510s Gaming Keyboard", Kind = "keyboard", Link = "USB", PlainHid = true, Vendor = true, Path = @"\\?\hid#vid_046d&pid_c22d&mi_01&col02" };
         Check(g510.IsG510 && Support.For(g510).Screen == typeof(PageG510) && !new Found { Name = "G510s Gaming Keyboard", PlainHid = true, Path = g510.Path }.IsG510
@@ -414,7 +414,7 @@ static class SelfTest
             && new Found { Hidpp10 = true, Index = 1, Wpid = 0x1023, Path = @"\\?\hid#vid_046d&pid_c531&mi_01" }.IsG500 && !new Found { Hidpp10 = true, Index = 1, Path = @"\\?\hid#vid_046d&pid_c531&mi_01" }.IsG500,
             "the G700 and G700s on a cable read their DPI with the G500's and G500s's units, and never read or write a profile page");
         var g9xReport = Report.Registers(new FakeG9x(), new Found { Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Hidpp10 = true }, "PageMouse");
-        Check(g9xReport.Contains("long 63=22 00 22 00 80 01") && g9xReport.Contains("page 02 · current") && g9xReport.Contains("page 04"), "the G9x report has its registers and profile pages");
+        Check(g9xReport.Contains("long 63=22 00 22 00 80 01") && g9xReport.Contains("page 02, current") && g9xReport.Contains("page 04"), "the G9x report has its registers and profile pages");
         Check(new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json" }.All(x => Model.Load(x).Rows.Length > 5), "the key layouts load");
         var g9 = new FakeG915();
         var cl = G915.Clusters(g9);
@@ -467,14 +467,14 @@ static class SelfTest
         Log.Clear();
         var spy = new Recorder(new FakeMouse());
         var mreport = Report.Build(spy, new Found { Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, Wpid = 0x4079, Path = @"\\?\hid#vid_046d&pid_c547&mi_02&col02#7&abc&0&0001#{x}", Features = new[] { 0x2201, 0x8060, 0x8070, 0x8100 } }, "PageMouse");
-        Check(mreport.Contains("ID 4079 · USB 046D:C547") && mreport.Contains("0000=0001") && mreport.Contains("0001=" + BitConverter.ToString(spy.Inner.Sectors[1]).Replace("-", ""))
+        Check(mreport.Contains("ID 4079, USB 046D:C547") && mreport.Contains("0000=0001") && mreport.Contains("0001=" + BitConverter.ToString(spy.Inner.Sectors[1]).Replace("-", ""))
             && mreport.Contains("0101=") && mreport.Contains("dpi list=") && mreport.Contains("zone 1 effect 3=") && !mreport.Contains("abc"), "the mouse report has its features, profiles and no device path");
         Check(spy.Calls.Count > 20 && spy.Calls.All(c => Report.Reads.ContainsKey(c.Item1) && Report.Reads[c.Item1].Contains(c.Item2)), "the mouse report only reads");
         var kspy = new Recorder(new FakeHidpp());
         var kreport = Report.Build(kspy, new Found { Name = "G515 LS TKL", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, Wpid = 0x40B4, Features = new[] { 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } }, "Page515");
         Check(kreport.Contains("lit ids=01 02 03") && kreport.Contains(" 4F 61 62") && kreport.Contains("layout=0D") && kreport.Contains("0008=") && kreport.Contains("0101=") && kreport.Contains("cluster 0 effect 1=") && kspy.Calls.All(c => Report.Reads.ContainsKey(c.Item1) && Report.Reads[c.Item1].Contains(c.Item2)), "the keyboard report reads its files and effects only");
         var hreport = Report.Build(new FakeHeadset(), new Found { Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "LIGHTSPEED", Index = 0xFF, Features = new[] { 0x8300, 0x1F20 } }, "PageHeadset");
-        Check(hreport.Contains("sidetone=1E") && hreport.Contains("auto-off=1E") && hreport.Contains("% · 3926 mV"), "the headset report reads sidetone, auto-off and the battery");
+        Check(hreport.Contains("sidetone=1E") && hreport.Contains("auto-off=1E") && hreport.Contains("%, 3926 mV"), "the headset report reads sidetone, auto-off and the battery");
         Check(!Report.Reads[0x8100].Intersect(new[] { 1, 3, 6, 7, 8, 0xC }).Any() && !Report.Reads[0x8101].Intersect(new[] { 2, 3, 6, 7 }).Any() && !Report.Reads[0x8071].Contains(1) && !Report.Reads[0x8070].Contains(3), "the report never calls a write function");
 
         foreach (var file in new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json", "g-full.json", "g-60.json" })

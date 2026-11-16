@@ -482,7 +482,7 @@ class PageLight : DevicePage
             {
                 int group = g, index = i;
                 byte id = list[g][i];
-                m.Items.Add(new ToolStripMenuItem("Group " + g + " · " + Litra.EffectName(id), null, (s, e) => TryEffect(group, index, id)));
+                m.Items.Add(new ToolStripMenuItem("Group " + g + ": " + Litra.EffectName(id), null, (s, e) => TryEffect(group, index, id)));
             }
             m.Items.Add(new ToolStripSeparator());
         }
@@ -495,7 +495,7 @@ class PageLight : DevicePage
     void TryEffect(int group, int index, byte id)
     {
         if (!ready || cur == null) return;
-        string name = "Group " + group + " · " + Litra.EffectName(id);
+        string name = "Group " + group + ": " + Litra.EffectName(id);
         trying = true;
         tried = name;
         Sync();
@@ -707,7 +707,7 @@ class PageLight : DevicePage
     {
         loading = true;
         var l = cur;
-        frontHead.Text = ready ? "Front light" : "Front light · reading…";
+        frontHead.Text = ready ? "Front light" : "Front light (reading…)";
         frontPower.Enabled = lumen.Enabled = kelvin.Enabled = ready;
         if (l != null)
         {
@@ -748,7 +748,7 @@ class PageLight : DevicePage
         liveBox.Visible = !(back && screening);
         frontBox.Top = backBox.Width * (liveBox.Visible ? 224 : 118) / 616;
         backBox.Top = backBox.Width * (liveBox.Visible ? 320 : 214) / 616;
-        liveHead.Text = trying ? "Live on the light · trying " + tried + ", look at the light" : "Live on the light";
+        liveHead.Text = trying ? "Live on the light: trying " + tried + ", look at the light" : "Live on the light";
         Show(l == null ? null : l.Effect == LightState.Static ? l.Colors : Litra.Frame(l, clock.Elapsed.TotalMilliseconds));
         Animation();
         areas.Visible = settingsBox.Visible = back && screening;
@@ -799,9 +799,9 @@ class PageLight : DevicePage
 
     protected override void Calm()
     {
-        if (screening) { Say("Screen effect · not saved to the light"); return; }
-        if (back && cur != null && cur.Effect != LightState.Static) { Say(LightState.Effects[cur.Effect] + " · G-Lite runs it, so it stops if you quit G-Lite"); return; }
-        Say(back && Settings.Get(Remembered) != "" ? "Back light set by G-Lite · not saved to the light" : "");
+        if (screening) { Say("Screen effect, not saved to the light"); return; }
+        if (back && cur != null && cur.Effect != LightState.Static) { Say(LightState.Effects[cur.Effect] + ": G-Lite runs it, so it stops if you quit G-Lite"); return; }
+        Say(back && Settings.Get(Remembered) != "" ? "Back light set by G-Lite, not saved to the light" : "");
     }
 
     void Send()
