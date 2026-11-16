@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.0.29-alpha] - 2026-11-16
 
 ### Changed
 
@@ -8,7 +8,7 @@
 
 ### Fixed
 
-- The preset you picked on a device is no longer forgotten when G-Lite quits. It's picked again at the next start, in the tray too, and set on the device if it no longer has it: a G515 or mouse goes back to the lighting saved on it when the preset wasn't saved.
+- The preset you picked on a device is no longer forgotten when G-Lite quits. It's picked again at the next start, in the tray too, and set on the device if it no longer has it: a G515 or mouse goes back to the lighting saved on it when the preset wasn't saved. If you changed the settings after picking it, your changes are kept and the preset shows its dot.
 
 ## [0.0.28-alpha] - 2026-11-15
 
