@@ -434,6 +434,7 @@ class MainWindow : Form
                 page.Visible = false;
                 pages[f.Key] = page;
                 if (page is Page515 && note != null) { ((Page515)page).Note = note; note = null; }
+                if (page is DevicePage) ((DevicePage)page).LoadForPreset();
             }
             else if (page is DevicePage) ((DevicePage)page).SetFound(f);
             else ((InfoPage)page).SetFound(f);

@@ -33,7 +33,7 @@ abstract class DevicePage : Control, IPage
     readonly Btn act;
     Action actDo;
     readonly ReportView report;
-    bool naming, touched;
+    bool naming, touched, working, restoring = true;
     string baseline, renaming, loaded;
     readonly Dictionary<string, string[]> drafts = new Dictionary<string, string[]>();
     public string Note;
@@ -226,8 +226,18 @@ abstract class DevicePage : Control, IPage
 
     protected void Did(string what) { Log.Add(Who, "you", what); }
 
+    // A screen that didn't read its device when made reads it now, so its preset is sent again without opening it.
+    public void LoadForPreset()
+    {
+        if (working || Settings.Get(PresetKey) == "") return;
+        // Started in the tray, a hidden screen has no handle yet, and Do's callbacks need one.
+        if (!IsHandleCreated) CreateHandle();
+        Load();
+    }
+
     protected void Do(Action<Hidpp> a, Action done = null, Action<string> failed = null)
     {
+        working = true;
         queue = queue.ContinueWith(_ =>
         {
             try
@@ -250,8 +260,30 @@ abstract class DevicePage : Control, IPage
         });
     }
 
+    string PresetKey { get { return "preset." + found.Slug; } }
+
+    void Remember() { if (loaded == null) Settings.Remove(PresetKey); else Settings.Set(PresetKey, loaded); }
+
+    // Once per run, after the first load: a device that saves (G515, mice) comes back on its onboard lighting, not the unsaved preview.
+    void RestorePreset()
+    {
+        if (!restoring) return;
+        restoring = false;
+        var name = Settings.Get(PresetKey);
+        int i = name == "" ? -1 : profiles.Items.IndexOf(name);
+        if (i <= 0) return;
+        var text = Settings.Get(prefix + name);
+        try { if (Current() != text) Use(text); }
+        catch (Exception) { Settings.Remove(PresetKey); return; }
+        profiles.Index = i;
+        loaded = name;
+        baseline = Current();
+        touched = false;
+    }
+
     protected void Loaded()
     {
+        RestorePreset();
         ShowSets();
         ShowSub();
         Calm();
@@ -368,6 +400,8 @@ abstract class DevicePage : Control, IPage
             }
             catch (Exception) { Say("This preset couldn't be read from settings.txt", true); }
         }
+        restoring = false;
+        Remember();
         ShowSets();
     }
 
@@ -389,6 +423,7 @@ abstract class DevicePage : Control, IPage
         drafts.Remove(name);
         baseline = null;
         loaded = null;
+        Remember();
         LoadSets(null);
         Revert();
         ShowSets();
@@ -406,7 +441,7 @@ abstract class DevicePage : Control, IPage
             var old = renaming;
             Settings.Set(prefix + name, Settings.Get(prefix + old));
             Settings.Remove(prefix + old);
-            if (loaded == old) loaded = name;
+            if (loaded == old) { loaded = name; Remember(); }
             EndName();
             LoadSets(name);
             Briefly("Renamed the preset to " + name);
@@ -415,7 +450,9 @@ abstract class DevicePage : Control, IPage
         baseline = Current();
         touched = false;
         loaded = name;
+        restoring = false;
         Settings.Set(prefix + name, baseline);
+        Remember();
         EndName();
         LoadSets(name);
         Briefly("Saved the preset " + name);

@@ -84,4 +84,4 @@ open
   1815 fn1  01
   1815 fn3  01
   1815 fn1  02
-  = status "Buttons, gestures and per-app settings stay in Logi Options+." [Report] Preset=None [Update (off)] […] Speed=36 SmartShift=off Invert the thumb wheel=on Switch to free spin at=9 (off) Invert scrolling=on Computer=1 · Desk PC [Revert (off)]
+  = status "Buttons, gestures and per-app settings stay in Logi Options+." [Report] Preset=Work [Update (off)] […] Speed=36 SmartShift=off Invert the thumb wheel=on Switch to free spin at=9 (off) Invert scrolling=on Computer=1 · Desk PC [Revert (off)]
