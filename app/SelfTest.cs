@@ -399,7 +399,9 @@ static class SelfTest
         var g700s = FakeG9x.G500s();
         var g700sState = G9x.Read(g700s, new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c07c&mi_01" }.G500Model);
         Check(g700sState.Dpi == 800 && g700sState.Dpis.Last() == 8200 && g700sState.Profile == null && !g700sState.Writable && g700sState.Stages.Length == 0
-            && new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c06b" }.G500Model == G9xModel.G700,
+            && new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c06b" }.G500Model == G9xModel.G700
+            && new Found { Hidpp10 = true, Index = 1, Wpid = 0x102A, Path = @"\\?\hid#vid_046d&pid_c531&mi_01" }.G500Model == G9xModel.G700s
+            && new Found { Hidpp10 = true, Index = 1, Wpid = 0x1023, Path = @"\\?\hid#vid_046d&pid_c531&mi_01" }.IsG500 && !new Found { Hidpp10 = true, Index = 1, Path = @"\\?\hid#vid_046d&pid_c531&mi_01" }.IsG500,
             "the G700 and G700s on a cable read their DPI with the G500's and G500s's units, and never read or write a profile page");
         var g9xReport = Report.Registers(new FakeG9x(), new Found { Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Hidpp10 = true }, "PageMouse");
         Check(g9xReport.Contains("long 63=22 00 22 00 80 01") && g9xReport.Contains("page 02 · current") && g9xReport.Contains("page 04"), "the G9x report has its registers and profile pages");

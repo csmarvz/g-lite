@@ -27,13 +27,15 @@ class Found
     public bool IsG560 { get { return Name.ToUpper().Contains("G560") && Has(0x8070); } }
     public bool IsMouse { get { return Kind == "mouse" && (Has(0x2201) || Has(0x2202)); } }
     public bool IsG9x { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_(C066|C249)", RegexOptions.IgnoreCase); } }
-    public bool IsG500 { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_(C068|C24E|C06B|C07C)", RegexOptions.IgnoreCase); } }
+    public bool IsG500 { get { return Hidpp10 && Path != null && (Regex.IsMatch(Path, @"PID_(C068|C24E|C06B|C07C)", RegexOptions.IgnoreCase) || Wpid == 0x1023 || Wpid == 0x102A); } }
     public bool IsG5 { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_(C041|C049)", RegexOptions.IgnoreCase); } }
     public bool IsG9 { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_C048", RegexOptions.IgnoreCase); } }
     public G9xModel G500Model
     {
         get
         {
+            if (Wpid == 0x1023) return G9xModel.G700;
+            if (Wpid == 0x102A) return G9xModel.G700s;
             var pid = Regex.Match(Path ?? "", "PID_([0-9A-F]{4})", RegexOptions.IgnoreCase).Groups[1].Value.ToUpperInvariant();
             return pid == "C24E" ? G9xModel.G500s : pid == "C06B" ? G9xModel.G700 : pid == "C07C" ? G9xModel.G700s : G9xModel.G500;
         }
@@ -294,6 +296,7 @@ static class Devices
         var pid = m.Success ? m.Groups[1].Value.ToUpper() : "";
         if (pid == "C52B" || pid == "C532" || pid == "C534") return "Unifying";
         if (pid == "C548") return "Bolt";
+        if (pid == "C531") return "Wireless";
         return "LIGHTSPEED";
     }
 
@@ -320,12 +323,15 @@ static class Devices
                 {
                     // Bolt receivers keep pairings in 0x5N, with the wireless id's bytes swapped (Solaar's BoltReceiver).
                     pair = link == "Bolt" ? pr.Register(0xFF, 0x83, 0xB5, (byte)(0x50 + n)) : null;
-                    if (pair == null) continue;
-                    wpid = pair[3] << 8 | pair[2];
-                    kind = pair[1] & 0x0F;
+                    // The G700's receiver (C531) is a Nano receiver with one device (Solaar); whether it lists it in 0xB5 isn't known, so slot 1 is tried anyway.
+                    if (pair == null && !(link == "Wireless" && n == 1)) continue;
+                    wpid = pair == null ? 0 : pair[3] << 8 | pair[2];
+                    kind = pair == null ? 2 : pair[1] & 0x0F;
                 }
                 Found f;
-                if (pr.Ping(n, 3500) >= 2) f = Describe(pr, p, n, link);
+                int protocol = pr.Ping(n, 3500);
+                if (protocol >= 2) f = Describe(pr, p, n, link);
+                else if (protocol == 1) f = Old(pr, p, n, link, wpid);
                 else
                 {
                     f = new Found { Path = p.Long, Index = n, Link = link, Asleep = true };
@@ -345,6 +351,28 @@ static class Devices
             }
         }
         return r;
+    }
+
+    // Wireless HID++ 1.0 devices, named by their wireless id (Solaar's descriptors).
+    public static readonly Dictionary<int, string[]> OldWireless = new Dictionary<int, string[]>
+    {
+        { 0x1023, new[] { "G700 Gaming Mouse", "mouse" } },
+        { 0x102A, new[] { "G700s Gaming Mouse", "mouse" } },
+    };
+
+    // A HID++ 1.0 device in a receiver slot: it answered the HID++ 2.0 ping with "invalid sub-ID".
+    static Found Old(Probe pr, Port p, byte n, string link, int wpid)
+    {
+        var v = pr.Register(n, 0x81, 0xF1, 0x01);
+        var b = v == null ? null : pr.Register(n, 0x81, 0xF1, 0x02);
+        string[] known;
+        if (!OldWireless.TryGetValue(wpid, out known)) known = new[] { link == "Wireless" ? "G700 / G700s" : "", "mouse" };
+        return new Found
+        {
+            Path = p.Long, ShortPath = p.Short, Index = n, Link = link, Hidpp10 = true, Name = known[0], Kind = known[1],
+            Firmware = v == null ? "" : v[1].ToString("X2") + "." + v[2].ToString("X2") + (b != null ? " · build " + b[1].ToString("X2") + b[2].ToString("X2") : ""),
+            Models = wpid == 0 ? "" : link + " " + wpid.ToString("X4")
+        };
     }
 
     static Found Old(Probe pr, Port p, byte[] v)
@@ -527,11 +555,15 @@ class Probe : IDisposable
         return r;
     }
 
+    // 1 for a HID++ 1.0 device: it answers with error 01, invalid sub-ID (Solaar's base.ping). 0 for no answer.
     public int Ping(byte idx, int ms)
     {
+        lastError = -1;
         var r = Send(idx, 0, 1, ms, 0, 0, 0x5A);
-        return r == null ? 0 : r[0];
+        return r != null ? r[0] : lastError == 0x01 ? 1 : 0;
     }
+
+    int lastError;
 
     public byte Feature(byte idx, int id)
     {
@@ -553,7 +585,7 @@ class Probe : IDisposable
             var r = Next(end);
             if (r == null) return null;
             if (r[1] != idx) continue;
-            if (r[2] == 0x8F && r[3] == feat) return null;
+            if (r[2] == 0x8F && r[3] == feat) { lastError = r[5]; return null; }
             if (r[2] == 0xFF && r[3] == feat && r[4] == m[3]) return null;
             if (r[2] == feat && r[3] == m[3]) return r.Skip(4).ToArray();
         }
