@@ -247,6 +247,8 @@ class PageMouse : DevicePage
 
     protected override bool Unsaved { get { return dirty; } }
 
+    protected override bool Damaged { get { return state != null && !state.ProfileOk; } }
+
     protected override string Current() { return cur.ToText(); }
 
     protected override void Use(string text)

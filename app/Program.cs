@@ -422,6 +422,7 @@ class MainWindow : Form
         found = list;
         foreach (var k in pages.Keys.Where(k => !keys.Contains(k)).ToList()) Remove(k);
         int y = 0;
+        var made = new List<DevicePage>();
         foreach (var f in list)
         {
             var type = PageFor(f);
@@ -434,7 +435,7 @@ class MainWindow : Form
                 page.Visible = false;
                 pages[f.Key] = page;
                 if (page is Page515 && note != null) { ((Page515)page).Note = note; note = null; }
-                if (page is DevicePage) ((DevicePage)page).LoadForPreset();
+                if (page is DevicePage) made.Add((DevicePage)page);
             }
             else if (page is DevicePage) ((DevicePage)page).SetFound(f);
             else ((InfoPage)page).SetFound(f);
@@ -466,6 +467,7 @@ class MainWindow : Form
         sleepers.Enabled = list.Any(f => f.Asleep && !Devices.Shorts.ContainsKey(f.Path ?? ""));
         if (!demo) Listen(list);
         if (!settingsPage.Visible && !logsPage.Visible && !updatePage.Visible) Pick(selected);
+        foreach (var page in made) if (page != shown) page.LoadForPreset();
     }
 
     static Type PageFor(Found f)

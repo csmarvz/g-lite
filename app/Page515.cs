@@ -894,6 +894,8 @@ class Page515 : DevicePage
 
     protected override void Lost() { claimed = false; clusters = null; present = null; }
 
+    protected override bool Damaged { get { return broken; } }
+
     protected override bool Unsaved { get { return cur != null && (live ? Known() : stored != null && (dirty || Screening)); } }
 
     protected override string Current() { return cur.ToText(brightness) + BarText(brightness) + (Screening ? "|" + setup.ToText() : ""); }

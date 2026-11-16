@@ -33,8 +33,8 @@ abstract class DevicePage : Control, IPage
     readonly Btn act;
     Action actDo;
     readonly ReportView report;
-    bool naming, touched, working, restoring = true;
-    string baseline, renaming, loaded;
+    bool naming, touched, ready, queuedWork, restoring = true;
+    string baseline, renaming, loaded, remembered;
     readonly Dictionary<string, string[]> drafts = new Dictionary<string, string[]>();
     public string Note;
 
@@ -231,10 +231,10 @@ abstract class DevicePage : Control, IPage
 
     protected void Did(string what) { Log.Add(Who, "you", what); }
 
-    // A screen that didn't read its device when made reads it now, so its preset is sent again without opening it.
+    // A screen that didn't read its device when made, and isn't shown, reads it now, so its preset is sent again without opening it.
     public void LoadForPreset()
     {
-        if (working || Settings.Get(PresetKey) == "") return;
+        if (queuedWork || Settings.Get(PresetKey) == "") return;
         // Started in the tray, a hidden screen has no handle yet, and Do's callbacks need one.
         if (!IsHandleCreated) CreateHandle();
         Load();
@@ -242,7 +242,7 @@ abstract class DevicePage : Control, IPage
 
     protected void Do(Action<Hidpp> a, Action done = null, Action<string> failed = null)
     {
-        working = true;
+        queuedWork = true;
         queue = queue.ContinueWith(_ =>
         {
             try
@@ -267,32 +267,51 @@ abstract class DevicePage : Control, IPage
 
     string PresetKey { get { return "preset." + found.Slug; } }
 
-    void Remember() { if (loaded == null) Settings.Remove(PresetKey); else Settings.Set(PresetKey, loaded); }
+    // The picked preset's name, with "=edited" (a name can't hold "=") once the settings moved away from it:
+    // then the next start keeps what the device or lighting.<device> has and shows the dot, instead of sending the preset over it.
+    void Remember()
+    {
+        if (restoring) return;
+        var value = loaded == null ? "" : loaded + (Changed() ? "=edited" : "");
+        if (value == remembered) return;
+        remembered = value;
+        if (value == "") Settings.Remove(PresetKey); else Settings.Set(PresetKey, value);
+    }
+
+    protected virtual bool Damaged { get { return false; } }
 
     // Once per run, after the first load: a device that saves (G515, mice) comes back on its onboard lighting, not the unsaved preview.
     void RestorePreset()
     {
         if (!restoring) return;
         restoring = false;
-        var name = Settings.Get(PresetKey);
-        int i = name == "" ? -1 : profiles.Items.IndexOf(name);
-        if (i <= 0) return;
+        remembered = Settings.Get(PresetKey);
+        var parts = remembered.Split('=');
+        var name = parts[0];
+        bool edited = parts.Length > 1;
+        int index = name == "" ? -1 : profiles.Items.IndexOf(name);
+        if (index <= 0) { Remember(); return; }
         var text = Settings.Get(prefix + name);
-        try { if (Current() != text) Use(text); }
-        catch (Exception) { Settings.Remove(PresetKey); return; }
-        profiles.Index = i;
+        if (!edited && !Damaged && Current() != text)
+        {
+            try { Use(text); }
+            catch (Exception) { Say("The preset " + name + " couldn't be read from settings.txt", true); Remember(); return; }
+        }
+        profiles.Index = index;
         loaded = name;
-        baseline = Current();
-        touched = false;
+        baseline = edited ? text : Current();
+        touched = edited;
+        ShowSets();
     }
 
     protected void Loaded()
     {
-        RestorePreset();
+        ready = true;
         ShowSets();
         ShowSub();
         Calm();
-        if (Note == null) return;
+        RestorePreset();
+        if (Note == null || !Visible) return;
         var n = Note;
         Note = null;
         Briefly(n);
@@ -325,10 +344,11 @@ abstract class DevicePage : Control, IPage
         updateBtn.Text = naming ? "Save" : picked ? "Update" : "New…";
         moreBtn.Text = naming ? "Cancel" : "…";
         bool changed = picked && Changed();
-        updateBtn.Enabled = (naming || !picked || changed) && Keepable;
+        updateBtn.Enabled = (naming || (picked ? changed : ready)) && Keepable;
         if (picked) profiles.Text = profiles.Items[profiles.Index] + (changed ? " •" : "");
         profiles.Invalidate();
         undoBtn.Enabled = picked ? changed : Unsaved;
+        Remember();
         if (!IsHandleCreated || !Visible) return;
         moreBtn.Width = (int)((naming ? 76 : 36) * Ui.K);
         var main = MainButton();
@@ -406,7 +426,6 @@ abstract class DevicePage : Control, IPage
             catch (Exception) { Say("This preset couldn't be read from settings.txt", true); }
         }
         restoring = false;
-        Remember();
         ShowSets();
     }
 
@@ -428,7 +447,6 @@ abstract class DevicePage : Control, IPage
         drafts.Remove(name);
         baseline = null;
         loaded = null;
-        Remember();
         LoadSets(null);
         Revert();
         ShowSets();
@@ -446,7 +464,7 @@ abstract class DevicePage : Control, IPage
             var old = renaming;
             Settings.Set(prefix + name, Settings.Get(prefix + old));
             Settings.Remove(prefix + old);
-            if (loaded == old) { loaded = name; Remember(); }
+            if (loaded == old) loaded = name;
             EndName();
             LoadSets(name);
             Briefly("Renamed the preset to " + name);
@@ -457,7 +475,6 @@ abstract class DevicePage : Control, IPage
         loaded = name;
         restoring = false;
         Settings.Set(prefix + name, baseline);
-        Remember();
         EndName();
         LoadSets(name);
         Briefly("Saved the preset " + name);
