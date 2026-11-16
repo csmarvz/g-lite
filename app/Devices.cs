@@ -329,7 +329,8 @@ static class Devices
                     kind = pair == null ? 2 : pair[1] & 0x0F;
                 }
                 Found f;
-                int protocol = pr.Ping(n, 3500);
+                // A slot the receiver didn't list (the C531's slot 1) gets a short ping: an asleep or absent mouse shouldn't hold up every scan.
+                int protocol = pr.Ping(n, pair == null ? 1000 : 3500);
                 if (protocol >= 2) f = Describe(pr, p, n, link);
                 else if (protocol == 1) f = Old(pr, p, n, link, wpid);
                 else

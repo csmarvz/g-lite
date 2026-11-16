@@ -256,7 +256,9 @@ class KeyPicture : Ctl
 class Keyboards
 {
     public Model Keys;
-    public Model Iso { get { return Keys.Iso(); } }
+    Model iso;
+    bool isoBuilt;
+    public Model Iso { get { if (!isoBuilt) { iso = Keys.Iso(); isoBuilt = true; } return iso; } }
     public string Prefix;
     public bool Saves, Guessed;
     public int[] Bar;

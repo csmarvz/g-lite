@@ -686,12 +686,12 @@ class G9xMouse : IMouse
     public void SetInvert(Hidpp h, bool on) { throw new Refused("This mouse can't invert its wheel"); }
     public byte[] ReadProfile(Hidpp h, GMouse.State s) { return G9x.ReadPage(h, s.Sector); }
     public void Setup(Hidpp h, GMouse.State s, MouseSet want) { throw new Refused("Saving isn't supported on this mouse"); }
-    public void Save(Hidpp h, GMouse.State s, byte[] now, MouseSet want) { G9x.Store(h, s, G9x.Build(now, want, s.Rate, model)); }
+    public void Save(Hidpp h, GMouse.State s, byte[] now, MouseSet want) { G9x.Store(h, s, G9x.Build(now, want, s.Rate, model), now); }
 
     public void Restore(Hidpp h, GMouse.State s, byte[] now, byte[] data)
     {
         if (data == null) throw new Refused("G-Lite can't restore the factory profile on this mouse");
-        G9x.Store(h, s, data);
+        G9x.Store(h, s, data, now);
     }
 
     public string Describe(byte[] profile) { return G9x.Describe(profile, model); }
@@ -758,10 +758,6 @@ static class G9x
     public static readonly EffectDef[] Effects = GMouse.Effects.Where(effect => effect.Id <= 0x01).ToArray();
     public static readonly int[] Rates = { 125, 200, 250, 333, 500, 1000 };
 
-    public static int Dpi(int raw) { return G9xModel.G9x.Dpi(raw); }
-
-    public static int Raw(int dpi) { return G9xModel.G9x.Raw(dpi); }
-
     public static bool Valid(byte[] page) { return page.Length == 512 && GMouse.Valid(page); }
 
     public static byte[] ReadPage(Hidpp device, int pageNumber)
@@ -780,9 +776,8 @@ static class G9x
         return 0xFF;
     }
 
-    public static int[] StagesOf(byte[] page, G9xModel model = null)
+    public static int[] StagesOf(byte[] page, G9xModel model)
     {
-        model = model ?? G9xModel.G9x;
         return Enumerable.Range(0, 5).Select(stage => page[4 + 6 * stage] << 8 | page[5 + 6 * stage]).TakeWhile(raw => raw != 0 && raw != 0xFFFF).Select(model.Dpi).ToArray();
     }
 
@@ -798,9 +793,8 @@ static class G9x
         };
     }
 
-    public static GMouse.State Read(Hidpp device, G9xModel model = null)
+    public static GMouse.State Read(Hidpp device, G9xModel model)
     {
-        model = model ?? G9xModel.G9x;
         var state = new GMouse.State { ProfileOk = true, Flash = model.Pages, Effects = Effects, Rates = Rates, Dpis = model.Dpis() };
         var resolution = device.Register(0x83, 0x63);
         state.Dpi = model.Dpi(resolution[0] | resolution[1] << 8);
@@ -832,9 +826,9 @@ static class G9x
         return state;
     }
 
-    public static void SetDpi(Hidpp device, int dpi, G9xModel model = null)
+    public static void SetDpi(Hidpp device, int dpi, G9xModel model)
     {
-        int raw = (model ?? G9xModel.G9x).Raw(dpi);
+        int raw = model.Raw(dpi);
         var resolution = new byte[16];
         Array.Copy(device.Register(0x83, 0x63), resolution, 6);
         resolution[0] = resolution[2] = (byte)raw;
@@ -844,7 +838,7 @@ static class G9x
 
     public static void SetRate(Hidpp device, int hz) { device.Register(0x80, 0x64, (byte)(1000 / hz)); }
 
-    public static string Describe(byte[] page, G9xModel model = null)
+    public static string Describe(byte[] page, G9xModel model)
     {
         if (!Valid(page)) return "damaged, can't be restored";
         var stages = StagesOf(page, model);
@@ -852,9 +846,8 @@ static class G9x
         return page[0x26] > 0 ? dpi + " · " + 1000 / page[0x26] + " Hz" : dpi;
     }
 
-    public static byte[] Build(byte[] old, MouseSet want, int hz, G9xModel model = null)
+    public static byte[] Build(byte[] old, MouseSet want, int hz, G9xModel model)
     {
-        model = model ?? G9xModel.G9x;
         var page = (byte[])old.Clone();
         var stages = StagesOf(page, model);
         if (stages.Length == 0) throw new Refused("The profile on the mouse has no DPI stages, not touching it");
@@ -874,34 +867,50 @@ static class G9x
         return page;
     }
 
-    public static void Store(Hidpp device, GMouse.State state, byte[] page)
+    // previous: the page as it was before (backed up), written back if the write fails after the erase.
+    public static void Store(Hidpp device, GMouse.State state, byte[] page, byte[] previous)
     {
         if (!state.Flash || !state.Writable) throw new Refused("Saving isn't supported on this mouse");
         if (page.Length != 512 || !Valid(page)) throw new Refused("Refusing to write a profile with a bad checksum");
         byte pageNumber = (byte)state.Sector;
         device.Register(0x80, 0x0F, 0xFF);
         bool erased = false;
-        try
+        try { WritePage(device, pageNumber, page, () => erased = true); }
+        catch (Exception e)
         {
-            for (int half = 0; half < 2; half++)
-            {
-                var data = new byte[256];
-                Array.Copy(page, 256 * half, data, 0, 256);
-                Upload(device, data);
-                if (half == 0) { erased = true; device.Register(0x82, 0xA0, 0x02, 0, 0, 0, 0, 0, pageNumber, 0, 0, 0, 0x01, 0x00); }
-                device.Register(0x82, 0xA0, 0x03, 0, 0, 0, 0, 0, pageNumber, (byte)(0x80 * half), 0, 0, 0x01, 0x00);
-            }
-        }
-        catch
-        {
-            // Once the erase may have run, the page can be half written: stay on the factory profile (0x0F FF) until a backup is restored.
             if (!erased)
+            {
                 try { device.Register(0x80, 0x0F, 0x00, state.Current[0]); }
                 catch (Exception) { }
-            throw;
+                throw;
+            }
+            // The page may be half written, and the mouse is on its factory profile (0x0F FF): put the page back as it was, then load it.
+            try
+            {
+                if (previous == null || previous.Length != 512 || !Valid(previous)) throw new Refused("no good copy to put back");
+                WritePage(device, pageNumber, previous, () => { });
+                device.Register(0x80, 0x0F, 0x00, state.Current[0]);
+            }
+            catch (Exception)
+            {
+                throw new IOException("Saving failed halfway (" + e.Message + "). The mouse is on its factory profile: restore the backup from Backups, or replug it and save again.", e);
+            }
+            throw new IOException("Saving failed (" + e.Message + "), so the profile as it was is back on the mouse.", e);
         }
         device.Register(0x80, 0x0F, 0x00, state.Current[0]);
         if (!ReadPage(device, pageNumber).SequenceEqual(page)) throw new IOException("The profile on the mouse didn't read back the same after saving");
+    }
+
+    static void WritePage(Hidpp device, byte pageNumber, byte[] page, Action erasing)
+    {
+        for (int half = 0; half < 2; half++)
+        {
+            var data = new byte[256];
+            Array.Copy(page, 256 * half, data, 0, 256);
+            Upload(device, data);
+            if (half == 0) { erasing(); device.Register(0x82, 0xA0, 0x02, 0, 0, 0, 0, 0, pageNumber, 0, 0, 0, 0x01, 0x00); }
+            device.Register(0x82, 0xA0, 0x03, 0, 0, 0, 0, 0, pageNumber, (byte)(0x80 * half), 0, 0, 0x01, 0x00);
+        }
     }
 
     static void Upload(Hidpp device, byte[] data)

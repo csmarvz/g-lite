@@ -337,35 +337,44 @@ static class SelfTest
             && new Found { Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard" }.Short == "G915 TKL", "the G915 is found, and the G915 X isn't");
         Check(new Found { Index = 0, Hidpp10 = true }.Slot == "" && new Found { Index = 0xFF }.Slot == "" && new Found { Index = 2 }.Slot == " · slot 2"
             && Found.LooksG("G9x Laser Mouse") && !new Found { Name = "G9x Laser Mouse", Kind = "mouse", Hidpp10 = true }.IsMouse, "an old HID++ 1.0 device has no slot and isn't taken for a HID++ 2.0 mouse");
-        Check(G9x.Dpi(17) == 400 && G9x.Dpi(136) == 3200 && G9x.Dpi(242) == 5700 && G9x.Dpi(9) == 200 && G9x.Dpi(85) == 2000 && G9x.Raw(5700) == 242 && G9x.Raw(800) == 34, "G9x DPI matches what LGS shows");
+        Check(G9xModel.G9x.Dpi(17) == 400 && G9xModel.G9x.Dpi(136) == 3200 && G9xModel.G9x.Dpi(242) == 5700 && G9xModel.G9x.Dpi(9) == 200 && G9xModel.G9x.Dpi(85) == 2000 && G9xModel.G9x.Raw(5700) == 242 && G9xModel.G9x.Raw(800) == 34, "G9x DPI matches what LGS shows");
         var g9xMouse = new FakeG9x();
-        var g9xState = G9x.Read(g9xMouse);
+        var g9xState = G9x.Read(g9xMouse, G9xModel.G9x);
         Check(g9xState.Dpi == 800 && g9xState.Stage == 1 && g9xState.Stages.SequenceEqual(new[] { 400, 800, 1600, 3200 }) && g9xState.Rate == 500 && g9xState.Light.Effect == 0x01 && g9xState.Light.Color == 0xFF0000 && g9xState.Light.Bright == 100, "the G9x reads its DPI, stages, rate and colour");
-        G9x.SetDpi(g9xMouse, 5700);
+        G9x.SetDpi(g9xMouse, 5700, G9xModel.G9x);
         G9x.SetRate(g9xMouse, 1000);
         G9x.SetLight(g9xMouse, new MouseLight { Effect = 0x01, Color = 0x0000FF, Bright = 50 });
         Check(g9xMouse.Registers[0x63].Take(6).SequenceEqual(FakeHidpp.Hex("F200F2008001")) && g9xMouse.Registers[0x64][0] == 1 && g9xMouse.Registers[0x57].SequenceEqual(FakeHidpp.Hex("00007F")), "the G9x sets DPI, rate and colour through its registers");
         G9x.SetLight(g9xMouse, new MouseLight { Effect = 0x00 });
-        Check(g9xMouse.Registers[0x57].SequenceEqual(new byte[3]) && G9x.Read(g9xMouse).Light.Effect == 0x00, "the G9x light turns off");
-        Check(G9x.StagesOf(g9xMouse.Pages[3]).SequenceEqual(new[] { 200, 800, 2000 }) && new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04" }.IsG9x && !new Found { Path = @"\\?\hid#vid_046d&pid_c066" }.IsG9x, "G9x profile 2 and detection");
+        Check(g9xMouse.Registers[0x57].SequenceEqual(new byte[3]) && G9x.Read(g9xMouse, G9xModel.G9x).Light.Effect == 0x00, "the G9x light turns off");
+        Check(G9x.StagesOf(g9xMouse.Pages[3], G9xModel.G9x).SequenceEqual(new[] { 200, 800, 2000 }) && new Found { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04" }.IsG9x && !new Found { Path = @"\\?\hid#vid_046d&pid_c066" }.IsG9x, "G9x profile 2 and detection");
         Check(Found.ModelText(FakeHidpp.Hex("0400000000000EB38940B4C35500")) == "USB C355 · LIGHTSPEED 40B4 · Bluetooth B389"
             && Found.ModelText(FakeHidpp.Hex("0300000000000C4079C0880000")) == "USB C088 · LIGHTSPEED 4079"
             && Found.ModelText(FakeHidpp.Hex("01000000000003000000000ABA")) == "0ABA", "product IDs from 0x0003 as the G515, G Pro Wireless and PRO X Wireless answer");
         var g9xSaver = new FakeG9x();
-        var g9xBefore = G9x.Read(g9xSaver);
+        var g9xBefore = G9x.Read(g9xSaver, G9xModel.G9x);
         var g9xOtherPage = (byte[])g9xSaver.Pages[3].Clone();
-        var g9xPage = G9x.Build(g9xSaver.Pages[2], new MouseSet { Dpi = 1200, Stage = 2, Light = new MouseLight { Effect = 0x01, Color = 0x00FF00, Bright = 100 } }, 1000);
-        G9x.Store(g9xSaver, g9xBefore, g9xPage);
-        var g9xAfter = G9x.Read(g9xSaver);
+        var g9xPage = G9x.Build(g9xSaver.Pages[2], new MouseSet { Dpi = 1200, Stage = 2, Light = new MouseLight { Effect = 0x01, Color = 0x00FF00, Bright = 100 } }, 1000, G9xModel.G9x);
+        G9x.Store(g9xSaver, g9xBefore, g9xPage, g9xBefore.Profile);
+        var g9xAfter = G9x.Read(g9xSaver, G9xModel.G9x);
         Check(g9xBefore.Writable && g9xSaver.Pages[2].SequenceEqual(g9xPage) && g9xAfter.ProfileOk && g9xAfter.Stages.SequenceEqual(new[] { 400, 800, 1200, 3200 })
             && g9xPage[16] == 0 && g9xPage[17] == 51 && g9xPage[18] == 0 && g9xPage[19] == 51 && g9xPage[0x23] == 2 && g9xPage[0x26] == 1 && g9xPage.Take(3).SequenceEqual(FakeHidpp.Hex("00FF00"))
             && g9xSaver.Pages[3].SequenceEqual(g9xOtherPage) && g9xSaver.Writes.SequenceEqual(new[] { "erase 2:0", "copy 2:0", "copy 2:128" })
             && g9xSaver.Registers[0x0F][0] == 0x00 && g9xSaver.Registers[0x0F][1] == 0x00, "the G9x saves a profile page through RAM, erase and copy, and loads it again");
-        var g9xDirectory = G9x.Read(new FakeG9x());
+        var g9xDirectory = G9x.Read(new FakeG9x(), G9xModel.G9x);
         g9xDirectory.Sector = 1;
         bool g9xRefused = false;
-        try { G9x.Store(g9xSaver, g9xDirectory, g9xPage); } catch (Refused) { g9xRefused = true; }
+        try { G9x.Store(g9xSaver, g9xDirectory, g9xPage, null); } catch (Refused) { g9xRefused = true; }
         Check(g9xRefused && !g9xDirectory.Writable && g9xSaver.Writes.Count == 3, "the G9x never writes the directory page");
+        var g9xCut = new FakeG9x();
+        var g9xCutState = G9x.Read(g9xCut, G9xModel.G9x);
+        var g9xKept = (byte[])g9xCut.Pages[2].Clone();
+        g9xCut.FailSecondHalf = true;
+        string g9xCutError = null;
+        try { G9x.Store(g9xCut, g9xCutState, G9x.Build(g9xKept, new MouseSet { Dpi = 1200, Stage = 2 }, 1000, G9xModel.G9x), g9xKept); } catch (System.IO.IOException e) { g9xCutError = e.Message; }
+        Check(g9xCutError != null && g9xCutError.Contains("as it was is back") && g9xCut.Pages[2].SequenceEqual(g9xKept) && g9xCut.Registers[0x0F][0] == 0x00
+            && g9xCut.Writes.SequenceEqual(new[] { "erase 2:0", "copy 2:0", "erase 2:0", "copy 2:0", "copy 2:128" }),
+            "a G9x save cut off after the erase puts the page back as it was and loads it, instead of leaving the mouse on its factory profile");
         Check(Found.FirmwareText(new byte[] { 0x00, 0x55, 0x31, 0x00, 0x12, 0x01, 0x00, 0x05 }) == "U1 12.01 · build 0005" && Found.FirmwareText(new byte[] { 0x00, 0x4D, 0x50, 0x4D, 0x17, 0x00, 0x00, 0x08 }) == "MPM 17.00 · build 0008", "a zero byte in the firmware name doesn't end the report");
         Check(new Found { Name = "G510 Gaming Keyboard" }.Short == "G510" && Found.LooksG("G510 Gaming Keyboard"), "the G510 gets a short name and counts as a G device");
         var g510 = new Found { Name = "G510s Gaming Keyboard", Kind = "keyboard", Link = "USB", PlainHid = true, Vendor = true, Path = @"\\?\hid#vid_046d&pid_c22d&mi_01&col02" };
@@ -379,7 +388,7 @@ static class SelfTest
         var g500sState = G9x.Read(g500s, G9xModel.G500s);
         G9x.SetDpi(g500s, 8200, G9xModel.G500s);
         var g500sPage = G9x.Build(g500s.Pages[2], new MouseSet { Dpi = 6400, Stage = 3, Light = new MouseLight { Effect = 0x01, Color = 0x00FF00, Bright = 100 } }, 1000, G9xModel.G500s);
-        G9x.Store(g500s, g500sState, g500sPage);
+        G9x.Store(g500s, g500sState, g500sPage, g500sState.Profile);
         var g500sAfter = G9x.Read(g500s, G9xModel.G500s);
         Check(g500sState.Dpi == 800 && g500sState.Light == null && g500sState.Stages.SequenceEqual(new[] { 400, 800, 1600, 3200 }) && g500sState.Dpis.Last() == 8200
             && g500s.Registers[0x63][0] == 164 && g500sAfter.Stages.SequenceEqual(new[] { 400, 800, 1600, 6400 }) && g500s.Pages[2][0x23] == 3 && g500s.Pages[2].Take(3).All(b => b == 0)

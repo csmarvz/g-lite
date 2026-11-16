@@ -400,7 +400,8 @@ class MainWindow : Form
 
     void Listen(List<Found> list)
     {
-        var paths = list.Where(f => f.Path != null && !f.PlainHid && !f.Hidpp10).Select(f => f.Path).Distinct().OrderBy(p => p).ToList();
+        // A HID++ 1.0 device on its cable (index 0) isn't watched; one behind a receiver (the G700) is, for the receiver's 0x41 connect events.
+        var paths = list.Where(f => f.Path != null && !f.PlainHid && !(f.Hidpp10 && f.Index == 0)).Select(f => f.Path).Distinct().OrderBy(p => p).ToList();
         var key = string.Join("|", paths);
         if (key == watched) return;
         watched = key;

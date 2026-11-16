@@ -99,7 +99,8 @@ static class Other
         else if (found.Has(0x2110))
         {
             var now = Try(device, 0x2110, 0);
-            if (now != null && now[2] > 0) state.ShiftDefault = now[2];
+            // The default is what G-Lite last wrote (it survives a reset); FF is SmartShift off, not a threshold to start the slider at.
+            if (now != null && now[2] > 0 && now[2] < 0xFF) state.ShiftDefault = now[2];
             if (now != null && now[1] > 0) { set[OtherSet.Shift] = now[1]; state.ShiftFeature = 0x2110; }
         }
         state.ShiftDefault = Math.Max(1, Math.Min(50, state.ShiftDefault));
@@ -121,10 +122,12 @@ static class Other
             {
                 set[OtherSet.Light] = config[0] & 1;
                 // Mode 2 (temporary manual) is automatic nudged with the keys: the keyboard goes back to automatic at the next power-on (spec x1982 v3).
-                if ((config[2] & 0x08) != 0 && (config[2] & 0x20) != 0) set[OtherSet.Auto] = (config[1] >> 3 & 3) != 3 ? 1 : 0;
+                int mode = config[1] >> 3 & 3;
+                if ((config[2] & 0x08) != 0 && (config[2] & 0x20) != 0) set[OtherSet.Auto] = mode == 1 || mode == 2 ? 1 : 0;
                 var info = (config[2] & 0x20) != 0 ? Try(device, 0x1982, 2) : null;
-                // The level is fn 0's b5, the stored setting, like Solaar; fn 2's b1 is the level lit right now, which fades.
-                if (info != null && info[0] > 1) { state.Levels = info[0]; set[OtherSet.Level] = Math.Min(info[0] - 1, (int)config[5]); }
+                // In mode 3 the level is fn 0's b5, the stored setting, like Solaar. Outside it b5 reads 0 (spec x1982 v3), so the slider shows
+                // fn 2's b1, the level lit now (it fades when idle).
+                if (info != null && info[0] > 1) { state.Levels = info[0]; set[OtherSet.Level] = Math.Min(info[0] - 1, mode == 3 ? config[5] : info[1]); }
             }
         }
         if (found.Has(0x1814))
@@ -202,7 +205,10 @@ static class Other
                 int now = config[1] >> 3 & 3;
                 int mode = want[OtherSet.Auto] == 1 ? 1 : want[OtherSet.Auto] == 0 || want[OtherSet.Level] >= 0 && want[OtherSet.Level] != sent[OtherSet.Level] ? 3 : now == 2 ? 1 : now;
                 byte options = (byte)(config[1] & ~0x18 | mode << 3);
-                int level = mode != 3 ? 0 : want[OtherSet.Level] >= 0 ? want[OtherSet.Level] : now == 3 ? config[5] : device.Call(device.F(0x1982), 2)[1];
+                bool picked = want[OtherSet.Level] >= 0 && want[OtherSet.Level] != sent[OtherSet.Level];
+                int level = mode != 3 ? 0 : picked ? want[OtherSet.Level] : now == 3 ? config[5] : device.Call(device.F(0x1982), 2)[1];
+                // A level nobody picked that reads 0 (faded, or never set) would store the backlight off: take the middle level instead.
+                if (mode == 3 && !picked && level == 0) level = Math.Max(1, (state.Levels - 1) / 2);
                 bool on = want[OtherSet.Light] >= 0 ? want[OtherSet.Light] == 1 : (config[0] & 1) != 0;
                 device.Call(device.F(0x1982), 1, (byte)(on ? 1 : 0), options, 0xFF, (byte)level, config[6], config[7], config[8], config[9], config[10], config[11], 0, 0);
             }

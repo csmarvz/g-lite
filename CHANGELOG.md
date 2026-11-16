@@ -10,9 +10,9 @@
 
 ### Fixed
 
-- MX keyboards: after the brightness keys had been used, G-Lite showed Automatic backlight as off, and changing the backlight could leave it dark. It now shows Automatic, and keeps the level that's lit.
+- MX keyboards: after the brightness keys had been used, G-Lite showed Automatic backlight as off, and changing the backlight could leave it dark. It now shows Automatic, shows the level that's lit, and turning Automatic off keeps that level (or a middle one) instead of turning the backlight off.
 - MX mice: the SmartShift threshold is kept when the mouse turns off and on again, instead of going back to its old value (or turning SmartShift back on).
-- G9x, G500 and G500s: saving only ever writes the mouse's own profile pages, never its factory ones; a profile list is read only up to its end; and if a save fails halfway, the mouse stays on its factory profile instead of a half-written one.
+- G9x, G500 and G500s: saving only ever writes the mouse's own profile pages, never its factory ones; a profile list is read only up to its end; and if a save fails halfway, G-Lite puts the profile back as it was instead of leaving a half-written one.
 - Litra Beam LX: Try effect's two-colour effect uses the Speed slider's period instead of 50 ms.
 - A device's firmware version is the one it runs, when it has more than one.
 - Every keyboard picture now has an ISO version, shown when the keyboard reports an ISO layout: the G915, G815, G512 X and the other newer keyboards used to show the US layout. The ISO Enter is drawn as one L-shaped key instead of two.

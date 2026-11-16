@@ -27,5 +27,6 @@ press Backlight
   = status "Applied to the keyboard. Buttons, gestures and per-app settings stay in Logi Options+." [Report] Preset=None [New…] […] Backlight=on Automatic=on Level=5 (off) Computer=1 · Desk PC [Revert]
 press Automatic
   1982 fn0
+  1982 fn2
   1982 fn1  01 1D FF 05 03 00 06 00 3C
   = status "Applied to the keyboard. Buttons, gestures and per-app settings stay in Logi Options+." [Report] Preset=None [New…] […] Backlight=on Automatic=off Level=5 Computer=1 · Desk PC [Revert]

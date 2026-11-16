@@ -609,6 +609,8 @@ class FakeG9x : Hidpp
     }
 
     public readonly List<string> Writes = new List<string>();
+    // The next copy of a second half fails once, after its page was erased: a save cut off halfway.
+    public bool FailSecondHalf;
     int nextSequence = -1, uploadPage, uploadOffset, uploadLeft;
 
     public override void Dispose() { }
@@ -639,6 +641,7 @@ class FakeG9x : Hidpp
         {
             int target = parameters[6], wordOffset = parameters[7], length = parameters[10] << 8 | parameters[11];
             if (target < 2) throw new HidppError(0x07, "protected page");
+            if (FailSecondHalf && parameters[0] == 0x03 && wordOffset == 0x80) { FailSecondHalf = false; throw new HidppError(0x04, "copy failed"); }
             Writes.Add((parameters[0] == 0x02 ? "erase " : "copy ") + target + ":" + wordOffset);
             if (parameters[0] == 0x02) Pages[target] = Enumerable.Repeat((byte)0xFF, 512).ToArray();
             else for (int i = 0; i < length; i++) Pages[target][wordOffset * 2 + i] &= Pages[parameters[2]][parameters[3] * 2 + i];
