@@ -15,6 +15,9 @@
 - G9x, G500 and G500s: saving only ever writes the mouse's own profile pages, never its factory ones; a profile list is read only up to its end; and if a save fails halfway, the mouse stays on its factory profile instead of a half-written one.
 - Litra Beam LX: Try effect's two-colour effect uses the Speed slider's period instead of 50 ms.
 - A device's firmware version is the one it runs, when it has more than one.
+- Every keyboard picture now has an ISO version, shown when the keyboard reports an ISO layout: the G915, G815, G512 X and the other newer keyboards used to show the US layout. The ISO Enter is drawn as one L-shaped key instead of two.
+- The G213's picture matches the keyboard: the numpad's + and Enter are two rows tall, the game mode and light buttons sit above Print Screen and Pause, mute and the volume rocker above the numpad, and play/pause, stop, back and forward in the function row.
+- The G213's light button turns the backlight off inside the keyboard, where G-Lite can't see or undo it. Its screen now says to press that button when the keys stay dark.
 - On a mouse running its factory profile, buttons set to DPI shift, DPI up, DPI down or other built-in functions show their name instead of "Special 07". Cycle profile, Default DPI, Scroll up and Scroll down are named too, and the G502 HERO's buttons get their names (Sniper, G7, G8…).
 - Try effect on the Litra Beam LX sends the smooth colour cycle and smooth colour wave the way the keyboards take them. Before, the light ignored them. Untested on a real light.
 

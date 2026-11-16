@@ -192,8 +192,9 @@ class PageSpeaker : DevicePage
         {
             var pic = Ui.Add(this, new Box(), 20, 118, 616, 209);
             Ui.Text(pic, "Live on the keyboard", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
-            iso = Model.Load(model.Replace(".json", "-iso.json"));
-            picture = Ui.Add(pic, new KeyPicture(Model.Load(model)) { Live = true }, 14, 36, 588, 161);
+            var ansi = Model.Load(model);
+            iso = ansi.Iso();
+            picture = Ui.Add(pic, new KeyPicture(ansi) { Live = true }, 14, 36, 588, 161);
         }
         light = Ui.Add(this, new Box(), 20, picture != null ? 339 : 118, 616, picture != null ? 310 : 330);
         lightHead = Ui.Text(light, "Lighting", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
@@ -590,7 +591,7 @@ class PageSpeaker : DevicePage
     {
         if (picture == null || !Visible) return;
         var listed = zones;
-        if (!isoShown && listed != null && layout > 2)
+        if (!isoShown && iso != null && listed != null && layout > 2)
         {
             isoShown = true;
             picture.SetModel(iso);
@@ -616,6 +617,8 @@ class PageSpeaker : DevicePage
         var listed = zones;
         if (listed != null && listed.Count == 0) { Say(keyboard ? "This keyboard lists no lighting zones" : "These speakers list no lighting zones", true); return; }
         if (screening) { Say("Screen effect · not saved to the speakers"); return; }
+        // The G213's light button turns the backlight off inside the keyboard: nothing is reported, and lighting sent then stays dark (docs/G213.md).
+        if (cur != null && keyboard && found.Short.ToUpper() == "G213") { Say("Set by G-Lite · keys dark? Press the light button above Pause"); return; }
         Say(cur == null ? "" : "Set by G-Lite · not saved to the " + noun);
     }
 

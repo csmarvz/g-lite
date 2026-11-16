@@ -11,6 +11,7 @@ static class SelfTest
     [STAThread]
     static int Main(string[] args)
     {
+        Latency.Ms = 0;
         var factory = Hex("0101003c012cffffffffffffffffffffffffffffffffffffffffffffffff18ff008180aaff00006400000000000000000000000019ff008180aaff0000640000000000000000000000000300000000000000000010000104000200ffffffffffffffff");
         var factoryDir = Hex("5e380925010181014063996dec0101ff");
         var pyProfile = Hex("0101003c012cffffffffffffffffffffffffffffffffffffffffffffffff000000000000000000000001ffffff000000000000000000000000000000000000017f7f7f000000000000000000000000000000000010000104000200ffffffffffffffff");
@@ -265,7 +266,7 @@ static class SelfTest
             && GSpeaker.ZoneName(1, 0) == "Keys" && GSpeaker.ZoneName(8, 3) == "Zone 3" && GSpeaker.ZoneName(0, 1) == "Zone 2", "the G213 counts as a G device with its model last, and its zones are named from their location");
         var wave = new MouseLight { Effect = 0x04, Period = 0x1388, Bright = 80, Direction = 3 };
         Check(GSpeaker.Encode(wave).SequenceEqual(new byte[] { 0, 0, 0, 0, 0, 0, 0x88, 3, 80, 0x13 }) && GSpeaker.FromText(GSpeaker.ToText(new[] { wave }), 1)[0].Same(wave)
-            && GSpeaker.FromText("1,FF0000,5000,100", 1)[0].Direction == 6 && Model.Load("g213.json").KeyIds().All(zone => zone >= 1 && zone <= 5) && Model.Load("g213-iso.json").KeyIds().All(zone => zone >= 1 && zone <= 5),
+            && GSpeaker.FromText("1,FF0000,5000,100", 1)[0].Direction == 6 && Model.Load("g213.json").KeyIds().All(zone => zone >= 1 && zone <= 5) && Model.Load("g213.json").Iso().KeyIds().All(zone => zone >= 1 && zone <= 5),
             "0x8070 Wave is encoded with its direction and kept in text, and every G213 key has a zone");
         int dpiShift = Array.FindIndex(Bindings.Actions, a => a.Name == "DPI shift"), disabled = Array.FindIndex(Bindings.Actions, a => a.Name == "Disabled");
         Check(Bindings.Find(Hex("9007FFFF")) == dpiShift && Bindings.Find(Hex("9007FF00")) == dpiShift && Bindings.Find(Hex("8000FFFF")) == disabled && Bindings.Find(Hex("80010005")) < 0
@@ -467,7 +468,7 @@ static class SelfTest
         Check(hreport.Contains("sidetone=1E") && hreport.Contains("auto-off=1E") && hreport.Contains("% · 3926 mV"), "the headset report reads sidetone, auto-off and the battery");
         Check(!Report.Reads[0x8100].Intersect(new[] { 1, 3, 6, 7, 8, 0xC }).Any() && !Report.Reads[0x8101].Intersect(new[] { 2, 3, 6, 7 }).Any() && !Report.Reads[0x8071].Contains(1) && !Report.Reads[0x8070].Contains(3), "the report never calls a write function");
 
-        foreach (var file in new[] { "g515-tkl.json", "g515-tkl-iso.json", "g915-tkl.json", "g915.json", "g512-x-75.json", "g-full.json", "g-60.json" })
+        foreach (var file in new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json", "g-full.json", "g-60.json" })
         {
             var board = Model.Load(file);
             int keys = board.Rows.Sum(r => r.Split('|').Count(t => !t.StartsWith("_")));
@@ -475,7 +476,22 @@ static class SelfTest
             Check(keyIds.Count == keys && board.Ids.Length == board.Rows.Length, file + " has one key id per key");
             Check(keyIds.Where(i => i >= 0).All(i => (i >= 0x01 && i <= 0x6F) || (i >= 0x99 && i <= 0xFE)), file + " key ids are lighting ids");
         }
-        var isoIds = Model.Load("g515-tkl-iso.json").KeyIds();
+        // The built ISO pictures were checked equal to the hand-made g515-tkl-iso.json and g213-iso.json they replaced.
+        foreach (var file in new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json" })
+        {
+            var isoBoard = Model.Load(file).Iso();
+            int isoKeys = isoBoard.Rows.Sum(r => r.Split('|').Count(t => !t.StartsWith("_")));
+            Check(isoBoard.KeyIds().Count == isoKeys && isoBoard.Ids.All(r => r.Split(' ').Length <= 40), file + " builds an ISO picture with one key id per key");
+        }
+        var g515Iso = Model.Load("g515-tkl.json").Iso();
+        Check(g515Iso.Rows[3] == "Tab:1.5|Q|W|E|R|T|Y|U|I|O|P|[|]|_.25|Enter:1.25:2:.25|_.25|Del|End|PgDn" && g515Iso.Rows[4] == "Caps:1.75|A|S|D|F|G|H|J|K|L|;|'|#"
+            && g515Iso.Rows[5] == "Shift:1.25|<>|Z|X|C|V|B|N|M|,|.|/|Shift:2.75|_1.25|↑" && g515Iso.Rows[6].Contains("|AltGr:1.25|")
+            && g515Iso.Ids[3] == "28 11 17 05 12 14 19 15 09 0F 10 2C 2D 25 49 4A 4B" && g515Iso.Ids[4] == "36 01 13 04 06 07 08 0A 0B 0C 30 31 2F" && g515Iso.Ids[5] == "69 61 1A 18 03 16 02 0E 0D 33 34 35 6D 4F",
+            "the G515's ISO picture: an L-shaped Enter from the Tab row with its id, # (2F), a short left Shift and <> (61), AltGr");
+        var g213Iso = Model.Load("g213.json").Iso();
+        Check(g213Iso.Rows[6] == "Caps:1.75|A|S|D|F|G|H|J|K|L|;|'|#|_4.75|4|5|6" && g213Iso.Ids[6] == "1 1 1 1 1 2 2 2 2 3 3 3 3 5 5 5" && g213Iso.Ids[7] == "1 1 1 1 1 1 2 2 2 2 3 3 3 4 5 5 5 5"
+            && g213Iso.Zones && !Model.Load("g515-tkl.json").Zones, "on the G213's zones, # and <> take the zone of the key they replace or sit by");
+        var isoIds = g515Iso.KeyIds();
         var ansiIds = Model.Load("g515-tkl.json").KeyIds();
         Check(isoIds.Contains(0x61) && isoIds.Contains(0x2F) && !isoIds.Contains(0x2E) && ansiIds.Contains(0x2E) && !ansiIds.Contains(0x61), "ISO has <> and the key next to Enter, ANSI has \\");
         Check(ansiIds.Distinct().Count() == 87 && isoIds.Distinct().Count() == 88, "the G515 has 87 keys in ANSI and 88 in ISO");
@@ -504,6 +520,18 @@ static class SelfTest
         KeyLights.Send(perKey, groups);
         Check(perKey.Keys.Count == 22 && perKey.Keys[0x14] == 0xFF0000 && perKey.Keys[0x6F] == 0x0000FF && perKey.Frames == 1, "per-key colours go out in groups of 13 and end with a frame");
         Check(perKey.Call(perKey.F(0x4540), 0)[0] == 0x0D, "the fake keyboard reports a Swiss layout");
+
+        // models/iso keeps each layout's ISO picture as a file to read; it isn't embedded, the app builds it with Model.Iso.
+        var isoFolder = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\models\iso");
+        foreach (var file in new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json" })
+        {
+            var builtIso = Model.Load(file).Iso();
+            var path = System.IO.Path.Combine(isoFolder, file.Replace(".json", "-iso.json"));
+            if (args.Contains("--record")) { System.IO.Directory.CreateDirectory(isoFolder); System.IO.File.WriteAllText(path, builtIso.ToJson(), new System.Text.UTF8Encoding(false)); }
+            var kept = System.IO.File.Exists(path) ? Model.Parse(System.IO.File.ReadAllText(path)) : null;
+            Check(kept != null && kept.Rows.SequenceEqual(builtIso.Rows) && kept.Ids.SequenceEqual(builtIso.Ids) && kept.Zones == builtIso.Zones && kept.Name == builtIso.Name,
+                "models/iso/" + System.IO.Path.GetFileName(path) + " is the ISO picture built from " + file + " (run build\\selftest.exe --record after changing a layout)");
+        }
 
         var traceFailures = Traces.Run(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\tests"), args.Contains("--record"));
         foreach (var failure in traceFailures) Console.WriteLine("FAIL " + failure);

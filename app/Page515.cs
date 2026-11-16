@@ -45,6 +45,7 @@ class KeyPicture : Ctl
     public void SetModel(Model m)
     {
         keys.Clear();
+        lips.Clear();
         uw = uh = 0;
         AccessibleName = m.Name + " lighting";
         foreach (var row in m.Rows)
@@ -56,9 +57,11 @@ class KeyPicture : Ctl
                 var parts = t.Split(':');
                 float w = parts.Length > 1 ? float.Parse(parts[1], CultureInfo.InvariantCulture) : 1;
                 float h = parts.Length > 2 ? float.Parse(parts[2], CultureInfo.InvariantCulture) : 1;
+                if (parts.Length > 3) lips[keys.Count] = float.Parse(parts[3], CultureInfo.InvariantCulture);
                 keys.Add(new RectangleF(x, uh, w, h));
                 x += w;
-                tall = Math.Max(tall, h);
+                // A key taller than a row (the numpad's + and Enter) hangs into the next one, which leaves a gap for it.
+                tall = Math.Max(tall, Math.Min(h, 1));
                 uw = Math.Max(uw, x);
             }
             uh += tall > 0 ? tall : x;
@@ -102,6 +105,40 @@ class KeyPicture : Ctl
 
     RectangleF Cap(RectangleF r) { return new RectangleF(ox + r.X * unit + 1.5f * K, oy + r.Y * unit + 1.5f * K, r.Width * unit - 3 * K, r.Height * unit - 3 * K); }
 
+    // A key with a lip ("Enter:1.25:2:.25", the ISO Enter) is an L: its own rectangle plus its first row widened to the left by the lip.
+    readonly Dictionary<int, float> lips = new Dictionary<int, float>();
+
+    RectangleF? TopRow(int k)
+    {
+        float lip;
+        if (!lips.TryGetValue(k, out lip)) return null;
+        var r = keys[k];
+        return Cap(new RectangleF(r.X - lip, r.Y, r.Width + lip, 1));
+    }
+
+    bool Hit(int k, Func<RectangleF, bool> test) { var top = TopRow(k); return test(Cap(keys[k])) || top != null && test(top.Value); }
+
+    void FillKey(Graphics g, int k, Color fill)
+    {
+        Ui.Fill(g, Cap(keys[k]), 3 * K, fill, fill);
+        var top = TopRow(k);
+        if (top != null) Ui.Fill(g, top.Value, 3 * K, fill, fill);
+    }
+
+    void Outline(Graphics g, int k, Pen pen)
+    {
+        var r = Cap(keys[k]);
+        var top = TopRow(k);
+        if (top == null)
+        {
+            using (var path = Ui.Round(new RectangleF(r.X + K, r.Y + K, r.Width - 2 * K, r.Height - 2 * K), 3 * K)) g.DrawPath(pen, path);
+            return;
+        }
+        var t = top.Value;
+        pen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
+        g.DrawPolygon(pen, new[] { new PointF(t.Left + K, t.Top + K), new PointF(r.Right - K, t.Top + K), new PointF(r.Right - K, r.Bottom - K), new PointF(r.Left + K, r.Bottom - K), new PointF(r.Left + K, t.Bottom - K), new PointF(t.Left + K, t.Bottom - K) });
+    }
+
     Rectangle Marquee { get { return Rectangle.FromLTRB(Math.Min(dragFrom.X, dragTo.X), Math.Min(dragFrom.Y, dragTo.Y), Math.Max(dragFrom.X, dragTo.X), Math.Max(dragFrom.Y, dragTo.Y)); } }
 
     bool Dragged { get { return Math.Abs(dragTo.X - dragFrom.X) > 4 * K || Math.Abs(dragTo.Y - dragFrom.Y) > 4 * K; } }
@@ -110,10 +147,7 @@ class KeyPicture : Ctl
     {
         var hits = new List<int>();
         for (int k = 0; k < keys.Count; k++)
-        {
-            var r = Cap(keys[k]);
-            if (Dragged ? r.IntersectsWith(Marquee) : r.Contains(dragTo)) hits.Add(k);
-        }
+            if (Hit(k, r => Dragged ? r.IntersectsWith(Marquee) : r.Contains(dragTo))) hits.Add(k);
         return hits;
     }
 
@@ -131,11 +165,7 @@ class KeyPicture : Ctl
         if (unit > 0) ripples.Add(Tuple.Create(new PointF((e.X - ox) / unit, (e.Y - oy) / unit), clock.Elapsed.TotalSeconds));
         if (Bar.Count == 0 || PartPicked == null || e.Button != MouseButtons.Left) return;
         for (int k = 0; k < keys.Count; k++)
-        {
-            var r = Cap(keys[k]);
-            r.Inflate(0, 2 * K);
-            if (r.Contains(e.Location)) { PartPicked(OnBar(k)); return; }
-        }
+            if (Hit(k, r => { r.Inflate(0, 2 * K); return r.Contains(e.Location); })) { PartPicked(OnBar(k)); return; }
     }
 
     protected override void OnMouseMove(MouseEventArgs e)
@@ -203,7 +233,7 @@ class KeyPicture : Ctl
                 fill = Ui.Mix(Theme.KeyOff, full, max / 255.0 * bright / 100.0);
             }
             if (Part != 0 && Part != (onBar ? 2 : 1)) fill = Ui.Mix(Theme.KeyOff, fill, 0.3);
-            Ui.Fill(g, Cap(r), 3 * K, fill, fill);
+            FillKey(g, k, fill);
         }
     }
 
@@ -213,12 +243,9 @@ class KeyPicture : Ctl
         for (int k = 0; k < keys.Count; k++)
         {
             var fill = liveColors != null && k < liveColors.Length ? Ui.Mix(Theme.KeyOff, liveColors[k], bright / 100.0) : Theme.KeyOff;
-            var r = Cap(keys[k]);
-            Ui.Fill(g, r, 3 * K, fill, fill);
+            FillKey(g, k, fill);
             if (touched.Contains(k) || marked != null && k < marked.Length && marked[k])
-                using (var pen = new Pen(Theme.Accent, 2 * K))
-                using (var path = Ui.Round(new RectangleF(r.X + K, r.Y + K, r.Width - 2 * K, r.Height - 2 * K), 3 * K))
-                    g.DrawPath(pen, path);
+                using (var pen = new Pen(Theme.Accent, 2 * K)) Outline(g, k, pen);
         }
         if (!dragging || !Dragged) return;
         using (var b = new SolidBrush(Color.FromArgb(46, Theme.Accent))) g.FillRectangle(b, Marquee);
@@ -228,7 +255,8 @@ class KeyPicture : Ctl
 
 class Keyboards
 {
-    public Model Keys, Iso;
+    public Model Keys;
+    public Model Iso { get { return Keys.Iso(); } }
     public string Prefix;
     public bool Saves, Guessed;
     public int[] Bar;
@@ -260,7 +288,7 @@ class Keyboards
     }
 
     public static readonly Keyboards
-        G515 = new Keyboards { Keys = Model.Load("g515-tkl.json"), Iso = Model.Load("g515-tkl-iso.json"), Prefix = "profile.g515.", Saves = true },
+        G515 = new Keyboards { Keys = Model.Load("g515-tkl.json"), Prefix = "profile.g515.", Saves = true },
         G915Tkl = new Keyboards { Keys = Model.Load("g915-tkl.json"), Prefix = "profile.g915." },
         G915 = new Keyboards { Keys = Model.Load("g915.json"), Prefix = "profile.g915." },
         G815 = new Keyboards { Keys = Named("g915.json", "G815"), Prefix = "profile.g815." },
@@ -792,9 +820,11 @@ class Page515 : DevicePage
 
     void ApplyLayout()
     {
-        if (kind.Iso == null || iso || layoutCode <= 2) return;
+        if (iso || layoutCode <= 2) return;
+        var model = kind.Iso;
+        if (model == null) return;
         iso = true;
-        picture.SetModel(kind.Iso);
+        picture.SetModel(model);
         force = true;
         if (Screening) SyncScreen();
     }

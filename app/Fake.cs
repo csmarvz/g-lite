@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -9,11 +10,58 @@ using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
+// The fakes answer after a short pause so --demo feels like a device; the self-test sets it to 0 (on Windows a 5 ms sleep lasts about 15).
+static class Latency
+{
+    public static int Ms = 5;
+    public static void Pause() { if (Ms > 0) Thread.Sleep(Ms); }
+}
+
 class Model
 {
     public string Name { get; set; }
     public string[] Rows { get; set; }
     public string[] Ids { get; set; }
+    // The ids are 0x8070 zones (the G213), not lighting ids.
+    public bool Zones { get; set; }
+
+    // The ISO picture, built from the ANSI one, for a keyboard whose 0x4540 layout is above 2: \ goes and Enter becomes an L from
+    // the Tab row (it keeps its id), the Caps row's Enter becomes #, the left Shift shortens for <>, the right Alt is AltGr.
+    // # and <> are lighting ids 2F and 61 (USB codes minus 3), or on a layout of zones the zone of the key they replace or sit by.
+    // Null for a layout without these keys.
+    public Model Iso()
+    {
+        var rows = Rows.Select(row => row.Split('|').ToList()).ToArray();
+        var ids = Rows.Select((row, r) => Ids != null && r < Ids.Length ? Ids[r].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList() : new List<string>()).ToArray();
+        int tab = Array.FindIndex(rows, row => row.Contains("\\:1.5")), caps = Array.FindIndex(rows, row => row.Contains("Enter:2.25")), shift = Array.FindIndex(rows, row => row.Contains("Shift:2.25"));
+        if (tab < 0 || caps < 0 || shift < 0) return null;
+        int backslash = rows[tab].IndexOf("\\:1.5"), enter = rows[caps].IndexOf("Enter:2.25"), leftShift = rows[shift].IndexOf("Shift:2.25");
+        int backslashKey = KeyIndex(rows[tab], backslash), enterKey = KeyIndex(rows[caps], enter), shiftKey = KeyIndex(rows[shift], leftShift);
+        string enterId = enterKey < ids[caps].Count ? ids[caps][enterKey] : "--";
+
+        rows[tab][backslash] = "Enter:1.25:2:.25";
+        rows[tab].Insert(backslash, "_.25");
+        if (backslashKey < ids[tab].Count) ids[tab][backslashKey] = enterId;
+
+        rows[caps][enter] = "#";
+        if (enter + 1 < rows[caps].Count && rows[caps][enter + 1].StartsWith("_"))
+            rows[caps][enter + 1] = "_" + (float.Parse(rows[caps][enter + 1].Substring(1), CultureInfo.InvariantCulture) + 1.25f).ToString("0.##", CultureInfo.InvariantCulture);
+        else if (enter + 1 < rows[caps].Count) rows[caps].Insert(enter + 1, "_1.25");
+        if (!Zones && enterKey < ids[caps].Count) ids[caps][enterKey] = "2F";
+
+        rows[shift][leftShift] = "Shift:1.25";
+        rows[shift].Insert(leftShift + 1, "<>");
+        if (shiftKey < ids[shift].Count) ids[shift].Insert(shiftKey + 1, Zones ? ids[shift][shiftKey] : "61");
+
+        foreach (var row in rows)
+        {
+            var alts = Enumerable.Range(0, row.Count).Where(t => row[t].Split(':')[0] == "Alt").ToList();
+            if (alts.Count == 2) row[alts[1]] = "AltGr" + row[alts[1]].Substring(3);
+        }
+        return new Model { Name = Name, Zones = Zones, Rows = rows.Select(row => string.Join("|", row)).ToArray(), Ids = Ids == null ? null : ids.Select(row => string.Join(" ", row)).ToArray() };
+    }
+
+    static int KeyIndex(List<string> row, int token) { return row.Take(token).Count(t => !t.StartsWith("_")); }
 
     public List<int> KeyIds()
     {
@@ -37,7 +85,21 @@ class Model
         string text;
         using (var stream = typeof(Model).Assembly.GetManifestResourceStream(file))
         using (var reader = new System.IO.StreamReader(stream)) text = reader.ReadToEnd();
-        return new Model { Name = Strings(text, "name")[0], Rows = Strings(text, "rows"), Ids = Strings(text, "ids") };
+        return Parse(text);
+    }
+
+    // The layout as its .json file holds it: models/iso/*-iso.json are written with this by selftest --record.
+    public string ToJson()
+    {
+        Func<string, string> quote = s => "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+        Func<string[], string> list = items => "[\n" + string.Join(",\n", items.Select(item => "    " + quote(item))) + "\n  ]";
+        return "{\n  \"name\": " + quote(Name) + ",\n" + (Zones ? "  \"kind\": \"zones\",\n" : "") + "  \"rows\": " + list(Rows) + ",\n  \"ids\": " + list(Ids ?? new string[0]) + "\n}\n";
+    }
+
+    public static Model Parse(string text)
+    {
+        var kind = Strings(text, "kind");
+        return new Model { Name = Strings(text, "name")[0], Rows = Strings(text, "rows"), Ids = Strings(text, "ids"), Zones = kind != null && kind[0] == "zones" };
     }
 
     static string[] Strings(string text, string key)
@@ -91,7 +153,7 @@ class FakeHidpp : Hidpp
 
     protected override byte[] Send(byte feat, int fn, byte[] p)
     {
-        Thread.Sleep(5);
+        Latency.Pause();
         var r = new byte[16];
         Func<int, int> u16 = o => p[o] << 8 | p[o + 1];
         if (feat == 0) { byte i; r[0] = Index.TryGetValue(u16(0), out i) ? i : (byte)0; }
@@ -168,7 +230,7 @@ class FakeSpeaker : Hidpp
 
     protected override byte[] Send(byte feat, int fn, byte[] p)
     {
-        Thread.Sleep(5);
+        Latency.Pause();
         var r = new byte[16];
         if (feat == 0) { byte i; r[0] = Index.TryGetValue(p[0] << 8 | p[1], out i) ? i : (byte)0; }
         else if (feat == Index[0x8070])
@@ -201,7 +263,7 @@ class FakeG510 : Hidpp
 
     protected override byte[] ReadFeature(byte id)
     {
-        Thread.Sleep(5);
+        Latency.Pause();
         byte[] report;
         if (!Features.TryGetValue(id, out report)) throw new System.IO.IOException("Couldn't read feature report " + id.ToString("X2") + " (error 31)");
         var reply = new byte[258];
@@ -211,7 +273,7 @@ class FakeG510 : Hidpp
 
     protected override void WriteFeature(byte[] report)
     {
-        Thread.Sleep(5);
+        Latency.Pause();
         byte[] old;
         if (!Features.TryGetValue(report[0], out old)) throw new System.IO.IOException("Couldn't set feature report " + report[0].ToString("X2") + " (error 31)");
         Features[report[0]] = report.Take(old.Length).ToArray();
@@ -234,7 +296,7 @@ class FakeLight : Hidpp
 
     protected override byte[] Send(byte feat, int fn, byte[] p)
     {
-        Thread.Sleep(5);
+        Latency.Pause();
         var r = new byte[16];
         if (feat == 0) { byte i; r[0] = Index.TryGetValue(p[0] << 8 | p[1], out i) ? i : (byte)0; }
         else if (feat == Index[0x1990])
@@ -303,7 +365,7 @@ class FakeG915 : Hidpp
 
     protected override byte[] Send(byte feat, int fn, byte[] p)
     {
-        Thread.Sleep(5);
+        Latency.Pause();
         var r = new byte[16];
         if (feat == 0) { byte i; r[0] = Index.TryGetValue(p[0] << 8 | p[1], out i) ? i : (byte)0; }
         else if (feat == Index[0x8040])
@@ -419,7 +481,7 @@ class FakeMouse : Hidpp
 
     protected override byte[] Send(byte feat, int fn, byte[] p)
     {
-        Thread.Sleep(5);
+        Latency.Pause();
         var r = new byte[16];
         Func<int, int> u16 = o => p[o] << 8 | p[o + 1];
         switch (feat)
@@ -614,7 +676,7 @@ class FakeHeadset : Hidpp
 
     protected override byte[] Send(byte feat, int fn, byte[] p)
     {
-        Thread.Sleep(5);
+        Latency.Pause();
         var r = new byte[16];
         if (feat == 0) { int id = p[0] << 8 | p[1]; r[0] = (byte)(id == 0x8300 ? 1 : id == 0x1F20 ? 2 : 0); }
         else if (feat == 1) { if (fn == 0) r[0] = (byte)Sidetone; if (fn == 1) Sidetone = p[0]; }
@@ -645,7 +707,7 @@ class FakeOther : Hidpp
 
     protected override byte[] Send(byte feat, int fn, byte[] parameters)
     {
-        System.Threading.Thread.Sleep(5);
+        Latency.Pause();
         var reply = new byte[16];
         if (feat == 0) { byte index; reply[0] = Index.TryGetValue(parameters[0] << 8 | parameters[1], out index) ? index : (byte)0; return reply; }
         int id = Index.First(pair => pair.Value == feat).Key;
@@ -730,7 +792,7 @@ class KeyboardView : Form
                 float h = parts.Length > 2 ? float.Parse(parts[2], System.Globalization.CultureInfo.InvariantCulture) * U : U;
                 keys.Add(Tuple.Create(new RectangleF(Pad + x, Head + Pad + y, w - 4, h - 4), parts[0]));
                 x += w;
-                tall = Math.Max(tall, h);
+                tall = Math.Max(tall, Math.Min(h, U));
                 width = Math.Max(width, x);
             }
             height += tall > 0 ? tall : x;
