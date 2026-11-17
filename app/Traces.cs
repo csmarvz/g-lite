@@ -406,6 +406,7 @@ static class Traces
     static string G560()
     {
         var found = new Found { Key = "trace|g560", Name = "G560 Gaming Speaker", Kind = "device", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 } };
+        string text;
         using (var s = Begin(() => Support.For(found).Make(found, new FakeSpeaker(), null)))
         {
             s.Pick("Effect", "Static");
@@ -431,13 +432,31 @@ static class Traces
             s.Pick("Preset", "None");
             s.Pick("Preset", "Green");
             s.Pick("Effect", "Static");
-            return s.Text;
+            s.Press("Revert changes");
+            text = s.Text;
         }
+        return text + Restart(found, () => new FakeSpeaker());
+    }
+
+    // G-Lite starts again on a device that lost its lighting: the preset picked last is picked and sent again,
+    // first one with the Screen effect, then (after Update) one without it.
+    static string Restart(Found found, Func<Hidpp> device)
+    {
+        string text;
+        using (var s = Begin(() => Support.For(found).Make(found, device(), null)))
+        {
+            s.Pick("Effect", "Static");
+            s.Press("Update");
+            text = "restart\n" + s.Text;
+        }
+        using (var s = Begin(() => Support.For(found).Make(found, device(), null)))
+            return text + "restart\n" + s.Text;
     }
 
     static string Litra()
     {
         var found = new Found { Key = "trace|litra", Name = "Litra Beam LX", Kind = "light", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1990, 0x8040, 0x8071, 0x8081 } };
+        string text;
         using (var s = Begin(() => Support.For(found).Make(found, new FakeLight(), null)))
         {
             s.Press("Front light on");
@@ -468,8 +487,10 @@ static class Traces
             s.Pick("Preset", "None");
             s.Pick("Preset", "Desk");
             s.Pick("Effect", "Static");
-            return s.Text;
+            s.Press("Revert changes");
+            text = s.Text;
         }
+        return text + Restart(found, () => new FakeLight());
     }
 
     static string MxMaster()

@@ -106,3 +106,127 @@ pick Effect Static
   8070 fn3  02 01 18 68 28
   8070 fn3  03 01 18 68 28
   = status "Set by G-Lite, not saved to the speakers" [Report] Preset=Green • [Update] […] Zone=All Effect=Static (no Wave) <Color 30D050> Brightness=50 Speed=80 (off) [Revert]
+press Revert changes
+  = status "Screen effect, not saved to the speakers" [Report] Preset=Green [Update (off)] […] Zone=All (off) Effect=Screen (no Wave) Monitor=<monitor> Brightness=100 Color boost=33 Update rate=9 Smooth changes=on [Reset areas] Pause when screen off or locked=on [Revert (off)]
+restart
+open
+  8070 fn0
+  8070 fn1  00 FF
+  8070 fn2  00 00 FF
+  8070 fn2  00 01 FF
+  8070 fn2  00 02 FF
+  8070 fn2  00 03 FF
+  8070 fn2  00 04 FF
+  8070 fn1  01 FF
+  8070 fn2  01 00 FF
+  8070 fn2  01 01 FF
+  8070 fn2  01 02 FF
+  8070 fn2  01 03 FF
+  8070 fn2  01 04 FF
+  8070 fn1  02 FF
+  8070 fn2  02 00 FF
+  8070 fn2  02 01 FF
+  8070 fn2  02 02 FF
+  8070 fn2  02 03 FF
+  8070 fn2  02 04 FF
+  8070 fn1  03 FF
+  8070 fn2  03 00 FF
+  8070 fn2  03 01 FF
+  8070 fn2  03 02 FF
+  8070 fn2  03 03 FF
+  8070 fn2  03 04 FF
+  8070 fn0
+  8070 fn1  00 FF
+  8070 fn2  00 00 FF
+  8070 fn2  00 01 FF
+  8070 fn2  00 02 FF
+  8070 fn2  00 03 FF
+  8070 fn2  00 04 FF
+  8070 fn1  01 FF
+  8070 fn2  01 00 FF
+  8070 fn2  01 01 FF
+  8070 fn2  01 02 FF
+  8070 fn2  01 03 FF
+  8070 fn2  01 04 FF
+  8070 fn1  02 FF
+  8070 fn2  02 00 FF
+  8070 fn2  02 01 FF
+  8070 fn2  02 02 FF
+  8070 fn2  02 03 FF
+  8070 fn2  02 04 FF
+  8070 fn1  03 FF
+  8070 fn2  03 00 FF
+  8070 fn2  03 01 FF
+  8070 fn2  03 02 FF
+  8070 fn2  03 03 FF
+  8070 fn2  03 04 FF
+  = status "Screen effect, not saved to the speakers" [Report] Preset=Green [Update (off)] […] Zone=All (off) Effect=Screen (no Wave) Monitor=<monitor> Brightness=100 Color boost=33 Update rate=9 Smooth changes=on [Reset areas] Pause when screen off or locked=on [Revert (off)]
+pick Effect Static
+  8070 fn3  00 01 18 68 28
+  8070 fn3  01 01 18 68 28
+  8070 fn3  02 01 18 68 28
+  8070 fn3  03 01 18 68 28
+  = status "Set by G-Lite, not saved to the speakers" [Report] Preset=Green • [Update] […] Zone=All Effect=Static (no Wave) <Color 30D050> Brightness=50 Speed=0 (off) [Revert]
+press Update
+  = status "Updated the preset Green" [Report] Preset=Green [Update (off)] […] Zone=All Effect=Static (no Wave) <Color 30D050> Brightness=50 Speed=0 (off) [Revert (off)]
+restart
+open
+  8070 fn0
+  8070 fn1  00 FF
+  8070 fn2  00 00 FF
+  8070 fn2  00 01 FF
+  8070 fn2  00 02 FF
+  8070 fn2  00 03 FF
+  8070 fn2  00 04 FF
+  8070 fn1  01 FF
+  8070 fn2  01 00 FF
+  8070 fn2  01 01 FF
+  8070 fn2  01 02 FF
+  8070 fn2  01 03 FF
+  8070 fn2  01 04 FF
+  8070 fn1  02 FF
+  8070 fn2  02 00 FF
+  8070 fn2  02 01 FF
+  8070 fn2  02 02 FF
+  8070 fn2  02 03 FF
+  8070 fn2  02 04 FF
+  8070 fn1  03 FF
+  8070 fn2  03 00 FF
+  8070 fn2  03 01 FF
+  8070 fn2  03 02 FF
+  8070 fn2  03 03 FF
+  8070 fn2  03 04 FF
+  8070 fn3  00 01 18 68 28
+  8070 fn3  01 01 18 68 28
+  8070 fn3  02 01 18 68 28
+  8070 fn3  03 01 18 68 28
+  8070 fn0
+  8070 fn1  00 FF
+  8070 fn2  00 00 FF
+  8070 fn2  00 01 FF
+  8070 fn2  00 02 FF
+  8070 fn2  00 03 FF
+  8070 fn2  00 04 FF
+  8070 fn1  01 FF
+  8070 fn2  01 00 FF
+  8070 fn2  01 01 FF
+  8070 fn2  01 02 FF
+  8070 fn2  01 03 FF
+  8070 fn2  01 04 FF
+  8070 fn1  02 FF
+  8070 fn2  02 00 FF
+  8070 fn2  02 01 FF
+  8070 fn2  02 02 FF
+  8070 fn2  02 03 FF
+  8070 fn2  02 04 FF
+  8070 fn1  03 FF
+  8070 fn2  03 00 FF
+  8070 fn2  03 01 FF
+  8070 fn2  03 02 FF
+  8070 fn2  03 03 FF
+  8070 fn2  03 04 FF
+  8070 fn3  00 01 18 68 28
+  8070 fn3  01 01 18 68 28
+  8070 fn3  02 01 18 68 28
+  8070 fn3  03 01 18 68 28
+  = status "Set by G-Lite, not saved to the speakers" [Report] Preset=Green [Update (off)] […] Zone=All Effect=Static (no Wave) <Color 30D050> Brightness=50 Speed=0 (off) [Revert (off)]
