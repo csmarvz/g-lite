@@ -7,6 +7,15 @@
 - No more dots between words: headings, status lines, menus and the device report use commas, colons and brackets instead, like "Lighting (as on the keyboard)" and "Set by G-Lite, not saved to the keyboard".
 - The demo (`--demo`) shows each device's real connection (LIGHTSPEED, USB, Bolt) instead of "Demo", and no "demo" next to the title.
 - The G213 is marked Works and the G512 X 75 Partial: both were tried by their owners.
+- MX keyboards: while the backlight is off, Automatic shows as off. Under Backlight, the screen says the keys light up when you next type: turned on, the MX Keys S stays dark until a key is pressed.
+- Switches that can't be changed look faded, like the sliders.
+- MX devices: the status line no longer repeats that buttons, gestures and per-app settings stay in Logi Options+.
+
+### Fixed
+
+- Litra Beam LX and G560: presets now keep the Screen effect and its areas. Turning the Screen effect on, or changing its areas, monitor, colour boost or update rate, enables Update; before, it stayed greyed out.
+- Picking a preset while the Screen effect runs also sets its update rate and shows its monitor.
+- Two backups taken in the same millisecond no longer share a file name, so the second can't replace the first.
 
 ## [0.0.30-alpha] - 2026-11-16
 

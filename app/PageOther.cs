@@ -256,6 +256,7 @@ class PageOther : DevicePage
     OtherSet cur = new OtherSet(), stored, sent, remembered, rememberedAtLoad;
     Other.State state;
     bool loading, dirty;
+    readonly Dictionary<Toggle, Label> toggleLabels = new Dictionary<Toggle, Label>();
     int seq;
     readonly Timer debounce = new Timer { Interval = 120 };
 
@@ -328,7 +329,9 @@ class PageOther : DevicePage
     Toggle ToggleRow(Box box, string name, string note, int y, int width)
     {
         var toggle = Ui.Add(box, new Toggle { AccessibleName = name }, 14, y + 2, 34, 18);
-        toggle.Follow(Ui.Text(box, name, 60, y, () => Theme.Text, 9.75f));
+        var label = Ui.Text(box, name, 60, y, () => Theme.Text, 9.75f);
+        toggle.Follow(label);
+        toggleLabels[toggle] = label;
         if (note != null) Hint(box, note, 60, y + 22, width - 46, 36);
         return toggle;
     }
@@ -391,14 +394,15 @@ class PageOther : DevicePage
 
     int Backlight(Box box, int width)
     {
-        light = ToggleRow(box, "Backlight", null, 40, width);
+        // Turned on, the MX Keys S stays dark until a key is pressed; coming near doesn't light it (an owner, 2026-11).
+        light = ToggleRow(box, "Backlight", "The keys light up when you next type.", 40, width);
         light.Changed += () => Change(OtherSet.Light, light.Checked ? 1 : 0);
-        auto = ToggleRow(box, "Automatic", "Dims by itself with the room's light.", 74, width);
+        auto = ToggleRow(box, "Automatic", "Dims by itself with the room's light.", 102, width);
         auto.Changed += () => Change(OtherSet.Auto, auto.Checked ? 1 : 0);
-        level = SliderRow(box, "Level", 136, width, out levelHead, out levelValue);
+        level = SliderRow(box, "Level", 164, width, out levelHead, out levelValue);
         level.Step = 1;
         level.Changed += (sender, e) => Change(OtherSet.Level, level.Value);
-        return 192;
+        return 220;
     }
 
     int EasySwitch(Box box, int width)
@@ -490,7 +494,7 @@ class PageOther : DevicePage
             light.Enabled = ready && cur[OtherSet.Light] >= 0;
             light.Checked = lit;
             auto.Enabled = ready && cur[OtherSet.Auto] >= 0 && lit;
-            auto.Checked = cur[OtherSet.Auto] == 1;
+            auto.Checked = lit && cur[OtherSet.Auto] == 1;
             bool manual = ready && cur[OtherSet.Level] >= 0 && lit && cur[OtherSet.Auto] != 1;
             level.Enabled = manual;
             level.Max = ready && state.Levels > 1 ? state.Levels - 1 : 1;
@@ -508,6 +512,7 @@ class PageOther : DevicePage
             hosts.Invalidate();
         }
         foreach (var control in new Control[] { bright, dpi, shift, level }) if (control != null) control.Invalidate();
+        foreach (var pair in toggleLabels) pair.Value.ForeColor = pair.Key.Enabled ? Theme.Text : Ui.Mix(Theme.Card, Theme.Dim, 0.45);
         loading = false;
     }
 
@@ -538,8 +543,7 @@ class PageOther : DevicePage
 
     protected override void Calm()
     {
-        if (state == null) { Say(""); return; }
-        Say((dirty ? "Applied to the " + Noun + ". " : "") + (Noun == "device" ? "Everything else stays in Logi Options+." : "Buttons, gestures and per-app settings stay in Logi Options+."));
+        Say(state != null && dirty ? "Applied to the " + Noun + "." : "");
     }
 
     // A refused setting goes back to what the device has, and isn't remembered or sent again.

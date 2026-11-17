@@ -667,11 +667,12 @@ class Toggle : Ctl
         var g = Begin(e);
         var r = new RectangleF(0.5f, 0.5f, Width - 1, Height - 1);
         float t = Now;
-        Ui.Fill(g, r, r.Height / 2, Ui.Mix(Theme.Btn, Theme.Accent, t), Ui.Mix(Theme.Border, Theme.Accent, t));
+        float faded = Enabled ? 0 : 0.6f;
+        Ui.Fill(g, r, r.Height / 2, Ui.Mix(Ui.Mix(Theme.Btn, Theme.Accent, t), Theme.Card, faded), Ui.Mix(Ui.Mix(Theme.Border, Theme.Accent, t), Theme.Card, faded));
         Ring(g, r.Height / 2);
         float d = Height - 8 * K;
         float stretch = Pressed ? 4 * K : 0;
-        using (var b = new SolidBrush(Ui.Mix(Theme.Dim, Theme.OnAccent, t)))
+        using (var b = new SolidBrush(Ui.Mix(Ui.Mix(Theme.Dim, Theme.OnAccent, t), Theme.Card, faded)))
         using (var path = Ui.Round(new RectangleF(4 * K + t * (Width - 8 * K - d - stretch), 4 * K, d + stretch, d), d / 2))
             g.FillPath(b, path);
     }
