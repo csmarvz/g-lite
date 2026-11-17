@@ -698,9 +698,10 @@ class FakeOther : Hidpp
 {
     static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8040, 2 }, { 0x2201, 3 }, { 0x2110, 4 }, { 0x2121, 5 }, { 0x2150, 6 }, { 0x1982, 7 }, { 0x1814, 8 }, { 0x1815, 9 } };
     static readonly string[] Names = { "Desk PC", "MacBook" };
-    public int Bright = 100, Dpi = 1000, Shift = 10, Wheel, ThumbInvert, Level, Host;
+    public int Bright = 100, Dpi = 1000, Shift = 10, Wheel, ThumbInvert, Level = 3, Host;
     public bool RefuseDpi;
-    public byte[] Backlight = { 0x01, 0x1D, 0x3D, 0x03, 0x00, 0x00, 0x03, 0x00, 0x06, 0x00, 0x3C, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    // An MX Keys S's 0x1982 fn 0, from its owner's report: manual, level 3, fading after 30 s, 30 s and 300 s.
+    public byte[] Backlight = { 0x01, 0x1D, 0x3D, 0x03, 0x00, 0x03, 0x06, 0x00, 0x06, 0x00, 0x3C, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
     public FakeOther() : base(false) { }
 
@@ -742,7 +743,12 @@ class FakeOther : Hidpp
                 break;
             case 0x1982:
                 if (fn == 0) Array.Copy(Backlight, reply, 16);
-                if (fn == 1) { Backlight[0] = parameters[0]; Backlight[1] = parameters[1]; Backlight[5] = parameters[3]; if ((parameters[1] >> 3 & 3) == 3) Level = parameters[3]; }
+                if (fn == 1)
+                {
+                    Backlight[0] = parameters[0]; Backlight[1] = parameters[1]; Backlight[5] = parameters[3];
+                    Array.Copy(parameters, 4, Backlight, 6, 6);
+                    if ((parameters[1] >> 3 & 3) == 3) Level = parameters[3];
+                }
                 if (fn == 2) { reply[0] = 8; reply[1] = (byte)Level; reply[2] = (byte)((Backlight[0] & 1) == 0 ? 0 : (Backlight[1] >> 3 & 3) == 1 ? 2 : 5); }
                 break;
             case 0x1814:

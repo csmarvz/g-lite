@@ -8,8 +8,10 @@ using System.Windows.Forms;
 
 class OtherSet
 {
-    public const int Bright = 0, Dpi = 1, Shift = 2, Invert = 3, Thumb = 4, Light = 5, Auto = 6, Level = 7, Count = 8;
-    static readonly string[] Keys = { "bright", "dpi", "shift", "invert", "thumb", "light", "auto", "level" };
+    // Away, Near and Powered are the backlight's fade delays in seconds: hands away from the keys, hands near them, on external power.
+    public const int Bright = 0, Dpi = 1, Shift = 2, Invert = 3, Thumb = 4, Light = 5, Auto = 6, Level = 7, Away = 8, Near = 9, Powered = 10, Count = 11;
+    public static readonly int[] Delays = { Away, Near, Powered };
+    static readonly string[] Keys = { "bright", "dpi", "shift", "invert", "thumb", "light", "auto", "level", "away", "near", "powered" };
 
     // -1 is a setting the device doesn't have, or one this set leaves alone. Shift is SmartShift's threshold: 1–50, or 255 when it's off (the wheel never switches to free spin).
     readonly int[] values = Enumerable.Repeat(-1, Count).ToArray();
@@ -128,6 +130,11 @@ static class Other
                 // In mode 3 the level is fn 0's b5, the stored setting, like Solaar. Outside it b5 reads 0 (spec x1982 v3), so the slider shows
                 // fn 2's b1, the level lit now (it fades when idle).
                 if (info != null && info[0] > 1) { state.Levels = info[0]; set[OtherSet.Level] = Math.Min(info[0] - 1, mode == 3 ? config[5] : info[1]); }
+                // Bytes 6–11: the fade delays, little-endian, in units of 5 s (spec x1982 v3, named by Solaar). Offered only when all three read,
+                // since an older version of the feature may not have them.
+                var delays = OtherSet.Delays.Select((setting, index) => config[6 + 2 * index] | config[7 + 2 * index] << 8).ToArray();
+                if (delays.All(units => units > 0))
+                    for (int index = 0; index < delays.Length; index++) set[OtherSet.Delays[index]] = delays[index] * 5;
             }
         }
         if (found.Has(0x1814))
@@ -164,7 +171,7 @@ static class Other
         }
     }
 
-    public static string Name(int setting) { return new[] { "brightness", "pointer speed", "SmartShift", "invert scrolling", "thumb wheel", "backlight", "backlight", "backlight" }[setting]; }
+    public static string Name(int setting) { return new[] { "brightness", "pointer speed", "SmartShift", "invert scrolling", "thumb wheel", "backlight", "backlight", "backlight", "backlight", "backlight", "backlight" }[setting]; }
 
     // Each setting is sent on its own, so one the device refuses doesn't stop the others. Returns the refused settings.
     public static List<int> Apply(Hidpp device, State state, OtherSet want, OtherSet sent)
@@ -192,13 +199,13 @@ static class Other
             var now = device.Call(device.F(0x2150), 1);
             device.Call(device.F(0x2150), 2, now[0], (byte)want[OtherSet.Thumb], 0);
         });
-        var lightSettings = new[] { OtherSet.Light, OtherSet.Auto, OtherSet.Level };
+        var lightSettings = new[] { OtherSet.Light, OtherSet.Auto, OtherSet.Level }.Concat(OtherSet.Delays).ToArray();
         bool backlight = lightSettings.Any(setting => want[setting] >= 0 && want[setting] != sent[setting]);
         if (backlight)
         {
             try
             {
-                // The keyboard stores this write. Durations go back as read; the level is sent only in mode 3, else 0, like Solaar.
+                // The keyboard stores this write. Delays not picked go back as read; the level is sent only in mode 3, else 0, like Solaar.
                 // Mode 2 can't be set (spec x1982 v3), so a keyboard in it is written back as automatic. Outside mode 3 the stored level reads 0,
                 // so going to mode 3 without a level picked takes the level lit now (fn 2 byte 1) rather than turning the backlight off.
                 var config = device.Call(device.F(0x1982), 0);
@@ -210,7 +217,15 @@ static class Other
                 // A level nobody picked that reads 0 (faded, or never set) would store the backlight off: take the middle level instead.
                 if (mode == 3 && !picked && level == 0) level = Math.Max(1, (state.Levels - 1) / 2);
                 bool on = want[OtherSet.Light] >= 0 ? want[OtherSet.Light] == 1 : (config[0] & 1) != 0;
-                device.Call(device.F(0x1982), 1, (byte)(on ? 1 : 0), options, 0xFF, (byte)level, config[6], config[7], config[8], config[9], config[10], config[11], 0, 0);
+                var delays = new byte[6];
+                for (int index = 0; index < OtherSet.Delays.Length; index++)
+                {
+                    int setting = OtherSet.Delays[index];
+                    int units = want[setting] > 0 ? want[setting] / 5 : config[6 + 2 * index] | config[7 + 2 * index] << 8;
+                    delays[2 * index] = (byte)units;
+                    delays[2 * index + 1] = (byte)(units >> 8);
+                }
+                device.Call(device.F(0x1982), 1, new byte[] { (byte)(on ? 1 : 0), options, 0xFF, (byte)level }.Concat(delays).Concat(new byte[] { 0, 0 }).ToArray());
             }
             catch (HidppError) { refused.AddRange(lightSettings.Where(setting => want[setting] >= 0)); }
         }
@@ -233,6 +248,10 @@ static class Other
                 case OtherSet.Dpi: value = state.Dpis[Nearest(state.Dpis, value)]; break;
                 case OtherSet.Shift: if (value > 50 && value != 255) value = -1; break;
                 case OtherSet.Level: value = Math.Min(state.Levels - 1, value); break;
+                // Up to 2 hours (Solaar's note on the spec), in steps of 5 s.
+                case OtherSet.Away:
+                case OtherSet.Near:
+                case OtherSet.Powered: value = Math.Max(5, Math.Min(7200, value / 5 * 5)); break;
                 default: value = value == 1 ? 1 : 0; break;
             }
             limited[setting] = value;
@@ -262,6 +281,9 @@ class PageOther : DevicePage
     Slider bright, dpi, shift, level;
     Label brightValue, dpiValue, shiftValue, levelValue, shiftHead, levelHead;
     Toggle shiftOn, invert, thumb, light, auto;
+    Label delayHead;
+    readonly Label[] delayLabels = new Label[3];
+    readonly Drop[] delayDrops = new Drop[3];
     Seg hosts;
     Box hostsBox;
 
@@ -391,15 +413,25 @@ class PageOther : DevicePage
 
     int Backlight(Box box, int width)
     {
-        // Turned on, the MX Keys S stays dark until a key is pressed; coming near doesn't light it (an owner, 2026-11).
-        light = ToggleRow(box, "Backlight", "The keys light up when you next type.", 40, width);
+        // Plugged in, the MX Keys S's hand sensor seems off: turned on, it stays dark until a key is pressed. On battery it lights at once (an owner, 2026-11).
+        light = ToggleRow(box, "Backlight", "Plugged in, the keys light up when you next type.", 40, width);
         light.Changed += () => Change(OtherSet.Light, light.Checked ? 1 : 0);
         auto = ToggleRow(box, "Automatic", "Dims by itself with the room's light.", 102, width);
         auto.Changed += () => Change(OtherSet.Auto, auto.Checked ? 1 : 0);
         level = SliderRow(box, "Level", 164, width, out levelHead, out levelValue);
         level.Step = 1;
         level.Changed += (sender, e) => Change(OtherSet.Level, level.Value);
-        return 220;
+        delayHead = Ui.Text(box, "Fades after", 14, 220, () => Theme.Dim, 9f);
+        string[] names = { "Hands away", "Hands near", "Plugged in" };
+        int column = (width - 2 * 12) / names.Length;
+        for (int index = 0; index < names.Length; index++)
+        {
+            int setting = OtherSet.Delays[index], x = 14 + index * (column + 12);
+            delayLabels[index] = Ui.Text(box, names[index], x, 242, () => Theme.Dim, 9f);
+            delayDrops[index] = Ui.Add(box, new Drop { AccessibleName = "Fades after, " + names[index].ToLowerInvariant() }, x, 262, column, 30);
+            delayDrops[index].Picked += picked => Change(setting, DelayChoices(cur[setting])[picked]);
+        }
+        return 306;
     }
 
     int EasySwitch(Box box, int width)
@@ -498,6 +530,18 @@ class PageOther : DevicePage
             level.Value = Math.Max(0, cur[OtherSet.Level]);
             Shade(levelHead, manual);
             levelValue.Text = ready && cur[OtherSet.Level] >= 0 ? cur[OtherSet.Level] + 1 + " of " + state.Levels : "";
+            bool delays = ready && cur[OtherSet.Away] > 0 && lit;
+            Shade(delayHead, delays);
+            for (int index = 0; index < delayDrops.Length; index++)
+            {
+                int seconds = cur[OtherSet.Delays[index]];
+                var choices = DelayChoices(seconds);
+                delayDrops[index].Items.Clear();
+                delayDrops[index].Items.AddRange(choices.Select(DelayText));
+                delayDrops[index].Index = Array.IndexOf(choices, seconds);
+                delayDrops[index].Enabled = delays;
+                Shade(delayLabels[index], delays);
+            }
         }
         if (hosts != null)
         {
@@ -510,6 +554,18 @@ class PageOther : DevicePage
         }
         foreach (var control in new Control[] { bright, dpi, shift, level }) if (control != null) control.Invalidate();
         loading = false;
+    }
+
+    static readonly int[] DelaySteps = { 5, 10, 15, 30, 60, 120, 300, 600, 1800, 3600 };
+
+    // The usual delays, with the keyboard's own when it isn't one of them.
+    static int[] DelayChoices(int seconds) { return seconds <= 0 || DelaySteps.Contains(seconds) ? DelaySteps : DelaySteps.Concat(new[] { seconds }).OrderBy(step => step).ToArray(); }
+
+    static string DelayText(int seconds)
+    {
+        if (seconds % 3600 == 0) return seconds / 3600 + " h";
+        if (seconds % 60 == 0) return seconds / 60 + " min";
+        return seconds + " s";
     }
 
     public override void Restyle() { Sync(); }

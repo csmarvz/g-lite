@@ -528,6 +528,9 @@ static class Traces
             s.Press("Backlight");
             s.Press("Backlight");
             s.Press("Automatic");
+            s.Pick("Fades after, hands away", "2 min");
+            s.Pick("Fades after, plugged in", "1 h");
+            s.Press("Revert changes");
             return s.Text;
         }
     }

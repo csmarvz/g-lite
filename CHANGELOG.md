@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- MX keyboards: how long the backlight stays on before it fades, with your hands away, with your hands near and while plugged in (Fades after, from 5 s to 1 h). Like the other settings, your choice is kept and sent again when the keyboard comes back.
+
+### Changed
+
+- MX keyboards: the note under Backlight now says the keys light up at the next keypress only when the keyboard is plugged in. On battery, the MX Keys S lights at once and its hand sensor works.
+
 ## [0.0.31-alpha] - 2026-11-17
 
 ### Changed

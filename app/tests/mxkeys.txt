@@ -8,25 +8,37 @@ open
   1815 fn1  01
   1815 fn3  01
   1815 fn1  02
-  = status "" [Report] Preset=None [New…] […] Backlight=on Automatic=off Level=0 Computer=1: Desk PC [Revert (off)]
+  = status "" [Report] Preset=None [New…] […] Backlight=on Automatic=off Level=3 Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min Computer=1: Desk PC [Revert (off)]
 slide Level 5
   1982 fn0
-  1982 fn1  01 1D FF 05 03 00 06 00 3C
-  = status "Applied to the keyboard." [Report] Preset=None [New…] […] Backlight=on Automatic=off Level=5 Computer=1: Desk PC [Revert]
+  1982 fn1  01 1D FF 05 06 00 06 00 3C
+  = status "Applied to the keyboard." [Report] Preset=None [New…] […] Backlight=on Automatic=off Level=5 Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min Computer=1: Desk PC [Revert]
 press Automatic
   1982 fn0
-  1982 fn1  01 0D FF 00 03 00 06 00 3C
-  = status "Applied to the keyboard." [Report] Preset=None [New…] […] Backlight=on Automatic=on Level=5 (off) Computer=1: Desk PC [Revert]
+  1982 fn1  01 0D FF 00 06 00 06 00 3C
+  = status "Applied to the keyboard." [Report] Preset=None [New…] […] Backlight=on Automatic=on Level=5 (off) Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min Computer=1: Desk PC [Revert]
 press Backlight
   1982 fn0
-  1982 fn1  00 0D FF 00 03 00 06 00 3C
-  = status "Applied to the keyboard." [Report] Preset=None [New…] […] Backlight=off Automatic=off (off) Level=5 (off) Computer=1: Desk PC [Revert]
+  1982 fn1  00 0D FF 00 06 00 06 00 3C
+  = status "Applied to the keyboard." [Report] Preset=None [New…] […] Backlight=off Automatic=off (off) Level=5 (off) Fades after, hands away=30 s (off) Fades after, hands near=30 s (off) Fades after, plugged in=5 min (off) Computer=1: Desk PC [Revert]
 press Backlight
   1982 fn0
-  1982 fn1  01 0D FF 00 03 00 06 00 3C
-  = status "Applied to the keyboard." [Report] Preset=None [New…] […] Backlight=on Automatic=on Level=5 (off) Computer=1: Desk PC [Revert]
+  1982 fn1  01 0D FF 00 06 00 06 00 3C
+  = status "Applied to the keyboard." [Report] Preset=None [New…] […] Backlight=on Automatic=on Level=5 (off) Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min Computer=1: Desk PC [Revert]
 press Automatic
   1982 fn0
   1982 fn2
-  1982 fn1  01 1D FF 05 03 00 06 00 3C
-  = status "Applied to the keyboard." [Report] Preset=None [New…] […] Backlight=on Automatic=off Level=5 Computer=1: Desk PC [Revert]
+  1982 fn1  01 1D FF 05 06 00 06 00 3C
+  = status "Applied to the keyboard." [Report] Preset=None [New…] […] Backlight=on Automatic=off Level=5 Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min Computer=1: Desk PC [Revert]
+pick Fades after, hands away 2 min
+  1982 fn0
+  1982 fn1  01 1D FF 05 18 00 06 00 3C
+  = status "Applied to the keyboard." [Report] Preset=None [New…] […] Backlight=on Automatic=off Level=5 Fades after, hands away=2 min Fades after, hands near=30 s Fades after, plugged in=5 min Computer=1: Desk PC [Revert]
+pick Fades after, plugged in 1 h
+  1982 fn0
+  1982 fn1  01 1D FF 05 18 00 06 00 D0 02
+  = status "Applied to the keyboard." [Report] Preset=None [New…] […] Backlight=on Automatic=off Level=5 Fades after, hands away=2 min Fades after, hands near=30 s Fades after, plugged in=1 h Computer=1: Desk PC [Revert]
+press Revert changes
+  1982 fn0
+  1982 fn1  01 1D FF 03 06 00 06 00 3C
+  = status "" [Report] Preset=None [New…] […] Backlight=on Automatic=off Level=3 Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min Computer=1: Desk PC [Revert (off)]
