@@ -119,7 +119,7 @@ It never writes 0x8100 or 0x8101 memory, but it saves lighting to flash.
   - It reads back after fn 8.
   - It never writes 0x0000 or 0x0100 and up.
   - It checks the CRC and keeps backups.
-- Live changes on an unsupported keyboard may not be "not saved". If the firmware ignores 0x8071 effects sent with persist off, as OpenRGB says, then live effects are also written to the effect storage. Test on a real G915 before promising "live only".
+- Live changes on an unsupported keyboard may not be "not saved". If the firmware ignores 0x8071 effects sent with persist off, as OpenRGB says, then live effects are also written to the effect storage. On a real G915 TKL, the keyboard woke from its own sleep on its profile's lighting, not the live effect (0x01), and both clusters report no effect storage (docs/G915.md).
 
 ## To check on real hardware
 

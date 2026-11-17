@@ -26,7 +26,7 @@ The G515 reports 96 ids: 00–4F, 61–6F and FE. Checked by lighting them:
 
 0x4540 fn 0 byte 0 gives the layout: 0D on this Swiss keyboard. G-Lite treats 0–2 as ANSI and anything above as ISO.
 
-The G915 ids in `g915.json` and `g915-tkl.json` follow the same rule and are untested. Its logo, media keys and G keys are `--`.
+The G915 ids in `g915.json` and `g915-tkl.json` follow the same rule. The Screen effect worked on an owner's G915 TKL (Swiss, also 0D); the full-size G915's are untested.
 
 ## Adding a keyboard
 

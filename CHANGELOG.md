@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.0.32-alpha] - 2026-11-17
 
 ### Added
 
@@ -10,11 +10,12 @@
 ### Changed
 
 - MX keyboards: the note under Backlight now says the keys light up at the next keypress only when the keyboard is plugged in. On battery, the MX Keys S lights at once and its hand sensor works.
+- The G915 TKL is marked Works: an owner tried it.
 
 ### Fixed
 
 - G915 and G915 TKL: after the keyboard turned itself off, G-Lite's lighting changes didn't show until it was turned off and on. G-Lite now wakes its lighting with each change. Tested on a G915 TKL.
-- G915 and G915 TKL: the picture shows the ISO layout on ISO keyboards, and the TKL's brightness and media keys sit where they are on the keyboard.
+- G915, G915 TKL and the other keyboards G-Lite sets live: the picture shows the ISO layout on ISO keyboards, and the G915 TKL's brightness and media keys sit where they are on the keyboard.
 
 ## [0.0.31-alpha] - 2026-11-17
 
