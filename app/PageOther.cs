@@ -256,7 +256,6 @@ class PageOther : DevicePage
     OtherSet cur = new OtherSet(), stored, sent, remembered, rememberedAtLoad;
     Other.State state;
     bool loading, dirty;
-    readonly Dictionary<Toggle, Label> toggleLabels = new Dictionary<Toggle, Label>();
     int seq;
     readonly Timer debounce = new Timer { Interval = 120 };
 
@@ -329,9 +328,7 @@ class PageOther : DevicePage
     Toggle ToggleRow(Box box, string name, string note, int y, int width)
     {
         var toggle = Ui.Add(box, new Toggle { AccessibleName = name }, 14, y + 2, 34, 18);
-        var label = Ui.Text(box, name, 60, y, () => Theme.Text, 9.75f);
-        toggle.Follow(label);
-        toggleLabels[toggle] = label;
+        toggle.Follow(Ui.Text(box, name, 60, y, () => Theme.Text, 9.75f));
         if (note != null) Hint(box, note, 60, y + 22, width - 46, 36);
         return toggle;
     }
@@ -512,7 +509,6 @@ class PageOther : DevicePage
             hosts.Invalidate();
         }
         foreach (var control in new Control[] { bright, dpi, shift, level }) if (control != null) control.Invalidate();
-        foreach (var pair in toggleLabels) pair.Value.ForeColor = pair.Key.Enabled ? Theme.Text : Ui.Mix(Theme.Card, Theme.Dim, 0.45);
         loading = false;
     }
 

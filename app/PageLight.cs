@@ -590,6 +590,7 @@ class PageLight : DevicePage
         Calm();
     }
 
+    // Doesn't send: the edit or preset that ends the Screen effect sends next, and sending here too raced it.
     void ScreenOff()
     {
         screening = false;

@@ -197,7 +197,7 @@ abstract class DevicePage : Control, IPage
 
     protected void Post(string text, bool warn) { if (IsHandleCreated) BeginInvoke((Action)(() => Say(text, warn))); }
 
-    protected static void Shade(Label l, bool on) { l.ForeColor = on ? Theme.Dim : Ui.Mix(Theme.Card, Theme.Dim, 0.45); }
+    protected static void Shade(Label l, bool on) { l.ForeColor = on ? Theme.Dim : Ui.Off; }
 
     protected static Label Value(Control parent, int x, int y, int w)
     {

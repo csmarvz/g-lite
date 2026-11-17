@@ -426,6 +426,7 @@ class PageSpeaker : DevicePage
         Calm();
     }
 
+    // Doesn't send: the edit or preset that ends the Screen effect sends next, and sending here too raced it.
     void ScreenOff()
     {
         screening = false;
@@ -530,7 +531,7 @@ class PageSpeaker : DevicePage
         bool known = l != null && !screening;
         var d = known ? GSpeaker.Def(l.Effect) : null;
         bool mixed = picked == 0 && cur != null && cur.Any(z => z == null || !z.Same(cur[0]));
-        lightHead.Text = listed != null && listed.Count == 0 ? "Lighting (not found on " + (keyboard ? "this keyboard" : "these speakers") + ")" + ")" : screening ? "Lighting" : !known ? "Lighting (as on the " + noun + ")" : mixed ? "Lighting (zones differ, a change sets all of them)" : "Lighting";
+        lightHead.Text = listed != null && listed.Count == 0 ? "Lighting (not found on " + (keyboard ? "this keyboard" : "these speakers") + ")" : screening ? "Lighting" : !known ? "Lighting (as on the " + noun + ")" : mixed ? "Lighting (zones differ, a change sets all of them)" : "Lighting";
         zoneSeg.Enabled = ready && !screening;
         Shade(zoneHead, !screening);
         zoneSeg.Index = picked;
@@ -631,11 +632,13 @@ class PageSpeaker : DevicePage
 
     void Send()
     {
-        if (cur == null || screening) return;
+        if (cur == null) return;
         var want = cur.Select(l => l == null ? null : l.Clone()).ToArray();
+        // Kept while the Screen effect runs too: they're the lights it goes back to, and a preset may have just set them.
+        Settings.Set(Remembered, GSpeaker.ToText(want));
+        if (screening) return;
         var z = zones;
         int n = ++seq;
-        Settings.Set(Remembered, GSpeaker.ToText(want));
         Do(h =>
         {
             if (n != seq || z == null) return;

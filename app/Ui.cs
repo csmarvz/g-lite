@@ -255,6 +255,9 @@ static class Ui
         return Color.FromArgb((int)(a.R + (b.R - a.R) * t), (int)(a.G + (b.G - a.G) * t), (int)(a.B + (b.B - a.B) * t));
     }
 
+    // The text of something that can't be changed now.
+    public static Color Off { get { return Mix(Theme.Card, Theme.Dim, 0.45); } }
+
     public static void Draw(Graphics g, string text, Font f, RectangleF r, Color c, TextFormatFlags flags)
     {
         TextRenderer.DrawText(g, text, f, Rectangle.Round(r), c, flags | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding);
@@ -638,6 +641,7 @@ class Swatch : Ctl
 class Toggle : Ctl
 {
     bool on;
+    Control follower;
     public event Action Changed;
 
     public Toggle()
@@ -648,6 +652,7 @@ class Toggle : Ctl
 
     public void Follow(Control label)
     {
+        follower = label;
         label.Click += (s, e) => { if (Enabled) OnClick(EventArgs.Empty); };
         label.DoubleClick += (s, e) => { if (Enabled) OnClick(EventArgs.Empty); };
     }
@@ -662,8 +667,19 @@ class Toggle : Ctl
         if (Changed != null) Changed();
     }
 
+    // The label fades with the switch. Checked at each paint too, since a theme change sets the label's colour back.
+    void FadeLabel()
+    {
+        if (follower == null) return;
+        var color = Enabled ? Theme.Text : Ui.Off;
+        if (follower.ForeColor != color) follower.ForeColor = color;
+    }
+
+    protected override void OnEnabledChanged(EventArgs e) { FadeLabel(); base.OnEnabledChanged(e); }
+
     protected override void OnPaint(PaintEventArgs e)
     {
+        FadeLabel();
         var g = Begin(e);
         var r = new RectangleF(0.5f, 0.5f, Width - 1, Height - 1);
         float t = Now;

@@ -55,8 +55,8 @@ static class Backups
             Directory.CreateDirectory(dir);
             var now = DateTime.UtcNow;
             var when = new DateTime(now.Ticks - now.Ticks % TimeSpan.TicksPerMillisecond, DateTimeKind.Utc);
-            // Two backups in the same millisecond would share a name, and the second would replace the first.
-            if (list.Count > 0 && when <= list[0].When) when = list[0].When.AddMilliseconds(1);
+            // Two backups in the same millisecond would share a name (the second replacing the first) or a time (sorting them at random).
+            while (list.Any(e => e.When == when)) when = when.AddMilliseconds(1);
             var name = (list.Count == 0 ? "first-" : "") + when.ToString(Utc, CultureInfo.InvariantCulture) + ".txt";
             File.WriteAllLines(Path.Combine(dir, name), data.Select(p => p.Key + "=" + Hex(p.Value)));
             if (who != null) Log.Add(who, "backup", data.Count == 1 ? "sector " + data.Keys.First() : data.Count + " files");
