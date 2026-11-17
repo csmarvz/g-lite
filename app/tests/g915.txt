@@ -11,7 +11,27 @@ open
   8071 fn0  01 04
   8071 fn0  01 05
   8071 fn0  01 06
+  8071 fn0  01 07
   8071 fn0  02
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
   8040 fn1
   8071 fn0
   8071 fn0  00 01
@@ -25,23 +45,43 @@ open
   8071 fn0  01 04
   8071 fn0  01 05
   8071 fn0  01 06
+  8071 fn0  01 07
   8071 fn0  02
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
   8040 fn1
-  = status "" [Report] Preset=None [New…] […] Effect=- Direction=- (off) Brightness=80 Speed=0 (off) [Revert (off)]
+  = status "Matches the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 [Revert] [Save to keyboard (off)]
 pick Effect Static
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 01 FF FF FF 02 00 00 00 00 00 00 01
   8071 fn1  01 01 FF FF FF 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] Preset=None [New…] […] Effect=Static <Color FFFFFF> Direction=- (off) Brightness=80 Speed=0 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Static Dim after=1 min <Color FFFFFF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 (off) [Revert] [Save to keyboard]
 press Color 30D050
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 01 30 D0 50 02 00 00 00 00 00 00 01
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] Preset=None [New…] […] Effect=Static <Color 30D050> Direction=- (off) Brightness=80 Speed=0 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 (off) [Revert] [Save to keyboard]
 slide Brightness 50
   8040 fn1
   8040 fn2  00 32
@@ -49,31 +89,258 @@ slide Brightness 50
   8071 fn8  01 01
   8071 fn1  00 01 30 D0 50 02 00 00 00 00 00 00 01
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] Preset=None [New…] […] Effect=Static <Color 30D050> Direction=- (off) Brightness=50 Speed=0 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert] [Save to keyboard]
 menu More preset actions > Save as new preset…
   menu: Save as new preset… | Rename… (off) | Delete (off)
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Save] [Cancel] Effect=Static <Color 30D050> Direction=- (off) Brightness=50 Speed=0 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] [Save] [Cancel] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert] [Save to keyboard]
 type Green
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Save] [Cancel] Effect=Static <Color 30D050> Direction=- (off) Brightness=50 Speed=0 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] [Save] [Cancel] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert] [Save to keyboard]
 press Save
-  = status "Saved the preset Green" [Report] Preset=Green [Update (off)] […] Effect=Static <Color 30D050> Direction=- (off) Brightness=50 Speed=0 (off) [Revert (off)]
+  = status "Saved the preset Green" [Report] [Backups] Preset=Green [Update (off)] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert (off)] [Save to keyboard]
 pick Effect Breathe
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
-  8071 fn1  00 03 30 D0 50 13 88 00 64 00 00 00 01
-  8071 fn1  01 02 30 D0 50 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] Preset=Green • [Update] […] Effect=Breathe <Color 30D050> Direction=- (off) Brightness=50 Speed=78 [Revert]
+  8071 fn1  00 03 30 D0 50 27 10 00 64 00 00 00 01
+  8071 fn1  01 02 30 D0 50 27 10 00 64 00 00 00 01
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=Green • [Update] […] Effect=Breathe Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
 pick Preset None
   8071 fn5  01
   8040 fn1
-  = status "" [Report] Preset=None [New…] […] Effect=- Direction=- (off) Brightness=50 Speed=78 (off) [Revert (off)]
+  8071 fn0
+  8071 fn0  00 01
+  8071 fn0  00 02
+  8071 fn0  00 03
+  8071 fn0  00 04
+  8071 fn0  01
+  8071 fn0  01 01
+  8071 fn0  01 02
+  8071 fn0  01 03
+  8071 fn0  01 04
+  8071 fn0  01 05
+  8071 fn0  01 06
+  8071 fn0  01 07
+  8071 fn0  02
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8040 fn1
+  = status "Matches the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert] [Save to keyboard (off)]
 pick Preset Green
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
-  8071 fn1  00 03 30 D0 50 13 88 00 64 00 00 00 01
-  8071 fn1  01 02 30 D0 50 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] Preset=Green • [Update] […] Effect=Breathe <Color 30D050> Direction=- (off) Brightness=50 Speed=78 [Revert]
+  8071 fn1  00 03 30 D0 50 27 10 00 64 00 00 00 01
+  8071 fn1  01 02 30 D0 50 27 10 00 64 00 00 00 01
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=Green • [Update] […] Effect=Breathe Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
+pick Dim after 15 s
+  8040 fn1
+  8071 fn5  01 03 04
+  8071 fn8  01 01
+  8071 fn1  00 03 30 D0 50 27 10 00 64 00 00 00 01
+  8071 fn1  01 02 30 D0 50 27 10 00 64 00 00 00 01
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=Green • [Update] […] Effect=Breathe Dim after=15 s <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
+pick Turn off after 10 min
+  8040 fn1
+  8071 fn5  01 03 04
+  8071 fn8  01 01
+  8071 fn1  00 03 30 D0 50 27 10 00 64 00 00 00 01
+  8071 fn1  01 02 30 D0 50 27 10 00 64 00 00 00 01
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=Green • [Update] […] Effect=Breathe Dim after=15 s <Color 30D050> Dim to=50% Direction=- (off) Turn off after=10 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
+press Save to keyboard
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fn6  00 01 00 00 00 FF
+  8100 fn7  01
+  8100 fn7  00 00 FF FF FF FF FF FF FF FF FF FF 0F 00 58 02
+  8100 fn7  80 02 00 3A 80 02 00 3B 80 02 00 3C 80 02 00 3D
+  8100 fn7  80 02 00 3E 80 02 00 3F 80 02 00 40 80 02 00 41
+  8100 fn7  80 02 00 42 80 02 00 43 80 02 00 44 80 02 00 45
+  8100 fn7  90 0D FF 01 90 0D FF 02 90 0D FF 03 FF FF FF FF
+  8100 fn7  00 04 00 00 00 04 00 02 00 04 00 04 00 04 00 06
+  8100 fn7  00 04 00 08 00 04 00 0A 00 04 00 0C 00 04 00 0E
+  8100 fn7  00 04 00 10 00 04 00 12 00 04 00 14 00 04 00 16
+  8100 fn7  90 0D FF 01 90 0D FF 02 90 0D FF 03 FF FF FF FF
+  8100 fn7  50 00 52 00 4F 00 46 00 49 00 4C 00 45 00 5F
+  8100 fn7  4E 00 41 00 4D 00 45 00 5F 00 44 00 45 00 46
+  8100 fn7  41 00 55 00 4C 00 54
+  8100 fn7  0A 30 D0 50 27 10 00 64 00 00 00 0A 30 D0 50 27
+  8100 fn7  10 00 64 00 00 00 0A 30 D0 50 27 10 00 32
+  8100 fn7  00 0A 30 D0 50 27 10 00 32 00 00 00 00 77 55
+  8100 fn8
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fn3  00 01
+  8071 fn5  01
+  = status "Saved to the keyboard" [Report] [Backups] Preset=Green • [Update] […] Effect=Breathe Dim after=15 s <Color 30D050> Dim to=50% Direction=- (off) Turn off after=10 min Brightness=50 Speed=52 [Revert] [Save to keyboard (off)]
+pick Effect Wave
+  8040 fn1
+  8071 fn5  01 03 04
+  8071 fn8  01 01
+  8071 fn1  00 02 00 00 00 00 00 27 10 64 00 00 01
+  8071 fn1  01 04 00 00 00 00 00 00 10 01 64 27 01
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=Green • [Update] […] Effect=Wave Dim after=15 s Dim to=50% Direction=Right Turn off after=10 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
+press Revert
+  8040 fn1
+  8071 fn5  01 03 04
+  8071 fn8  01 01
+  8071 fn1  00 01 30 D0 50 02 00 00 00 00 00 00 01
+  8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=Green [Update (off)] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert (off)] [Save to keyboard]
+menu Backups > Restore the factory lighting
+  menu: Restore the factory lighting | Restore a backup (off) | <when>, Cycle, first backup | Open the backups folder
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fn5  01 01
+  8100 fn5  01 01 00 10
+  8100 fn5  01 01 00 20
+  8100 fn5  01 01 00 30
+  8100 fn5  01 01 00 40
+  8100 fn5  01 01 00 50
+  8100 fn5  01 01 00 60
+  8100 fn5  01 01 00 70
+  8100 fn5  01 01 00 80
+  8100 fn5  01 01 00 90
+  8100 fn5  01 01 00 A0
+  8100 fn5  01 01 00 B0
+  8100 fn5  01 01 00 C0
+  8100 fn5  01 01 00 D0
+  8100 fn5  01 01 00 E0
+  8100 fn5  01 01 00 EF
+  8100 fn6  00 01 00 00 00 FF
+  8100 fn7  01
+  8100 fn7  00 00 FF FF FF FF FF FF FF FF FF FF 3C 00 2C 01
+  8100 fn7  80 02 00 3A 80 02 00 3B 80 02 00 3C 80 02 00 3D
+  8100 fn7  80 02 00 3E 80 02 00 3F 80 02 00 40 80 02 00 41
+  8100 fn7  80 02 00 42 80 02 00 43 80 02 00 44 80 02 00 45
+  8100 fn7  90 0D FF 01 90 0D FF 02 90 0D FF 03 FF FF FF FF
+  8100 fn7  00 04 00 00 00 04 00 02 00 04 00 04 00 04 00 06
+  8100 fn7  00 04 00 08 00 04 00 0A 00 04 00 0C 00 04 00 0E
+  8100 fn7  00 04 00 10 00 04 00 12 00 04 00 14 00 04 00 16
+  8100 fn7  90 0D FF 01 90 0D FF 02 90 0D FF 03 FF FF FF FF
+  8100 fn7  50 00 52 00 4F 00 46 00 49 00 4C 00 45 00 5F
+  8100 fn7  4E 00 41 00 4D 00 45 00 5F 00 44 00 45 00 46
+  8100 fn7  41 00 55 00 4C 00 54
+  8100 fn7  03 00 00 00 00 00 13 88 64 00 00 03
+  8100 fn7  00 13 88 64 00 00 03 00 00 00 00 00 13 88 32
+  8100 fn7  00 03 00 00 00 00 00 13 88 32 00 00 00 73 CB
+  8100 fn8
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fn3  00 01
+  8071 fn5  01
+  8071 fn0
+  8071 fn0  00 01
+  8071 fn0  00 02
+  8071 fn0  00 03
+  8071 fn0  00 04
+  8071 fn0  01
+  8071 fn0  01 01
+  8071 fn0  01 02
+  8071 fn0  01 03
+  8071 fn0  01 04
+  8071 fn0  01 05
+  8071 fn0  01 06
+  8071 fn0  01 07
+  8071 fn0  02
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8040 fn1
+  = status "Restored the factory lighting" [Report] [Backups] Preset=Green [Update (off)] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=78 [Revert (off)] [Save to keyboard (off)]
 quit
-  = status "Set by G-Lite, not saved to the keyboard" [Report] Preset=Green • [Update] […] Effect=Breathe <Color 30D050> Direction=- (off) Brightness=50 Speed=78 [Revert]
+  = status "Restored the factory lighting" [Report] [Backups] Preset=Green [Update (off)] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=78 [Revert (off)] [Save to keyboard (off)]

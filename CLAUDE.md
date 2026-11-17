@@ -18,7 +18,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - `Hidpp`: HID++ 2.0 over the receiver, and `Register` and `Upload` for HID++ 1.0 registers and memory uploads when it's given the short collection
   - `Lighting`: the lighting settings
   - `G515`: the effect table, profile encode and decode, CRC32, onboard file read and write, preview
-  - `G915`: live lighting on the G915, G915 TKL and G815 (0x8071 keys and logo clusters, the older effect ids; `G915.Claim` also sets full power with fn 8, since the keyboard wakes from its own sleep in power mode 3 and ignores effects until then). Live lighting tested on a G915 TKL. No saving yet. See `docs/G915.md`.
+  - `G915`: live lighting on the G915, G915 TKL and G815 (0x8071 keys and logo clusters, the older effect ids; `G915.Claim` also sets full power with fn 8, since the keyboard wakes from its own sleep in power mode 3 and ignores effects until then). Live lighting tested on a G915 TKL. Save to keyboard writes the active onboard profile (format 4: lighting records at 0xD0, idle times at 0x1C, after a backup under `backups\G915-<wireless id>\`), and Backups can restore the factory copy's lighting only. See `docs/G915.md`.
 - `app/Program.cs`:
   - `MainWindow`: the device sidebar, one page per found device, rescans on plug and unplug, the Settings and Logs screens, updates and run on startup. A click on the G-Lite title (not a drag) opens `KeyboardView` with the games on its own `FakeHidpp`; it doesn't look clickable on purpose
   - The device list (`DeviceList` in `app/Ui.cs`) scrolls with the mouse wheel (an eased glide) when it doesn't fit above the update row and the buttons. It has no scrollbar: rows fade into the sidebar at an edge with more beyond it.

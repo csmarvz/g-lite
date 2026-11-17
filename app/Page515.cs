@@ -260,7 +260,7 @@ class Keyboards
     bool isoBuilt;
     public Model Iso { get { if (!isoBuilt) { iso = Keys.Iso(); isoBuilt = true; } return iso; } }
     public string Prefix;
-    public bool Saves, Guessed;
+    public bool Saves, Profile, Guessed;
     public int[] Bar;
 
     public static string File(string name)
@@ -291,9 +291,9 @@ class Keyboards
 
     public static readonly Keyboards
         G515 = new Keyboards { Keys = Model.Load("g515-tkl.json"), Prefix = "profile.g515.", Saves = true },
-        G915Tkl = new Keyboards { Keys = Model.Load("g915-tkl.json"), Prefix = "profile.g915." },
-        G915 = new Keyboards { Keys = Model.Load("g915.json"), Prefix = "profile.g915." },
-        G815 = new Keyboards { Keys = Named("g915.json", "G815"), Prefix = "profile.g815." },
+        G915Tkl = new Keyboards { Keys = Model.Load("g915-tkl.json"), Prefix = "profile.g915.", Profile = true },
+        G915 = new Keyboards { Keys = Model.Load("g915.json"), Prefix = "profile.g915.", Profile = true },
+        G815 = new Keyboards { Keys = Named("g915.json", "G815"), Prefix = "profile.g815.", Profile = true },
         G512X = new Keyboards { Keys = Model.Load("g512-x-75.json"), Prefix = "profile.g512x.", Bar = Enumerable.Range(0xA0, 33).ToArray() };
 }
 
@@ -375,6 +375,11 @@ class Page515 : DevicePage
         {
             backupsBtn = BackupsButton("keyboard's lighting");
             backupsBtn.Click += (s, e) => ShowBackups();
+        }
+        else if (kind.Profile)
+        {
+            backupsBtn = BackupsButton("keyboard's profile");
+            backupsBtn.Click += (s, e) => ShowProfileBackups();
         }
 
         var pic = Ui.Add(this, new Box(), 20, 118, 616, 209);
@@ -532,17 +537,18 @@ class Page515 : DevicePage
 
         var idle = Ui.Add(this, new Box(), 412, 339, 224, Parts ? 316 : 272);
         idleArea = idle;
-        Ui.Text(idle, live ? "Saving" : "When idle", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
-        var note = Ui.Text(idle, "G-Lite can't save to this keyboard yet. It keeps your lighting and sets it again when G-Lite starts and when you open this screen. Picking None gives the keyboard its own lighting back." + (kind.Guessed ? " The key picture is a guess for this model." : ""), 14, 40, () => Theme.Dim, 9f);
-        note.AutoSize = false;
-        note.Size = new Size(196, 200);
-        note.Visible = live;
+        bool note = live && !kind.Profile;
+        Ui.Text(idle, note ? "Saving" : "When idle", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
+        var noteText = Ui.Text(idle, "G-Lite can't save to this keyboard yet. It keeps your lighting and sets it again when G-Lite starts and when you open this screen. Picking None gives the keyboard its own lighting back." + (kind.Guessed ? " The key picture is a guess for this model." : ""), 14, 40, () => Theme.Dim, 9f);
+        noteText.AutoSize = false;
+        noteText.Size = new Size(196, 200);
+        noteText.Visible = note;
         idleBox = Choice(idle, "Dim after", IdleText, 40, i => cur.Idle = IdleSecs[i]);
         dimBox = Choice(idle, "Dim to", DimText, 98, i => cur.Dim = DimPcts[i]);
         sleepBox = Choice(idle, "Turn off after", SleepText, 156, i => cur.Sleep = SleepSecs[i]);
-        if (live) foreach (Control c in idle.Controls) if (c != note && c.Top > 30) c.Visible = false;
+        if (note) foreach (Control c in idle.Controls) if (c != noteText && c.Top > 30) c.Visible = false;
 
-        saveBtn = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Save to keyboard", Visible = !live }, 496, 685, 140, 32);
+        saveBtn = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Save to keyboard", Visible = !note }, 496, 685, 140, 32);
         saveBtn.Click += (s, e) => Save();
 
         if (canScreen && Settings.Get(Active) == "1")
@@ -1050,6 +1056,7 @@ class Page515 : DevicePage
             else if (ScreenCapture.Missing(setup.Monitor)) Say("The chosen monitor isn't connected. Using the main monitor.", true);
             else Say("Live only.");
         }
+        else if (live && kind.Profile) Say(dirty ? "Set by G-Lite, not saved to the keyboard" : Known() ? "Matches the keyboard" : "");
         else if (live) Say(Known() ? "Set by G-Lite, not saved to the keyboard" : "");
         else Say(dirty ? "Not saved to the keyboard" : stored == null ? "" : "Matches the keyboard");
     }
@@ -1107,7 +1114,7 @@ class Page515 : DevicePage
             dirty = true;
             cur = stored != null ? stored.Clone() : new Lighting();
         }
-        if (live) { Forget(); return; }
+        if (live) { Forget(); if (kind.Profile) Load(); return; }
         if (stored == null) { Sync(); Calm(); return; }
         cur = stored.Clone();
         brightness = storedBrightness;
@@ -1144,6 +1151,7 @@ class Page515 : DevicePage
 
     void Save()
     {
+        if (live) { SaveProfile(); return; }
         var l = cur.Clone();
         int b = brightness;
         saveBtn.Enabled = false;
@@ -1163,6 +1171,109 @@ class Page515 : DevicePage
             unknownStored = false;
             Sync();
             Say("Saved to the keyboard");
+        });
+    }
+
+    string ProfileBackups { get { return "G915-" + found.Wpid.ToString("X4"); } }
+
+    // Saves into the active onboard profile, after a backup of it. The keyboard then runs the lighting itself, so nothing is
+    // remembered to send again.
+    void SaveProfile()
+    {
+        var l = cur.Clone();
+        var others = bar == null ? null : bar.Clone();
+        int n = edits;
+        saveBtn.Enabled = false;
+        Say("Saving…");
+        Did("Save to keyboard");
+        Do(h =>
+        {
+            if (clusters == null) clusters = G915.Clusters(h);
+            int sector;
+            var p = G915.ReadProfile(h, out sector);
+            var built = G915.Build(p, clusters, l, others);
+            Backups.Save(ProfileBackups, new Dictionary<string, byte[]> { { sector.ToString("X4"), p } }, Who);
+            G915.Store(h, sector, built);
+            claimed = false;
+        }, () =>
+        {
+            Settings.Remove(Remembered);
+            stored = l;
+            unknownStored = false;
+            if (n == edits) dirty = false;
+            Sync();
+            Say("Saved to the keyboard");
+        });
+    }
+
+    static int BackupSector(Backups.Entry e)
+    {
+        int sector;
+        return e.Data.Count == 1 && int.TryParse(e.Data.Keys.First(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out sector) && sector > 0 && sector < 0x100
+            && GMouse.Valid(e.Data.Values.First()) ? sector : -1;
+    }
+
+    void ShowProfileBackups()
+    {
+        BackupMenu(backupsBtn, ProfileBackups, "Restore the factory lighting", RestoreFactoryLighting,
+            e =>
+            {
+                if (BackupSector(e) < 0) return "damaged, can't be restored";
+                var l = G915.Decode(e.Data.Values.First(), clusters == null ? 1 : G915.Keys(clusters));
+                return l == null ? "an effect G-Lite doesn't know" : G515.Def(l.Effect).Name;
+            },
+            e => BackupSector(e) > 0, RestoreProfile);
+    }
+
+    void RestoreFactoryLighting()
+    {
+        const string what = "the factory lighting";
+        debounce.Stop();
+        previewSeq++;
+        saveBtn.Enabled = false;
+        Say("Restoring " + what + "…");
+        Did("Restore " + what);
+        Do(h =>
+        {
+            int sector;
+            var p = G915.ReadProfile(h, out sector);
+            var built = G915.FactoryLighting(h, sector, p);
+            Backups.Save(ProfileBackups, new Dictionary<string, byte[]> { { sector.ToString("X4"), p } }, Who);
+            G915.Store(h, sector, built);
+            claimed = false;
+        }, () =>
+        {
+            Settings.Remove(Remembered);
+            Note = "Restored " + what;
+            dirty = false;
+            Load();
+        });
+    }
+
+    void RestoreProfile(Backups.Entry e)
+    {
+        int sector = BackupSector(e);
+        var p = e.Data.Values.First();
+        string what = "the backup from " + When(e);
+        debounce.Stop();
+        previewSeq++;
+        saveBtn.Enabled = false;
+        Say("Restoring " + what + "…");
+        Did("Restore " + what);
+        Do(h =>
+        {
+            int now;
+            var current = G915.ReadProfile(h, out now);
+            if (now != sector) throw new Refused("The keyboard runs another profile than the one in this backup");
+            Backups.Save(ProfileBackups, new Dictionary<string, byte[]> { { now.ToString("X4"), current } }, Who);
+            G915.Store(h, sector, p);
+            claimed = false;
+        }, () =>
+        {
+            Settings.Remove(Remembered);
+            Note = "Restored " + what;
+            dirty = false;
+            Load();
         });
     }
 
@@ -1214,10 +1325,14 @@ class Page515 : DevicePage
         if (kept != null) try { var pieces = kept.Split('#'); l = Lighting.FromText(pieces[0], out kb); lb = BarFrom(pieces); } catch (Exception) { l = null; lb = null; }
         bool dropped = false;
         bool screening = Screening, readLayout = layoutCode < 0 && found.Has(0x4540);
+        Lighting saved = null;
         Do(h =>
         {
             if (readLayout) layoutCode = h.Call(h.F(0x4540), 0)[0];
             clusters = G915.Clusters(h);
+            if (kind.Profile)
+                try { int sector; saved = G915.Decode(G915.ReadProfile(h, out sector), G915.Keys(clusters)); }
+                catch (Refused) { }
             if (l != null && seq == previewSeq && !screening)
             {
                 if (kb >= 0 && kb <= 100 && kb != G515.Brightness(h)) G515.SetBrightness(h, kb);
@@ -1232,6 +1347,8 @@ class Page515 : DevicePage
             storedBrightness = b;
             if (n == edits)
             {
+                dirty = l != null && kind.Profile;
+                if (l == null && saved != null) l = saved;
                 stored = l == null ? null : l.Clone();
                 unknownStored = l == null;
                 brightness = b;

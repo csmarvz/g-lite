@@ -346,7 +346,12 @@ class FakeLight : Hidpp
 class FakeG915 : Hidpp
 {
     Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8071, 10 }, { 0x8040, 20 }, { 0x8100, 21 }, { 0x4540, 16 } };
-    public byte[][] Ids = { new byte[] { 0x00, 0x01, 0x03, 0x0A }, new byte[] { 0x00, 0x01, 0x0A, 0x03, 0x04, 0x0B } };
+    public byte[][] Ids = { new byte[] { 0x00, 0x01, 0x03, 0x0A }, new byte[] { 0x00, 0x01, 0x0A, 0x03, 0x04, 0x0B, 0x0C } };
+    // Profile 1 of an owner's G915 TKL (Cycle at 10 s on both clusters, power save after 60 s, off after 300 s), and its factory copy (Cycle at 5 s).
+    public readonly Dictionary<int, byte[]> Sectors = new Dictionary<int, byte[]> { { 1, FakeHidpp.Hex("010000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFF3C002C018002003A8002003B8002003C8002003D8002003E8002003F800200408002004180020042800200438002004480020045900DFF01900DFF02900DFF03FFFFFFFF00040000000400020004000400040006000400080004000A0004000C0004000E00040010000400120004001400040016900DFF01900DFF02900DFF03FFFFFFFF500052004F00460049004C0045005F004E0041004D0045005F00440045004600410055004C00540000000000000000000300000000002710320000030000000000271032000003000000000027101900000300000000002710190000004349") }, { 0x101, FakeHidpp.Hex("010000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFF3C002C018002003A8002003B8002003C8002003D8002003E8002003F800200408002004180020042800200438002004480020045900DFF01900DFF02900D0001900D0002900D0003FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0300000000001388640000030000000000138864000003000000000013883200000300000000001388320000FFFFFF") } };
+    public int Reloads, Power = 1;
+    List<byte> pending = new List<byte>();
+    int writeTo, writeLength;
     public readonly byte[][] Live = { new byte[13], new byte[13] };
     public int Brightness = 80, Claimed;
     public byte Layout = 1;
@@ -370,6 +375,17 @@ class FakeG915 : Hidpp
         var r = new byte[16];
         if (feat == 0) { byte i; r[0] = Index.TryGetValue(p[0] << 8 | p[1], out i) ? i : (byte)0; }
         else if (feat == Index[0x4540]) r[0] = Layout;
+        else if (Index.ContainsKey(0x8100) && feat == Index[0x8100])
+        {
+            if (fn == 0) FakeHidpp.Hex("01040103030F1000FF3604").CopyTo(r, 0);
+            if (fn == 2) r[0] = 1;
+            if (fn == 3) Reloads++;
+            if (fn == 4) r[1] = 1;
+            if (fn == 5) Sectors[p[0] << 8 | p[1]].Skip(p[2] << 8 | p[3]).Take(16).ToArray().CopyTo(r, 0);
+            if (fn == 6) { writeTo = p[0] << 8 | p[1]; writeLength = p[4] << 8 | p[5]; pending.Clear(); }
+            if (fn == 7) pending.AddRange(p.Take(16));
+            if (fn == 8) Sectors[writeTo] = pending.Take(writeLength).ToArray();
+        }
         else if (feat == Index[0x8040])
         {
             if (fn == 1) { r[0] = (byte)(Brightness >> 8); r[1] = (byte)Brightness; }
@@ -384,6 +400,7 @@ class FakeG915 : Hidpp
                 else Live[p[0]] = p.Take(13).ToArray();
             }
             if (fn == 5) Claimed = p[1];
+            if (fn == 8 && p[0] == 1) Power = p[1];
         }
         else if (Index.ContainsKey(0x8081) && feat == Index[0x8081] && fn == 0)
         {

@@ -280,6 +280,12 @@ static class Traces
             s.Pick("Effect", "Breathe");
             s.Pick("Preset", "None");
             s.Pick("Preset", "Green");
+            s.Pick("Dim after", "15 s");
+            s.Pick("Turn off after", "10 min");
+            s.Press("Save to keyboard");
+            s.Pick("Effect", "Wave");
+            s.Press("Revert");
+            s.Menu("Backups", "Restore the factory lighting");
             s.Do("quit", () => page.Exiting());
             return s.Text;
         }

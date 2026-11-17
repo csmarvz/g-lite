@@ -435,6 +435,20 @@ static class SelfTest
         Check(lacks && g9.Live[1][1] == 2, "an effect the G915 lacks is refused without sending anything");
         G915.Release(g9);
         Check(g9.Claimed == 0, "release gives the lighting back to the G915");
+        int g9Sector;
+        var g9Profile = G915.ReadProfile(g9, out g9Sector);
+        var g9Saved = G915.Decode(g9Profile, 1);
+        Check(g9Sector == 1 && g9Saved.Effect == 0x15 && g9Saved.Period == 10000 && g9Saved.Idle == 60 && g9Saved.Sleep == 300 && g9Saved.Dim == 50,
+            "the G915 TKL's profile reads as Cycle at 10 s, dimmed to half after 60 s, off after 300 s");
+        var g9Built = G915.Build(g9Profile, cl, new Lighting { Effect = 0x16, Period = 3000, Direction = 1, Dim = 50, Idle = 15, Sleep = 600 }, null);
+        // Profile 3 of the same keyboard, Cycle on the logo and Wave on the keys, normal then dimmed (its Wave also has FF in its first and sixth parameter bytes).
+        var g9Want = FakeHidpp.Hex("0300000000000BB864000004000000000000B801640B0300000000000BB832000004000000000000B801320B");
+        Check(g9Built.Skip(0xD0).Take(44).SequenceEqual(g9Want) && GMouse.Valid(g9Built) && g9Built[0x1C] == 15 && g9Built[0x1E] == 0x58 && g9Built[0x1F] == 2
+            && g9Built.Take(0xD0).Where((x, i) => i < 0x1C || i > 0x1F).SequenceEqual(g9Profile.Take(0xD0).Where((x, i) => i < 0x1C || i > 0x1F)),
+            "saving Wave on the G915 writes the records the keyboard's own Wave profile has, the idle times, and keeps every other byte");
+        G915.Claim(g9);
+        G915.Store(g9, g9Sector, g9Built);
+        Check(g9.Sectors[1].SequenceEqual(g9Built) && g9.Reloads == 1 && g9.Claimed == 0, "the G915's profile is written, loaded again, and the lighting given back");
         Check(Settings.Get("theme") == "system" && Theme.Mode == "system", "theme starts on system");
         Theme.Mode = "light";
         Check(Theme.Light && Settings.Get("theme") == "light", "light theme is saved and applied");

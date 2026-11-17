@@ -4,6 +4,7 @@
 
 ### Added
 
+- G915, G915 TKL and G815: Save to keyboard, with Dim after, Dim to and Turn off after. The lighting goes into the keyboard's onboard profile, so it stays without G-Lite. G-Lite backs up the profile first, and Backups can restore an earlier one or the factory lighting. Tried on a G915 TKL.
 - MX keyboards: how long the backlight stays on before it fades, with your hands away, with your hands near and while plugged in (Fades after, from 5 s to 1 h). Like the other settings, your choice is kept and sent again when the keyboard comes back.
 
 ### Changed

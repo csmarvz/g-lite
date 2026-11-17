@@ -663,6 +663,118 @@ static class G915
 
     public static void Release(Hidpp h) { h.Call(h.F(0x8071), 5, 0x01, 0x00, 0x00); }
 
+    // The onboard profile, format 4, from a G915 TKL's report (docs/G915.md): power save and off after (seconds, little-endian) at
+    // 0x1C and 0x1E, then four 11-byte lighting records from 0xD0, one per cluster, then the same dimmed for power save.
+    const int Records = 0xD0;
+
+    public static byte[] ReadProfile(Hidpp h, out int sector)
+    {
+        byte o = h.F(0x8100);
+        if (h.Call(o, 2)[0] != 1) throw new Refused("The keyboard isn't on its onboard profiles");
+        var info = h.Call(o, 0);
+        int size = info[7] << 8 | info[8];
+        if (info[1] != 4 || size < 0xF0 || size > 0x1000) throw new Refused("Saving isn't supported on this keyboard (profile format " + info[1] + ")");
+        var current = h.Call(o, 4);
+        sector = current[0] << 8 | current[1];
+        if (sector == 0 || sector >= 0x100) throw new Refused("The keyboard runs a factory profile");
+        var p = GMouse.ReadSector(h, sector, size);
+        if (!GMouse.Valid(p)) throw new Refused("The keyboard's profile has a bad checksum");
+        return p;
+    }
+
+    // Returns null when the keys hold an effect this app doesn't know.
+    public static Lighting Decode(byte[] p, int keys)
+    {
+        var r = p.Skip(Records + 11 * keys).Take(11).ToArray();
+        var l = new Lighting { Idle = p[0x1C] | p[0x1D] << 8, Sleep = p[0x1E] | p[0x1F] << 8, Color = r[1] << 16 | r[2] << 8 | r[3] };
+        switch (r[0])
+        {
+            case 0x00: l.Effect = 0x00; break;
+            case 0x01: l.Effect = 0x01; break;
+            case 0x0A: l.Effect = 0x0A; l.Period = r[4] << 8 | r[5]; break;
+            case 0x03: l.Effect = 0x15; l.Period = r[6] << 8 | r[7]; break;
+            case 0x04: l.Effect = 0x16; l.Period = r[10] << 8 | r[7]; l.Direction = r[8]; break;
+            case 0x0B: l.Effect = 0x17; l.Period = r[5] << 8 | r[6]; break;
+            default: return null;
+        }
+        if (l.Effect != 0x01 && l.Effect != 0x0A && l.Effect != 0x17) l.Color = 0xFFFFFF;
+        var dim = p.Skip(Records + 11 * (2 + keys)).Take(11).ToArray();
+        l.Dim = dim[0] == r[0] && Level(r) > 0 ? Math.Min(100, Level(dim) * 100 / Level(r)) : 50;
+        return l;
+    }
+
+    static int Level(byte[] r)
+    {
+        switch (r[0])
+        {
+            case 0x03: return r[8];
+            case 0x04: return r[9];
+            case 0x0A: return r[7];
+            default: return Math.Max(r[1], Math.Max(r[2], r[3]));
+        }
+    }
+
+    // The dimmed records keep the colour and lower the intensity, as the keyboard's own profiles do; Static and Ripple have no
+    // intensity, so their colour is scaled.
+    static byte[] Dimmed(byte id, byte[] b, int pct)
+    {
+        b = (byte[])b.Clone();
+        switch (id)
+        {
+            case 0x03: b[7] = (byte)Math.Max(1, pct); break;
+            case 0x04: b[8] = (byte)Math.Max(1, pct); break;
+            case 0x0A: b[6] = (byte)Math.Max(1, pct); break;
+            default: for (int i = 0; i < 3; i++) b[i] = (byte)(b[i] * pct / 100); break;
+        }
+        return b;
+    }
+
+    public static byte[] Build(byte[] profile, List<byte[]> clusters, Lighting l, Lighting others)
+    {
+        if (clusters.Count != 2) throw new Refused("Saving isn't supported on this keyboard (" + clusters.Count + " lighting clusters)");
+        var p = (byte[])profile.Clone();
+        int keys = Keys(clusters);
+        for (int c = 0; c < 2; c++)
+        {
+            var light = c == keys || others == null ? l : others;
+            int i = Pick(light.Effect, clusters[c], c != keys);
+            if (i < 0) throw new Refused("This keyboard doesn't have that effect");
+            byte id = clusters[c][i];
+            var b = Encode(id, light);
+            p[Records + 11 * c] = id;
+            b.CopyTo(p, Records + 11 * c + 1);
+            p[Records + 11 * (2 + c)] = id;
+            Dimmed(id, b, l.Dim).CopyTo(p, Records + 11 * (2 + c) + 1);
+        }
+        p[0x1C] = (byte)l.Idle; p[0x1D] = (byte)(l.Idle >> 8);
+        p[0x1E] = (byte)l.Sleep; p[0x1F] = (byte)(l.Sleep >> 8);
+        GMouse.Seal(p);
+        return p;
+    }
+
+    // The lighting and idle times of the factory copy of the profile at `sector` (0101 for 0001 on the G915 TKL), into a copy of
+    // `profile`. Only those: a whole factory profile would drop what else the user changed, like G-shift macros.
+    public static byte[] FactoryLighting(Hidpp h, int sector, byte[] profile)
+    {
+        var rom = GMouse.ReadSector(h, 0x100 + sector, profile.Length);
+        if (rom.Skip(Records).Take(44).All(b => b == 0xFF) || rom[0x1C] == 0xFF) throw new Refused("Couldn't read the keyboard's factory lighting");
+        var p = (byte[])profile.Clone();
+        Array.Copy(rom, 0x1C, p, 0x1C, 4);
+        Array.Copy(rom, Records, p, Records, 44);
+        GMouse.Seal(p);
+        return p;
+    }
+
+    // Writes the profile (GMouse.WriteSector refuses 0000 and the factory sectors, and reads it back), loads it again and gives
+    // the lighting back, so the keyboard runs it, its power save included.
+    public static void Store(Hidpp h, int sector, byte[] p)
+    {
+        GMouse.WriteSector(h, sector, p);
+        try { h.Call(h.F(0x8100), 3, (byte)(sector >> 8), (byte)sector); }
+        catch (HidppError) { }
+        Release(h);
+    }
+
     public static void Preview(Hidpp h, List<byte[]> clusters, Lighting l, Lighting others = null)
     {
         byte f = h.F(0x8071);
