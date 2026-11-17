@@ -179,7 +179,7 @@ class Script : IDisposable
             string off = c.Enabled ? "" : " (off)";
             if (c is Btn && c.Text != "") parts.Add("[" + c.Text + off + "]");
             else if (c is Seg) { var s = (Seg)c; parts.Add(c.AccessibleName + "=" + (s.Index >= 0 && s.Index < s.Items.Length ? s.Items[s.Index] : "-") + off + (s.Off.Length == 0 ? "" : " (no " + string.Join(", ", s.Off.Where(i => i >= 0 && i < s.Items.Length).Select(i => s.Items[i])) + ")")); }
-            else if (c is Drop) parts.Add(c.AccessibleName + "=" + (c.Text == "" ? "-" : c.Text) + off);
+            else if (c is Drop) parts.Add(c.AccessibleName + "=" + (c.AccessibleName == "Monitor" ? "<monitor>" : c.Text == "" ? "-" : c.Text) + off);
             else if (c is Slider) parts.Add(c.AccessibleName + "=" + ((Slider)c).Value + off);
             else if (c is Toggle) parts.Add(c.AccessibleName + "=" + (((Toggle)c).Checked ? "on" : "off") + off);
             else if (c is Swatch && ((Swatch)c).On) parts.Add("<" + c.AccessibleName + ">");
@@ -424,6 +424,13 @@ static class Traces
             s.Pick("Effect", "Off");
             s.Pick("Preset", "None");
             s.Pick("Preset", "Green");
+            s.Pick("Effect", "Screen");
+            s.Press("Update");
+            s.Slide("Color boost", 80);
+            s.Press("Revert changes");
+            s.Pick("Preset", "None");
+            s.Pick("Preset", "Green");
+            s.Pick("Effect", "Static");
             return s.Text;
         }
     }
@@ -453,6 +460,13 @@ static class Traces
             s.Menu("Try the light's own effects", "Group 0: Breathe");
             s.Menu("Try the light's own effects", "Group 1: Smooth colour wave");
             s.Menu("Try the light's own effects", "Back to G-Lite's colours");
+            s.Pick("Effect", "Static");
+            s.Pick("Effect", "Screen");
+            s.Press("Update");
+            s.Slide("Color boost", 80);
+            s.Press("Revert changes");
+            s.Pick("Preset", "None");
+            s.Pick("Preset", "Desk");
             s.Pick("Effect", "Static");
             return s.Text;
         }

@@ -53,7 +53,11 @@ static class Backups
             if (list.Count > 0 && Same(list[0].Data, data)) return;
             var dir = Folder(device);
             Directory.CreateDirectory(dir);
-            var name = (list.Count == 0 ? "first-" : "") + DateTime.UtcNow.ToString(Utc, CultureInfo.InvariantCulture) + ".txt";
+            var now = DateTime.UtcNow;
+            var when = new DateTime(now.Ticks - now.Ticks % TimeSpan.TicksPerMillisecond, DateTimeKind.Utc);
+            // Two backups in the same millisecond would share a name, and the second would replace the first.
+            if (list.Count > 0 && when <= list[0].When) when = list[0].When.AddMilliseconds(1);
+            var name = (list.Count == 0 ? "first-" : "") + when.ToString(Utc, CultureInfo.InvariantCulture) + ".txt";
             File.WriteAllLines(Path.Combine(dir, name), data.Select(p => p.Key + "=" + Hex(p.Value)));
             if (who != null) Log.Add(who, "backup", data.Count == 1 ? "sector " + data.Keys.First() : data.Count + " files");
             foreach (var old in List(device).Where(e => !e.First).Skip(Keep)) File.Delete(old.File);

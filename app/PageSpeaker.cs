@@ -207,7 +207,7 @@ class PageSpeaker : DevicePage
         effects = Ui.Add(light, new Seg { Items = names.ToArray(), AccessibleName = "Effect" }, 14, 116, 440, 32);
         effects.Picked += i =>
         {
-            if (i == GSpeaker.Effects.Length) { if (!screening) ScreenOn(); return; }
+            if (i == GSpeaker.Effects.Length) { if (!screening) { ScreenOn(); Edited(); } return; }
             if (screening) ScreenOff();
             var d = GSpeaker.Effects[i];
             Edit(l =>
@@ -384,16 +384,24 @@ class PageSpeaker : DevicePage
 
     public override void Restyle() { Sync(); }
 
-    protected override string Current() { return cur == null ? "" : GSpeaker.ToText(cur); }
+    protected override string Current() { return (cur == null ? "" : GSpeaker.ToText(cur)) + (screening ? "|" + setup.ToText() : ""); }
 
     protected override void Use(string text)
     {
-        var lights = GSpeaker.FromText(text, Count);
-        if (lights == null) return;
-        if (screening) ScreenOff();
-        cur = lights;
+        var pieces = text.Split('|');
+        var lights = GSpeaker.FromText(pieces[0], Count);
+        bool screen = !keyboard && pieces.Length > 1;
+        if (lights == null && !screen) return;
+        if (screen) setup = GSpeaker.Screen(pieces[1]);
+        if (screening && !screen) ScreenOff();
+        if (lights != null) cur = lights;
         wholeAgain = true;
         seq++;
+        if (screen)
+        {
+            if (!screening) ScreenOn();
+            else { screenTimer.Interval = setup.Interval; ScreenChanged(); Snap(); }
+        }
         Edited();
         Sync();
         Send();
@@ -412,8 +420,7 @@ class PageSpeaker : DevicePage
         framed = null;
         Did("Screen effect on");
         screenTimer.Interval = setup.Interval;
-        screenTimer.Start();
-        snapTimer.Start();
+        if (!Manual) { screenTimer.Start(); snapTimer.Start(); }
         Snap();
         Sync();
         Calm();
@@ -430,7 +437,6 @@ class PageSpeaker : DevicePage
         sent = new MouseLight[Count];
         Did("Screen effect off");
         Sync();
-        Send();
     }
 
     void ScreenChanged()
@@ -439,6 +445,7 @@ class PageSpeaker : DevicePage
         Settings.Set(Saved, setup.ToText());
         framed = null;
         Sync();
+        Edited();
     }
 
     void Tick()

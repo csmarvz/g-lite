@@ -378,7 +378,7 @@ class PageLight : DevicePage
         effects = Ui.Add(backBox, new Seg { Items = LightState.Effects.Concat(new[] { "Screen" }).ToArray(), AccessibleName = "Effect" }, 14, 106, 588, 30);
         effects.Picked += i =>
         {
-            if (i == LightState.Effects.Length) { if (!screening) ScreenOn(); return; }
+            if (i == LightState.Effects.Length) { if (!screening) { ScreenOn(); Edited(); } return; }
             if (screening) ScreenOff();
             Edit(l => { colorsChosen = true; l.Effect = i; }, true);
         };
@@ -539,24 +539,32 @@ class PageLight : DevicePage
 
     public override void Restyle() { Sync(); }
 
-    protected override string Current() { return cur == null ? "" : "front:" + cur.FrontText() + (back ? ";back:" + cur.BackText() : ""); }
+    protected override string Current() { return cur == null ? "" : "front:" + cur.FrontText() + (back ? ";back:" + cur.BackText() : "") + (screening ? "|" + setup.ToText() : ""); }
 
     protected override void Use(string text)
     {
         if (cur == null) return;
+        var pieces = text.Split('|');
         var next = cur.Clone();
-        foreach (var part in text.Split(';'))
+        foreach (var part in pieces[0].Split(';'))
         {
             if (part.StartsWith("front:")) next.ReadFront(part.Substring(6));
             if (part.StartsWith("back:") && back) next.ReadBack(part.Substring(5));
         }
         next.Lumen = lumens.Snap(next.Lumen);
         next.Kelvin = kelvins.Snap(next.Kelvin);
-        if (screening) ScreenOff();
+        bool screen = back && pieces.Length > 1;
+        if (screen) setup = Litra.Screen(pieces[1]);
+        if (screening && !screen) ScreenOff();
         EndTrying();
         colorsChosen = true;
         cur = next;
         seq++;
+        if (screen)
+        {
+            if (!screening) ScreenOn();
+            else { screenTimer.Interval = setup.Interval; ScreenChanged(); Snap(); }
+        }
         Edited();
         Sync();
         Send();
@@ -576,8 +584,7 @@ class PageLight : DevicePage
         framed = null;
         Did("Screen effect on");
         screenTimer.Interval = setup.Interval;
-        screenTimer.Start();
-        snapTimer.Start();
+        if (!Manual) { screenTimer.Start(); snapTimer.Start(); }
         Snap();
         Sync();
         Calm();
@@ -595,7 +602,6 @@ class PageLight : DevicePage
         if (ready) Do(h => { var was = sent; if (was != null) was.Colors = Enumerable.Repeat(-1, LightState.Zones).ToArray(); });
         Did("Screen effect off");
         Sync();
-        Send();
     }
 
     void ScreenChanged()
@@ -606,6 +612,7 @@ class PageLight : DevicePage
         preview.Zones = setup.Zones;
         preview.Selected = selectedZone;
         preview.Invalidate();
+        Edited();
     }
 
     bool Animated { get { return back && ready && !screening && !trying && cur != null && cur.Effect != LightState.Static; } }
