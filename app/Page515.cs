@@ -1213,9 +1213,10 @@ class Page515 : DevicePage
         int kb = -1;
         if (kept != null) try { var pieces = kept.Split('#'); l = Lighting.FromText(pieces[0], out kb); lb = BarFrom(pieces); } catch (Exception) { l = null; lb = null; }
         bool dropped = false;
-        bool screening = Screening;
+        bool screening = Screening, readLayout = layoutCode < 0 && found.Has(0x4540);
         Do(h =>
         {
+            if (readLayout) layoutCode = h.Call(h.F(0x4540), 0)[0];
             clusters = G915.Clusters(h);
             if (l != null && seq == previewSeq && !screening)
             {
@@ -1236,6 +1237,7 @@ class Page515 : DevicePage
                 brightness = b;
                 if (l != null && !Screening) { cur = l; bar = lb; part = lb == null ? 0 : 1; }
             }
+            ApplyLayout();
             Sync();
             Loaded();
         });

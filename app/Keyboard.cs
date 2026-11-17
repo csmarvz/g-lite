@@ -652,7 +652,14 @@ static class G915
         return G515.Encode(s, 100);
     }
 
-    public static void Claim(Hidpp h) { h.Call(h.F(0x8071), 5, 0x01, 0x03, 0x04); }
+    // The G915 TKL turns itself off after its timeout even while G-Lite holds the power modes, and wakes in mode 3 (off) on its own
+    // lighting, ignoring effects until fn 8 sets full power again (tested on an owner's keyboard).
+    public static void Claim(Hidpp h)
+    {
+        byte f = h.F(0x8071);
+        h.Call(f, 5, 0x01, 0x03, 0x04);
+        try { h.Call(f, 8, 0x01, 0x01, 0x00); } catch (HidppError) { }
+    }
 
     public static void Release(Hidpp h) { h.Call(h.F(0x8071), 5, 0x01, 0x00, 0x00); }
 

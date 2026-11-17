@@ -40,7 +40,8 @@ The preset you picked on each device is picked again when G-Lite starts, and set
 | Device | Connection | Status | What G-Lite can do |
 |---|---|---|---|
 | G515 LIGHTSPEED TKL | LIGHTSPEED receiver | Works | Lighting effects, colour, speed, direction, brightness, idle dimming and turn-off, profiles, saving to the keyboard, backups and restoring them, factory lighting |
-| G915, G915 TKL and G815 | LIGHTSPEED receiver or USB | Untested | Lighting effects, colour, speed, direction, brightness and profiles. G-Lite sets your lighting again when it starts, but can't save it to the keyboard yet. See [docs/G915.md](docs/G915.md). |
+| G915 TKL | LIGHTSPEED receiver | Works | Lighting effects, colour, speed, direction, brightness, the Screen effect and profiles. G-Lite sets your lighting again when it starts, but can't save it to the keyboard yet. See [docs/G915.md](docs/G915.md). |
+| G915 and G815 | LIGHTSPEED receiver or USB | Untested | The same as the G915 TKL. |
 | G512 X 75 | USB | Partial | Lighting effects, colour, speed, direction, brightness and profiles, on the keys and the light bar, together or each with its own effect. Not yet: saving to the keyboard, the knobs and actuation. See [docs/G512X.md](docs/G512X.md). |
 | G915 X, G713, G715, PRO X TKL, PRO X 60, G515 RAPID TKL, G512 X 98 and other newer G keyboards | LIGHTSPEED receiver or USB | Untested | Lighting effects, colour, speed, direction, brightness, the Screen effect and profiles. Not saved to the keyboard. The key picture is picked from the keyboard's name (TKL, 60%, 75%, full size) and may not match. |
 | G213 | USB | Works | Off, Static, Breathe, Cycle and Wave on the whole keyboard, Off and Static on each of its five areas, with colour, speed, direction and brightness, a live key picture, and profiles. The keyboard can't store lighting (G HUB can't either), so G-Lite sets it again at each start. See [docs/G213.md](docs/G213.md). |

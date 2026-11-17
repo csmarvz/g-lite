@@ -345,10 +345,11 @@ class FakeLight : Hidpp
 
 class FakeG915 : Hidpp
 {
-    Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8071, 10 }, { 0x8040, 20 }, { 0x8100, 21 } };
+    Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8071, 10 }, { 0x8040, 20 }, { 0x8100, 21 }, { 0x4540, 16 } };
     public byte[][] Ids = { new byte[] { 0x00, 0x01, 0x03, 0x0A }, new byte[] { 0x00, 0x01, 0x0A, 0x03, 0x04, 0x0B } };
     public readonly byte[][] Live = { new byte[13], new byte[13] };
     public int Brightness = 80, Claimed;
+    public byte Layout = 1;
 
     public FakeG915() : base(false) { }
 
@@ -356,7 +357,7 @@ class FakeG915 : Hidpp
     {
         return new FakeG915
         {
-            Index = new Dictionary<int, byte> { { 0x8071, 6 }, { 0x8081, 7 }, { 0x8040, 8 }, { 0x8101, 9 } },
+            Index = new Dictionary<int, byte> { { 0x8071, 6 }, { 0x8081, 7 }, { 0x8040, 8 }, { 0x8101, 9 }, { 0x4540, 10 } },
             Ids = new[] { new byte[] { 0x00, 0x01, 0x0A, 0x15, 0x16, 0x17, 0x18 }, new byte[] { 0x00, 0x01, 0x0A, 0x15, 0x16, 0x18 } }
         };
     }
@@ -368,6 +369,7 @@ class FakeG915 : Hidpp
         Latency.Pause();
         var r = new byte[16];
         if (feat == 0) { byte i; r[0] = Index.TryGetValue(p[0] << 8 | p[1], out i) ? i : (byte)0; }
+        else if (feat == Index[0x4540]) r[0] = Layout;
         else if (feat == Index[0x8040])
         {
             if (fn == 1) { r[0] = (byte)(Brightness >> 8); r[1] = (byte)Brightness; }
