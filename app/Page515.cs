@@ -360,6 +360,7 @@ class Page515 : DevicePage
     readonly ColorRow colors;
     readonly Slider speed, bright;
     readonly Drop idleBox, dimBox, sleepBox;
+    readonly int never;
     readonly Btn saveBtn, backupsBtn;
     readonly KeyPicture picture;
     Backups.Entry fix;
@@ -543,9 +544,11 @@ class Page515 : DevicePage
         noteText.AutoSize = false;
         noteText.Size = new Size(196, 200);
         noteText.Visible = note;
-        idleBox = Choice(idle, "Dim after", IdleText, 40, i => cur.Idle = IdleSecs[i]);
+        // The G915 TKL reads 0 as at once, not never (tried on an owner's keyboard), so its profile keyboards don't offer Never.
+        never = kind.Profile ? 1 : 0;
+        idleBox = Choice(idle, "Dim after", IdleText.Skip(never).ToArray(), 40, i => cur.Idle = IdleSecs[i + never]);
         dimBox = Choice(idle, "Dim to", DimText, 98, i => cur.Dim = DimPcts[i]);
-        sleepBox = Choice(idle, "Turn off after", SleepText, 156, i => cur.Sleep = SleepSecs[i]);
+        sleepBox = Choice(idle, "Turn off after", SleepText.Skip(never).ToArray(), 156, i => cur.Sleep = SleepSecs[i + never]);
         if (note) foreach (Control c in idle.Controls) if (c != noteText && c.Top > 30) c.Visible = false;
 
         saveBtn = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Save to keyboard", Visible = !note }, 496, 685, 140, 32);
@@ -1015,9 +1018,9 @@ class Page515 : DevicePage
         bright.Value = brightness;
         brightValue.Text = brightness + "%";
         bright.Invalidate();
-        idleBox.Index = Near(IdleSecs, cur.Idle);
+        idleBox.Index = Near(IdleSecs.Skip(never).ToArray(), cur.Idle);
         dimBox.Index = Near(DimPcts, cur.Dim);
-        sleepBox.Index = Near(SleepSecs, cur.Sleep);
+        sleepBox.Index = Near(SleepSecs.Skip(never).ToArray(), cur.Sleep);
         dimBox.Enabled = cur.Idle > 0;
         saveBtn.Enabled = dirty && !broken;
         picture.Display(known ? cur : null, known ? bar : null, brightness);

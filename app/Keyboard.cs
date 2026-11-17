@@ -732,6 +732,7 @@ static class G915
     public static byte[] Build(byte[] profile, List<byte[]> clusters, Lighting l, Lighting others)
     {
         if (clusters.Count != 2) throw new Refused("Saving isn't supported on this keyboard (" + clusters.Count + " lighting clusters)");
+        if (l.Idle <= 0 || l.Sleep <= 0) throw new Refused("This keyboard can't keep its lighting on forever: 0 dims and turns it off at once");
         var p = (byte[])profile.Clone();
         int keys = Keys(clusters);
         for (int c = 0; c < 2; c++)
