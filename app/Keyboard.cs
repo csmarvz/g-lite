@@ -673,7 +673,7 @@ static class G915
         if (h.Call(o, 2)[0] != 1) throw new Refused("The keyboard isn't on its onboard profiles");
         var info = h.Call(o, 0);
         int size = info[7] << 8 | info[8];
-        if (info[1] != 4 || size < 0xF0 || size > 0x1000) throw new Refused("Saving isn't supported on this keyboard (profile format " + info[1] + ")");
+        if (info[1] != 4 || size < Records + 44 + 2 || size > 0x1000) throw new Refused("Saving isn't supported on this keyboard (profile format " + info[1] + ")");
         var current = h.Call(o, 4);
         sector = current[0] << 8 | current[1];
         if (sector == 0 || sector >= 0x100) throw new Refused("The keyboard runs a factory profile");

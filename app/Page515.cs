@@ -693,6 +693,7 @@ class Page515 : DevicePage
         if (!quiet) { ClaimLights(h); return; }
         if (found.Has(0x8101)) h.Quiet(h.F(0x8101), 6, 0x05);
         h.Quiet(h.F(0x8071), 5, 0x01, 0x03, 0x04);
+        if (!found.Has(0x8101)) try { h.Quiet(h.F(0x8071), 8, 0x01, 0x01, 0x00); } catch (HidppError) { }
     }
 
     void ClaimLights(Hidpp h)
@@ -934,7 +935,7 @@ class Page515 : DevicePage
 
     protected override bool Damaged { get { return broken; } }
 
-    protected override bool Unsaved { get { return cur != null && (live ? Known() : stored != null && (dirty || Screening)); } }
+    protected override bool Unsaved { get { return cur != null && (live && kind.Profile ? dirty || Screening : live ? Known() : stored != null && (dirty || Screening)); } }
 
     protected override string Current() { return cur.ToText(brightness) + BarText(brightness) + (Screening ? "|" + setup.ToText() : ""); }
 
@@ -1174,7 +1175,7 @@ class Page515 : DevicePage
         });
     }
 
-    string ProfileBackups { get { return "G915-" + found.Wpid.ToString("X4"); } }
+    string ProfileBackups { get { return found.Slug; } }
 
     // Saves into the active onboard profile, after a backup of it. The keyboard then runs the lighting itself, so nothing is
     // remembered to send again.
@@ -1183,6 +1184,8 @@ class Page515 : DevicePage
         var l = cur.Clone();
         var others = bar == null ? null : bar.Clone();
         int n = edits;
+        debounce.Stop();
+        previewSeq++;
         saveBtn.Enabled = false;
         Say("Saving…");
         Did("Save to keyboard");
@@ -1215,7 +1218,7 @@ class Page515 : DevicePage
 
     void ShowProfileBackups()
     {
-        BackupMenu(backupsBtn, ProfileBackups, "Restore the factory lighting", RestoreFactoryLighting,
+        BackupMenu(backupsBtn, ProfileBackups, "Restore the factory lighting", () => RestoreProfile(null),
             e =>
             {
                 if (BackupSector(e) < 0) return "damaged, can't be restored";
@@ -1225,36 +1228,12 @@ class Page515 : DevicePage
             e => BackupSector(e) > 0, RestoreProfile);
     }
 
-    void RestoreFactoryLighting()
-    {
-        const string what = "the factory lighting";
-        debounce.Stop();
-        previewSeq++;
-        saveBtn.Enabled = false;
-        Say("Restoring " + what + "…");
-        Did("Restore " + what);
-        Do(h =>
-        {
-            int sector;
-            var p = G915.ReadProfile(h, out sector);
-            var built = G915.FactoryLighting(h, sector, p);
-            Backups.Save(ProfileBackups, new Dictionary<string, byte[]> { { sector.ToString("X4"), p } }, Who);
-            G915.Store(h, sector, built);
-            claimed = false;
-        }, () =>
-        {
-            Settings.Remove(Remembered);
-            Note = "Restored " + what;
-            dirty = false;
-            Load();
-        });
-    }
-
+    // A null backup restores the factory lighting.
     void RestoreProfile(Backups.Entry e)
     {
-        int sector = BackupSector(e);
-        var p = e.Data.Values.First();
-        string what = "the backup from " + When(e);
+        int sector = e == null ? -1 : BackupSector(e);
+        var backup = e == null ? null : e.Data.Values.First();
+        string what = e == null ? "the factory lighting" : "the backup from " + When(e);
         debounce.Stop();
         previewSeq++;
         saveBtn.Enabled = false;
@@ -1264,9 +1243,10 @@ class Page515 : DevicePage
         {
             int now;
             var current = G915.ReadProfile(h, out now);
-            if (now != sector) throw new Refused("The keyboard runs another profile than the one in this backup");
+            if (backup != null && now != sector) throw new Refused("The keyboard runs another profile than the one in this backup");
+            var p = backup ?? G915.FactoryLighting(h, now, current);
             Backups.Save(ProfileBackups, new Dictionary<string, byte[]> { { now.ToString("X4"), current } }, Who);
-            G915.Store(h, sector, p);
+            G915.Store(h, now, p);
             claimed = false;
         }, () =>
         {
@@ -1330,9 +1310,11 @@ class Page515 : DevicePage
         {
             if (readLayout) layoutCode = h.Call(h.F(0x4540), 0)[0];
             clusters = G915.Clusters(h);
-            if (kind.Profile)
+            // Only when nothing is remembered: a remembered lighting replaces what's saved. Optional, so any failure leaves the
+            // screen on live lighting as before.
+            if (kind.Profile && l == null)
                 try { int sector; saved = G915.Decode(G915.ReadProfile(h, out sector), G915.Keys(clusters)); }
-                catch (Refused) { }
+                catch (Exception) { }
             if (l != null && seq == previewSeq && !screening)
             {
                 if (kb >= 0 && kb <= 100 && kb != G515.Brightness(h)) G515.SetBrightness(h, kb);

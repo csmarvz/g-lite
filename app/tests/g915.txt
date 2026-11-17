@@ -67,7 +67,7 @@ open
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8040 fn1
-  = status "Matches the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 [Revert] [Save to keyboard (off)]
+  = status "Matches the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 [Revert (off)] [Save to keyboard (off)]
 pick Effect Static
   8040 fn1
   8071 fn5  01 03 04
@@ -141,7 +141,7 @@ pick Preset None
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8040 fn1
-  = status "Matches the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert] [Save to keyboard (off)]
+  = status "Matches the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert (off)] [Save to keyboard (off)]
 pick Preset Green
   8040 fn1
   8071 fn5  01 03 04
