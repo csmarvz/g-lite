@@ -1,0 +1,33 @@
+G-Lite device report
+G-Lite 0.0.20-alpha · Windows 11 build 26200
+2026-11-12 08:20 UTC
+
+Device    Wireless Keyboard
+Kind      keyboard
+Link      Unifying · slot 1 · ID 4023 · USB 046D:C534
+Model     –
+Firmware  RQK 49.00 · build 0029
+Battery   30%
+Screen    none, not supported yet
+
+Features
+01 0001 v0  feature set
+02 0003 v0  firmware
+03 0005 v0  name
+04 1000 v0  battery
+05 1B00 v0
+06 1D4B v0  wireless status
+07 40A0 v0
+08 4100 v0
+09 4520 v0
+0A 1810 v0  hidden internal
+0B 1830 v0  hidden internal
+0C 1890 v0  hidden internal
+0D 18A0 v0  hidden internal
+0E 18B0 v0  hidden internal
+0F 1DF3 v0  hidden internal
+10 1E00 v0  hidden
+11 1868 v0  hidden internal
+
+0003 firmware
+entity 0=00 52 51 4B 49 00 00 29 00 40 23 00 00 00 00 00

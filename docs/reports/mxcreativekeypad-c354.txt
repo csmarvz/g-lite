@@ -1,0 +1,79 @@
+G-Lite device report
+
+G-Lite 0.0.23-alpha · Windows 11 build 26300
+
+2026-11-12 23:47 UTC
+
+Device MX Creative Keypad
+
+Kind device
+
+Link USB · USB 046D:C354
+
+Model USB C354
+
+Firmware U1 66.00 · build 0017
+
+Battery –
+
+Screen none, not supported yet
+
+Features
+
+01 0001 v2 feature set
+
+02 0003 v7 firmware
+
+03 0005 v5 name
+
+04 0008 v1
+
+05 0011 v0
+
+06 00C3 v1
+
+07 1602 v0
+
+08 1802 v0 hidden internal
+
+09 1805 v0 hidden internal
+
+0A 1807 v4 hidden internal
+
+0B 1B04 v6 controls
+
+0C 1E00 v0 hidden
+
+0D 1E02 v0 hidden internal
+
+0E 1EB0 v0 hidden internal
+
+0F 8040 v1 brightness
+
+10 92E2 v0 hidden internal
+
+11 180B v0 hidden internal
+
+0003 firmware
+
+entity 0=01 42 4C 32 20 00 00 17 00 AB D4 00 00 00 00 00
+
+entity 1=00 55 31 00 66 00 00 17 01 C3 54 00 00 00 00 00
+
+entity 2=0B 49 4D 00 01 00 00 17 00 C3 54 00 00 00 00 00
+
+entity 3=02 48 57 20 00 00 00 00 00 00 00 00 00 00 00 00
+
+1B04 controls
+
+count=02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+control 0=01 A1 00 00 20 00 01 00 00 00 00 00 00 00 00 00
+
+control 1=01 A2 00 00 20 00 01 00 00 00 00 00 00 00 00 00
+
+8040 brightness
+
+info=00 64 65 10 00 00 00 00 00 00 00 00 00 00 00 00
+
+now=00 64 00 00 00 00 00 00 00 00 00 00 00 00 00 00

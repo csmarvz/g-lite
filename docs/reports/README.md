@@ -1,10 +1,20 @@
 # Device reports
 
-Reports from G-Lite's Report button, kept as they were sent, so the facts in the other docs can be checked against the bytes. A report leaves out the unit ID (the serial), the friendly name and the device path.
+Reports from G-Lite's Report button, kept as they were sent, so the facts in the other docs can be checked against the bytes. A report leaves out the unit ID (the serial), the friendly name and the device path. Only the latest report of each device is kept. Reports from before 0.0.31 separate values with a middle dot, as G-Lite did then.
 
 | File | Device | Firmware | Date | From | Used in |
 |---|---|---|---|---|---|
 | [g515-40b4.txt](g515-40b4.txt) | G515 LIGHTSPEED TKL (40B4, USB C355), Swiss layout, through its receiver | MPK 25.02, build 0013 | 2026-11-18 | The maintainer's keyboard | `G515Profile` in `app/Keyboard.cs` |
-| [gprowireless-4079.txt](gprowireless-4079.txt) | G Pro Wireless (4079, USB C088), through its receiver | MPM 15.02, build 0026 | 2026-11-18 | The maintainer's mouse | `MouseProtocol` in `app/Mouse.cs` |
-| [proxwireless-0aba.txt](proxwireless-0aba.txt) | PRO X Wireless headset, through its dongle (USB 0ABA) | U1 12.01, build 0203 | 2026-11-18 | The maintainer's headset | `HeadsetProtocol` in `app/Headset.cs` |
+| [g915tkl-408e.txt](g915tkl-408e.txt) | G915 TKL (408E, USB C343), Swiss layout, through its receiver | MPK 14.02, build 0022 | 2026-11-17 | An owner | [G915.md](../G915.md) |
 | [g815-c33f.txt](g815-c33f.txt) | G815 (USB C33F), Swiss layout | U1 31.02, build 0018 | 2026-11-18 | An owner | [G915.md](../G915.md) |
+| [g512x75-c35f.txt](g512x75-c35f.txt) | G512 X 75 (USB C35F) | U1 81.05, build 0020 | 2026-11-11 | An owner | [G512X.md](../G512X.md) |
+| [g213-c336.txt](g213-c336.txt) | G213 (USB C336) | U1 09.00, build 0006 | 2026-11-15 | The maintainer's keyboard | [G213.md](../G213.md) |
+| [g510s-c22d.txt](g510s-c22d.txt) | G510s (USB C22D), no HID++ | | 2026-11-14 | An owner | [G510.md](../G510.md) |
+| [gprowireless-4079.txt](gprowireless-4079.txt) | G Pro Wireless (4079, USB C088), through its receiver | MPM 15.02, build 0026 | 2026-11-18 | The maintainer's mouse | `MouseProtocol` in `app/Mouse.cs` |
+| [g502lightspeed-407f.txt](g502lightspeed-407f.txt) | G502 LIGHTSPEED (407F, USB C08D), through its receiver | MPM 17.00, build 0008 | 2026-11-10 | The maintainer's mouse | `Bindings` and `ButtonSpy` in `app/Mouse.cs` |
+| [g305-4074.txt](g305-4074.txt) | G305 (4074), through its receiver | RQM 68.02, build 0021 | 2026-11-10 | The maintainer's mouse | `FakeMouse.G305` in `app/Fake.cs`, [adding-a-device.md](../adding-a-device.md) |
+| [proxwireless-0aba.txt](proxwireless-0aba.txt) | PRO X Wireless headset, through its dongle (USB 0ABA) | U1 12.01, build 0203 | 2026-11-18 | The maintainer's headset | `HeadsetProtocol` in `app/Headset.cs` |
+| [g560-0a78.txt](g560-0a78.txt) | G560 speakers (USB 0A78) | U1 22.03, build 0023 | 2026-11-11 | An owner | [G560.md](../G560.md) |
+| [k295-4023.txt](k295-4023.txt) | K270/K295 "Wireless Keyboard" (4023), through its receiver | RQK 49.00, build 0029 | 2026-11-12 | The maintainer's keyboard | [K295.md](../K295.md) |
+| [mxkeyss-b378.txt](mxkeyss-b378.txt) | MX Keys S (Bluetooth B378), Swiss layout | RBK 81.02, build 0017 | 2026-11-17 | The maintainer's keyboard | [other-devices.md](../other-devices.md) |
+| [mxcreativekeypad-c354.txt](mxcreativekeypad-c354.txt) | MX Creative Keypad (USB C354) | U1 66.00, build 0017 | 2026-11-12 | An owner | [other-devices.md](../other-devices.md) |

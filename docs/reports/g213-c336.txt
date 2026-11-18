@@ -1,0 +1,63 @@
+G-Lite device report
+G-Lite 0.0.26-alpha · Windows 11 build 26200
+2026-11-15 12:23 UTC
+
+Device    Gaming Keyboard G213
+Kind      keyboard
+Link      USB · USB 046D:C336
+Model     USB C336
+Firmware  U1 09.00 · build 0006
+Battery   –
+Screen    none, not supported yet
+
+Features
+01 0001 v1  feature set
+02 0003 v2  firmware
+03 4522 v0
+04 0005 v0  name
+05 1E00 v0  hidden
+06 4540 v0  keyboard layout
+07 1EB0 v0  hidden internal
+08 8060 v0  report rate
+09 00C2 v0
+0A 1801 v0  hidden internal
+0B 1802 v0  hidden internal
+0C 8070 v5  LED effects
+0D 1821 v0
+0E 1BC0 v0
+0F 1806 v0  hidden internal
+
+0003 firmware
+entity 0=00 55 31 20 09 00 00 06 01 C3 36 00 00 00 00 00
+entity 1=01 42 4F 54 31 00 00 02 00 AA C8 00 00 00 00 00
+
+4540 keyboard layout
+layout=0D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+8060 report rate
+rates=8B 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+now=01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+8070 LED effects
+info=06 00 01 00 00 00 00 00 00 00 00 00 00 00 00 00
+zone 0=00 00 01 05 00 00 00 00 00 00 00 00 00 00 00 00
+zone 0 effect 0=00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+zone 0 effect 1=00 01 00 01 00 05 00 00 00 00 00 00 00 00 00 00
+zone 0 effect 2=00 02 00 0A C0 01 03 E0 00 00 00 00 00 00 00 00
+zone 0 effect 3=00 03 00 03 C0 01 03 E0 00 00 00 00 00 00 00 00
+zone 0 effect 4=00 04 00 04 D4 A1 00 1E 00 00 00 00 00 00 00 00
+zone 1=01 00 06 02 00 00 00 00 00 00 00 00 00 00 00 00
+zone 1 effect 0=01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+zone 1 effect 1=01 01 00 01 00 05 00 00 00 00 00 00 00 00 00 00
+zone 2=02 00 07 02 00 00 00 00 00 00 00 00 00 00 00 00
+zone 2 effect 0=02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+zone 2 effect 1=02 01 00 01 00 05 00 00 00 00 00 00 00 00 00 00
+zone 3=03 00 08 02 00 00 00 00 00 00 00 00 00 00 00 00
+zone 3 effect 0=03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+zone 3 effect 1=03 01 00 01 00 05 00 00 00 00 00 00 00 00 00 00
+zone 4=04 00 09 02 00 00 00 00 00 00 00 00 00 00 00 00
+zone 4 effect 0=04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+zone 4 effect 1=04 01 00 01 00 05 00 00 00 00 00 00 00 00 00 00
+zone 5=05 00 0A 02 00 00 00 00 00 00 00 00 00 00 00 00
+zone 5 effect 0=05 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+zone 5 effect 1=05 01 00 01 00 05 00 00 00 00 00 00 00 00 00 00

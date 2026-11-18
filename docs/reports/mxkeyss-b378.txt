@@ -1,0 +1,91 @@
+G-Lite device report
+G-Lite 0.0.30-alpha · Windows 11 build 26200
+2026-11-17 09:37 UTC
+
+Device    MX Keys S
+Kind      keyboard
+Link      Bluetooth
+Model     Bluetooth B378
+Firmware  RBK 81.02 · build 0017
+Battery   80% · charging
+Screen    PageOther
+
+Features
+01 0001 v2  feature set
+02 0003 v4  firmware
+03 0005 v0  name
+04 1D4B v0  wireless status
+05 0020 v0  config change
+06 0007 v0  friendly name
+07 0011 v0
+08 1004 v3  battery
+09 1B04 v5  controls
+0A 1814 v2  change host
+0B 1815 v2  hosts info
+0C 1982 v3  backlight
+0D 40A3 v0
+0E 4220 v0
+0F 4521 v0
+10 4531 v1
+11 4540 v0  keyboard layout
+12 00C3 v0
+13 1802 v0  hidden internal
+14 1803 v0  hidden internal
+15 1807 v0  hidden internal
+16 1816 v0  hidden internal
+17 1805 v0  hidden internal
+18 1830 v0  hidden internal
+19 1891 v9  hidden internal
+1A 18A1 v0  hidden internal
+1B 1E00 v0  hidden
+1C 1E02 v0  hidden internal
+1D 1602 v0
+1E 1EB0 v0  hidden internal
+1F 1861 v1  hidden internal
+20 1A20 v1  hidden internal
+21 18B0 v1  hidden internal
+
+0003 firmware
+entity 0=01 42 4C 31 88 02 00 17 00 B3 78 00 00 00 00 00
+entity 1=00 52 42 4B 81 02 00 17 01 B3 78 00 00 00 00 00
+entity 2=05 00 00 00 00 00 01 26 00 00 00 00 00 00 00 00
+
+1B04 controls
+count=15 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+control 0=00 C7 00 A3 3A 01 00 00 04 00 00 00 00 00 00 00
+control 1=00 C8 00 A4 3A 02 00 00 04 00 00 00 00 00 00 00
+control 2=00 E2 00 C1 3A 03 00 00 04 00 00 00 00 00 00 00
+control 3=00 E3 00 C2 3A 04 00 00 04 00 00 00 00 00 00 00
+control 4=01 03 00 D8 3A 05 00 00 04 00 00 00 00 00 00 00
+control 5=01 08 00 DD 3A 06 00 00 04 00 00 00 00 00 00 00
+control 6=01 1C 00 F1 3A 07 00 00 04 00 00 00 00 00 00 00
+control 7=00 E4 00 06 3A 08 00 00 04 00 00 00 00 00 00 00
+control 8=00 E5 00 04 3A 09 00 00 04 00 00 00 00 00 00 00
+control 9=00 E6 00 05 3A 0A 00 00 04 00 00 00 00 00 00 00
+control 10=00 E7 00 03 3A 0B 00 00 04 00 00 00 00 00 00 00
+control 11=00 E8 00 02 3A 0C 00 00 04 00 00 00 00 00 00 00
+control 12=00 E9 00 01 34 00 00 00 04 00 00 00 00 00 00 00
+control 13=00 0A 00 0A 34 00 00 00 04 00 00 00 00 00 00 00
+control 14=01 0A 00 DF 34 00 00 00 04 00 00 00 00 00 00 00
+control 15=00 EA 00 C3 34 00 00 00 04 00 00 00 00 00 00 00
+control 16=00 6F 00 44 34 00 00 00 04 00 00 00 00 00 00 00
+control 17=00 D1 00 AE 04 00 00 00 04 00 00 00 00 00 00 00
+control 18=00 D2 00 AF 04 00 00 00 04 00 00 00 00 00 00 00
+control 19=00 D3 00 B0 04 00 00 00 04 00 00 00 00 00 00 00
+control 20=00 DE 00 62 00 00 00 00 04 00 00 00 00 00 00 00
+
+1814 change host
+hosts=03 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+1815 hosts info
+info=13 08 03 00 00 00 00 00 00 00 00 00 00 00 00 00
+host 0=00 01 04 01 03 18 00 00 00 00 00 00 00 00 00 00
+host 1=01 01 04 01 0C 18 00 00 00 00 00 00 00 00 00 00
+host 2=02 00 00 00 00 18 00 00 00 00 00 00 00 00 00 00
+
+1982 backlight
+config=01 1D 3D 03 00 03 06 00 06 00 3C 00 00 00 00 00
+info=08 03 05 00 03 00 06 00 3C 00 00 00 00 00 00 00
+
+4540 keyboard layout
+layout=0D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
