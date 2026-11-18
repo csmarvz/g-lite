@@ -31,7 +31,7 @@ class G510Set
 
 // The G510 and G510s backlight: one colour for the whole keyboard in feature report 0x05 (`05 R G B`), with no brightness or effects of its own,
 // so brightness scales the colour and G-Lite runs Breathe and Cycle by sending frames. From the Linux driver hid-lg-g15 (facts only) and an owner's report (docs/G510.md).
-static class G510
+static class G510Lighting
 {
     public const byte Backlight = 0x05;
 
@@ -51,14 +51,14 @@ static class G510
         if (!s.On) return 0;
         double k = s.Bright / 100.0, phase = ms % s.Period / s.Period;
         if (s.Effect == G510Set.Breathe) return Scale(s.Color, k * (0.5 - 0.5 * Math.Cos(2 * Math.PI * phase)));
-        if (s.Effect == G510Set.Cycle) return Scale(Litra.Hue(phase), k);
+        if (s.Effect == G510Set.Cycle) return Scale(LitraProtocol.Hue(phase), k);
         return Scale(s.Color, k);
     }
 
     public static void Set(Hidpp h, int color, bool quiet = false)
     {
         var report = new[] { Backlight, (byte)(color >> 16), (byte)(color >> 8), (byte)color };
-        if (quiet) h.QuietFeature(report); else h.SetFeature(report);
+        if (quiet) h.SetFeatureUnlogged(report); else h.SetFeature(report);
     }
 }
 
@@ -75,21 +75,21 @@ class PageG510 : DevicePage
     internal override bool Busy { get { return debounce.Enabled; } }
 
     readonly Label lightHead, effectHead, colorHead, brightHead, brightValue, speedHead, speedValue;
-    readonly Seg effects;
+    readonly SegmentedPicker effects;
     readonly ColorRow colors;
     readonly Slider bright, speed;
 
-    string Remembered { get { return "lighting." + found.Slug; } }
+    string Remembered { get { return "lighting." + found.SettingsKey; } }
 
-    public PageG510(Found found, Hidpp fake, MouseEventHandler drag) : base(found, fake, drag, found.Short, "keyboard", "profile." + found.Slug + ".")
+    public PageG510(FoundDevice found, Hidpp fake, MouseEventHandler drag) : base(found, fake, drag, found.ShortName, "keyboard", "profile." + found.SettingsKey + ".")
     {
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };
         animTimer.Tick += (s, e) => Animate();
 
-        var light = Ui.Add(this, new Box(), 20, 118, 616, 256);
-        lightHead = Ui.Text(light, "Backlight", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
+        var light = Ui.Add(this, new RoundedBox(), 20, 118, 616, 256);
+        lightHead = Ui.Text(light, "Backlight", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         effectHead = Ui.Text(light, "Effect", 14, 40, () => Theme.Dim, 9f);
-        effects = Ui.Add(light, new Seg { Items = G510Set.Effects, AccessibleName = "Effect" }, 14, 58, 440, 32);
+        effects = Ui.Add(light, new SegmentedPicker { Items = G510Set.Effects, AccessibleName = "Effect" }, 14, 58, 440, 32);
         effects.Picked += i => Edit(s => { s.On = i > 0; if (i > 0) s.Effect = i - 1; }, true);
         colorHead = Ui.Text(light, "Color", 14, 100, () => Theme.Dim, 9f);
         colors = new ColorRow(light, 117);
@@ -107,7 +107,7 @@ class PageG510 : DevicePage
         note.Size = new Size(588, 36);
 
         cur = G510Set.FromText(Settings.Get(Remembered));
-        Sync();
+        RefreshControls();
         if (cur != null) Load();
     }
 
@@ -117,11 +117,11 @@ class PageG510 : DevicePage
         base.Dispose(disposing);
     }
 
-    public override void Restyle() { Sync(); }
+    public override void Restyle() { RefreshControls(); }
 
     protected override string Current() { return cur == null ? "" : cur.ToText(); }
 
-    protected override void Use(string text)
+    protected override void ApplyPreset(string text)
     {
         var s = G510Set.FromText(text);
         if (s == null) return;
@@ -138,7 +138,7 @@ class PageG510 : DevicePage
         if (read == null) return;
         Settings.Remove(Remembered);
         cur = null;
-        Sync();
+        RefreshControls();
         Send(read.Clone());
     }
 
@@ -155,29 +155,29 @@ class PageG510 : DevicePage
     {
         seq++;
         Edited();
-        Sync();
+        RefreshControls();
         debounce.Stop();
         if (now) Send(); else debounce.Start();
     }
 
-    void Sync()
+    void RefreshControls()
     {
         loading = true;
         var s = cur ?? read;
         bool known = ready && s != null, lit = known && s.On, color = lit && s.Effect != G510Set.Cycle, moving = lit && s.Effect != G510Set.Static;
         lightHead.Text = ready && read == null ? "Backlight (couldn't be read)" : "Backlight";
-        Shade(effectHead, ready);
+        SetDimmed(effectHead, ready);
         effects.Enabled = ready;
         effects.Index = known ? (s.On ? s.Effect + 1 : 0) : -1;
         effects.Invalidate();
-        Shade(colorHead, color);
-        colors.Sync(known ? s.Color : 0xFFFFFF, color);
-        Shade(brightHead, lit);
+        SetDimmed(colorHead, color);
+        colors.RefreshControls(known ? s.Color : 0xFFFFFF, color);
+        SetDimmed(brightHead, lit);
         bright.Enabled = lit;
         bright.Value = known ? s.Bright : 100;
         brightValue.Text = lit ? s.Bright + "%" : "";
         bright.Invalidate();
-        Shade(speedHead, moving);
+        SetDimmed(speedHead, moving);
         speed.Enabled = moving;
         speed.Value = known ? (G510Set.MaxPeriod - s.Period) * 100 / (G510Set.MaxPeriod - G510Set.MinPeriod) : 0;
         speedValue.Text = moving ? speed.Value + "%" : "";
@@ -198,12 +198,12 @@ class PageG510 : DevicePage
     void Animate()
     {
         if (IsDisposed || !Animated || framing || DateTime.UtcNow < pausedUntil) return;
-        int frame = G510.Frame(cur, clock.Elapsed.TotalMilliseconds);
+        int frame = G510Lighting.Frame(cur, clock.Elapsed.TotalMilliseconds);
         if (frame == framed) return;
         framing = true;
-        Do(h =>
+        RunOnDevice(h =>
         {
-            try { G510.Set(h, frame, true); framed = frame; }
+            try { G510Lighting.Set(h, frame, true); framed = frame; }
             finally { framing = false; }
         }, null, msg =>
         {
@@ -211,14 +211,14 @@ class PageG510 : DevicePage
             framing = false;
             framed = -1;
             pausedUntil = DateTime.UtcNow.AddSeconds(10);
-            Say("The keyboard refused the effect's colors: " + msg, true);
+            ShowStatus("The keyboard refused the effect's colors: " + msg, true);
         });
     }
 
-    protected override void Calm()
+    protected override void ClearStatus()
     {
-        if (ready && read == null) { Say("The keyboard didn't answer. Is it plugged in?", true, Load, "Try again"); return; }
-        Say(cur == null ? "" : "Set by G-Lite, not saved to the keyboard");
+        if (ready && read == null) { ShowStatus("The keyboard didn't answer. Is it plugged in?", true, Load, "Try again"); return; }
+        ShowStatus(cur == null ? "" : "Set by G-Lite, not saved to the keyboard");
     }
 
     void Send()
@@ -234,33 +234,33 @@ class PageG510 : DevicePage
         int n = ++seq;
         framed = -1;
         pausedUntil = DateTime.MinValue;
-        if (want.On && want.Effect != G510Set.Static) { Do(h => sent = null, () => { if (n == seq) Calm(); }); return; }
-        Do(h =>
+        if (want.On && want.Effect != G510Set.Static) { RunOnDevice(h => sent = null, () => { if (n == seq) ClearStatus(); }); return; }
+        RunOnDevice(h =>
         {
             if (n != seq || want.Same(sent)) return;
-            G510.Set(h, G510.Frame(want, 0));
+            G510Lighting.Set(h, G510Lighting.Frame(want, 0));
             sent = want;
-        }, () => { if (n == seq) Calm(); });
+        }, () => { if (n == seq) ClearStatus(); });
     }
 
     public override void Load()
     {
         debounce.Stop();
-        Say("Reading the keyboard…");
+        ShowStatus("Reading the keyboard…");
         var want = cur == null ? null : cur.Clone();
         int color = -1;
-        Do(h =>
+        RunOnDevice(h =>
         {
             sent = null;
             framed = -1;
-            try { color = G510.Read(h); }
+            try { color = G510Lighting.Read(h); }
             catch (System.IO.IOException) { color = -1; }
-            if (want != null && color >= 0 && (!want.On || want.Effect == G510Set.Static)) { G510.Set(h, G510.Frame(want, 0)); sent = want; }
+            if (want != null && color >= 0 && (!want.On || want.Effect == G510Set.Static)) { G510Lighting.Set(h, G510Lighting.Frame(want, 0)); sent = want; }
         }, () =>
         {
             ready = true;
             read = color < 0 ? null : new G510Set { On = color != 0, Color = color == 0 ? 0xFFFFFF : color, Bright = 100 };
-            Sync();
+            RefreshControls();
             Loaded();
         });
     }

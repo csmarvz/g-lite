@@ -12,26 +12,26 @@ class HidppError : Exception
     public HidppError(int code, string msg) : base(msg) { Code = code; }
 }
 
-class Refused : Exception
+class RefusedException : Exception
 {
-    public Refused(string msg) : base(msg) { }
+    public RefusedException(string msg) : base(msg) { }
 }
 
-class HalfWritten : Refused
+class HalfWrittenException : RefusedException
 {
-    public HalfWritten(string msg) : base(msg) { }
+    public HalfWrittenException(string msg) : base(msg) { }
 }
 
 class Hidpp : IDisposable
 {
     int calls = new Random().Next(12);
-    readonly byte Idx = 1;
-    public bool Direct { get { return Idx == 0xFF; } }
-    FileStream fs, shortStream;
-    byte[] rbuf = new byte[20], shortBuffer = new byte[7];
+    readonly byte DeviceIndex = 1;
+    public bool Direct { get { return DeviceIndex == 0xFF; } }
+    FileStream longStream, shortStream;
+    byte[] longBuffer = new byte[20], shortBuffer = new byte[7];
     Task<int> pending, shortPending;
     Dictionary<int, byte> features = new Dictionary<int, byte>();
-    public string Who;
+    public string DeviceLabel;
     public static Action<string> Tap;
     readonly string path;
     int featureLength;
@@ -64,11 +64,11 @@ class Hidpp : IDisposable
 
     public Hidpp(string path, byte index)
     {
-        Idx = index;
+        DeviceIndex = index;
         this.path = path;
         var h = CreateFile(path, 0xC0000000, 3, IntPtr.Zero, 3, 0x40000000, IntPtr.Zero);
         if (h.IsInvalid) throw new IOException("Can't open the device (error " + Marshal.GetLastWin32Error() + ")");
-        fs = new FileStream(h, FileAccess.ReadWrite, 1, true);
+        longStream = new FileStream(h, FileAccess.ReadWrite, 1, true);
     }
 
     public Hidpp(string path, byte index, string shortPath) : this(path, index)
@@ -78,7 +78,7 @@ class Hidpp : IDisposable
         if (!handle.IsInvalid) shortStream = new FileStream(handle, FileAccess.ReadWrite, 1, true);
     }
 
-    public virtual void Dispose() { fs.Dispose(); if (shortStream != null) shortStream.Dispose(); }
+    public virtual void Dispose() { longStream.Dispose(); if (shortStream != null) shortStream.Dispose(); }
 
     public byte[] Register(byte subId, byte register, params byte[] parameters)
     {
@@ -87,11 +87,11 @@ class Hidpp : IDisposable
         try
         {
             var reply = SendRegister(subId, register, parameters);
-            if (isSet && Who != null) Log.Register(Who, register, parameters, "ok");
+            if (isSet && DeviceLabel != null) Log.Register(DeviceLabel, register, parameters, "ok");
             return reply;
         }
-        catch (HidppError e) { if (isSet && Who != null) Log.Register(Who, register, parameters, "error " + e.Code.ToString("X2")); throw; }
-        catch (TimeoutException) { if (Who != null) Log.Register(Who, register, parameters, "no answer"); throw; }
+        catch (HidppError e) { if (isSet && DeviceLabel != null) Log.Register(DeviceLabel, register, parameters, "error " + e.Code.ToString("X2")); throw; }
+        catch (TimeoutException) { if (DeviceLabel != null) Log.Register(DeviceLabel, register, parameters, "no answer"); throw; }
     }
 
     protected virtual byte[] SendRegister(byte subId, byte register, byte[] parameters)
@@ -100,17 +100,17 @@ class Hidpp : IDisposable
         bool isLong = subId == 0x82;
         var message = new byte[isLong ? 20 : 7];
         message[0] = isLong ? (byte)0x11 : (byte)0x10;
-        message[1] = Idx;
+        message[1] = DeviceIndex;
         message[2] = subId;
         message[3] = register;
         Array.Copy(parameters, 0, message, 4, Math.Min(parameters.Length, message.Length - 4));
-        (isLong ? fs : shortStream).Write(message, 0, message.Length);
+        (isLong ? longStream : shortStream).Write(message, 0, message.Length);
         var deadline = DateTime.UtcNow.AddSeconds(3);
         while (true)
         {
             var reply = ReadBoth(deadline);
             if (reply == null) throw new TimeoutException("The device didn't answer. Is it on?");
-            if (reply[1] != Idx) continue;
+            if (reply[1] != DeviceIndex) continue;
             if (reply[2] == 0x8F && reply[3] == subId && reply[4] == register)
                 throw new HidppError(reply[5], string.Format("HID++ 1.0 error 0x{0:x2} (register {1:x2})", reply[5], register));
             if (reply[2] == subId && reply[3] == register) return reply.Skip(4).ToArray();
@@ -123,10 +123,10 @@ class Hidpp : IDisposable
         try
         {
             SendUpload(subId, sequence, data);
-            if (Who != null) Log.Upload(Who, subId, sequence, "ok");
+            if (DeviceLabel != null) Log.Upload(DeviceLabel, subId, sequence, "ok");
         }
-        catch (HidppError e) { if (Who != null) Log.Upload(Who, subId, sequence, "error " + e.Code.ToString("X2")); throw; }
-        catch (TimeoutException) { if (Who != null) Log.Upload(Who, subId, sequence, "no answer"); throw; }
+        catch (HidppError e) { if (DeviceLabel != null) Log.Upload(DeviceLabel, subId, sequence, "error " + e.Code.ToString("X2")); throw; }
+        catch (TimeoutException) { if (DeviceLabel != null) Log.Upload(DeviceLabel, subId, sequence, "no answer"); throw; }
     }
 
     protected virtual void SendUpload(byte subId, byte sequence, byte[] data)
@@ -134,17 +134,17 @@ class Hidpp : IDisposable
         if (shortStream == null) throw new NotSupportedException("The device has no HID++ 1.0 channel");
         var message = new byte[20];
         message[0] = 0x11;
-        message[1] = Idx;
+        message[1] = DeviceIndex;
         message[2] = subId;
         message[3] = sequence;
         Array.Copy(data, 0, message, 4, Math.Min(data.Length, 16));
-        fs.Write(message, 0, message.Length);
+        longStream.Write(message, 0, message.Length);
         var deadline = DateTime.UtcNow.AddSeconds(3);
         while (true)
         {
             var reply = ReadBoth(deadline);
             if (reply == null) throw new TimeoutException("The mouse didn't take the upload");
-            if (reply[1] != Idx) continue;
+            if (reply[1] != DeviceIndex) continue;
             if (reply[2] == 0x8F && reply[3] == subId) throw new HidppError(reply[5], string.Format("HID++ 1.0 error 0x{0:x2} (upload)", reply[5]));
             if (reply[2] != 0x50) continue;
             // An error ack doesn't repeat the sequence number (cvuchener's g500 doc/hidpp10.md: byte 4 "if there was no error").
@@ -156,7 +156,7 @@ class Hidpp : IDisposable
 
     byte[] ReadBoth(DateTime deadline)
     {
-        if (pending == null) pending = fs.ReadAsync(rbuf, 0, 20);
+        if (pending == null) pending = longStream.ReadAsync(longBuffer, 0, 20);
         if (shortPending == null) shortPending = shortStream.ReadAsync(shortBuffer, 0, 7);
         var ms = (int)(deadline - DateTime.UtcNow).TotalMilliseconds;
         if (ms <= 0) return null;
@@ -165,7 +165,7 @@ class Hidpp : IDisposable
         var done = which == 0 ? pending : shortPending;
         if (which == 0) pending = null; else shortPending = null;
         if (done.IsFaulted || done.IsCanceled) throw new IOException("The device stopped answering. Was it unplugged?");
-        if (which == 0) return (byte[])rbuf.Clone();
+        if (which == 0) return (byte[])longBuffer.Clone();
         var reply = new byte[20];
         Array.Copy(shortBuffer, reply, 7);
         return reply;
@@ -174,27 +174,27 @@ class Hidpp : IDisposable
     public byte[] Call(byte feat, int fn, params byte[] p)
     {
         Record(feat, fn, p);
-        if (Who == null || feat == 0) return Send(feat, fn, p);
+        if (DeviceLabel == null || feat == 0) return Send(feat, fn, p);
         int id = features.Where(x => x.Value == feat).Select(x => x.Key).FirstOrDefault();
         bool read = Log.Reads(id, fn);
         try
         {
             var r = Send(feat, fn, p);
-            if (!read) Log.Sent(Who, id, fn, p, "ok");
+            if (!read) Log.Sent(DeviceLabel, id, fn, p, "ok");
             return r;
         }
-        catch (HidppError e) { if (!read) Log.Sent(Who, id, fn, p, "error " + e.Code.ToString("X2")); throw; }
-        catch (TimeoutException) { Log.Sent(Who, id, fn, p, "no answer"); throw; }
+        catch (HidppError e) { if (!read) Log.Sent(DeviceLabel, id, fn, p, "error " + e.Code.ToString("X2")); throw; }
+        catch (TimeoutException) { Log.Sent(DeviceLabel, id, fn, p, "no answer"); throw; }
     }
 
-    public byte[] Quiet(byte feat, int fn, params byte[] p) { Record(feat, fn, p); return Send(feat, fn, p); }
+    public byte[] CallUnlogged(byte feat, int fn, params byte[] p) { Record(feat, fn, p); return Send(feat, fn, p); }
 
     // For a call the device doesn't answer, like 0x1814 fn 1: it switches to another computer first.
-    public void Fire(byte feat, int fn, params byte[] p)
+    public void SendWithoutReply(byte feat, int fn, params byte[] p)
     {
         Record(feat, fn, p);
         Write(feat, fn, p);
-        if (Who != null) Log.Sent(Who, features.Where(pair => pair.Value == feat).Select(pair => pair.Key).FirstOrDefault(), fn, p, "sent");
+        if (DeviceLabel != null) Log.Sent(DeviceLabel, features.Where(pair => pair.Value == feat).Select(pair => pair.Key).FirstOrDefault(), fn, p, "sent");
     }
 
     protected virtual void Write(byte feat, int fn, byte[] p) { Message(feat, fn, p); }
@@ -202,9 +202,9 @@ class Hidpp : IDisposable
     byte[] Message(byte feat, int fn, byte[] p)
     {
         var msg = new byte[20];
-        msg[0] = 0x11; msg[1] = Idx; msg[2] = feat; msg[3] = (byte)(fn << 4 | 1 + (System.Threading.Interlocked.Increment(ref calls) & 0x7FFFFFFF) % 12);
+        msg[0] = 0x11; msg[1] = DeviceIndex; msg[2] = feat; msg[3] = (byte)(fn << 4 | 1 + (System.Threading.Interlocked.Increment(ref calls) & 0x7FFFFFFF) % 12);
         Array.Copy(p, 0, msg, 4, p.Length);
-        fs.Write(msg, 0, 20);
+        longStream.Write(msg, 0, 20);
         return msg;
     }
 
@@ -216,7 +216,7 @@ class Hidpp : IDisposable
         {
             var r = Read(deadline);
             if (r == null) throw new TimeoutException("The device didn't answer. Is it on?");
-            if (r[1] != Idx) continue;
+            if (r[1] != DeviceIndex) continue;
             if (r[2] == 0xFF && r[3] == feat && r[4] == msg[3])
                 throw new HidppError(r[5], string.Format("HID++ error 0x{0:x2} (feature {1}, fn {2})", r[5], feat, fn));
             if (r[2] == feat && r[3] == msg[3]) return r.Skip(4).ToArray();
@@ -225,11 +225,11 @@ class Hidpp : IDisposable
 
     byte[] Read(DateTime deadline)
     {
-        if (pending == null) pending = fs.ReadAsync(rbuf, 0, 20);
+        if (pending == null) pending = longStream.ReadAsync(longBuffer, 0, 20);
         var ms = (int)(deadline - DateTime.UtcNow).TotalMilliseconds;
         if (ms <= 0 || !pending.Wait(ms)) return null;
         pending = null;
-        return (byte[])rbuf.Clone();
+        return (byte[])longBuffer.Clone();
     }
 
     // Feature reports, for the devices that don't speak HID++ (the G510). Each call opens the collection without overlapped I/O, which HidD_GetFeature and HidD_SetFeature need.
@@ -245,13 +245,13 @@ class Hidpp : IDisposable
         try
         {
             WriteFeature(report);
-            if (Who != null) Log.Add(Who, "sent", "feature" + Bytes(report, 16), "ok");
+            if (DeviceLabel != null) Log.Add(DeviceLabel, "sent", "feature" + Bytes(report, 16), "ok");
         }
-        catch (IOException) { if (Who != null) Log.Add(Who, "sent", "feature" + Bytes(report, 16), "error"); throw; }
+        catch (IOException) { if (DeviceLabel != null) Log.Add(DeviceLabel, "sent", "feature" + Bytes(report, 16), "error"); throw; }
     }
 
     // For animation frames: tapped for traces but kept out of the log, like Quiet.
-    public void QuietFeature(params byte[] report)
+    public void SetFeatureUnlogged(params byte[] report)
     {
         if (Tap != null) Tap("set feature" + Bytes(report, 16));
         WriteFeature(report);
@@ -290,7 +290,7 @@ class Hidpp : IDisposable
         return Math.Max(1, featureLength);
     }
 
-    public byte F(int id)
+    public byte FeatureIndex(int id)
     {
         byte i;
         if (!features.TryGetValue(id, out i))
@@ -302,12 +302,12 @@ class Hidpp : IDisposable
     }
 }
 
-class EffectDef
+class EffectInfo
 {
     public byte Id;
     public string Name;
     public bool Color, Speed, Direction;
-    public int MinP, MaxP, DefP;
+    public int MinPeriod, MaxPeriod, DefaultPeriod;
 }
 
 class Lighting
@@ -338,19 +338,19 @@ class Lighting
     }
 }
 
-static class G515
+static class G515Profile
 {
-    public static readonly EffectDef[] Effects =
+    public static readonly EffectInfo[] Effects =
     {
-        new EffectDef { Id = 0x00, Name = "Off" },
-        new EffectDef { Id = 0x01, Name = "Static", Color = true },
-        new EffectDef { Id = 0x0A, Name = "Breathe", Color = true, Speed = true, MinP = 1000, MaxP = 20000, DefP = 5000 },
-        new EffectDef { Id = 0x15, Name = "Cycle", Speed = true, MinP = 1000, MaxP = 20000, DefP = 5000 },
-        new EffectDef { Id = 0x16, Name = "Wave", Speed = true, Direction = true, MinP = 1000, MaxP = 20000, DefP = 5000 },
-        new EffectDef { Id = 0x17, Name = "Ripple", Color = true, Speed = true, MinP = 2, MaxP = 200, DefP = 20 },
+        new EffectInfo { Id = 0x00, Name = "Off" },
+        new EffectInfo { Id = 0x01, Name = "Static", Color = true },
+        new EffectInfo { Id = 0x0A, Name = "Breathe", Color = true, Speed = true, MinPeriod = 1000, MaxPeriod = 20000, DefaultPeriod = 5000 },
+        new EffectInfo { Id = 0x15, Name = "Cycle", Speed = true, MinPeriod = 1000, MaxPeriod = 20000, DefaultPeriod = 5000 },
+        new EffectInfo { Id = 0x16, Name = "Wave", Speed = true, Direction = true, MinPeriod = 1000, MaxPeriod = 20000, DefaultPeriod = 5000 },
+        new EffectInfo { Id = 0x17, Name = "Ripple", Color = true, Speed = true, MinPeriod = 2, MaxPeriod = 200, DefaultPeriod = 20 },
     };
 
-    public static EffectDef Def(byte id) { return Effects.FirstOrDefault(e => e.Id == id); }
+    public static EffectInfo EffectById(byte id) { return Effects.FirstOrDefault(e => e.Id == id); }
 
     static int Scale(int c, int pct)
     {
@@ -378,7 +378,7 @@ static class G515
 
     static int Rgb(byte[] r, int o) { return r[o] << 16 | r[o + 1] << 8 | r[o + 2]; }
     static int Max3(int c) { return Math.Max(c >> 16 & 0xFF, Math.Max(c >> 8 & 0xFF, c & 0xFF)); }
-    static int U16(byte[] b, int o) { return b[o] << 8 | b[o + 1]; }
+    static int ReadUInt16BigEndian(byte[] b, int o) { return b[o] << 8 | b[o + 1]; }
     static void Put16(byte[] b, int o, int v) { b[o] = (byte)(v >> 8); b[o + 1] = (byte)v; }
     static void Put32(byte[] b, int o, uint v) { b[o] = (byte)(v >> 24); b[o + 1] = (byte)(v >> 16); b[o + 2] = (byte)(v >> 8); b[o + 3] = (byte)v; }
 
@@ -387,14 +387,14 @@ static class G515
     {
         var rec = p.Skip(30 + ((p[74] & 1) != 0 ? 0 : 11)).Take(11).ToArray();
         var dim = p.Skip(30 + ((p[74] & 2) != 0 ? 22 : 33)).Take(11).ToArray();
-        var def = Def(rec[0]);
+        var def = EffectById(rec[0]);
         if (def == null) return null;
         var l = new Lighting { Effect = rec[0] };
-        int idle = U16(p, 2), sleep = U16(p, 4);
+        int idle = ReadUInt16BigEndian(p, 2), sleep = ReadUInt16BigEndian(p, 4);
         l.Idle = idle == 0xFFFF ? 0 : idle;
         l.Sleep = sleep == 0xFFFF ? 0 : sleep;
         if (def.Color) l.Color = Rgb(rec, 1);
-        if (def.Speed) l.Period = Math.Min(def.MaxP, Math.Max(def.MinP, rec[0] == 0x0A ? U16(rec, 4) : U16(rec, 7)));
+        if (def.Speed) l.Period = Math.Min(def.MaxPeriod, Math.Max(def.MinPeriod, rec[0] == 0x0A ? ReadUInt16BigEndian(rec, 4) : ReadUInt16BigEndian(rec, 7)));
         if (def.Direction) l.Direction = rec[10];
         if (dim[0] == rec[0])
         {
@@ -451,13 +451,13 @@ static class G515
     static byte[] ReadBuffer(Hidpp h, int size)
     {
         var o = new List<byte>();
-        for (int off = 0; off < size; off += 16) o.AddRange(h.Call(h.F(0x8101), 0xC, (byte)(off >> 8), (byte)off));
+        for (int off = 0; off < size; off += 16) o.AddRange(h.Call(h.FeatureIndex(0x8101), 0xC, (byte)(off >> 8), (byte)off));
         return o.Take(size).ToArray();
     }
 
     static byte[] ReadFile(Hidpp h, int addr, int size)
     {
-        try { h.Call(h.F(0x8101), 8, (byte)(addr >> 8), (byte)addr, (byte)(size >> 8), (byte)size); }
+        try { h.Call(h.FeatureIndex(0x8101), 8, (byte)(addr >> 8), (byte)addr, (byte)(size >> 8), (byte)size); }
         catch (HidppError e) { if (e.Code == 4 && addr < 0x0100) return null; throw; }
         return ReadBuffer(h, size);
     }
@@ -465,7 +465,7 @@ static class G515
     static void SaveFile(Hidpp h, int addr, byte[] data, uint checksum)
     {
         if (addr != 0x0000 && addr != 0x0008) throw new InvalidOperationException("refusing to write factory storage");
-        byte f = h.F(0x8101);
+        byte f = h.FeatureIndex(0x8101);
         h.Call(f, 2, 0, (byte)data.Length);
         for (int o = 0; o < data.Length; o += 16) h.Call(f, 3, data.Skip(o).Take(16).ToArray());
         if (!ReadBuffer(h, data.Length).SequenceEqual(data)) throw new IOException("Staging buffer mismatch, nothing written");
@@ -487,50 +487,50 @@ static class G515
         };
     }
 
-    public static void Check(Files f)
+    public static void CheckFiles(Files f)
     {
-        if (!ValidProfile(f.FactoryProfile) || !ValidDir(f.FactoryDir)) throw new Refused("Unknown onboard profile layout, not touching it");
+        if (!ValidProfile(f.FactoryProfile) || !ValidDir(f.FactoryDir)) throw new RefusedException("Unknown onboard profile layout, not touching it");
         if (f.UserProfile == null && f.UserDir == null) return;
         bool ours = f.UserDir == null || (ValidDir(f.UserDir) && f.UserDir[14] == 8);
-        if (ours && (f.UserProfile == null || f.UserDir == null)) throw new HalfWritten("User profile is half written, not touching it");
+        if (ours && (f.UserProfile == null || f.UserDir == null)) throw new HalfWrittenException("User profile is half written, not touching it");
         if (!ours || !ValidProfile(f.UserProfile))
-            throw new Refused("The profiles saved on the keyboard aren't laid out the way G-Lite writes them, not touching them");
+            throw new RefusedException("The profiles saved on the keyboard aren't laid out the way G-Lite writes them, not touching them");
         if (Crc32(f.UserProfile) != (uint)(f.UserDir[10] << 24 | f.UserDir[11] << 16 | f.UserDir[12] << 8 | f.UserDir[13]))
-            throw new HalfWritten("User profile doesn't match its directory entry, not touching it");
+            throw new HalfWrittenException("User profile doesn't match its directory entry, not touching it");
     }
 
-    public static bool Good(Files f)
+    public static bool FilesAreValid(Files f)
     {
-        try { Check(f); return true; } catch (Refused) { return false; }
+        try { CheckFiles(f); return true; } catch (RefusedException) { return false; }
     }
 
     public static Files Snapshot(Hidpp h)
     {
         var f = Read(h);
-        Check(f);
+        CheckFiles(f);
         return f;
     }
 
-    public static int Brightness(Hidpp h) { var r = h.Call(h.F(0x8040), 1); return U16(r, 0); }
-    public static void SetBrightness(Hidpp h, int v) { h.Call(h.F(0x8040), 2, (byte)(v >> 8), (byte)v); }
+    public static int Brightness(Hidpp h) { var r = h.Call(h.FeatureIndex(0x8040), 1); return ReadUInt16BigEndian(r, 0); }
+    public static void SetBrightness(Hidpp h, int v) { h.Call(h.FeatureIndex(0x8040), 2, (byte)(v >> 8), (byte)v); }
 
     public static void Claim(Hidpp h)
     {
-        h.Call(h.F(0x8101), 6, 0x05);
-        h.Call(h.F(0x8071), 5, 0x01, 0x03, 0x04);
+        h.Call(h.FeatureIndex(0x8101), 6, 0x05);
+        h.Call(h.FeatureIndex(0x8071), 5, 0x01, 0x03, 0x04);
     }
 
     public static void Release(Hidpp h)
     {
-        h.Call(h.F(0x8071), 5, 0x01, 0x00, 0x00);
-        h.Call(h.F(0x8101), 6, 0x03);
+        h.Call(h.FeatureIndex(0x8071), 5, 0x01, 0x00, 0x00);
+        h.Call(h.FeatureIndex(0x8101), 6, 0x03);
     }
 
     public static void Preview(Hidpp h, Lighting l) { Preview(h, l, 100); }
 
     public static void Preview(Hidpp h, Lighting l, int level)
     {
-        byte rgb = h.F(0x8071);
+        byte rgb = h.FeatureIndex(0x8071);
         int index = -1;
         for (int e = 0; e < 16 && index < 0; e++)
             if (h.Call(rgb, 0, 0, (byte)e, 0)[3] == l.Effect) index = e;
@@ -543,26 +543,26 @@ static class G515
     public static void Store(Hidpp h, Files f, Lighting l)
     {
         var p = BuildProfile(f.UserProfile ?? f.FactoryProfile, l);
-        Put(h, f, p, BuildDirectory(f.FactoryDir, p));
+        WriteFiles(h, f, p, BuildDirectory(f.FactoryDir, p));
     }
 
     public static void Restore(Hidpp h, Files backup)
     {
         var now = Read(h);
-        if (!ValidProfile(now.FactoryProfile) || !ValidDir(now.FactoryDir)) throw new Refused("Unknown onboard profile layout, not touching it");
+        if (!ValidProfile(now.FactoryProfile) || !ValidDir(now.FactoryDir)) throw new RefusedException("Unknown onboard profile layout, not touching it");
         if (backup.FactoryProfile != null && (!backup.FactoryProfile.SequenceEqual(now.FactoryProfile) || !backup.FactoryDir.SequenceEqual(now.FactoryDir)))
-            throw new Refused("This backup is from a different keyboard, not restoring it");
+            throw new RefusedException("This backup is from a different keyboard, not restoring it");
         if (backup.UserProfile == null)
         {
             var p = (byte[])now.FactoryProfile.Clone();
-            Put(h, now, p, BuildDirectory(now.FactoryDir, p));
+            WriteFiles(h, now, p, BuildDirectory(now.FactoryDir, p));
             return;
         }
-        Check(new Files { FactoryProfile = now.FactoryProfile, FactoryDir = now.FactoryDir, UserProfile = backup.UserProfile, UserDir = backup.UserDir });
-        Put(h, now, backup.UserProfile, backup.UserDir);
+        CheckFiles(new Files { FactoryProfile = now.FactoryProfile, FactoryDir = now.FactoryDir, UserProfile = backup.UserProfile, UserDir = backup.UserDir });
+        WriteFiles(h, now, backup.UserProfile, backup.UserDir);
     }
 
-    static void Put(Hidpp h, Files now, byte[] p, byte[] d)
+    static void WriteFiles(Hidpp h, Files now, byte[] p, byte[] d)
     {
         if (now.UserProfile == null || !p.SequenceEqual(now.UserProfile)) SaveFile(h, 0x0008, p, Crc32(p));
         if (now.UserDir == null || !d.SequenceEqual(now.UserDir)) SaveFile(h, 0x0000, d, Crc32(d.Skip(4).ToArray()));
@@ -571,8 +571,8 @@ static class G515
 
     public static void Activate(Hidpp h, byte[] p)
     {
-        h.Call(h.F(0x8071), 5, 0x01, 0x00, 0x00);
-        byte f = h.F(0x8101);
+        h.Call(h.FeatureIndex(0x8071), 5, 0x01, 0x00, 0x00);
+        byte f = h.FeatureIndex(0x8101);
         h.Call(f, 6, 0x0B);
         var cfg = new byte[] { 0x81, 0x01, 0x01, 0x00, 0x01, 0x00, 0x63, 0, 0, 0, 0 };
         Put32(cfg, 7, Crc32(p));
@@ -582,7 +582,7 @@ static class G515
     }
 }
 
-static class G915
+static class G915Lighting
 {
     static readonly Dictionary<byte, byte[]> Alike = new Dictionary<byte, byte[]>
     {
@@ -598,7 +598,7 @@ static class G915
 
     public static List<byte[]> Clusters(Hidpp h)
     {
-        byte f = h.F(0x8071);
+        byte f = h.FeatureIndex(0x8071);
         var all = new List<byte[]>();
         for (int c = 0; c < 8; c++)
         {
@@ -649,19 +649,19 @@ static class G915
         }
         var s = l.Clone();
         s.Effect = id;
-        return G515.Encode(s, 100);
+        return G515Profile.Encode(s, 100);
     }
 
     // The G915 TKL turns itself off after its timeout even while G-Lite holds the power modes, and wakes in mode 3 (off) on its own
     // lighting, ignoring effects until fn 8 sets full power again (tested on an owner's keyboard).
     public static void Claim(Hidpp h)
     {
-        byte f = h.F(0x8071);
+        byte f = h.FeatureIndex(0x8071);
         h.Call(f, 5, 0x01, 0x03, 0x04);
         try { h.Call(f, 8, 0x01, 0x01, 0x00); } catch (HidppError) { }
     }
 
-    public static void Release(Hidpp h) { h.Call(h.F(0x8071), 5, 0x01, 0x00, 0x00); }
+    public static void Release(Hidpp h) { h.Call(h.FeatureIndex(0x8071), 5, 0x01, 0x00, 0x00); }
 
     // The onboard profile, format 4, from a G915 TKL's report (docs/G915.md): power save and off after (seconds, little-endian) at
     // 0x1C and 0x1E, then four 11-byte lighting records from 0xD0, one per cluster, then the same dimmed for power save.
@@ -669,16 +669,16 @@ static class G915
 
     public static byte[] ReadProfile(Hidpp h, out int sector)
     {
-        byte o = h.F(0x8100);
-        if (h.Call(o, 2)[0] != 1) throw new Refused("The keyboard isn't on its onboard profiles");
+        byte o = h.FeatureIndex(0x8100);
+        if (h.Call(o, 2)[0] != 1) throw new RefusedException("The keyboard isn't on its onboard profiles");
         var info = h.Call(o, 0);
         int size = info[7] << 8 | info[8];
-        if (info[1] != 4 || size < Records + 44 + 2 || size > 0x1000) throw new Refused("Saving isn't supported on this keyboard (profile format " + info[1] + ")");
+        if (info[1] != 4 || size < Records + 44 + 2 || size > 0x1000) throw new RefusedException("Saving isn't supported on this keyboard (profile format " + info[1] + ")");
         var current = h.Call(o, 4);
         sector = current[0] << 8 | current[1];
-        if (sector == 0 || sector >= 0x100) throw new Refused("The keyboard runs a factory profile");
-        var p = GMouse.ReadSector(h, sector, size);
-        if (!GMouse.Valid(p)) throw new Refused("The keyboard's profile has a bad checksum");
+        if (sector == 0 || sector >= 0x100) throw new RefusedException("The keyboard runs a factory profile");
+        var p = MouseProtocol.ReadSector(h, sector, size);
+        if (!MouseProtocol.Valid(p)) throw new RefusedException("The keyboard's profile has a bad checksum");
         return p;
     }
 
@@ -731,15 +731,15 @@ static class G915
 
     public static byte[] Build(byte[] profile, List<byte[]> clusters, Lighting l, Lighting others)
     {
-        if (clusters.Count != 2) throw new Refused("Saving isn't supported on this keyboard (" + clusters.Count + " lighting clusters)");
-        if (l.Idle <= 0 || l.Sleep <= 0) throw new Refused("This keyboard can't keep its lighting on forever: 0 dims and turns it off at once");
+        if (clusters.Count != 2) throw new RefusedException("Saving isn't supported on this keyboard (" + clusters.Count + " lighting clusters)");
+        if (l.Idle <= 0 || l.Sleep <= 0) throw new RefusedException("This keyboard can't keep its lighting on forever: 0 dims and turns it off at once");
         var p = (byte[])profile.Clone();
         int keys = Keys(clusters);
         for (int c = 0; c < 2; c++)
         {
             var light = c == keys || others == null ? l : others;
             int i = Pick(light.Effect, clusters[c], c != keys);
-            if (i < 0) throw new Refused("This keyboard doesn't have that effect");
+            if (i < 0) throw new RefusedException("This keyboard doesn't have that effect");
             byte id = clusters[c][i];
             var b = Encode(id, light);
             p[Records + 11 * c] = id;
@@ -749,7 +749,7 @@ static class G915
         }
         p[0x1C] = (byte)l.Idle; p[0x1D] = (byte)(l.Idle >> 8);
         p[0x1E] = (byte)l.Sleep; p[0x1F] = (byte)(l.Sleep >> 8);
-        GMouse.Seal(p);
+        MouseProtocol.WriteChecksum(p);
         return p;
     }
 
@@ -757,12 +757,12 @@ static class G915
     // `profile`. Only those: a whole factory profile would drop what else the user changed, like G-shift macros.
     public static byte[] FactoryLighting(Hidpp h, int sector, byte[] profile)
     {
-        var rom = GMouse.ReadSector(h, 0x100 + sector, profile.Length);
-        if (rom.Skip(Records).Take(44).All(b => b == 0xFF) || rom[0x1C] == 0xFF) throw new Refused("Couldn't read the keyboard's factory lighting");
+        var rom = MouseProtocol.ReadSector(h, 0x100 + sector, profile.Length);
+        if (rom.Skip(Records).Take(44).All(b => b == 0xFF) || rom[0x1C] == 0xFF) throw new RefusedException("Couldn't read the keyboard's factory lighting");
         var p = (byte[])profile.Clone();
         Array.Copy(rom, 0x1C, p, 0x1C, 4);
         Array.Copy(rom, Records, p, Records, 44);
-        GMouse.Seal(p);
+        MouseProtocol.WriteChecksum(p);
         return p;
     }
 
@@ -770,17 +770,17 @@ static class G915
     // the lighting back, so the keyboard runs it, its power save included.
     public static void Store(Hidpp h, int sector, byte[] p)
     {
-        GMouse.WriteSector(h, sector, p);
-        try { h.Call(h.F(0x8100), 3, (byte)(sector >> 8), (byte)sector); }
+        MouseProtocol.WriteSector(h, sector, p);
+        try { h.Call(h.FeatureIndex(0x8100), 3, (byte)(sector >> 8), (byte)sector); }
         catch (HidppError) { }
         Release(h);
     }
 
     public static void Preview(Hidpp h, List<byte[]> clusters, Lighting l, Lighting others = null)
     {
-        byte f = h.F(0x8071);
+        byte f = h.FeatureIndex(0x8071);
         int keys = Keys(clusters);
-        if (Pick(l.Effect, clusters[keys], false) < 0) throw new Refused("This keyboard doesn't have that effect");
+        if (Pick(l.Effect, clusters[keys], false) < 0) throw new RefusedException("This keyboard doesn't have that effect");
         for (int c = 0; c < clusters.Count; c++)
         {
             var light = c == keys || others == null ? l : others;

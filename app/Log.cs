@@ -47,7 +47,7 @@ static class Log
 
     static void Write(string who, string kind, string text, string result)
     {
-        var line = string.Join("\t", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture), Clean(who), kind, Clean(text), result);
+        var line = string.Join("\t", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture), OneLine(who), kind, OneLine(text), result);
         lock (gate)
             try
             {
@@ -64,7 +64,7 @@ static class Log
             catch (UnauthorizedAccessException) { }
     }
 
-    static string Clean(string s) { return (s ?? "").Replace('\t', ' ').Replace('\r', ' ').Replace('\n', ' '); }
+    static string OneLine(string s) { return (s ?? "").Replace('\t', ' ').Replace('\r', ' ').Replace('\n', ' '); }
 
     public static List<Line> Read()
     {
@@ -101,13 +101,13 @@ static class Log
             catch (UnauthorizedAccessException) { }
     }
 
-    public static List<Line> Fold(IEnumerable<Line> lines)
+    public static List<Line> MergeRepeatedSends(IEnumerable<Line> lines)
     {
         var o = new List<Line>();
         foreach (var l in lines)
         {
             var last = o.Count > 0 ? o[o.Count - 1] : null;
-            if (last != null && l.Kind == "sent" && last.Kind == "sent" && last.Who == l.Who && last.Result == l.Result && Fn(last.Text) == Fn(l.Text))
+            if (last != null && l.Kind == "sent" && last.Kind == "sent" && last.Who == l.Who && last.Result == l.Result && FirstWord(last.Text) == FirstWord(l.Text))
             {
                 last.Times++;
                 continue;
@@ -117,7 +117,7 @@ static class Log
         return o;
     }
 
-    static string Fn(string t) { int i = t.IndexOf("  "); return i < 0 ? t : t.Substring(0, i); }
+    static string FirstWord(string t) { int i = t.IndexOf("  "); return i < 0 ? t : t.Substring(0, i); }
 
     public static string Format(Line l)
     {
@@ -125,7 +125,7 @@ static class Log
         var text = l.Text;
         if (l.Kind == "sent")
         {
-            var fn = Fn(l.Text);
+            var fn = FirstWord(l.Text);
             text = fn.PadRight(10) + (l.Result + (l.Times > 1 ? " ×" + l.Times : "")).PadRight(12) + l.Text.Substring(fn.Length).TrimStart();
         }
         return (l.Time + "  " + who.PadRight(15) + l.Kind.PadRight(8) + text).TrimEnd();

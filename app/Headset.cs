@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-class Mic : IDisposable
+class MicrophoneCapture : IDisposable
 {
     [StructLayout(LayoutKind.Sequential)]
     struct Format { public short Tag, Channels; public int Rate, Bytes; public short Align, Bits, Extra; }
@@ -47,7 +47,7 @@ class Mic : IDisposable
         return -1;
     }
 
-    public Mic(int device)
+    public MicrophoneCapture(int device)
     {
         var f = new Format { Tag = 1, Channels = 1, Rate = 48000, Bits = 16, Align = 2, Bytes = 96000 };
         int r = waveInOpen(out handle, (IntPtr)device, ref f, IntPtr.Zero, IntPtr.Zero, 0);
@@ -62,7 +62,7 @@ class Mic : IDisposable
         waveInStart(handle);
     }
 
-    public void Keep()
+    public void RequeueBuffers()
     {
         foreach (var h in headers)
         {
@@ -88,23 +88,23 @@ class Mic : IDisposable
     }
 }
 
-class HeadSet
+class HeadsetSettings
 {
-    public int Sidetone, Off = -1;
+    public int Sidetone, AutoOffMinutes = -1;
 
-    public HeadSet Clone() { return (HeadSet)MemberwiseClone(); }
+    public HeadsetSettings Clone() { return (HeadsetSettings)MemberwiseClone(); }
 
-    public string ToText() { return Sidetone + "," + Off; }
+    public string ToText() { return Sidetone + "," + AutoOffMinutes; }
 
-    public static HeadSet FromText(string text)
+    public static HeadsetSettings FromText(string text)
     {
         var v = text.Split(',').Select(int.Parse).ToArray();
         if (v.Length != 2) throw new FormatException();
-        return new HeadSet { Sidetone = v[0], Off = v[1] };
+        return new HeadsetSettings { Sidetone = v[0], AutoOffMinutes = v[1] };
     }
 }
 
-static class GHeadset
+static class HeadsetProtocol
 {
     public static readonly int[] OffMinutes = { 0, 5, 10, 15, 30, 60, 90 };
 
@@ -112,31 +112,31 @@ static class GHeadset
     {
         public bool HasSidetone, HasOff, Charging;
         public int Millivolts;
-        public HeadSet Set = new HeadSet();
+        public HeadsetSettings Set = new HeadsetSettings();
     }
 
     public static State Read(Hidpp h, bool autoOff)
     {
         var s = new State();
-        try { s.Set.Sidetone = h.Call(h.F(0x8300), 0)[0]; s.HasSidetone = true; }
+        try { s.Set.Sidetone = h.Call(h.FeatureIndex(0x8300), 0)[0]; s.HasSidetone = true; }
         catch (NotSupportedException) { }
         catch (HidppError) { }
         try
         {
-            var b = h.Call(h.F(0x1F20), 0);
+            var b = h.Call(h.FeatureIndex(0x1F20), 0);
             s.Millivolts = b[0] << 8 | b[1];
             s.Charging = b[2] == 3;
         }
         catch (NotSupportedException) { }
         catch (HidppError) { }
         if (!autoOff) return s;
-        try { s.Set.Off = h.Call(h.F(0x1F20), 1)[0]; s.HasOff = true; }
+        try { s.Set.AutoOffMinutes = h.Call(h.FeatureIndex(0x1F20), 1)[0]; s.HasOff = true; }
         catch (NotSupportedException) { }
         catch (HidppError) { }
         return s;
     }
 
-    public static void SetSidetone(Hidpp h, int v) { h.Call(h.F(0x8300), 1, (byte)Math.Max(0, Math.Min(100, v))); }
+    public static void SetSidetone(Hidpp h, int v) { h.Call(h.FeatureIndex(0x8300), 1, (byte)Math.Max(0, Math.Min(100, v))); }
 
-    public static void SetOff(Hidpp h, int minutes) { h.Call(h.F(0x1F20), 2, (byte)Math.Max(0, Math.Min(90, minutes))); }
+    public static void SetOff(Hidpp h, int minutes) { h.Call(h.FeatureIndex(0x1F20), 2, (byte)Math.Max(0, Math.Min(90, minutes))); }
 }

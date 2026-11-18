@@ -55,20 +55,20 @@ static class Report
 
     class Reader
     {
-        public Hidpp H;
-        public readonly StringBuilder S = new StringBuilder();
+        public Hidpp Device;
+        public readonly StringBuilder Output = new StringBuilder();
         public string Error;
         int misses;
 
-        public byte[] Ask(int feature, int fn, params byte[] p)
+        public byte[] ReadOnlyCall(int feature, int fn, params byte[] p)
         {
             int[] ok;
-            if (!Reads.TryGetValue(feature, out ok) || !ok.Contains(fn)) throw new Refused(string.Format("Not a known read: feature {0:X4} fn {1}", feature, fn));
+            if (!Reads.TryGetValue(feature, out ok) || !ok.Contains(fn)) throw new RefusedException(string.Format("Not a known read: feature {0:X4} fn {1}", feature, fn));
             Error = null;
             if (misses >= 2) { Error = "no answer"; return null; }
             try
             {
-                var r = H.Call(H.F(feature), fn, p);
+                var r = Device.Call(Device.FeatureIndex(feature), fn, p);
                 misses = 0;
                 return r;
             }
@@ -80,17 +80,17 @@ static class Report
 
         public byte[] Show(string label, int feature, int fn, params byte[] p)
         {
-            var r = Ask(feature, fn, p);
-            S.AppendLine(label + "=" + (r == null ? Error : Hex(r, " ")));
+            var r = ReadOnlyCall(feature, fn, p);
+            Output.AppendLine(label + "=" + (r == null ? Error : Hex(r, " ")));
             return r;
         }
     }
 
-    public static string Build(Hidpp h, Found f, string screen)
+    public static string Build(Hidpp h, FoundDevice f, string screen)
     {
-        var r = new Reader { H = h };
-        var s = r.S;
-        Head(s, f, screen, () => f.Battery >= 0 || !f.Has(0x1F20) ? (f.Battery < 0 ? "–" : f.Battery + "%") + (f.Millivolts > 0 ? ", " + f.Millivolts + " mV" : "") + (f.Charging ? ", charging" : "") : HeadsetBattery(r));
+        var r = new Reader { Device = h };
+        var s = r.Output;
+        WriteHeader(s, f, screen, () => f.Battery >= 0 || !f.Has(0x1F20) ? (f.Battery < 0 ? "–" : f.Battery + "%") + (f.Millivolts > 0 ? ", " + f.Millivolts + " mV" : "") + (f.Charging ? ", charging" : "") : HeadsetBattery(r));
 
         var ids = Features(r, f);
         foreach (var id in ids.Where(Reads.ContainsKey).Where(x => x != 0x0001))
@@ -102,10 +102,10 @@ static class Report
         return s.ToString();
     }
 
-    public static string Registers(Hidpp device, Found found, string screen)
+    public static string Registers(Hidpp device, FoundDevice found, string screen)
     {
         var text = new StringBuilder();
-        Head(text, found, screen, () => "–");
+        WriteHeader(text, found, screen, () => "–");
         text.AppendLine();
         text.AppendLine("HID++ 1.0 registers");
         int misses = 0;
@@ -121,13 +121,13 @@ static class Report
         var pageNumbers = new List<int> { 1 };
         for (int entry = 0; entry + 2 < 510 && directory[entry] != 0xFF && pageNumbers.Count < 17; entry += 3)
             if (directory[entry] >= 2 && directory[entry] < 32) pageNumbers.Add(directory[entry]);
-        int currentPage = current != null && current[0] == 0 && current[1] < 16 ? G9x.Entry(directory, current[1]) : -1;
+        int currentPage = current != null && current[0] == 0 && current[1] < 16 ? G9xRegisters.Entry(directory, current[1]) : -1;
         foreach (var pageNumber in pageNumbers)
         {
             var page = pageNumber == 1 ? directory : ReadPage(device, pageNumber);
             if (page == null) break;
             text.AppendLine();
-            text.AppendLine("page " + pageNumber.ToString("X2") + (G9x.Valid(page) ? "" : ", bad checksum") + (pageNumber == currentPage ? ", current" : ""));
+            text.AppendLine("page " + pageNumber.ToString("X2") + (G9xRegisters.Valid(page) ? "" : ", bad checksum") + (pageNumber == currentPage ? ", current" : ""));
             for (int offset = 0; offset < 512; offset += 16)
             {
                 var row = page.Skip(offset).Take(16).ToArray();
@@ -146,10 +146,10 @@ static class Report
     [DllImport("hid.dll", SetLastError = true)] static extern bool HidD_GetFeature(SafeFileHandle handle, byte[] buffer, int length);
     [DllImport("hid.dll", SetLastError = true)] static extern bool HidD_GetInputReport(SafeFileHandle handle, byte[] buffer, int length);
 
-    public static string Plain(Found found, string screen)
+    public static string PlainHidReport(FoundDevice found, string screen)
     {
         var text = new StringBuilder();
-        Head(text, found, screen, () => "–");
+        WriteHeader(text, found, screen, () => "–");
         var pid = Regex.Match(found.Path ?? "", @"PID_([0-9A-F]{4})", RegexOptions.IgnoreCase).Groups[1].Value;
         foreach (var id in Devices.PlainIds(pid))
         {
@@ -247,12 +247,12 @@ static class Report
 
     static byte[] ReadPage(Hidpp device, int pageNumber)
     {
-        try { return G9x.ReadPage(device, pageNumber); }
+        try { return G9xRegisters.ReadPage(device, pageNumber); }
         catch (HidppError) { return null; }
         catch (TimeoutException) { return null; }
     }
 
-    static void Head(StringBuilder s, Found f, string screen, Func<string> battery)
+    static void WriteHeader(StringBuilder s, FoundDevice f, string screen, Func<string> battery)
     {
         s.AppendLine("G-Lite device report");
         s.AppendLine("G-Lite " + Version() + ", " + Windows());
@@ -260,19 +260,19 @@ static class Report
         s.AppendLine();
         Row(s, "Device", f.Name == "" ? "–" : f.Name);
         Row(s, "Kind", f.Kind);
-        Row(s, "Link", f.Link + f.Slot + (f.Hidpp10 ? ", HID++ 1.0" : "") + (f.Wpid != 0 ? ", ID " + f.Wpid.ToString("X4") : "") + Usb(f.Path));
+        Row(s, "Link", f.Link + f.Slot + (f.Hidpp10 ? ", HID++ 1.0" : "") + (f.WirelessId != 0 ? ", ID " + f.WirelessId.ToString("X4") : "") + Usb(f.Path));
         Row(s, "Model", f.Models == "" ? "–" : f.Models);
         Row(s, "Firmware", f.Firmware == "" ? "–" : f.Firmware);
         Row(s, "Battery", battery());
         Row(s, "Screen", screen);
     }
 
-    static List<int> Features(Reader r, Found f)
+    static List<int> Features(Reader r, FoundDevice f)
     {
-        var s = r.S;
+        var s = r.Output;
         var ids = new List<int>();
         s.AppendLine();
-        var count = r.Ask(0x0001, 0);
+        var count = r.ReadOnlyCall(0x0001, 0);
         if (count == null)
         {
             s.AppendLine("Features (from the scan)");
@@ -283,7 +283,7 @@ static class Report
         s.AppendLine("Features");
         for (int i = 1; i <= count[0]; i++)
         {
-            var x = r.Ask(0x0001, 1, (byte)i);
+            var x = r.ReadOnlyCall(0x0001, 1, (byte)i);
             if (x == null) { s.AppendLine(i.ToString("X2") + " " + r.Error); continue; }
             int id = x[0] << 8 | x[1];
             ids.Add(id);
@@ -293,18 +293,18 @@ static class Report
         return ids;
     }
 
-    static void Section(Reader r, Found f, int id)
+    static void Section(Reader r, FoundDevice f, int id)
     {
         switch (id)
         {
             case 0x0003:
                 {
-                    var c = r.Ask(0x0003, 0);
+                    var c = r.ReadOnlyCall(0x0003, 0);
                     for (int e = 0; c != null && e < Math.Min((int)c[0], 8); e++)
                     {
-                        var x = r.Ask(0x0003, 1, (byte)e);
+                        var x = r.ReadOnlyCall(0x0003, 1, (byte)e);
                         if (x != null) for (int i = 11; i < x.Length; i++) x[i] = 0;
-                        r.S.AppendLine("entity " + e + "=" + (x == null ? r.Error : Hex(x, " ")));
+                        r.Output.AppendLine("entity " + e + "=" + (x == null ? r.Error : Hex(x, " ")));
                     }
                     break;
                 }
@@ -350,14 +350,14 @@ static class Report
             case 0x8071:
                 for (int c = 0; c < 8; c++)
                 {
-                    var where = r.Ask(id, 0, (byte)c, 0xFF, 0);
-                    if (where != null) r.S.AppendLine("cluster " + c + "=" + Hex(where, " "));
+                    var where = r.ReadOnlyCall(id, 0, (byte)c, 0xFF, 0);
+                    if (where != null) r.Output.AppendLine("cluster " + c + "=" + Hex(where, " "));
                     int n = 0;
                     for (int e = 0; e < 32; e++)
                     {
-                        var x = r.Ask(id, 0, (byte)c, (byte)e, 0);
+                        var x = r.ReadOnlyCall(id, 0, (byte)c, (byte)e, 0);
                         if (x == null) break;
-                        r.S.AppendLine("cluster " + c + " effect " + e + "=" + Hex(x, " "));
+                        r.Output.AppendLine("cluster " + c + " effect " + e + "=" + Hex(x, " "));
                         n++;
                     }
                     if (n == 0) break;
@@ -373,7 +373,7 @@ static class Report
                             for (int bit = 0; bit < 8; bit++)
                                 if ((x[2 + i] >> bit & 1) != 0) lit.Add(page * 112 + i * 8 + bit);
                     }
-                    r.S.AppendLine("lit ids=" + string.Join(" ", lit.Select(n => n.ToString("X2"))));
+                    r.Output.AppendLine("lit ids=" + string.Join(" ", lit.Select(n => n.ToString("X2"))));
                     break;
                 }
             case 0x8100: Profiles(r); break;
@@ -400,10 +400,10 @@ static class Report
 
     static string HeadsetBattery(Reader r)
     {
-        var b = r.Ask(0x1F20, 0);
+        var b = r.ReadOnlyCall(0x1F20, 0);
         if (b == null) return "–";
         int mv = b[0] << 8 | b[1];
-        return "~" + (b[2] == 3 ? Found.FromChargingVolts(mv) : Found.FromVolts(mv)) + "%, " + mv + " mV" + (b[2] == 3 ? ", charging" : "");
+        return "~" + (b[2] == 3 ? FoundDevice.FromChargingVolts(mv) : FoundDevice.FromVolts(mv)) + "%, " + mv + " mV" + (b[2] == 3 ? ", charging" : "");
     }
 
     static void Profiles(Reader r)
@@ -414,7 +414,7 @@ static class Report
         r.Show("dpi index", 0x8100, 0xB);
         if (desc == null) return;
         int size = desc[7] << 8 | desc[8];
-        if (size < 16 || size > 0x1000) { r.S.AppendLine("sector size " + size + ", not read"); return; }
+        if (size < 16 || size > 0x1000) { r.Output.AppendLine("sector size " + size + ", not read"); return; }
         var dir = Sector(r, 0x0000, size);
         var sectors = new List<int>();
         for (int i = 0; dir != null && i + 1 < dir.Length && sectors.Count < 8; i += 4)
@@ -434,26 +434,26 @@ static class Report
         for (int off = 0; off < size; off += 16)
         {
             int at = Math.Min(off, size - 16);
-            var x = r.Ask(0x8100, 5, (byte)(sector >> 8), (byte)sector, (byte)(at >> 8), (byte)at);
-            if (x == null) { r.S.AppendLine(sector.ToString("X4") + "=" + r.Error); return null; }
+            var x = r.ReadOnlyCall(0x8100, 5, (byte)(sector >> 8), (byte)sector, (byte)(at >> 8), (byte)at);
+            if (x == null) { r.Output.AppendLine(sector.ToString("X4") + "=" + r.Error); return null; }
             Array.Copy(x, off - at, p, off, Math.Min(16, size - off));
         }
-        r.S.AppendLine(sector.ToString("X4") + "=" + Hex(p, ""));
+        r.Output.AppendLine(sector.ToString("X4") + "=" + Hex(p, ""));
         return p;
     }
 
     static byte[] File(Reader r, int addr, int size)
     {
-        if (r.Ask(0x8101, 8, (byte)(addr >> 8), (byte)addr, (byte)(size >> 8), (byte)size) == null) { r.S.AppendLine(addr.ToString("X4") + "=" + r.Error); return null; }
+        if (r.ReadOnlyCall(0x8101, 8, (byte)(addr >> 8), (byte)addr, (byte)(size >> 8), (byte)size) == null) { r.Output.AppendLine(addr.ToString("X4") + "=" + r.Error); return null; }
         var o = new List<byte>();
         for (int off = 0; off < size; off += 16)
         {
-            var x = r.Ask(0x8101, 0xC, (byte)(off >> 8), (byte)off);
-            if (x == null) { r.S.AppendLine(addr.ToString("X4") + "=" + r.Error); return null; }
+            var x = r.ReadOnlyCall(0x8101, 0xC, (byte)(off >> 8), (byte)off);
+            if (x == null) { r.Output.AppendLine(addr.ToString("X4") + "=" + r.Error); return null; }
             o.AddRange(x);
         }
         var data = o.Take(size).ToArray();
-        r.S.AppendLine(addr.ToString("X4") + "=" + Hex(data, ""));
+        r.Output.AppendLine(addr.ToString("X4") + "=" + Hex(data, ""));
         return data;
     }
 

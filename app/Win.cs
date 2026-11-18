@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
-static class Win
+static class WindowHelpers
 {
     public const int DpiChanged = 0x02E0;
     public static bool Rounded;
@@ -58,7 +58,7 @@ static class Win
     [DllImport("user32.dll")] static extern IntPtr MonitorFromPoint(Point p, int flags);
     [DllImport("shcore.dll")] static extern int GetDpiForMonitor(IntPtr monitor, int type, out uint x, out uint y);
 
-    public static void Aware()
+    public static void EnableDpiAwareness()
     {
         try { if (SetProcessDpiAwarenessContext((IntPtr)(-4))) return; } catch (EntryPointNotFoundException) { }
         try { SetProcessDPIAware(); } catch (EntryPointNotFoundException) { }
@@ -78,7 +78,7 @@ static class Win
 
     public static float FromMessage(Message m) { return (m.WParam.ToInt64() & 0xFFFF) / 96f; }
 
-    public static Font Px(float points, float scale, string face = "Segoe UI")
+    public static Font PixelFont(float points, float scale, string face = "Segoe UI")
     {
         return new Font(face, points * 96f / 72f * scale, FontStyle.Regular, GraphicsUnit.Pixel);
     }

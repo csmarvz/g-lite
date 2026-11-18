@@ -5,7 +5,7 @@ Asked for by a user. Nothing here is checked on a real pad yet.
 ## What G-Lite sees
 
 - **X mode (XInput, the default and the mode Logitech recommends for games):** nothing. Windows drives the pad with its Xbox controller driver (`xusb`), not as a HID device, so the HID scan never meets it. The only way in would be the XInput API: buttons, rumble and, for wireless pads, a battery level (`XInputGetBatteryInformation`). Telling a Logitech pad from an Xbox pad there needs the vendor and product id, which only the undocumented `XInputGetCapabilitiesEx` (xinput1_4, ordinal 108) gives.
-- **D mode (DirectInput):** a plain HID joystick, with no vendor-defined collection and no HID++. G-Lite lists it with `PlainHid`, like the G510, and its Report (`Report.Plain`) shows each HID collection, its report lengths and every feature report read with `HidD_GetFeature`. That report tells us whether there's anything to talk to.
+- **D mode (DirectInput):** a plain HID joystick, with no vendor-defined collection and no HID++. G-Lite lists it with `PlainHid`, like the G510, and its Report (`Report.PlainHidReport`) shows each HID collection, its report lengths and every feature report read with `HidD_GetFeature`. That report tells us whether there's anything to talk to.
 
 ## Ids (vendor 046D)
 

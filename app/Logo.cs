@@ -44,7 +44,7 @@ static class Logo
         return bmp;
     }
 
-    public static Icon Make(int n)
+    public static Icon MakeIcon(int n)
     {
         using (var b = Draw(n)) return Icon.FromHandle(b.GetHicon());
     }

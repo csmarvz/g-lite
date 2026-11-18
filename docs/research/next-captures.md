@@ -30,8 +30,8 @@ Existing notes were preserved; this dated research directory supersedes only the
 
 These come from reading `app/Devices.cs`, `app/Mouse.cs` and `app/Report.cs`, not running them:
 
-- `Found.IsMouse` requires 2201. Known 2202-only captures establish a real missing family.
-- `GMouse` sets DPI with 2201 and rate with 8060. Newer argument layouts/rate indexes require separate dispatch.
+- `FoundDevice.IsMouse` requires 2201. Known 2202-only captures establish a real missing family.
+- `MouseProtocol` sets DPI with 2201 and rate with 8060. Newer argument layouts/rate indexes require separate dispatch.
 - Mouse writable profiles are gated to format 3. That restriction should stay until other formats are validated, even if upstream libraries accept them.
 - Device discovery only considers Logitech VID 046D, collections with output length 7 or 20, and requires a long collection. This is insufficient evidence of discovery for Centurion, ASTRO VID9886, X56 VID0738, custom G300/G600 feature reports or modern wheel replies.
 - Receiver enumeration probes slots 1–6. libratbag's POWERPLAY mat explicitly uses index 7.

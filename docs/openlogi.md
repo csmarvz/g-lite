@@ -35,7 +35,7 @@ Recorded devices: G512, G915, and MX devices (Anywhere 3S, Creative Keypad, Ergo
 
 ### Onboard profiles (0x8100)
 
-OpenLogi only reads profiles, checked on a G502 LIGHTSPEED. It agrees with `GMouse` and adds:
+OpenLogi only reads profiles, checked on a G502 LIGHTSPEED. It agrees with `MouseProtocol` and adds:
 
 - fn 0 reply: memory model at 0, profile format at 1, macro format at 2, profile count at 3, factory profile count at 4, button count at 5, sector count at 6, sector size at 7–8 (big endian). The G502 LIGHTSPEED answers `01 03 01 05 01 0B 10 00 FF`: format 3, five profiles, 11 buttons, sector size 255.
 - The directory (sector 0x0000, or 0x0100 if that's blank) is 4 bytes per entry: sector (big endian), enabled, reserved. 0xFFFF ends it.
@@ -43,7 +43,7 @@ OpenLogi only reads profiles, checked on a G502 LIGHTSPEED. It agrees with `GMou
 - fn 1 sets the mode until the next power cycle: 1 onboard, 2 host.
 - fn 3 makes a profile current: `00 <index> 00`, the index 1-based.
 
-So the name and the LED records may sit at the same place in formats 2, 4 and 5 too. `GMouse` only takes format 3. Accept another format only after a report shows its sector.
+So the name and the LED records may sit at the same place in formats 2, 4 and 5 too. `MouseProtocol` only takes format 3. Accept another format only after a report shows its sector.
 
 ### Battery (0x1004)
 

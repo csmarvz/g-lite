@@ -19,18 +19,18 @@ class MainWindow : Form
 {
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-    const int W = 868, H = 730, SideW = 212, SideIn = SideW - 20;
+    const int WindowWidth = 868, WindowHeight = 730, SidebarWidth = 212, SidebarInnerWidth = SidebarWidth - 20;
 
     public NotifyIcon Tray;
     readonly FakeHidpp fake;
     readonly Dictionary<string, Control> pages = new Dictionary<string, Control>();
-    readonly Dictionary<string, DevItem> items = new Dictionary<string, DevItem>();
+    readonly Dictionary<string, DeviceListItem> items = new Dictionary<string, DeviceListItem>();
     readonly Dictionary<string, Hidpp> demoDevs = new Dictionary<string, Hidpp>();
-    List<Found> found = new List<Found>();
+    List<FoundDevice> found = new List<FoundDevice>();
     string selected, note;
     Control shown;
     bool scanning, reading;
-    Watch watch;
+    DeviceWatcher watch;
     string watched = "";
     DateTime batteriesRead;
     readonly EmptyPage empty;
@@ -40,13 +40,13 @@ class MainWindow : Form
     bool rowShown, labelShown;
     string ready;
     readonly Control side, settingsPage;
-    readonly Btn settingsBtn, logsBtn, scanBtn, minimize, close;
+    readonly FlatButton settingsBtn, logsBtn, scanBtn, minimize, close;
     readonly LogsPage logsPage;
     readonly System.Windows.Forms.Timer rescanSoon = new System.Windows.Forms.Timer { Interval = 1500 }, sleepers = new System.Windows.Forms.Timer { Interval = 15000 }, batteries = new System.Windows.Forms.Timer { Interval = 60000 };
-    readonly Btn updateBtn;
+    readonly FlatButton updateBtn;
     readonly PageUpdate updatePage;
     readonly Label checkText, themeHint;
-    readonly Seg themeSeg;
+    readonly SegmentedPicker themeSeg;
     readonly Toggle runToggle, checkToggle, autoToggle;
     KeyboardView view;
     readonly bool demo;
@@ -63,22 +63,22 @@ class MainWindow : Form
     {
         this.fake = fake;
         demo = fake != null;
-        Win.Round(this);
-        HandleCreated += (s, e) => { Win.Border(this, Theme.Border); Presence.Watch(Handle); };
+        WindowHelpers.Round(this);
+        HandleCreated += (s, e) => { WindowHelpers.Border(this, Theme.Border); Presence.Watch(Handle); };
         FormBorderStyle = FormBorderStyle.None;
         Text = "G-Lite";
         StartPosition = FormStartPosition.Manual;
-        ClientSize = new Size(W, H);
-        Ui.Style(this, () => BackColor = Theme.Bg);
+        ClientSize = new Size(WindowWidth, WindowHeight);
+        Ui.Style(this, () => BackColor = Theme.Background);
         Ui.Font(this, 9.75f, Ui.Regular);
         FormClosing += (s, e) => { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; ToTray(); } };
         MouseDown += Drag;
 
-        side = Ui.Add(this, new Control(), 0, 0, SideW, H);
-        Ui.Style(side, () => side.BackColor = Theme.Side);
+        side = Ui.Add(this, new Control(), 0, 0, SidebarWidth, WindowHeight);
+        Ui.Style(side, () => side.BackColor = Theme.Sidebar);
         side.Paint += (s, e) => { using (var p = new Pen(Theme.Border)) e.Graphics.DrawLine(p, side.Width - 1, 0, side.Width - 1, side.Height); };
         side.MouseDown += Drag;
-        Ui.Add(side, new Brand(), 10, 12, SideIn, 34).MouseDown += (s, e) =>
+        Ui.Add(side, new TitleLogo(), 10, 12, SidebarInnerWidth, 34).MouseDown += (s, e) =>
         {
             if (e.Button != MouseButtons.Left) return;
             var at = Location;
@@ -86,62 +86,62 @@ class MainWindow : Form
             Drag(s, e);
             if (Location != at) return;
             moved = was;
-            if (e.X < 60 * Ui.K) ToggleView();
+            if (e.X < 60 * Ui.DpiScale) ToggleView();
         };
-        Ui.Text(side, "DEVICES", 18, 58, () => Theme.Dim, 8.25f, Ui.Semi).MouseDown += Drag;
-        deviceList = Ui.Add(side, new DeviceList(), 0, 78, SideW - 1, 400);
+        Ui.Text(side, "DEVICES", 18, 58, () => Theme.Dim, 8.25f, Ui.Semibold).MouseDown += Drag;
+        deviceList = Ui.Add(side, new DeviceList(), 0, 78, SidebarWidth - 1, 400);
         deviceList.MouseDown += Drag;
         noneText = Ui.Text(deviceList, "Looking…", 18, 4, () => Theme.Dim, 9f);
 
-        int bottom = H - 14 - 36;
-        var quit = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "power", Text = "Quit" }, 10, bottom, SideIn, 36);
+        int bottom = WindowHeight - 14 - 36;
+        var quit = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "power", Text = "Quit" }, 10, bottom, SidebarInnerWidth, 36);
         quit.Click += (s, e) => { HidePanel(); WaitAll(); Application.Exit(); };
         quit.TabIndex = 103;
         bottom -= 40;
-        settingsBtn = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "gear", Text = "Settings" }, 10, bottom, SideIn, 36);
+        settingsBtn = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "gear", Text = "Settings" }, 10, bottom, SidebarInnerWidth, 36);
         settingsBtn.Click += (s, e) => ShowSettings();
         settingsBtn.TabIndex = 102;
         bottom -= 40;
-        logsBtn = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "lines", Text = "Logs" }, 10, bottom, SideIn, 36);
+        logsBtn = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "lines", Text = "Logs" }, 10, bottom, SidebarInnerWidth, 36);
         logsBtn.Click += (s, e) => ShowLogs();
         logsBtn.TabIndex = 101;
         bottom -= 40;
-        scanBtn = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "refresh", Text = "Scan for devices" }, 10, bottom, SideIn, 36);
+        scanBtn = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "refresh", Text = "Scan for devices" }, 10, bottom, SidebarInnerWidth, 36);
         scanBtn.Click += (s, e) => Rescan();
         scanBtn.TabIndex = 100;
         if (demo)
         {
             bottom -= 40;
-            view = new KeyboardView(fake, Model.Load("g515-tkl.json"));
-            var show = Ui.Add(side, new Btn { Look = Look.Ghost, Icon = "keyboard", Text = "Show keyboard" }, 10, bottom, SideIn, 36);
+            view = new KeyboardView(fake, KeyLayout.Load("g515-tkl.json"));
+            var show = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "keyboard", Text = "Show keyboard" }, 10, bottom, SidebarInnerWidth, 36);
             show.Click += (s, e) => { if (view.Visible) view.Hide(); else ShowView(); };
             view.VisibleChanged += (s, e) => { show.Text = view.Visible ? "Hide keyboard" : "Show keyboard"; wantView = view.Visible; };
         }
-        updateBtn = Ui.Add(side, new Btn { Look = Look.Solid, Icon = "download", Text = "Update available", Visible = false }, 10, bottom - 40, SideIn, 36);
+        updateBtn = Ui.Add(side, new FlatButton { Style = ButtonStyle.Solid, Icon = "download", Text = "Update available", Visible = false }, 10, bottom - 40, SidebarInnerWidth, 36);
         updateBtn.Click += (s, e) => { if (ready != null) Restart(); else ShowUpdatePage(false); };
         updateBtn.TabIndex = 99;
         navTop = bottom;
         readyText = Ui.Text(side, "", 18, bottom - 40 - 20, () => Theme.Dim, 8.25f);
         readyText.AutoSize = false;
         readyText.AutoEllipsis = true;
-        readyText.Size = new Size(SideIn - 8, 16);
+        readyText.Size = new Size(SidebarInnerWidth - 8, 16);
         readyText.Cursor = Cursors.Hand;
         readyText.Visible = false;
         readyText.Click += (s, e) => ShowUpdatePage(false);
         FitList();
 
-        empty = Ui.Add(this, new EmptyPage(Drag, Rescan), SideW, 0, W - SideW, H);
+        empty = Ui.Add(this, new EmptyPage(Drag, Rescan), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         rescanSoon.Tick += (s, e) => { rescanSoon.Stop(); Rescan(); };
         sleepers.Tick += (s, e) => { if (Visible) Rescan(); };
         batteries.Tick += (s, e) => ReadBatteries();
         if (!demo) batteries.Start();
 
-        settingsPage = Ui.Add(this, new Control { Visible = false }, SideW, 0, W - SideW, H);
-        Ui.Style(settingsPage, () => settingsPage.BackColor = Theme.Bg);
+        settingsPage = Ui.Add(this, new Control { Visible = false }, SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
+        Ui.Style(settingsPage, () => settingsPage.BackColor = Theme.Background);
         settingsPage.MouseDown += Drag;
         var sp = settingsPage;
-        logsPage = Ui.Add(this, new LogsPage(Drag), SideW, 0, W - SideW, H);
-        updatePage = Ui.Add(this, new PageUpdate(Drag), SideW, 0, W - SideW, H);
+        logsPage = Ui.Add(this, new LogsPage(Drag), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
+        updatePage = Ui.Add(this, new PageUpdate(Drag), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         if (demo) updatePage.Fetch = DemoChangelog;
         updatePage.BackClicked = ShowSettings;
         updatePage.CheckClicked = () => CheckUpdates(true);
@@ -155,19 +155,19 @@ class MainWindow : Form
             ShowUpdate(null);
             if (updatePage.FromSettings) ShowSettings(); else Pick(selected);
         };
-        Ui.Text(sp, "Settings", 20, 14, () => Theme.Text, 13.5f, Ui.Semi).MouseDown += Drag;
+        Ui.Text(sp, "Settings", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += Drag;
 
-        Ui.Text(sp, "Appearance", 20, 64, () => Theme.Dim, 9f, Ui.Semi);
-        var look = Ui.Add(sp, new Box(), 20, 86, 616, 64);
+        Ui.Text(sp, "Appearance", 20, 64, () => Theme.Dim, 9f, Ui.Semibold);
+        var look = Ui.Add(sp, new RoundedBox(), 20, 86, 616, 64);
         themeHint = Row(look, 0, "Theme", "");
-        themeSeg = Ui.Add(look, new Seg { Items = new[] { "System", "Dark", "Light" }, AccessibleName = "Theme" }, 616 - 14 - 240, 16, 240, 32);
+        themeSeg = Ui.Add(look, new SegmentedPicker { Items = new[] { "System", "Dark", "Light" }, AccessibleName = "Theme" }, 616 - 14 - 240, 16, 240, 32);
         themeSeg.Picked += i => { Theme.Mode = Theme.Modes[i]; ShowThemeHint(); };
 
-        Ui.Text(sp, "Updates", 20, 170, () => Theme.Dim, 9f, Ui.Semi);
-        var upd = Ui.Add(sp, new Box(), 20, 192, 616, 192);
+        Ui.Text(sp, "Updates", 20, 170, () => Theme.Dim, 9f, Ui.Semibold);
+        var upd = Ui.Add(sp, new RoundedBox(), 20, 192, 616, 192);
         Row(upd, 0, "Check for updates", "Looks for a new release on GitHub when G-Lite starts");
-        checkToggle = Ui.Add(upd, new Toggle { Checked = Updater.Check, AccessibleName = "Check for updates" }, 616 - 14 - 40, 21, 40, 22);
-        checkToggle.Changed += () => Updater.Check = checkToggle.Checked;
+        checkToggle = Ui.Add(upd, new Toggle { Checked = Updater.CheckForUpdates, AccessibleName = "Check for updates" }, 616 - 14 - 40, 21, 40, 22);
+        checkToggle.Changed += () => Updater.CheckForUpdates = checkToggle.Checked;
         Rule(upd, 64);
         Row(upd, 64, "Install updates automatically", "Otherwise G-Lite asks first");
         autoToggle = Ui.Add(upd, new Toggle { Checked = Updater.Auto, AccessibleName = "Install updates automatically" }, 616 - 14 - 40, 64 + 21, 40, 22);
@@ -177,31 +177,31 @@ class MainWindow : Form
         checkText.AutoSize = false;
         checkText.AutoEllipsis = true;
         checkText.Size = new Size(616 - 14 - 180 - 14 - 14, 18);
-        var now = Ui.Add(upd, new Btn { Text = "Check for updates" }, 616 - 14 - 180, 128 + 16, 180, 32);
+        var now = Ui.Add(upd, new FlatButton { Text = "Check for updates" }, 616 - 14 - 180, 128 + 16, 180, 32);
         now.Click += (s, e) => { ShowUpdatePage(true); CheckUpdates(true); };
 
-        Ui.Text(sp, "Startup", 20, 404, () => Theme.Dim, 9f, Ui.Semi);
-        var start = Ui.Add(sp, new Box(), 20, 426, 616, 64);
+        Ui.Text(sp, "Startup", 20, 404, () => Theme.Dim, 9f, Ui.Semibold);
+        var start = Ui.Add(sp, new RoundedBox(), 20, 426, 616, 64);
         Row(start, 0, "Run on startup", "Starts in the tray when you sign in to Windows");
         runToggle = Ui.Add(start, new Toggle { AccessibleName = "Run on startup" }, 616 - 14 - 40, 21, 40, 22);
         runToggle.Changed += () => SetStartup(runToggle.Checked);
 
-        minimize = Ui.Add(this, new Btn { Look = Look.Ghost, Icon = "minus", AccessibleName = "Minimize" }, W - 12 - 72, 10, 36, 28);
+        minimize = Ui.Add(this, new FlatButton { Style = ButtonStyle.Ghost, Icon = "minus", AccessibleName = "Minimize" }, WindowWidth - 12 - 72, 10, 36, 28);
         minimize.Click += (s, e) => WindowState = FormWindowState.Minimized;
         minimize.TabIndex = 1000;
-        close = Ui.Add(this, new Btn { Look = Look.Ghost, Icon = "close", AccessibleName = "Close to tray" }, W - 12 - 36, 10, 36, 28);
+        close = Ui.Add(this, new FlatButton { Style = ButtonStyle.Ghost, Icon = "close", AccessibleName = "Close to tray" }, WindowWidth - 12 - 36, 10, 36, 28);
         close.Click += (s, e) => ToTray();
         close.TabIndex = 1001;
 
         Theme.Changed += Restyle;
         ShowThemeHint();
         ShowUpdate(null);
-        Rescale(Win.At(Point.Empty));
+        Rescale(WindowHelpers.At(Point.Empty));
     }
 
     static Label Row(Control box, int y, string title, string hint)
     {
-        Ui.Text(box, title, 14, y + 12, () => Theme.Text, 9.75f, Ui.Semi);
+        Ui.Text(box, title, 14, y + 12, () => Theme.Text, 9.75f, Ui.Semibold);
         return Ui.Text(box, hint, 14, y + 33, () => Theme.Dim, 9f);
     }
 
@@ -215,7 +215,7 @@ class MainWindow : Form
     {
         Ui.Restyle();
         foreach (var p in pages.Values.OfType<DevicePage>()) p.Restyle();
-        Win.Border(this, Theme.Border);
+        WindowHelpers.Border(this, Theme.Border);
         ShowThemeHint();
         Invalidate(true);
         if (Tray != null && Tray.ContextMenuStrip != null) Tray.ContextMenuStrip.BackColor = Theme.Card;
@@ -248,7 +248,7 @@ class MainWindow : Form
         foreach (var p in pages) p.Value.Visible = p.Key == key;
         empty.Visible = key == null;
         foreach (var i in items) { i.Value.On = i.Key == key; i.Value.Invalidate(); }
-        DevItem picked;
+        DeviceListItem picked;
         if (changed && key != null && items.TryGetValue(key, out picked)) deviceList.Reveal(picked);
         if (Visible) ShowPage(Current);
     }
@@ -264,7 +264,7 @@ class MainWindow : Form
     void ShowSettings()
     {
         runToggle.Checked = StartupOn();
-        checkToggle.Checked = Updater.Check;
+        checkToggle.Checked = Updater.CheckForUpdates;
         autoToggle.Checked = Updater.Auto;
         ShowThemeHint();
         foreach (var p in pages.Values) p.Visible = false;
@@ -318,7 +318,7 @@ class MainWindow : Form
         updateBtn.Invalidate();
     }
 
-    static string Who(Found f) { return f.Short == "" ? f.Name : f.Short; }
+    static string DeviceLabel(FoundDevice f) { return f.ShortName == "" ? f.Name : f.ShortName; }
 
     T Place<T>(Control parent, T c, int x, int y, int w, int h) where T : Control
     {
@@ -335,9 +335,9 @@ class MainWindow : Form
         scanBtn.Enabled = false;
         Task.Run(() =>
         {
-            List<Found> list;
+            List<FoundDevice> list;
             try { list = demo ? DemoDevices() : Devices.Scan(); }
-            catch (Exception) { list = new List<Found>(); }
+            catch (Exception) { list = new List<FoundDevice>(); }
             BeginInvoke((Action)(() => Apply(list)));
         });
     }
@@ -367,13 +367,13 @@ class MainWindow : Form
         rescanSoon.Start();
     }
 
-    void ShowBattery(Found f, Found now)
+    void ShowBattery(FoundDevice f, FoundDevice now)
     {
         if (!found.Contains(f)) return;
         f.Battery = now.Battery;
         f.Charging = now.Charging;
         f.Millivolts = now.Millivolts;
-        DevItem item;
+        DeviceListItem item;
         if (items.TryGetValue(f.Key, out item)) { item.Level = f.Level; item.Value = f.BatteryText; item.Invalidate(); }
         Control page;
         if (pages.TryGetValue(f.Key, out page))
@@ -391,14 +391,14 @@ class MainWindow : Form
         {
             var f = found.FirstOrDefault(d => d.Path == path && d.Index == report[1] && !d.Asleep && d.BatteryFeature != 0 && d.BatteryFeature == report[2]);
             if (f == null) return;
-            var now = new Found { Name = f.Name, BatteryId = f.BatteryId };
+            var now = new FoundDevice { Name = f.Name, BatteryId = f.BatteryId };
             Devices.Decode(now, report.Skip(4).ToArray());
-            if (now.Approx) Devices.Remember(now, DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute);
+            if (now.BatteryFromVoltage) Devices.Remember(now, DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute);
             ShowBattery(f, now);
         }));
     }
 
-    void Listen(List<Found> list)
+    void Listen(List<FoundDevice> list)
     {
         // A HID++ 1.0 device on its cable (index 0) isn't watched; one behind a receiver (the G700) is, for the receiver's 0x41 connect events.
         var paths = list.Where(f => f.Path != null && !f.PlainHid && !(f.Hidpp10 && f.Index == 0)).Select(f => f.Path).Distinct().OrderBy(p => p).ToList();
@@ -406,10 +406,10 @@ class MainWindow : Form
         if (key == watched) return;
         watched = key;
         if (watch != null) watch.Dispose();
-        watch = paths.Count == 0 ? null : new Watch(paths, Heard);
+        watch = paths.Count == 0 ? null : new DeviceWatcher(paths, Heard);
     }
 
-    void Apply(List<Found> list)
+    void Apply(List<FoundDevice> list)
     {
         scanning = false;
         scanBtn.Text = "Scan for devices";
@@ -418,8 +418,8 @@ class MainWindow : Form
         var keys = new HashSet<string>(list.Select(f => f.Key));
         var before = new HashSet<string>(found.Select(f => f.Key));
         foreach (var f in list.Where(f => !before.Contains(f.Key)))
-            Log.Add(Who(f), "found", f.Link + f.Slot + (f.Wpid != 0 ? ", ID " + f.Wpid.ToString("X4") : "") + (f.Asleep ? ", asleep" : ""));
-        foreach (var f in found.Where(f => !keys.Contains(f.Key))) Log.Add(Who(f), "lost", f.Link);
+            Log.Add(DeviceLabel(f), "found", f.Link + f.Slot + (f.WirelessId != 0 ? ", ID " + f.WirelessId.ToString("X4") : "") + (f.Asleep ? ", asleep" : ""));
+        foreach (var f in found.Where(f => !keys.Contains(f.Key))) Log.Add(DeviceLabel(f), "lost", f.Link);
         found = list;
         foreach (var k in pages.Keys.Where(k => !keys.Contains(k)).ToList()) Remove(k);
         int y = 0;
@@ -431,8 +431,8 @@ class MainWindow : Form
             if (pages.TryGetValue(f.Key, out page) && page.GetType() != type) { Remove(f.Key); page = null; }
             if (page == null)
             {
-                page = Make(f, type);
-                Place(this, page, SideW, 0, W - SideW, H);
+                page = MakePage(f, type);
+                Place(this, page, SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
                 page.Visible = false;
                 pages[f.Key] = page;
                 if (page is Page515 && note != null) { ((Page515)page).Note = note; note = null; }
@@ -440,22 +440,22 @@ class MainWindow : Form
             }
             else if (page is DevicePage) ((DevicePage)page).SetFound(f);
             else ((InfoPage)page).SetFound(f);
-            DevItem item;
+            DeviceListItem item;
             if (!items.TryGetValue(f.Key, out item))
             {
                 var key = f.Key;
-                item = Place(deviceList, new DevItem(), 10, y, SideIn, 46);
+                item = Place(deviceList, new DeviceListItem(), 10, y, SidebarInnerWidth, 46);
                 deviceList.Watch(item);
                 item.Click += (s, e) => Pick(key);
                 items[key] = item;
             }
             item.TabIndex = list.IndexOf(f);
-            item.Title = f.Short;
-            item.Sub = f.Sub;
+            item.Title = f.ShortName;
+            item.Subtitle = f.Subtitle;
             item.Level = f.Level;
             item.Value = f.BatteryText;
             item.Icon = f.IsG560 ? "speaker" : f.Kind == "light" || f.Kind == "keyboard" || f.Kind == "mouse" || f.Kind == "headset" ? f.Kind : "device";
-            item.AccessibleName = f.Short;
+            item.AccessibleName = f.ShortName;
             item.Location = new Point(S(10), S(y) - deviceList.Offset);
             item.Invalidate();
             y += 50;
@@ -471,15 +471,15 @@ class MainWindow : Form
         foreach (var page in made) if (page != shown) page.LoadForPreset();
     }
 
-    static Type PageFor(Found f)
+    static Type PageFor(FoundDevice f)
     {
-        var support = Support.For(f);
+        var support = DeviceTable.For(f);
         return support == null ? typeof(InfoPage) : support.Screen;
     }
 
-    Control Make(Found f, Type type)
+    Control MakePage(FoundDevice f, Type type)
     {
-        var support = Support.For(f);
+        var support = DeviceTable.For(f);
         if (support == null || support.Screen != type) return new InfoPage(f, Drag, Rescan);
         Hidpp dev = null;
         if (demo && !demoDevs.TryGetValue(f.Key, out dev))
@@ -493,38 +493,38 @@ class MainWindow : Form
         if (shown == page) { if (page is IPage) ((IPage)page).Hidden(); shown = null; }
         pages.Remove(key);
         page.Dispose();
-        DevItem item;
+        DeviceListItem item;
         if (items.TryGetValue(key, out item)) { items.Remove(key); item.Dispose(); }
     }
 
     void WaitAll() { foreach (var p in pages.Values.OfType<IPage>()) p.Queue.Wait(5000); }
 
-    static List<Found> DemoDevices()
+    static List<FoundDevice> DemoDevices()
     {
         Thread.Sleep(400);
-        return new List<Found>
+        return new List<FoundDevice>
         {
-            new Found { Key = "demo|keyboard", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Link = "LIGHTSPEED", Wpid = 0x40B4, Battery = 82, Firmware = "MPK 25.02, build 0016", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
-            new Found { Key = "demo|g915", Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, Wpid = 0x408E, Battery = 70, Approx = true, Millivolts = 3923, Firmware = "MPK 14.01, build 0021", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 } },
-            new Found { Key = "demo|g512x", Name = "G512 X 75", Kind = "keyboard", Link = "USB", Index = 0xFF, Firmware = "U1 81.05, build 0020", Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
-            new Found { Key = "demo|prox60", Name = "PRO X 60", Kind = "keyboard", Link = "LIGHTSPEED", Index = 5, Wpid = 0x40C1, Battery = 77, Firmware = "MPK 21.01, build 0012", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
-            new Found { Key = "demo|g512", Name = "G512 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Link = "USB", Index = 0xFF, Firmware = "U1 38.03, build 0015", Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8060, 0x8070, 0x8080 } },
-            new Found { Key = "demo|g510", Name = "G510s Gaming Keyboard", Kind = "keyboard", Link = "USB", Index = 0xFF, PlainHid = true, Vendor = true, Path = @"\\?\hid#vid_046d&pid_c22d&mi_01&col02" },
-            new Found { Key = "demo|mouse", Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, Wpid = 0x4079, Battery = 54, Approx = true, Millivolts = 3824, Firmware = "MPM 15.02, build 0017", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
-            new Found { Key = "demo|superlight2", Name = "PRO X SUPERLIGHT 2", Kind = "mouse", Link = "LIGHTSPEED", Index = 4, Wpid = 0x40A9, Battery = 63, Firmware = "MPM 31.01, build 0018", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2202, 0x8061, 0x8100 } },
-            new Found { Key = "demo|g9x", Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04", Firmware = "58.02, build 0018" },
-            new Found { Key = "demo|g560", Name = "G560 Gaming Speaker", Kind = "device", Link = "USB", Index = 0xFF, Firmware = "U1 22.03, build 0023", Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 } },
-            new Found { Key = "demo|litra", Name = "Litra Beam LX", Kind = "light", Link = "USB", Index = 0xFF, Firmware = "U1 03.02, build 0011", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1990, 0x8040, 0x8071, 0x8081 } },
-            new Found { Key = "demo|mxmaster", Name = "MX Master 3S", Kind = "mouse", Link = "Bolt", Index = 2, Wpid = 0xB034, Battery = 70, Firmware = "RBM 21.00, build 0013", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x2110, 0x2121, 0x2150, 0x2201 } },
-            new Found { Key = "demo|mxkeys", Name = "MX Keys S", Kind = "keyboard", Link = "Bolt", Index = 3, Wpid = 0xB378, Battery = 55, Firmware = "RBK 74.00, build 0024", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x1982, 0x40A3 } },
-            new Found { Key = "demo|keypad", Name = "MX Creative Keypad", Kind = "device", Link = "USB", Index = 0xFF, Firmware = "U1 66.00, build 0017", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1B04, 0x8040 } },
-            new Found { Key = "demo|g915full", Name = "G915 LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "LIGHTSPEED", Index = 2, Wpid = 0x407C, Battery = 46, Approx = true, Millivolts = 3780, Firmware = "MPK 12.01, build 0019", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 } },
-            new Found { Key = "demo|g502", Name = "G502 LIGHTSPEED Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 3, Wpid = 0x407F, Battery = 88, Approx = true, Millivolts = 4020, Firmware = "MPM 16.01, build 0020", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
-            new Found { Key = "demo|g9", Name = "G9 Laser Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c048&mi_01&col04", Firmware = "31.01, build 0012" },
-            new Found { Key = "demo|g700s", Name = "G700s Gaming Mouse", Kind = "mouse", Link = "Wireless", Index = 1, Wpid = 0x102A, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c531&mi_01&col02", Models = "Wireless 102A", Firmware = "79.02, build 0016" },
-            new Found { Key = "demo|g500s", Name = "G500s Laser Gaming Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c24e&mi_01&col04", Firmware = "86.01, build 0003" },
-            new Found { Key = "demo|g502hero", Name = "G502 HERO Gaming Mouse", Kind = "mouse", Link = "USB", Index = 0xFF, Models = "USB C08B", Firmware = "U1 69.00, build 0009", Features = new[] { 0x0001, 0x0003, 0x0005, 0x2201, 0x8060, 0x8070, 0x8100 } },
-            new Found { Key = "demo|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "LIGHTSPEED", Index = 0xFF, Battery = 71, Approx = true, Millivolts = 3926, Firmware = "U1 12.01, build 0203", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300 } },
+            new FoundDevice { Key = "demo|keyboard", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Link = "LIGHTSPEED", WirelessId = 0x40B4, Battery = 82, Firmware = "MPK 25.02, build 0016", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
+            new FoundDevice { Key = "demo|g915", Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x408E, Battery = 70, BatteryFromVoltage = true, Millivolts = 3923, Firmware = "MPK 14.01, build 0021", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 } },
+            new FoundDevice { Key = "demo|g512x", Name = "G512 X 75", Kind = "keyboard", Link = "USB", Index = 0xFF, Firmware = "U1 81.05, build 0020", Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
+            new FoundDevice { Key = "demo|prox60", Name = "PRO X 60", Kind = "keyboard", Link = "LIGHTSPEED", Index = 5, WirelessId = 0x40C1, Battery = 77, Firmware = "MPK 21.01, build 0012", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
+            new FoundDevice { Key = "demo|g512", Name = "G512 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Link = "USB", Index = 0xFF, Firmware = "U1 38.03, build 0015", Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8060, 0x8070, 0x8080 } },
+            new FoundDevice { Key = "demo|g510", Name = "G510s Gaming Keyboard", Kind = "keyboard", Link = "USB", Index = 0xFF, PlainHid = true, HasVendorCollection = true, Path = @"\\?\hid#vid_046d&pid_c22d&mi_01&col02" },
+            new FoundDevice { Key = "demo|mouse", Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x4079, Battery = 54, BatteryFromVoltage = true, Millivolts = 3824, Firmware = "MPM 15.02, build 0017", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
+            new FoundDevice { Key = "demo|superlight2", Name = "PRO X SUPERLIGHT 2", Kind = "mouse", Link = "LIGHTSPEED", Index = 4, WirelessId = 0x40A9, Battery = 63, Firmware = "MPM 31.01, build 0018", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2202, 0x8061, 0x8100 } },
+            new FoundDevice { Key = "demo|g9x", Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04", Firmware = "58.02, build 0018" },
+            new FoundDevice { Key = "demo|g560", Name = "G560 Gaming Speaker", Kind = "device", Link = "USB", Index = 0xFF, Firmware = "U1 22.03, build 0023", Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 } },
+            new FoundDevice { Key = "demo|litra", Name = "Litra Beam LX", Kind = "light", Link = "USB", Index = 0xFF, Firmware = "U1 03.02, build 0011", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1990, 0x8040, 0x8071, 0x8081 } },
+            new FoundDevice { Key = "demo|mxmaster", Name = "MX Master 3S", Kind = "mouse", Link = "Bolt", Index = 2, WirelessId = 0xB034, Battery = 70, Firmware = "RBM 21.00, build 0013", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x2110, 0x2121, 0x2150, 0x2201 } },
+            new FoundDevice { Key = "demo|mxkeys", Name = "MX Keys S", Kind = "keyboard", Link = "Bolt", Index = 3, WirelessId = 0xB378, Battery = 55, Firmware = "RBK 74.00, build 0024", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x1982, 0x40A3 } },
+            new FoundDevice { Key = "demo|keypad", Name = "MX Creative Keypad", Kind = "device", Link = "USB", Index = 0xFF, Firmware = "U1 66.00, build 0017", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1B04, 0x8040 } },
+            new FoundDevice { Key = "demo|g915full", Name = "G915 LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "LIGHTSPEED", Index = 2, WirelessId = 0x407C, Battery = 46, BatteryFromVoltage = true, Millivolts = 3780, Firmware = "MPK 12.01, build 0019", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 } },
+            new FoundDevice { Key = "demo|g502", Name = "G502 LIGHTSPEED Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 3, WirelessId = 0x407F, Battery = 88, BatteryFromVoltage = true, Millivolts = 4020, Firmware = "MPM 16.01, build 0020", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
+            new FoundDevice { Key = "demo|g9", Name = "G9 Laser Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c048&mi_01&col04", Firmware = "31.01, build 0012" },
+            new FoundDevice { Key = "demo|g700s", Name = "G700s Gaming Mouse", Kind = "mouse", Link = "Wireless", Index = 1, WirelessId = 0x102A, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c531&mi_01&col02", Models = "Wireless 102A", Firmware = "79.02, build 0016" },
+            new FoundDevice { Key = "demo|g500s", Name = "G500s Laser Gaming Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c24e&mi_01&col04", Firmware = "86.01, build 0003" },
+            new FoundDevice { Key = "demo|g502hero", Name = "G502 HERO Gaming Mouse", Kind = "mouse", Link = "USB", Index = 0xFF, Models = "USB C08B", Firmware = "U1 69.00, build 0009", Features = new[] { 0x0001, 0x0003, 0x0005, 0x2201, 0x8060, 0x8070, 0x8100 } },
+            new FoundDevice { Key = "demo|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "LIGHTSPEED", Index = 0xFF, Battery = 71, BatteryFromVoltage = true, Millivolts = 3926, Firmware = "U1 12.01, build 0203", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300 } },
         };
     }
 
@@ -536,7 +536,7 @@ class MainWindow : Form
         SuspendLayout();
         Scale(new SizeF(ns / scale, ns / scale));
         scale = ns;
-        Ui.K = ns;
+        Ui.DpiScale = ns;
         Ui.Refont();
         ResumeLayout();
         Invalidate(true);
@@ -545,15 +545,15 @@ class MainWindow : Form
 
     public void RefreshIcons()
     {
-        int t = (int)Math.Round(16 * Win.At(Point.Empty)), b = S(32);
+        int t = (int)Math.Round(16 * WindowHelpers.At(Point.Empty)), b = S(32);
         bool light = Theme.TaskbarLight();
         if (Tray != null && (t != traySize || light != trayLight)) { traySize = t; trayLight = light; Tray.Icon = Logo.MakeTray(t, light); }
-        if (b != bigSize) { bigSize = b; Icon = Logo.Make(b); }
+        if (b != bigSize) { bigSize = b; Icon = Logo.MakeIcon(b); }
     }
 
     protected override void WndProc(ref Message m)
     {
-        if (m.Msg == Win.DpiChanged) Rescale(Win.FromMessage(m));
+        if (m.Msg == WindowHelpers.DpiChanged) Rescale(WindowHelpers.FromMessage(m));
         Presence.Power(m);
         if (m.Msg == 0x0219 && !demo) RescanSoon();
         base.WndProc(ref m);
@@ -569,7 +569,7 @@ class MainWindow : Form
 
     protected override void OnPaint(PaintEventArgs e)
     {
-        if (!Win.Rounded) using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+        if (!WindowHelpers.Rounded) using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
     }
 
     void SetStartup(bool on)
@@ -597,7 +597,7 @@ class MainWindow : Form
     {
         if (view == null)
         {
-            view = new KeyboardView(new FakeHidpp(), Model.Load("g515-tkl.json"));
+            view = new KeyboardView(new FakeHidpp(), KeyLayout.Load("g515-tkl.json"));
             view.VisibleChanged += (s, e) => wantView = view.Visible;
         }
         if (view.Visible) view.Hide(); else ShowView();
@@ -638,10 +638,10 @@ class MainWindow : Form
     void GotVersion(string v, string err, bool manual)
     {
         if (err != null) Log.Add("", "update", "Couldn't check for updates: " + err);
-        else if (v != null) Log.Add("", "update", !Updater.Newer(v, Application.ProductVersion) ? "Checked for updates: " + v + " is the latest" : "Version " + v + " is available" + (!manual && !demo && v == Updater.Skipped ? ", skipped" : ""));
+        else if (v != null) Log.Add("", "update", !Updater.IsNewerVersion(v, Application.ProductVersion) ? "Checked for updates: " + v + " is the latest" : "Version " + v + " is available" + (!manual && !demo && v == Updater.Skipped ? ", skipped" : ""));
         if (ready != null) { if (manual) { checkText.Text = "Version " + ready + " installed. Restart G-Lite to use it."; updatePage.Ready(ready); } return; }
         if (err != null) { if (manual) { checkText.Text = "Couldn't check for updates: " + err; updatePage.CheckFailed(err); } return; }
-        if (v == null || !Updater.Newer(v, Application.ProductVersion)) { if (manual) { checkText.Text = "G-Lite is up to date"; updatePage.Current(); } return; }
+        if (v == null || !Updater.IsNewerVersion(v, Application.ProductVersion)) { if (manual) { checkText.Text = "G-Lite is up to date"; updatePage.Current(); } return; }
         if (!manual && !demo && v == Updater.Skipped) return;
         if (!manual && Updater.Auto) { Install(v); return; }
         if (manual) checkText.Text = "Version " + v + " is available";
@@ -757,7 +757,7 @@ class MainWindow : Form
 
     public void SetNote(string n) { note = n; }
 
-    public List<Found> Listed { get { return found; } }
+    public List<FoundDevice> Listed { get { return found; } }
 
     public void Open(string key)
     {
@@ -775,7 +775,7 @@ class MainWindow : Form
     {
         if (WindowState == FormWindowState.Minimized) { Show(); WindowState = FormWindowState.Normal; }
         var wa = Screen.FromPoint(Cursor.Position).WorkingArea;
-        Rescale(Win.At(moved ? Location : Cursor.Position));
+        Rescale(WindowHelpers.At(moved ? Location : Cursor.Position));
         if (!moved) Location = new Point(Math.Max(wa.Left, wa.Right - Width - S(12)), Math.Max(wa.Top, wa.Bottom - Height - S(12)));
         Show();
         if (view != null && wantView) ShowView();
@@ -797,14 +797,14 @@ class MainWindow : Form
         Hide();
         if (shown is IPage) ((IPage)shown).Hidden();
         shown = null;
-        BeginInvoke((Action)Win.Trim);
+        BeginInvoke((Action)WindowHelpers.Trim);
     }
 
     [STAThread]
     static void Main(string[] args)
     {
         if (args.Length == 2 && args[0] == "--swap") { Environment.ExitCode = Updater.Swap(args[1]); return; }
-        Win.Aware();
+        WindowHelpers.EnableDpiAwareness();
         bool fresh, demo = args.Contains("--demo");
         using (var mutex = new Mutex(true, demo ? "GLiteDemo" : "GLite", out fresh))
         {
@@ -824,7 +824,7 @@ class MainWindow : Form
             tray.ContextMenuStrip = new ContextMenuStrip { Renderer = Ui.Menus, ShowImageMargin = false, BackColor = Theme.Card };
             var menu = tray.ContextMenuStrip;
             menu.Tag = "round";
-            menu.Opened += (s, e) => Win.Corners(menu.Handle, Theme.Border);
+            menu.Opened += (s, e) => WindowHelpers.Corners(menu.Handle, Theme.Border);
             var self = System.Diagnostics.Process.GetCurrentProcess();
             var lastCpu = TimeSpan.Zero;
             var lastAt = self.StartTime.ToUniversalTime();
@@ -838,27 +838,27 @@ class MainWindow : Form
                 lastAt = now;
                 return percent;
             };
-            Func<Found, string> state = f => f.Asleep ? "" : f.Battery >= 0 ? f.BatteryText : "";
+            Func<FoundDevice, string> state = f => f.Asleep ? "" : f.Battery >= 0 ? f.BatteryText : "";
             var tip = new TrayTip { Tray = tray };
             tip.Rows = () =>
             {
                 var rows = new List<string[]>();
                 if (demo) rows.Add(new[] { "G-Lite", "demo" });
                 rows.Add(new[] { "CPU", measure().ToString("0.0") + "%" });
-                rows.Add(new[] { "RAM", (Win.PrivateMemory() >> 20) + " MB" });
-                rows.AddRange(panel.Listed.Select(f => new[] { f.Short, state(f), f.Level != -1 ? f.Level.ToString() : "" }));
+                rows.Add(new[] { "RAM", (WindowHelpers.PrivateMemory() >> 20) + " MB" });
+                rows.AddRange(panel.Listed.Select(f => new[] { f.ShortName, state(f), f.Level != -1 ? f.Level.ToString() : "" }));
                 if (panel.Available != null) rows.Add(new[] { "Update", panel.Available });
                 return rows;
             };
-            tray.MouseMove += (s, e) => { if (menu.Visible) return; tip.Moved(); panel.ReadBatteries(); };
-            tray.MouseDown += (s, e) => tip.Gone();
+            tray.MouseMove += (s, e) => { if (menu.Visible) return; tip.PointerMoved(); panel.ReadBatteries(); };
+            tray.MouseDown += (s, e) => tip.Dismiss();
             Action fill = () =>
             {
                 menu.Items.Clear();
                 foreach (var f in panel.Listed)
                 {
                     var key = f.Key;
-                    var row = new MenuRow(f.Short) { Level = f.Level, Value = state(f) };
+                    var row = new MenuRow(f.ShortName) { Level = f.Level, Value = state(f) };
                     row.Click += (s, e) => panel.Open(key);
                     menu.Items.Add(row);
                 }
@@ -866,13 +866,13 @@ class MainWindow : Form
                 menu.Items.Add("Scan for devices", null, (s, e) => panel.Rescan());
                 menu.Items.Add("Settings", null, (s, e) => panel.OpenSettings());
                 menu.Items.Add("Quit G-Lite", null, (s, e) => { tray.Visible = false; Application.Exit(); });
-                float k = Win.At(Cursor.Position);
+                float k = WindowHelpers.At(Cursor.Position);
                 menu.Padding = new Padding((int)(4 * k), (int)(6 * k), (int)(4 * k), (int)(6 * k));
                 menu.Items.Insert(0, new ToolStripLabel { AutoSize = false, Height = (int)(5 * k), Enabled = false });
                 foreach (ToolStripItem item in menu.Items) if (item is ToolStripMenuItem) item.Padding = new Padding((int)(6 * k), (int)(3 * k), (int)(6 * k), (int)(3 * k));
             };
             fill();
-            menu.Opening += (s, e) => { tip.Gone(); fill(); e.Cancel = false; };
+            menu.Opening += (s, e) => { tip.Dismiss(); fill(); e.Cancel = false; };
             tray.MouseClick += (s, e) => { if (e.Button == MouseButtons.Left) { if (panel.Visible && panel.WindowState != FormWindowState.Minimized) panel.HidePanel(); else panel.ShowPanel(); } };
             panel.CreateControl();
             panel.Handle.ToString();
@@ -891,45 +891,45 @@ class MainWindow : Form
             else
             {
                 var settle = new System.Windows.Forms.Timer { Interval = 15000 };
-                settle.Tick += (s, e) => { settle.Dispose(); if (!panel.Visible) Win.Trim(); };
+                settle.Tick += (s, e) => { settle.Dispose(); if (!panel.Visible) WindowHelpers.Trim(); };
                 settle.Start();
             }
-            if (Updater.Check) panel.CheckUpdates(false);
+            if (Updater.CheckForUpdates) panel.CheckUpdates(false);
             Application.Run();
             tray.Visible = false;
         }
     }
 }
 
-class Support
+class DeviceTable
 {
-    public Func<Found, bool> Matches;
+    public Func<FoundDevice, bool> Matches;
     public Type Screen;
-    public Func<Found, Hidpp, MouseEventHandler, Control> Make;
-    public Func<Found, Hidpp> Fake;
+    public Func<FoundDevice, Hidpp, MouseEventHandler, Control> Make;
+    public Func<FoundDevice, Hidpp> Fake;
 
-    public static readonly Support[] All =
+    public static readonly DeviceTable[] All =
     {
-        new Support { Matches = f => f.IsG515, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, Keyboards.G515) },
-        new Support { Matches = f => f.IsG915, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, f.Name.ToUpper().Contains("TKL") ? Keyboards.G915Tkl : f.Name.ToUpper().Contains("G815") ? Keyboards.G815 : Keyboards.G915), Fake = f => new FakeG915() },
-        new Support { Matches = f => f.IsG512X, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, Keyboards.G512X), Fake = f => FakeG915.G512X() },
-        new Support { Matches = f => f.IsRgbKeyboard, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, Keyboards.For(f)), Fake = f => FakeG915.G512X() },
-        new Support { Matches = f => f.IsLedKeyboard, Screen = typeof(PageSpeaker), Make = (f, d, drag) => new PageSpeaker(f, d, drag), Fake = f => new FakeSpeaker { Count = 2 } },
-        new Support { Matches = f => f.IsG510, Screen = typeof(PageG510), Make = (f, d, drag) => new PageG510(f, d, drag), Fake = f => new FakeG510() },
-        new Support { Matches = f => f.IsG9x, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new G9xMouse(G9xModel.G9x)), Fake = f => new FakeG9x() },
-        new Support { Matches = f => f.IsG5, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, G5Mouse.G5()), Fake = f => FakeG9x.Short(0x82) },
-        new Support { Matches = f => f.IsG9, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, G5Mouse.G9()), Fake = f => FakeG9x.Short(0x84) },
-        new Support { Matches = f => f.IsG500, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new G9xMouse(f.G500Model)), Fake = f => FakeG9x.G500s() },
-        new Support { Matches = f => f.IsMouse && f.Has(0x2202), Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new HidppMouse()), Fake = f => FakeMouse.ProX2() },
-        new Support { Matches = f => f.IsMouse, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new HidppMouse()), Fake = f => FakeMouse.For(f) },
-        new Support { Matches = f => f.IsG560, Screen = typeof(PageSpeaker), Make = (f, d, drag) => new PageSpeaker(f, d, drag), Fake = f => new FakeSpeaker() },
-        new Support { Matches = f => f.IsLight, Screen = typeof(PageLight), Make = (f, d, drag) => new PageLight(f, d, drag), Fake = f => new FakeLight() },
-        new Support { Matches = f => f.IsHeadset, Screen = typeof(PageHeadset), Make = (f, d, drag) => new PageHeadset(f, d, drag), Fake = f => new FakeHeadset() },
+        new DeviceTable { Matches = f => f.IsG515, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, KeyboardKinds.G515) },
+        new DeviceTable { Matches = f => f.IsG915, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, f.Name.ToUpper().Contains("TKL") ? KeyboardKinds.G915Tkl : f.Name.ToUpper().Contains("G815") ? KeyboardKinds.G815 : KeyboardKinds.G915), Fake = f => new FakeG915() },
+        new DeviceTable { Matches = f => f.IsG512X, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, KeyboardKinds.G512X), Fake = f => FakeG915.G512X() },
+        new DeviceTable { Matches = f => f.IsRgbKeyboard, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, KeyboardKinds.For(f)), Fake = f => FakeG915.G512X() },
+        new DeviceTable { Matches = f => f.IsLedKeyboard, Screen = typeof(PageSpeaker), Make = (f, d, drag) => new PageSpeaker(f, d, drag), Fake = f => new FakeSpeaker { Count = 2 } },
+        new DeviceTable { Matches = f => f.IsG510, Screen = typeof(PageG510), Make = (f, d, drag) => new PageG510(f, d, drag), Fake = f => new FakeG510() },
+        new DeviceTable { Matches = f => f.IsG9x, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new G9xMouse(G9xModel.G9x)), Fake = f => new FakeG9x() },
+        new DeviceTable { Matches = f => f.IsG5, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, G5Mouse.G5()), Fake = f => FakeG9x.Short(0x82) },
+        new DeviceTable { Matches = f => f.IsG9, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, G5Mouse.G9()), Fake = f => FakeG9x.Short(0x84) },
+        new DeviceTable { Matches = f => f.IsG500, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new G9xMouse(f.G500Model)), Fake = f => FakeG9x.G500s() },
+        new DeviceTable { Matches = f => f.IsMouse && f.Has(0x2202), Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new HidppMouse()), Fake = f => FakeMouse.ProX2() },
+        new DeviceTable { Matches = f => f.IsMouse, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new HidppMouse()), Fake = f => FakeMouse.For(f) },
+        new DeviceTable { Matches = f => f.IsG560, Screen = typeof(PageSpeaker), Make = (f, d, drag) => new PageSpeaker(f, d, drag), Fake = f => new FakeSpeaker() },
+        new DeviceTable { Matches = f => f.IsLight, Screen = typeof(PageLight), Make = (f, d, drag) => new PageLight(f, d, drag), Fake = f => new FakeLight() },
+        new DeviceTable { Matches = f => f.IsHeadset, Screen = typeof(PageHeadset), Make = (f, d, drag) => new PageHeadset(f, d, drag), Fake = f => new FakeHeadset() },
     };
 
-    public static readonly Support Other = new Support { Matches = global::Other.Fits, Screen = typeof(PageOther), Make = (f, d, drag) => new PageOther(f, d, drag), Fake = f => new FakeOther() };
+    public static readonly DeviceTable Other = new DeviceTable { Matches = OtherDevice.Supports, Screen = typeof(PageOtherDevice), Make = (f, d, drag) => new PageOtherDevice(f, d, drag), Fake = f => new FakeOther() };
 
-    public static Support For(Found f)
+    public static DeviceTable For(FoundDevice f)
     {
         if (f.Asleep) return null;
         if (!f.IsG) return Other.Matches(f) ? Other : null;

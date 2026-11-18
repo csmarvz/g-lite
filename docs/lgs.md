@@ -10,7 +10,7 @@ What LGS 9.04.49 (the last version, May 2022) tells us. Read from its install fi
 
 ## Device manifests
 
-One XML file per family: `Resources\<Model>\Manifest\Device_Manifest.xml`. They hold:
+One XML file per family: `Resources\<KeyLayout>\Manifest\Device_Manifest.xml`. They hold:
 
 - How LGS finds the device: `hid_probe` with usage page 0xFF00, usage 1 (short) and 2 (long), PID and VID.
 - The backlight: `type="g9x"` (G9 family only) or `rgb`, with a default colour. Newer devices have `colorLEDEffects` instead.

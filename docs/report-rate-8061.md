@@ -31,11 +31,11 @@ Some may have both 0x8060 and 0x8061. Prefer 0x8061 when it's there.
 | 6 | 0x40 | 8000 Hz | 125 µs |
 
 - The mouse sends an event on fn 0 when its rate changes on the mouse itself. Re-read with fn 2.
-- 0x8060 for comparison: fn 0 gives a mask of milliseconds (bit n is n+1 ms), fn 1 the current interval in ms, fn 2 sets it in ms. That's what `GMouse` does.
+- 0x8060 for comparison: fn 0 gives a mask of milliseconds (bit n is n+1 ms), fn 1 the current interval in ms, fn 2 sets it in ms. That's what `MouseProtocol` does.
 
 ## Which connection to read
 
-fn 1 answers for the connection in use without asking which one it is. For fn 2, pass 1 when the mouse is behind a receiver and 0 when it's wired (`Found.Link`). Or read both and show the one matching fn 1's list.
+fn 1 answers for the connection in use without asking which one it is. For fn 2, pass 1 when the mouse is behind a receiver and 0 when it's wired (`FoundDevice.Link`). Or read both and show the one matching fn 1's list.
 
 ## Onboard mode
 

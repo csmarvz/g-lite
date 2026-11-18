@@ -106,9 +106,9 @@ static class Bindings
     public static byte[][] Copy(byte[][] a) { return a == null ? null : a.Select(x => (byte[])x.Clone()).ToArray(); }
 
     // The G502 HERO (USB C08B) has the G502 LIGHTSPEED's slots (g502-hub's docs/hardware-notes.md, from its button spy).
-    public static string[] Names(Found f, int count)
+    public static string[] Names(FoundDevice f, int count)
     {
-        int wpid = f.Models.Contains("C08B") ? 0x407F : f.Wpid;
+        int wpid = f.Models.Contains("C08B") ? 0x407F : f.WirelessId;
         var known = wpid == 0x407F ? new[] { "Left button", "Right button", "Wheel click", "Thumb, back", "Thumb, front", "Sniper", "G7", "G8", "G9", "Wheel tilt right", "Wheel tilt left" }
             : wpid == 0x4079 ? new[] { "Left button", "Right button", "Wheel click", "Left side, back", "Left side, front", "DPI, underneath", "Right side, back", "Right side, front" }
             : new[] { "Left button", "Right button", "Wheel click" };
@@ -171,17 +171,17 @@ class MouseSet
     }
 }
 
-static class GMouse
+static class MouseProtocol
 {
-    public static readonly EffectDef[] Effects =
+    public static readonly EffectInfo[] Effects =
     {
-        new EffectDef { Id = 0x00, Name = "Off" },
-        new EffectDef { Id = 0x01, Name = "Static", Color = true },
-        new EffectDef { Id = 0x0A, Name = "Breathe", Color = true, Speed = true, MinP = 1000, MaxP = 20000, DefP = 5000 },
-        new EffectDef { Id = 0x03, Name = "Cycle", Speed = true, MinP = 1000, MaxP = 20000, DefP = 8000 },
+        new EffectInfo { Id = 0x00, Name = "Off" },
+        new EffectInfo { Id = 0x01, Name = "Static", Color = true },
+        new EffectInfo { Id = 0x0A, Name = "Breathe", Color = true, Speed = true, MinPeriod = 1000, MaxPeriod = 20000, DefaultPeriod = 5000 },
+        new EffectInfo { Id = 0x03, Name = "Cycle", Speed = true, MinPeriod = 1000, MaxPeriod = 20000, DefaultPeriod = 8000 },
     };
 
-    public static EffectDef Def(byte id) { return Effects.FirstOrDefault(e => e.Id == id); }
+    public static EffectInfo EffectById(byte id) { return Effects.FirstOrDefault(e => e.Id == id); }
 
     public class State
     {
@@ -189,7 +189,7 @@ static class GMouse
         public int[] Dpis = new int[0], Stages = new int[0], Rates = new int[0];
         public bool Onboard, ProfileOk = true, Flash, Fresh, CanInvert, Inverted;
         public MouseLight Light;
-        public EffectDef[] Effects = GMouse.Effects;
+        public EffectInfo[] Effects = MouseProtocol.Effects;
         public Dictionary<int, Dictionary<int, int>> Zones = new Dictionary<int, Dictionary<int, int>>();
         public int Sector = -1, SectorSize, Format, ButtonCount;
         public byte[][] Buttons;
@@ -227,10 +227,10 @@ static class GMouse
 
     public static bool Valid(byte[] p)
     {
-        return p != null && p.Length >= 0xF0 && Crc(p, p.Length - 2) == U16(p, p.Length - 2);
+        return p != null && p.Length >= 0xF0 && Crc(p, p.Length - 2) == ReadUInt16BigEndian(p, p.Length - 2);
     }
 
-    public static void Seal(byte[] p)
+    public static void WriteChecksum(byte[] p)
     {
         int c = Crc(p, p.Length - 2);
         p[p.Length - 2] = (byte)(c >> 8);
@@ -255,7 +255,7 @@ static class GMouse
 
     static void ReadWideDpi(Hidpp h, State s)
     {
-        byte d = h.F(0x2202);
+        byte d = h.FeatureIndex(0x2202);
         var list = new List<byte> { 0 };
         bool ended = false;
         for (int page = 0; page < 16 && !ended; page++)
@@ -265,7 +265,7 @@ static class GMouse
         }
         s.Dpis = DpiList(list.ToArray());
         if (s.Dpis.Length > 1000) s.Dpis = s.Dpis.Where(x => x % 50 == 0).ToArray();
-        s.Dpi = U16(h.Call(d, 5, 0), 1);
+        s.Dpi = ReadUInt16BigEndian(h.Call(d, 5, 0), 1);
     }
 
     public static string Describe(byte[] p)
@@ -273,14 +273,14 @@ static class GMouse
         if (!Valid(p)) return "damaged, can't be restored";
         var stages = StagesOf(p);
         var l = Decode(p.Skip(0xDB).Take(11).ToArray());
-        return (p[1] < stages.Length ? stages[p[1]] + " DPI" : "DPI stages") + ", " + (l == null ? "lighting" : Def(l.Effect).Name) + ", " + (p[0] > 0 ? 1000 / p[0] + " Hz" : "");
+        return (p[1] < stages.Length ? stages[p[1]] + " DPI" : "DPI stages") + ", " + (l == null ? "lighting" : EffectById(l.Effect).Name) + ", " + (p[0] > 0 ? 1000 / p[0] + " Hz" : "");
     }
 
     public static byte[] Build(byte[] old, MouseSet want, int zones)
     {
         var p = (byte[])old.Clone();
         var stages = StagesOf(p);
-        if (stages.Length == 0) throw new Refused("The profile on the mouse has no DPI stages, not touching it");
+        if (stages.Length == 0) throw new RefusedException("The profile on the mouse has no DPI stages, not touching it");
         int i = want.Stage >= 0 && want.Stage < stages.Length ? want.Stage : Array.IndexOf(stages, want.Dpi);
         if (i < 0) i = Math.Min((int)p[1], stages.Length - 1);
         p[3 + 2 * i] = (byte)want.Dpi;
@@ -291,7 +291,7 @@ static class GMouse
         {
             int count = Math.Min(want.Buttons.Length, 16);
             var before = Enumerable.Range(0, count).Select(k => p.Skip(0x20 + 4 * k).Take(4).ToArray()).ToArray();
-            if (Bindings.HasLeft(before, count) && !Bindings.HasLeft(want.Buttons, count)) throw new Refused("No button is set to Left click, not saving");
+            if (Bindings.HasLeft(before, count) && !Bindings.HasLeft(want.Buttons, count)) throw new RefusedException("No button is set to Left click, not saving");
             for (int b = 0; b < count; b++) want.Buttons[b].CopyTo(p, 0x20 + 4 * b);
         }
         if (want.Light != null)
@@ -300,22 +300,22 @@ static class GMouse
                 p[0xD0 + 11 * z] = want.Light.Effect;
                 Encode(want.Light).CopyTo(p, 0xD1 + 11 * z);
             }
-        Seal(p);
+        WriteChecksum(p);
         return p;
     }
 
     public static byte[] Factory(byte[] rom, byte[] current)
     {
-        if (rom[0] == 0 || rom[0] > 8 || StagesOf(rom).Length == 0) throw new Refused("Couldn't read the mouse's factory profile, not restoring it (it starts " + BitConverter.ToString(rom, 0, Math.Min(13, rom.Length)).Replace("-", " ") + ")");
+        if (rom[0] == 0 || rom[0] > 8 || StagesOf(rom).Length == 0) throw new RefusedException("Couldn't read the mouse's factory profile, not restoring it (it starts " + BitConverter.ToString(rom, 0, Math.Min(13, rom.Length)).Replace("-", " ") + ")");
         var p = (byte[])rom.Clone();
         if (Valid(current)) Array.Copy(current, 0xA0, p, 0xA0, 0x30);
-        Seal(p);
+        WriteChecksum(p);
         return p;
     }
 
     public static byte[] ReadSector(Hidpp h, int sector, int size)
     {
-        byte o = h.F(0x8100);
+        byte o = h.FeatureIndex(0x8100);
         var p = new byte[size];
         for (int off = 0; off < size; off += 16)
         {
@@ -328,14 +328,14 @@ static class GMouse
 
     public static void WriteSector(Hidpp h, int sector, byte[] p)
     {
-        if (sector <= 0 || sector >= 0x100) throw new Refused("Refusing to write that part of the mouse's memory");
-        if (!Valid(p)) throw new Refused("Refusing to write a profile with a bad checksum");
+        if (sector <= 0 || sector >= 0x100) throw new RefusedException("Refusing to write that part of the mouse's memory");
+        if (!Valid(p)) throw new RefusedException("Refusing to write a profile with a bad checksum");
         Write(h, sector, p);
     }
 
     static void Write(Hidpp h, int sector, byte[] p)
     {
-        byte o = h.F(0x8100);
+        byte o = h.FeatureIndex(0x8100);
         h.Call(o, 6, (byte)(sector >> 8), (byte)sector, 0, 0, (byte)(p.Length >> 8), (byte)p.Length);
         for (int i = 0; i < p.Length; i += 16)
         {
@@ -351,53 +351,53 @@ static class GMouse
     // Solaar treats both as no directory, and the mouse runs its factory profiles.
     public static bool Unwritten(byte[] directory)
     {
-        return Valid(directory) && U16(directory, 0) == 0xFFFF || directory.All(b => b == 0x00) || directory.All(b => b == 0xFF);
+        return Valid(directory) && ReadUInt16BigEndian(directory, 0) == 0xFFFF || directory.All(b => b == 0x00) || directory.All(b => b == 0xFF);
     }
 
     public static byte[] Directory(int size, int profiles)
     {
-        if (profiles < 1 || profiles > 8 || size < 0xF0) throw new Refused("Refusing to build that profile directory");
+        if (profiles < 1 || profiles > 8 || size < 0xF0) throw new RefusedException("Refusing to build that profile directory");
         var d = Enumerable.Repeat((byte)0xFF, size).ToArray();
         for (int i = 0; i < profiles; i++) { d[4 * i] = 0; d[4 * i + 1] = (byte)(i + 1); d[4 * i + 2] = (byte)(i == 0 ? 1 : 0); d[4 * i + 3] = 0; }
         d[4 * profiles + 2] = 0;
         d[4 * profiles + 3] = 0;
-        Seal(d);
+        WriteChecksum(d);
         return d;
     }
 
     public static void Setup(Hidpp h, State s, byte[] p)
     {
-        if (!s.Fresh || !State.KnownFormat(s.Format) || p.Length != s.SectorSize) throw new Refused("Saving isn't supported on this mouse");
+        if (!s.Fresh || !State.KnownFormat(s.Format) || p.Length != s.SectorSize) throw new RefusedException("Saving isn't supported on this mouse");
         WriteSector(h, 1, p);
         var directory = Directory(s.SectorSize, 1);
         Write(h, 0x0000, directory);
-        try { h.Call(h.F(0x8100), 3, 0x00, 0x01); }
+        try { h.Call(h.FeatureIndex(0x8100), 3, 0x00, 0x01); }
         catch (HidppError) { }
-        if (h.Who != null) Log.Add(h.Who, "sent", "Onboard memory set up: the profile at 0001, built from the factory profile at " + s.Sector.ToString("X4") + ", and the directory at 0000", "ok");
+        if (h.DeviceLabel != null) Log.Add(h.DeviceLabel, "sent", "Onboard memory set up: the profile at 0001, built from the factory profile at " + s.Sector.ToString("X4") + ", and the directory at 0000", "ok");
     }
 
     public static void Store(Hidpp h, State s, byte[] p)
     {
-        if (!s.Writable || s.Fresh || p.Length != s.SectorSize) throw new Refused("Saving isn't supported on this mouse");
+        if (!s.Writable || s.Fresh || p.Length != s.SectorSize) throw new RefusedException("Saving isn't supported on this mouse");
         WriteSector(h, s.Sector, p);
-        try { h.Call(h.F(0x8100), 3, s.Current); }
+        try { h.Call(h.FeatureIndex(0x8100), 3, s.Current); }
         catch (HidppError) { }
     }
 
-    static int U16(byte[] b, int o) { return b[o] << 8 | b[o + 1]; }
+    static int ReadUInt16BigEndian(byte[] b, int o) { return b[o] << 8 | b[o + 1]; }
 
     public static int[] DpiList(byte[] r)
     {
         var v = new List<int>();
         for (int o = 1; o + 1 < r.Length; o += 2)
         {
-            int x = U16(r, o);
+            int x = ReadUInt16BigEndian(r, o);
             if (x == 0) break;
             if ((x & 0xE000) == 0xE000)
             {
                 int step = x & 0x1FFF;
                 if (v.Count == 0 || step == 0 || o + 3 >= r.Length) break;
-                int end = U16(r, o + 2);
+                int end = ReadUInt16BigEndian(r, o + 2);
                 for (int d = v[v.Count - 1] + step; d < end; d += step) v.Add(d);
                 continue;
             }
@@ -428,7 +428,7 @@ static class GMouse
 
     public static MouseLight Decode(byte[] rec)
     {
-        var def = Def(rec[0]);
+        var def = EffectById(rec[0]);
         if (def == null) return null;
         var l = new MouseLight { Effect = rec[0] };
         int c = rec[1] << 16 | rec[2] << 8 | rec[3];
@@ -440,10 +440,10 @@ static class GMouse
                 l.Color = (rec[1] * 255 / max) << 16 | (rec[2] * 255 / max) << 8 | rec[3] * 255 / max;
                 l.Bright = Math.Max(1, (max * 100 + 127) / 255);
                 break;
-            case 0x0A: l.Color = c; l.Period = U16(rec, 4); l.Bright = rec[7] == 0 ? 100 : rec[7]; break;
-            case 0x03: l.Period = U16(rec, 6); l.Bright = rec[8] == 0 ? 100 : rec[8]; break;
+            case 0x0A: l.Color = c; l.Period = ReadUInt16BigEndian(rec, 4); l.Bright = rec[7] == 0 ? 100 : rec[7]; break;
+            case 0x03: l.Period = ReadUInt16BigEndian(rec, 6); l.Bright = rec[8] == 0 ? 100 : rec[8]; break;
         }
-        if (def.Speed) l.Period = Math.Max(def.MinP, Math.Min(def.MaxP, l.Period));
+        if (def.Speed) l.Period = Math.Max(def.MinPeriod, Math.Min(def.MaxPeriod, l.Period));
         l.Bright = Math.Min(100, l.Bright);
         return l;
     }
@@ -458,14 +458,14 @@ static class GMouse
         var s = new State();
         try
         {
-            byte d = h.F(0x2201);
+            byte d = h.FeatureIndex(0x2201);
             s.Dpis = DpiList(h.Call(d, 1, 0));
-            s.Dpi = U16(h.Call(d, 2, 0), 1);
+            s.Dpi = ReadUInt16BigEndian(h.Call(d, 2, 0), 1);
         }
         catch (NotSupportedException) { ReadWideDpi(h, s); }
         try
         {
-            byte r = h.F(0x8060);
+            byte r = h.FeatureIndex(0x8060);
             s.Rates = RateList(h.Call(r, 0)[0]);
             int ms = h.Call(r, 1)[0];
             s.Rate = ms > 0 ? 1000 / ms : 0;
@@ -474,7 +474,7 @@ static class GMouse
         {
             try
             {
-                byte r = h.F(0x8061);
+                byte r = h.FeatureIndex(0x8061);
                 s.Rates = WideRates(h.Call(r, 1)[1]);
                 int index = h.Call(r, 2, (byte)(h.Direct ? 0 : 1))[0];
                 s.Rate = index < 7 ? 125 << index : 0;
@@ -486,14 +486,14 @@ static class GMouse
         int logo = -1;
         try
         {
-            byte f = h.F(0x8070);
+            byte f = h.FeatureIndex(0x8070);
             int zones = h.Call(f, 0)[0];
             for (int z = 0; z < zones; z++)
             {
                 var info = h.Call(f, 1, (byte)z, 0xFF, 0);
-                if (U16(info, 1) == 2) logo = z;
+                if (ReadUInt16BigEndian(info, 1) == 2) logo = z;
                 var map = new Dictionary<int, int>();
-                for (int e = 0; e < info[3]; e++) map[U16(h.Call(f, 2, (byte)z, (byte)e, 0xFF, 0), 2)] = e;
+                for (int e = 0; e < info[3]; e++) map[ReadUInt16BigEndian(h.Call(f, 2, (byte)z, (byte)e, 0xFF, 0), 2)] = e;
                 s.Zones[z] = map;
             }
         }
@@ -502,7 +502,7 @@ static class GMouse
         if (logo < 0) logo = s.Zones.Count - 1;
         try
         {
-            byte w = h.F(0x2121);
+            byte w = h.FeatureIndex(0x2121);
             s.CanInvert = (h.Call(w, 0)[1] & 0x08) != 0;
             s.Inverted = (h.Call(w, 1)[0] & 0x04) != 0;
         }
@@ -510,7 +510,7 @@ static class GMouse
         catch (HidppError) { s.CanInvert = false; }
         try
         {
-            byte o = h.F(0x8100);
+            byte o = h.FeatureIndex(0x8100);
             s.Onboard = h.Call(o, 2)[0] == 1;
             if (s.Onboard)
             {
@@ -518,10 +518,10 @@ static class GMouse
                 s.ProfileOk = false;
                 s.ButtonCount = Math.Min(16, (int)desc[5]);
                 s.Format = desc[1];
-                s.SectorSize = U16(desc, 7);
+                s.SectorSize = ReadUInt16BigEndian(desc, 7);
                 var cp = h.Call(o, 4);
                 s.Current = new[] { cp[0], cp[1] };
-                s.Sector = U16(cp, 0);
+                s.Sector = ReadUInt16BigEndian(cp, 0);
                 if (s.SectorSize >= 0xF0 && s.SectorSize <= 0x1000)
                 {
                     s.Profile = ReadSector(h, s.Sector, s.SectorSize);
@@ -556,38 +556,38 @@ static class GMouse
     public static void SetDpi(Hidpp h, int dpi)
     {
         byte high = (byte)(dpi >> 8), low = (byte)dpi;
-        try { h.Call(h.F(0x2201), 3, 0, high, low); return; }
+        try { h.Call(h.FeatureIndex(0x2201), 3, 0, high, low); return; }
         catch (NotSupportedException) { }
-        byte d = h.F(0x2202);
+        byte d = h.FeatureIndex(0x2202);
         bool both = (h.Call(d, 1, 0)[2] & 1) != 0;
         byte lift = h.Call(d, 5, 0)[9];
         try { h.Call(d, 6, 0, high, low, both ? high : (byte)0, both ? low : (byte)0, lift); }
-        catch (HidppError) { throw new Refused("The mouse refused this DPI. It may only take its saved DPI stages."); }
+        catch (HidppError) { throw new RefusedException("The mouse refused this DPI. It may only take its saved DPI stages."); }
     }
 
     public static void SetInvert(Hidpp h, bool on)
     {
-        byte w = h.F(0x2121);
-        var mode = h.Quiet(w, 1);
+        byte w = h.FeatureIndex(0x2121);
+        var mode = h.CallUnlogged(w, 1);
         bool now = (mode[0] & 0x04) != 0;
         if (now == on) return;
         h.Call(w, 2, (byte)(on ? mode[0] | 0x04 : mode[0] & ~0x04), mode[1], mode[2]);
     }
 
-    public static void SetStage(Hidpp h, int i) { h.Call(h.F(0x8100), 0xC, (byte)i); }
+    public static void SetStage(Hidpp h, int i) { h.Call(h.FeatureIndex(0x8100), 0xC, (byte)i); }
 
     public static void SetRate(Hidpp h, int hz)
     {
-        try { h.Call(h.F(0x8060), 2, (byte)(1000 / hz)); return; }
+        try { h.Call(h.FeatureIndex(0x8060), 2, (byte)(1000 / hz)); return; }
         catch (NotSupportedException) { }
         int index = Array.IndexOf(new[] { 125, 250, 500, 1000, 2000, 4000, 8000 }, hz);
-        if (index < 0) throw new Refused("This mouse has no " + hz + " Hz rate");
-        h.Call(h.F(0x8061), 3, (byte)index);
+        if (index < 0) throw new RefusedException("This mouse has no " + hz + " Hz rate");
+        h.Call(h.FeatureIndex(0x8061), 3, (byte)index);
     }
 
     public static void SetLight(Hidpp h, State s, MouseLight l)
     {
-        byte f = h.F(0x8070);
+        byte f = h.FeatureIndex(0x8070);
         foreach (var z in s.Zones)
         {
             int e;
@@ -599,42 +599,42 @@ static class GMouse
 
 interface IMouse
 {
-    EffectDef[] Effects { get; }
+    EffectInfo[] Effects { get; }
     bool HasFactory { get; }
-    GMouse.State Read(Hidpp h);
-    void SendDpi(Hidpp h, GMouse.State s, MouseSet want, MouseSet sent);
-    void SetLight(Hidpp h, GMouse.State s, MouseLight light);
+    MouseProtocol.State Read(Hidpp h);
+    void SendDpi(Hidpp h, MouseProtocol.State s, MouseSet want, MouseSet sent);
+    void SetLight(Hidpp h, MouseProtocol.State s, MouseLight light);
     void SetRate(Hidpp h, int hz);
     void SetInvert(Hidpp h, bool on);
-    byte[] ReadProfile(Hidpp h, GMouse.State s);
-    void Setup(Hidpp h, GMouse.State s, MouseSet want);
-    void Save(Hidpp h, GMouse.State s, byte[] now, MouseSet want);
-    void Restore(Hidpp h, GMouse.State s, byte[] now, byte[] data);
+    byte[] ReadProfile(Hidpp h, MouseProtocol.State s);
+    void Setup(Hidpp h, MouseProtocol.State s, MouseSet want);
+    void Save(Hidpp h, MouseProtocol.State s, byte[] now, MouseSet want);
+    void Restore(Hidpp h, MouseProtocol.State s, byte[] now, byte[] data);
     string Describe(byte[] profile);
     int DefaultStage(byte[] profile);
 }
 
 class HidppMouse : IMouse
 {
-    public EffectDef[] Effects { get { return GMouse.Effects; } }
+    public EffectInfo[] Effects { get { return MouseProtocol.Effects; } }
     public bool HasFactory { get { return true; } }
-    public GMouse.State Read(Hidpp h) { return GMouse.Read(h); }
+    public MouseProtocol.State Read(Hidpp h) { return MouseProtocol.Read(h); }
 
-    public void SendDpi(Hidpp h, GMouse.State s, MouseSet want, MouseSet sent)
+    public void SendDpi(Hidpp h, MouseProtocol.State s, MouseSet want, MouseSet sent)
     {
         if (sent != null && want.Dpi == sent.Dpi && want.Stage == sent.Stage) return;
         bool saved = s.Onboard && want.Stage >= 0 && want.Stage < s.Stages.Length && s.Stages[want.Stage] == want.Dpi;
-        if (saved) GMouse.SetStage(h, want.Stage); else GMouse.SetDpi(h, want.Dpi);
+        if (saved) MouseProtocol.SetStage(h, want.Stage); else MouseProtocol.SetDpi(h, want.Dpi);
     }
 
-    public void SetLight(Hidpp h, GMouse.State s, MouseLight light) { GMouse.SetLight(h, s, light); }
-    public void SetRate(Hidpp h, int hz) { GMouse.SetRate(h, hz); }
-    public void SetInvert(Hidpp h, bool on) { GMouse.SetInvert(h, on); }
-    public byte[] ReadProfile(Hidpp h, GMouse.State s) { return GMouse.ReadSector(h, s.Sector, s.SectorSize); }
-    public void Setup(Hidpp h, GMouse.State s, MouseSet want) { GMouse.Setup(h, s, GMouse.Build(GMouse.ReadSector(h, s.Sector, s.SectorSize), want, s.Zones.Count)); }
-    public void Save(Hidpp h, GMouse.State s, byte[] now, MouseSet want) { GMouse.Store(h, s, GMouse.Build(now, want, s.Zones.Count)); }
-    public void Restore(Hidpp h, GMouse.State s, byte[] now, byte[] data) { GMouse.Store(h, s, data ?? GMouse.Factory(GMouse.ReadSector(h, GMouse.RomSector, s.SectorSize), now)); }
-    public string Describe(byte[] profile) { return GMouse.Describe(profile); }
+    public void SetLight(Hidpp h, MouseProtocol.State s, MouseLight light) { MouseProtocol.SetLight(h, s, light); }
+    public void SetRate(Hidpp h, int hz) { MouseProtocol.SetRate(h, hz); }
+    public void SetInvert(Hidpp h, bool on) { MouseProtocol.SetInvert(h, on); }
+    public byte[] ReadProfile(Hidpp h, MouseProtocol.State s) { return MouseProtocol.ReadSector(h, s.Sector, s.SectorSize); }
+    public void Setup(Hidpp h, MouseProtocol.State s, MouseSet want) { MouseProtocol.Setup(h, s, MouseProtocol.Build(MouseProtocol.ReadSector(h, s.Sector, s.SectorSize), want, s.Zones.Count)); }
+    public void Save(Hidpp h, MouseProtocol.State s, byte[] now, MouseSet want) { MouseProtocol.Store(h, s, MouseProtocol.Build(now, want, s.Zones.Count)); }
+    public void Restore(Hidpp h, MouseProtocol.State s, byte[] now, byte[] data) { MouseProtocol.Store(h, s, data ?? MouseProtocol.Factory(MouseProtocol.ReadSector(h, MouseProtocol.RomSector, s.SectorSize), now)); }
+    public string Describe(byte[] profile) { return MouseProtocol.Describe(profile); }
     public int DefaultStage(byte[] profile) { return profile[1]; }
 }
 
@@ -656,7 +656,7 @@ class G9xModel
 
     public int Dpi(int raw) { return (int)Math.Round(raw * (double)dpiPerStep / rawPerStep / 50) * 50; }
 
-    public int Raw(int dpi) { return (int)Math.Round(Math.Max(200, Math.Min(Max, dpi)) * (double)rawPerStep / dpiPerStep); }
+    public int DpiToRaw(int dpi) { return (int)Math.Round(Math.Max(200, Math.Min(Max, dpi)) * (double)rawPerStep / dpiPerStep); }
 
     public int[] Dpis() { return Enumerable.Range(0, (Max - 200) / 50 + 1).Select(step => 200 + 50 * step).ToArray(); }
 }
@@ -667,34 +667,34 @@ class G9xMouse : IMouse
 
     public G9xMouse(G9xModel model) { this.model = model; }
 
-    public EffectDef[] Effects { get { return G9x.Effects; } }
+    public EffectInfo[] Effects { get { return G9xRegisters.Effects; } }
     public bool HasFactory { get { return false; } }
-    public GMouse.State Read(Hidpp h) { return G9x.Read(h, model); }
+    public MouseProtocol.State Read(Hidpp h) { return G9xRegisters.Read(h, model); }
 
-    public void SendDpi(Hidpp h, GMouse.State s, MouseSet want, MouseSet sent)
+    public void SendDpi(Hidpp h, MouseProtocol.State s, MouseSet want, MouseSet sent)
     {
-        if (sent == null || want.Dpi != sent.Dpi) G9x.SetDpi(h, want.Dpi, model);
+        if (sent == null || want.Dpi != sent.Dpi) G9xRegisters.SetDpi(h, want.Dpi, model);
     }
 
-    public void SetLight(Hidpp h, GMouse.State s, MouseLight light)
+    public void SetLight(Hidpp h, MouseProtocol.State s, MouseLight light)
     {
-        if (!model.Light) throw new Refused("This mouse has no colour light");
-        G9x.SetLight(h, light);
+        if (!model.Light) throw new RefusedException("This mouse has no colour light");
+        G9xRegisters.SetLight(h, light);
     }
 
-    public void SetRate(Hidpp h, int hz) { G9x.SetRate(h, hz); }
-    public void SetInvert(Hidpp h, bool on) { throw new Refused("This mouse can't invert its wheel"); }
-    public byte[] ReadProfile(Hidpp h, GMouse.State s) { return G9x.ReadPage(h, s.Sector); }
-    public void Setup(Hidpp h, GMouse.State s, MouseSet want) { throw new Refused("Saving isn't supported on this mouse"); }
-    public void Save(Hidpp h, GMouse.State s, byte[] now, MouseSet want) { G9x.Store(h, s, G9x.Build(now, want, s.Rate, model), now); }
+    public void SetRate(Hidpp h, int hz) { G9xRegisters.SetRate(h, hz); }
+    public void SetInvert(Hidpp h, bool on) { throw new RefusedException("This mouse can't invert its wheel"); }
+    public byte[] ReadProfile(Hidpp h, MouseProtocol.State s) { return G9xRegisters.ReadPage(h, s.Sector); }
+    public void Setup(Hidpp h, MouseProtocol.State s, MouseSet want) { throw new RefusedException("Saving isn't supported on this mouse"); }
+    public void Save(Hidpp h, MouseProtocol.State s, byte[] now, MouseSet want) { G9xRegisters.Store(h, s, G9xRegisters.Build(now, want, s.Rate, model), now); }
 
-    public void Restore(Hidpp h, GMouse.State s, byte[] now, byte[] data)
+    public void Restore(Hidpp h, MouseProtocol.State s, byte[] now, byte[] data)
     {
-        if (data == null) throw new Refused("G-Lite can't restore the factory profile on this mouse");
-        G9x.Store(h, s, data, now);
+        if (data == null) throw new RefusedException("G-Lite can't restore the factory profile on this mouse");
+        G9xRegisters.Store(h, s, data, now);
     }
 
-    public string Describe(byte[] profile) { return G9x.Describe(profile, model); }
+    public string Describe(byte[] profile) { return G9xRegisters.Describe(profile, model); }
     public int DefaultStage(byte[] profile) { return profile[0x23]; }
 }
 
@@ -718,47 +718,47 @@ class G5Mouse : IMouse
         return (raw & 0x80) != 0 && index >= 0 && index < dpis.Length ? dpis[index] : 0;
     }
 
-    public int Raw(int dpi)
+    public int DpiToRaw(int dpi)
     {
         int index = Array.IndexOf(dpis, dpi);
-        if (index < 0) throw new Refused("This mouse has no " + dpi + " DPI setting");
+        if (index < 0) throw new RefusedException("This mouse has no " + dpi + " DPI setting");
         return 0x80 | index + firstIndex;
     }
 
-    public EffectDef[] Effects { get { return G9x.Effects; } }
+    public EffectInfo[] Effects { get { return G9xRegisters.Effects; } }
     public bool HasFactory { get { return false; } }
 
-    public GMouse.State Read(Hidpp h)
+    public MouseProtocol.State Read(Hidpp h)
     {
-        var state = new GMouse.State { ProfileOk = true, Effects = G9x.Effects, Rates = G9x.Rates, Dpis = dpis };
+        var state = new MouseProtocol.State { ProfileOk = true, Effects = G9xRegisters.Effects, Rates = G9xRegisters.Rates, Dpis = dpis };
         state.Dpi = Dpi(h.Register(0x81, 0x63)[0]);
         int interval = h.Register(0x81, 0x64)[0];
         state.Rate = interval > 0 ? 1000 / interval : 0;
         return state;
     }
 
-    public void SendDpi(Hidpp h, GMouse.State s, MouseSet want, MouseSet sent)
+    public void SendDpi(Hidpp h, MouseProtocol.State s, MouseSet want, MouseSet sent)
     {
-        if (sent == null || want.Dpi != sent.Dpi) h.Register(0x80, 0x63, (byte)Raw(want.Dpi));
+        if (sent == null || want.Dpi != sent.Dpi) h.Register(0x80, 0x63, (byte)DpiToRaw(want.Dpi));
     }
 
-    public void SetLight(Hidpp h, GMouse.State s, MouseLight light) { throw new Refused("G-Lite can't set this mouse's light yet"); }
-    public void SetRate(Hidpp h, int hz) { G9x.SetRate(h, hz); }
-    public void SetInvert(Hidpp h, bool on) { throw new Refused("This mouse can't invert its wheel"); }
-    public byte[] ReadProfile(Hidpp h, GMouse.State s) { return null; }
-    public void Setup(Hidpp h, GMouse.State s, MouseSet want) { throw new Refused("Saving isn't supported on this mouse"); }
-    public void Save(Hidpp h, GMouse.State s, byte[] now, MouseSet want) { throw new Refused("Saving isn't supported on this mouse"); }
-    public void Restore(Hidpp h, GMouse.State s, byte[] now, byte[] data) { throw new Refused("Saving isn't supported on this mouse"); }
+    public void SetLight(Hidpp h, MouseProtocol.State s, MouseLight light) { throw new RefusedException("G-Lite can't set this mouse's light yet"); }
+    public void SetRate(Hidpp h, int hz) { G9xRegisters.SetRate(h, hz); }
+    public void SetInvert(Hidpp h, bool on) { throw new RefusedException("This mouse can't invert its wheel"); }
+    public byte[] ReadProfile(Hidpp h, MouseProtocol.State s) { return null; }
+    public void Setup(Hidpp h, MouseProtocol.State s, MouseSet want) { throw new RefusedException("Saving isn't supported on this mouse"); }
+    public void Save(Hidpp h, MouseProtocol.State s, byte[] now, MouseSet want) { throw new RefusedException("Saving isn't supported on this mouse"); }
+    public void Restore(Hidpp h, MouseProtocol.State s, byte[] now, byte[] data) { throw new RefusedException("Saving isn't supported on this mouse"); }
     public string Describe(byte[] profile) { return ""; }
     public int DefaultStage(byte[] profile) { return 0; }
 }
 
-static class G9x
+static class G9xRegisters
 {
-    public static readonly EffectDef[] Effects = GMouse.Effects.Where(effect => effect.Id <= 0x01).ToArray();
+    public static readonly EffectInfo[] Effects = MouseProtocol.Effects.Where(effect => effect.Id <= 0x01).ToArray();
     public static readonly int[] Rates = { 125, 200, 250, 333, 500, 1000 };
 
-    public static bool Valid(byte[] page) { return page.Length == 512 && GMouse.Valid(page); }
+    public static bool Valid(byte[] page) { return page.Length == 512 && MouseProtocol.Valid(page); }
 
     public static byte[] ReadPage(Hidpp device, int pageNumber)
     {
@@ -793,9 +793,9 @@ static class G9x
         };
     }
 
-    public static GMouse.State Read(Hidpp device, G9xModel model)
+    public static MouseProtocol.State Read(Hidpp device, G9xModel model)
     {
-        var state = new GMouse.State { ProfileOk = true, Flash = model.Pages, Effects = Effects, Rates = Rates, Dpis = model.Dpis() };
+        var state = new MouseProtocol.State { ProfileOk = true, Flash = model.Pages, Effects = Effects, Rates = Rates, Dpis = model.Dpis() };
         var resolution = device.Register(0x83, 0x63);
         state.Dpi = model.Dpi(resolution[0] | resolution[1] << 8);
         int interval = device.Register(0x81, 0x64)[0];
@@ -828,7 +828,7 @@ static class G9x
 
     public static void SetDpi(Hidpp device, int dpi, G9xModel model)
     {
-        int raw = model.Raw(dpi);
+        int raw = model.DpiToRaw(dpi);
         var resolution = new byte[16];
         Array.Copy(device.Register(0x83, 0x63), resolution, 6);
         resolution[0] = resolution[2] = (byte)raw;
@@ -850,28 +850,28 @@ static class G9x
     {
         var page = (byte[])old.Clone();
         var stages = StagesOf(page, model);
-        if (stages.Length == 0) throw new Refused("The profile on the mouse has no DPI stages, not touching it");
+        if (stages.Length == 0) throw new RefusedException("The profile on the mouse has no DPI stages, not touching it");
         int stage = want.Stage >= 0 && want.Stage < stages.Length ? want.Stage : Array.IndexOf(stages, want.Dpi);
         if (stage < 0) stage = Math.Min((int)page[0x23], stages.Length - 1);
-        int raw = model.Raw(want.Dpi);
+        int raw = model.DpiToRaw(want.Dpi);
         page[4 + 6 * stage] = page[6 + 6 * stage] = (byte)(raw >> 8);
         page[5 + 6 * stage] = page[7 + 6 * stage] = (byte)raw;
         page[0x23] = (byte)stage;
         if (hz > 0) page[0x26] = (byte)(1000 / hz);
         if (want.Light != null && model.Light)
         {
-            var color = want.Light.Effect == 0x01 ? GMouse.Encode(want.Light) : new byte[3];
+            var color = want.Light.Effect == 0x01 ? MouseProtocol.Encode(want.Light) : new byte[3];
             Array.Copy(color, page, 3);
         }
-        GMouse.Seal(page);
+        MouseProtocol.WriteChecksum(page);
         return page;
     }
 
     // previous: the page as it was before (backed up), written back if the write fails after the erase.
-    public static void Store(Hidpp device, GMouse.State state, byte[] page, byte[] previous)
+    public static void Store(Hidpp device, MouseProtocol.State state, byte[] page, byte[] previous)
     {
-        if (!state.Flash || !state.Writable) throw new Refused("Saving isn't supported on this mouse");
-        if (page.Length != 512 || !Valid(page)) throw new Refused("Refusing to write a profile with a bad checksum");
+        if (!state.Flash || !state.Writable) throw new RefusedException("Saving isn't supported on this mouse");
+        if (page.Length != 512 || !Valid(page)) throw new RefusedException("Refusing to write a profile with a bad checksum");
         byte pageNumber = (byte)state.Sector;
         device.Register(0x80, 0x0F, 0xFF);
         bool erased = false;
@@ -887,7 +887,7 @@ static class G9x
             // The page may be half written, and the mouse is on its factory profile (0x0F FF): put the page back as it was, then load it.
             try
             {
-                if (previous == null || previous.Length != 512 || !Valid(previous)) throw new Refused("no good copy to put back");
+                if (previous == null || previous.Length != 512 || !Valid(previous)) throw new RefusedException("no good copy to put back");
                 WritePage(device, pageNumber, previous, () => { });
                 device.Register(0x80, 0x0F, 0x00, state.Current[0]);
             }
@@ -930,7 +930,7 @@ static class G9x
 
     public static void SetLight(Hidpp device, MouseLight light)
     {
-        var color = light.Effect == 0x01 ? GMouse.Encode(light) : new byte[3];
+        var color = light.Effect == 0x01 ? MouseProtocol.Encode(light) : new byte[3];
         device.Register(0x80, 0x57, color[0], color[1], color[2]);
     }
 }

@@ -12,10 +12,10 @@ class PageUpdate : Control
 {
     [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)] static extern int SetWindowTheme(IntPtr h, string app, string id);
     readonly Label big, meta, link, whatsNew;
-    readonly Box notesBox;
+    readonly RoundedBox notesBox;
     readonly RichTextBox notes;
     readonly StatusLine status;
-    readonly Btn back, skip, primary;
+    readonly FlatButton back, skip, primary;
     readonly Dictionary<string, List<Release>> changelogs = new Dictionary<string, List<Release>>();
     readonly Dictionary<string, string> changelogErrors = new Dictionary<string, string>();
     readonly HashSet<string> loading = new HashSet<string>();
@@ -30,12 +30,12 @@ class PageUpdate : Control
     public PageUpdate(MouseEventHandler drag)
     {
         Visible = false;
-        Ui.Style(this, () => BackColor = Theme.Bg);
+        Ui.Style(this, () => BackColor = Theme.Background);
         MouseDown += drag;
-        Ui.Text(this, "Update", 20, 14, () => Theme.Text, 13.5f, Ui.Semi).MouseDown += drag;
+        Ui.Text(this, "Update", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += drag;
 
-        var hero = Ui.Add(this, new Box(), 20, 64, 616, 92);
-        big = Ui.Text(hero, "", 18, 12, () => Theme.Text, 12.75f, Ui.Semi);
+        var hero = Ui.Add(this, new RoundedBox(), 20, 64, 616, 92);
+        big = Ui.Text(hero, "", 18, 12, () => Theme.Text, 12.75f, Ui.Semibold);
         meta = Ui.Text(hero, "", 18, 42, () => Theme.Dim, 9f);
         meta.AutoSize = false;
         meta.AutoEllipsis = true;
@@ -47,13 +47,13 @@ class PageUpdate : Control
         installedLabel.AutoSize = false;
         installedLabel.Size = new Size(200, 18);
         installedLabel.TextAlign = ContentAlignment.TopRight;
-        var installedText = Ui.Text(hero, installed, 398, 46, () => Theme.Text, 9.75f, Ui.Semi);
+        var installedText = Ui.Text(hero, installed, 398, 46, () => Theme.Text, 9.75f, Ui.Semibold);
         installedText.AutoSize = false;
         installedText.Size = new Size(200, 20);
         installedText.TextAlign = ContentAlignment.TopRight;
 
-        whatsNew = Ui.Text(this, "What's new", 20, 172, () => Theme.Dim, 9f, Ui.Semi);
-        notesBox = Ui.Add(this, new Box(), 20, 194, 616, 463);
+        whatsNew = Ui.Text(this, "What's new", 20, 172, () => Theme.Dim, 9f, Ui.Semibold);
+        notesBox = Ui.Add(this, new RoundedBox(), 20, 194, 616, 463);
         notes = Ui.Add(notesBox, new RichTextBox { ReadOnly = true, WordWrap = true, ScrollBars = RichTextBoxScrollBars.Vertical, BorderStyle = BorderStyle.None, DetectUrls = false, AccessibleName = "Changelog" }, 18, 10, 594, 443);
         Ui.Style(notes, () => { notes.BackColor = Theme.Card; Dark(); Render(); });
         notes.HandleCreated += (s, e) => { Dark(); Later(Render); };
@@ -63,11 +63,11 @@ class PageUpdate : Control
         var line = Ui.Add(this, new Control(), 0, 673, 656, 1);
         Ui.Style(line, () => line.BackColor = Theme.Border);
         status = Ui.Add(this, new StatusLine(), 20, 683, 330, 36);
-        back = Ui.Add(this, new Btn { Text = "Back" }, 284, 685, 76, 32);
+        back = Ui.Add(this, new FlatButton { Text = "Back" }, 284, 685, 76, 32);
         back.Click += (s, e) => { if (BackClicked != null) BackClicked(); };
-        skip = Ui.Add(this, new Btn { Text = "Skip this version" }, 368, 685, 140, 32);
+        skip = Ui.Add(this, new FlatButton { Text = "Skip this version" }, 368, 685, 140, 32);
         skip.Click += (s, e) => { if (SkipClicked != null) SkipClicked(); };
-        primary = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Update now" }, 516, 685, 120, 32);
+        primary = Ui.Add(this, new FlatButton { Style = ButtonStyle.Primary, Text = "Update now" }, 516, 685, 120, 32);
         primary.Click += (s, e) => Primary();
     }
 
@@ -226,7 +226,7 @@ class PageUpdate : Control
         notes.SelectionFont = Ui.Get(size, face);
         notes.SelectionColor = color;
         notes.SelectionBullet = bullet;
-        notes.BulletIndent = (int)Math.Round(12 * Ui.K);
+        notes.BulletIndent = (int)Math.Round(12 * Ui.DpiScale);
         notes.AppendText(text);
     }
 
@@ -252,7 +252,7 @@ class PageUpdate : Control
             {
                 if (!first) Add("\n", 9.75f, Ui.Regular, Theme.Text, false);
                 first = false;
-                Add(release.Version, 9.75f, Ui.Semi, Theme.Text, false);
+                Add(release.Version, 9.75f, Ui.Semibold, Theme.Text, false);
                 Add((release.Date != "" ? "   " + release.Date : "") + "\n", 9f, Ui.Regular, Theme.Dim, false);
                 foreach (var text in release.Lines)
                 {
@@ -260,7 +260,7 @@ class PageUpdate : Control
                     if (plain.StartsWith("#"))
                     {
                         Add("\n", 4.5f, Ui.Regular, Theme.Text, false);
-                        Add(plain.TrimStart('#', ' ').ToUpperInvariant() + "\n", 8.25f, Ui.Semi, Theme.Accent, false);
+                        Add(plain.TrimStart('#', ' ').ToUpperInvariant() + "\n", 8.25f, Ui.Semibold, Theme.Accent, false);
                     }
                     else if (plain.StartsWith("- ") || plain.StartsWith("* ")) Add(plain.Substring(2) + "\n", 9.75f, Ui.Regular, Theme.Text, true);
                     else Add(plain + "\n", 9.75f, Ui.Regular, Theme.Text, false);

@@ -4,7 +4,7 @@ A Litra Beam LX owner sent a report from G-Lite 0.0.23 (below) and says it works
 
 ## Why G-Lite missed it
 
-The scan found its HID++ interface, then dropped it at the end because the name doesn't look like a G device (`Found.LooksG`). The scan now keeps every Logitech HID++ device with a name. Devices that aren't G devices (or a Litra) only get the info page, so the report is the only thing that talks to them, and it only reads.
+The scan found its HID++ interface, then dropped it at the end because the name doesn't look like a G device (`FoundDevice.LooksG`). The scan now keeps every Logitech HID++ device with a name. Devices that aren't G devices (or a Litra) only get the info page, so the report is the only thing that talks to them, and it only reads.
 
 ## Ids and transport
 
@@ -41,9 +41,9 @@ The indexes litra-rs hard-codes (0x0A and 0x0C) match the functions of 0x8040 an
 - 0x8081: 7 zones, ids 1–7. fn 1 sets up to 4 zones per message (`<id> R G B`, unused entries `FF 00 00 00`), then fn 7 `00 00 01 00 00` shows the frame. litra-rs keeps every channel at 1 or more. The litra-lx README says to set all 7 zones every time, so G-Lite always does.
 - Which zone is leftmost isn't known.
 
-The owner's report (firmware ILL 01.02) shows 0x8071 v4 with two clusters, which G-Lite only uses through Try effect (below): cluster 0 lists effects 0x01, 0x0A and 0x15, cluster 1 lists 0x13, 0x16 and 0x18. So Breathe, Cycle and Wave are run by G-Lite: `Litra.Frame` works out the seven colours at a time, and the light's screen sends a frame every 50 ms while the effect is on, only when it changed. They keep running while G-Lite is in the tray and stop when it quits. Breathe fades the zone colours, Cycle turns all zones through the hues, Wave spreads the hues across the zones. Speed sets the period, 1 to 20 s.
+The owner's report (firmware ILL 01.02) shows 0x8071 v4 with two clusters, which G-Lite only uses through Try effect (below): cluster 0 lists effects 0x01, 0x0A and 0x15, cluster 1 lists 0x13, 0x16 and 0x18. So Breathe, Cycle and Wave are run by G-Lite: `LitraProtocol.Frame` works out the seven colours at a time, and the light's screen sends a frame every 50 ms while the effect is on, only when it changed. They keep running while G-Lite is in the tray and stop when it quits. Breathe fades the zone colours, Cycle turns all zones through the hues, Wave spreads the hues across the zones. Speed sets the period, 1 to 20 s.
 
-G-Lite keeps the back light as `lighting.<device>` (on, brightness, 7 colours, effect, period) once it's been changed, and sets it again when the light's screen loads. The Screen effect has seven areas side by side (`Litra.ScreenZones`), sent as one frame with `Litra.Colors`.
+G-Lite keeps the back light as `lighting.<device>` (on, brightness, 7 colours, effect, period) once it's been changed, and sets it again when the light's screen loads. The Screen effect has seven areas side by side (`LitraProtocol.ScreenZones`), sent as one frame with `LitraProtocol.Colors`.
 
 ## The Beam LX's report
 
@@ -67,7 +67,7 @@ Firmware ILL 01.02 build 0073, USB 046D:C903, Bluetooth B903. 0x8040 and 0x8081 
 
 On a light with 0x8071, the back light box has Try effect. Its menu lists every effect of every cluster, read when the screen loads (0x8071 fn 0 `<cluster> <effect> 00`, byte 3 the id). Picking one stops G-Lite's own animation, takes software control of the clusters (0x8071 fn 5 `01 01 00`) and sends 0x8071 fn 1 `<cluster> <effect index> <10 parameter bytes> 01`, with the parameters from Lghub's notes. Without fn 5 the light answers fn 1 with error 0x05 for every effect (the owner's first try, 2026-11). Back to G-Lite's colours, any change on the screen, a preset, the Screen effect or reading the light again gives control back (fn 5 `01 00 00`):
 
-The parameters are the keyboards' (`G915.Encode`):
+The parameters are the keyboards' (`G915Lighting.Encode`):
 
 - Static: `R G B 02`
 - Breathe: `R G B <period u16> 00 64`

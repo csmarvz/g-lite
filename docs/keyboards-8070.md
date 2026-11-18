@@ -1,8 +1,8 @@
 # Older G keyboards
 
-The G512 and similar G keyboards light up through 0x8070, the feature `GMouse` already uses, not through 0x8071 like the G515 and G915. Supporting them is mostly a new screen around code G-Lite has. From OpenLogi's G512 recording (see [openlogi.md](openlogi.md)) and [lighting-control.md](lighting-control.md).
+The G512 and similar G keyboards light up through 0x8070, the feature `MouseProtocol` already uses, not through 0x8071 like the G515 and G915. Supporting them is mostly a new screen around code G-Lite has. From OpenLogi's G512 recording (see [openlogi.md](openlogi.md)) and [lighting-control.md](lighting-control.md).
 
-Status: built on the G560's screen (`PageSpeaker`, for `Found.IsLedKeyboard`: kind keyboard, 0x8070, no 0x8071). It sets Off, Static, Breathe, Cycle and Wave live on all zones or each one, greys out the effects a zone doesn't list, names zones from their location (`GSpeaker.ZoneName`: 1 Keys, 2 Logo, 6–11 Zone 1–6, else Zone n), keeps the lighting as `lighting.<device>` and sets it again on load. A keyboard with a zone key map (`GSpeaker.Picture`, only the G213 so far) gets a live key picture. No per-key colours, no Save.
+Status: built on the G560's screen (`PageSpeaker`, for `FoundDevice.IsLedKeyboard`: kind keyboard, 0x8070, no 0x8071). It sets Off, Static, Breathe, Cycle and Wave live on all zones or each one, greys out the effects a zone doesn't list, names zones from their location (`ZoneLighting.ZoneName`: 1 Keys, 2 Logo, 6–11 Zone 1–6, else Zone n), keeps the lighting as `lighting.<device>` and sets it again on load. A keyboard with a zone key map (`ZoneLighting.Picture`, only the G213 so far) gets a live key picture. No per-key colours, no Save.
 
 Tested on a real G213 (see [G213.md](G213.md)): fn 3 without a persistence byte lights it, Wave works with OpenRGB's layout, and the persistence byte stores nothing. The G512 and the others are still untested. The plan below (its own page, a shared `Led` class) is kept for when one of them reports.
 
@@ -20,12 +20,12 @@ Features that matter:
 |---|---|---|
 | 0x8070 colour LED effects | 7 | Effects |
 | 0x8080 per-key lighting | 2 | Not used |
-| 0x8060 report rate | 0 | Could reuse `GMouse` |
+| 0x8060 report rate | 0 | Could reuse `MouseProtocol` |
 | 0x4540 keyboard layout | 0 | ANSI or ISO, later |
 
 No 0x8071, 0x8040 (brightness), 0x8100 or 0x8101. So:
 
-- No brightness feature. Brightness has to be in the effect: Static scales the colour, Breathe and Cycle take an intensity byte, as `GMouse.Encode` does.
+- No brightness feature. Brightness has to be in the effect: Static scales the colour, Breathe and Cycle take an intensity byte, as `MouseProtocol.Encode` does.
 - No onboard profiles. Saving would be the 0x8070 persistence byte: send the effect with 1 (RAM and EEPROM). Only on Save, never on each preview, because EEPROM wears. The G213 accepts 1 but forgets it at the next power cycle, and lists persistency capabilities 0; check a keyboard's capabilities before offering Save.
 
 ## Probably the same family
@@ -50,14 +50,14 @@ Wave (0x04), Starlight (0x05) and Ripple (0x0B) on 0x8070 aren't in OpenLogi. St
 
 ## Zones
 
-fn 1 gives each zone's location: 1 primary (the keys), 2 logo, 6–11 primary 1 to 6 (a G213's five zones, say). A first version can set every zone to the same effect, as `GMouse.SetLight` does for a mouse's zones.
+fn 1 gives each zone's location: 1 primary (the keys), 2 logo, 6–11 primary 1 to 6 (a G213's five zones, say). A first version can set every zone to the same effect, as `MouseProtocol.SetLight` does for a mouse's zones.
 
 ## Code
 
 | File | Change |
 |---|---|
-| `app/Devices.cs` | `Found.IsLedKeyboard`: kind keyboard, has 0x8070, no 0x8071. |
-| `app/Mouse.cs` | Move the 0x8070 parts of `GMouse` (zones, `Encode`, `Decode`, `SetLight`) into a small `Led` class both use. Add the persistence byte. |
+| `app/Devices.cs` | `FoundDevice.IsLedKeyboard`: kind keyboard, has 0x8070, no 0x8071. |
+| `app/Mouse.cs` | Move the 0x8070 parts of `MouseProtocol` (zones, `Encode`, `Decode`, `SetLight`) into a small `Led` class both use. Add the persistence byte. |
 | `app/PageKeyboard.cs` | Effect, colour, speed, brightness, the key picture, Save to keyboard. Smaller than `Page515`: no 0x8101 files, no idle settings, no backups (nothing is overwritten that G-Lite can't set again). |
 | `app/models/g512.json` | The full-size layout. |
 | `app/Fake.cs` | `FakeLedKeyboard` for the demo and self-tests. |

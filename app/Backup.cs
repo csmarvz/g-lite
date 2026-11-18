@@ -19,9 +19,9 @@ static class Backups
 
         public byte[] Get(string key) { byte[] b; return Data.TryGetValue(key, out b) ? b : null; }
 
-        public G515.Files Files
+        public G515Profile.Files Files
         {
-            get { return new G515.Files { FactoryProfile = Get("0101"), FactoryDir = Get("0100"), UserProfile = Get("0008"), UserDir = Get("0000") }; }
+            get { return new G515Profile.Files { FactoryProfile = Get("0101"), FactoryDir = Get("0100"), UserProfile = Get("0008"), UserDir = Get("0000") }; }
         }
     }
 
@@ -38,12 +38,12 @@ static class Backups
         return a.Count == b.Count && a.All(p => b.ContainsKey(p.Key) && Same(p.Value, b[p.Key]));
     }
 
-    public static Dictionary<string, byte[]> Of(G515.Files f)
+    public static Dictionary<string, byte[]> FromFiles(G515Profile.Files f)
     {
         return new Dictionary<string, byte[]> { { "0101", f.FactoryProfile }, { "0100", f.FactoryDir }, { "0008", f.UserProfile }, { "0000", f.UserDir } };
     }
 
-    public static void Save(string device, G515.Files f, string who = null) { Save(device, Of(f), who); }
+    public static void Save(string device, G515Profile.Files f, string who = null) { Save(device, FromFiles(f), who); }
 
     public static void Save(string device, Dictionary<string, byte[]> data, string who = null)
     {
@@ -64,7 +64,7 @@ static class Backups
         }
         catch (Exception ex)
         {
-            if (ex is IOException || ex is UnauthorizedAccessException) throw new Refused("Couldn't make a backup, so nothing was written: " + ex.Message);
+            if (ex is IOException || ex is UnauthorizedAccessException) throw new RefusedException("Couldn't make a backup, so nothing was written: " + ex.Message);
             throw;
         }
     }
@@ -99,11 +99,11 @@ static class Backups
         catch (Exception) { }
     }
 
-    public static string Describe(G515.Files f)
+    public static string Describe(G515Profile.Files f)
     {
-        if (!G515.Good(f)) return "damaged, can't be restored";
+        if (!G515Profile.FilesAreValid(f)) return "damaged, can't be restored";
         if (f.UserProfile == null) return "factory lighting";
-        var l = G515.Decode(f.UserProfile);
-        return l == null ? "factory animation" : G515.Def(l.Effect).Name;
+        var l = G515Profile.Decode(f.UserProfile);
+        return l == null ? "factory animation" : G515Profile.EffectById(l.Effect).Name;
     }
 }

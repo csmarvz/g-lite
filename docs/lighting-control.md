@@ -33,7 +33,7 @@ The flags byte:
 
 All two-byte fields are big endian.
 
-- `G915.Clusters` and `G515.Preview` use only the effect form. Reading the cluster form first gives the effect count without probing until an error.
+- `G915Lighting.Clusters` and `G515Profile.Preview` use only the effect form. Reading the cluster form first gives the effect count without probing until an error.
 - Byte 6 of the cluster reply says whether the cluster can store effects in EEPROM. Read it before offering a save that uses flag 0x02.
 - Extended capabilities: bit 0 stored-effect info, bit 2 LED bin, bit 3 monochrome only, bit 4 no effect sync, bit 5 shutdown (fn 9), bit 6 cluster-changed event.
 - Non-volatile capabilities: bit 0 boot-up effect, 1 demo, 2 user demo, 3 events display, 4 active dimming, 5 ramp down to off, 6 shutdown effect.
@@ -47,7 +47,7 @@ All two-byte fields are big endian.
 | Control | All clusters (needed for fn 1) | Power modes (needed for fn 8) | |
 | Events | Effect sync | User activity | No-activity timeout |
 
-- `G515.Claim` and `G915.Claim` send `01 03 04`: clusters and power modes, and the no-activity event. OpenRGB sends `01 03 07` on the G915, which only adds events. Either should work.
+- `G515Profile.Claim` and `G915Lighting.Claim` send `01 03 04`: clusters and power modes, and the no-activity event. OpenRGB sends `01 03 07` on the G915, which only adds events. Either should work.
 - Release sends `01 00 00`.
 - Without it, fn 1 is refused: the Litra Beam LX answers error 0x05 to every effect until fn 5 `01 01 00` has been sent. Logitech's spec (x8071 v4) names it: NOT_ALLOWED "if the enableSWControlOfAllRgbClusters is not enabled". fn 5's bytes are get/set, then the control flags (0x01 all RGB clusters, 0x02 power modes: "disables all FW power modes handling"), then event flags (0x01 effect sync, 0x02 user activity, 0x04 no-activity timeout). So the keyboards' `01 03 04` also turns off the firmware's own idle dimming, which G-Lite does itself. fn 1's last byte: bit 0 RAM, bit 1 EEPROM, bits 2–3 the power mode (0 full, 1 power save).
 - OpenLogi reads the flags first (`00 00 00`), adds bit 0, and on exit puts back what it read. That's the polite way, in case G HUB or something else held control. G-Lite could do the same: read in `Claim`, keep the bytes, send them back in `Release`. It's not urgent.
@@ -80,7 +80,7 @@ What could go wrong with 1: in onboard mode, the active profile's lighting may w
 | 1 | RAM and EEPROM |
 | 2 | EEPROM only |
 
-- `GMouse.SetLight` sends 12 bytes, so the persistence is 0: live only. Save to mouse writes the profile instead. That's right.
+- `MouseProtocol.SetLight` sends 12 bytes, so the persistence is 0: live only. Save to mouse writes the profile instead. That's right.
 - The G213 accepts 1 without an error but comes back with its factory Cycle after a power cycle; its zones list persistency capabilities 0 (see [G213.md](G213.md)).
 - On a device without onboard profiles, like the G512, 1 is how to save. See [keyboards-8070.md](keyboards-8070.md).
 
@@ -89,7 +89,7 @@ What could go wrong with 1: in onboard mode, the active profile's lighting may w
 - fn 0: zone count at 0, non-volatile capabilities at 1–2, extended capabilities at 3–4.
 - fn 1 `<zone> 00 00`: zone at 0, location at 1–2 (1 primary, 2 logo, 3 left, 4 right, 5 combined, 6–11 primary 1 to 6), effect count at 3, persistency capabilities at 4.
 - fn 2 `<zone> <effect> 00`: zone at 0, effect at 1, effect id at 2–3, capabilities at 4–5, period at 6–7.
-- `GMouse.Read` sends fn 1 and fn 2 with `FF 00` after the zone or effect. It works on the G Pro Wireless. OpenLogi sends zeros.
+- `MouseProtocol.Read` sends fn 1 and fn 2 with `FF 00` after the zone or effect. It works on the G Pro Wireless. OpenLogi sends zeros.
 - Extended capabilities: bit 0 fn 14 supported, bit 1 fn 9 not supported, bit 2 LED bin, bit 3 monochrome only, bit 4 no effect sync.
 
 ### Effect ids
@@ -109,7 +109,7 @@ What could go wrong with 1: in onboard mode, the active profile's lighting may w
 | 0x0A | Breathe |
 | 0x0B | Ripple |
 
-These are the same ids the G915 uses on 0x8071. OpenLogi only encodes Static (colour in params 0–2). `GMouse.Encode` has Static, Breathe and Cycle; `GSpeaker.Encode` adds Wave (0x04) for keyboards, checked on the G213.
+These are the same ids the G915 uses on 0x8071. OpenLogi only encodes Static (colour in params 0–2). `MouseProtocol.Encode` has Static, Breathe and Cycle; `ZoneLighting.Encode` adds Wave (0x04) for keyboards, checked on the G213.
 
 ### Reading back (no need to remember the lighting)
 

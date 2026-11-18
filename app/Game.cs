@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 abstract class Game
 {
-    public const int W = 15, H = 5;
+    public const int Columns = 15, Rows = 5;
     public int Score;
     public bool Over;
     public abstract int Interval { get; }
@@ -28,10 +28,10 @@ class Blocks : Game
         new[] { 2, 0, 0, 1, 1, 1, 2, 1 },
     };
     static readonly int[] Colors = { 0xFF3B3B, 0xFF9A1F, 0xFFE03B, 0x3BE06A, 0x3BD5FF, 0x4A6BFF, 0xC04AFF };
-    public readonly int[,] Cells = new int[H, W];
+    public readonly int[,] Cells = new int[Rows, Columns];
     readonly Random rng = new Random();
     int[] piece;
-    int px, py, color;
+    int pieceX, pieceY, color;
 
     public Blocks() { Spawn(); }
 
@@ -54,7 +54,7 @@ class Blocks : Game
         for (int i = 0; i < 4; i++)
         {
             int x = p[2 * i] + dx, y = p[2 * i + 1] + dy;
-            if (x < 0 || x >= W || y < 0 || y >= H || Cells[y, x] != 0) return false;
+            if (x < 0 || x >= Columns || y < 0 || y >= Rows || Cells[y, x] != 0) return false;
         }
         return true;
     }
@@ -62,11 +62,11 @@ class Blocks : Game
     void Spawn()
     {
         int k = rng.Next(Shapes.Length);
-        piece = Shapes[k]; color = Colors[k]; px = 0; py = rng.Next(H - 1);
-        if (!Fits(piece, px, py)) Over = true;
+        piece = Shapes[k]; color = Colors[k]; pieceX = 0; pieceY = rng.Next(Rows - 1);
+        if (!Fits(piece, pieceX, pieceY)) Over = true;
     }
 
-    public void Move(int dy) { if (!Over && Fits(piece, px, py + dy)) py += dy; }
+    public void Move(int dy) { if (!Over && Fits(piece, pieceX, pieceY + dy)) pieceY += dy; }
 
     public void Rotate()
     {
@@ -77,14 +77,14 @@ class Blocks : Game
         for (int i = 0; i < 4; i++) { mx = Math.Min(mx, r[2 * i]); my = Math.Min(my, r[2 * i + 1]); }
         for (int i = 0; i < 4; i++) { r[2 * i] -= mx; r[2 * i + 1] -= my; }
         foreach (var kick in new[] { 0, -1, 1, -2, 2 })
-            if (Fits(r, px, py + kick)) { piece = r; py += kick; return; }
+            if (Fits(r, pieceX, pieceY + kick)) { piece = r; pieceY += kick; return; }
     }
 
     bool Fall()
     {
         if (Over) return false;
-        if (Fits(piece, px + 1, py)) { px++; return true; }
-        for (int i = 0; i < 4; i++) Cells[piece[2 * i + 1] + py, piece[2 * i] + px] = color;
+        if (Fits(piece, pieceX + 1, pieceY)) { pieceX++; return true; }
+        for (int i = 0; i < 4; i++) Cells[piece[2 * i + 1] + pieceY, piece[2 * i] + pieceX] = color;
         ClearFull();
         Spawn();
         return false;
@@ -92,13 +92,13 @@ class Blocks : Game
 
     public void ClearFull()
     {
-        for (int x = W - 1; x >= 0; x--)
+        for (int x = Columns - 1; x >= 0; x--)
         {
             bool full = true;
-            for (int y = 0; y < H; y++) full &= Cells[y, x] != 0;
+            for (int y = 0; y < Rows; y++) full &= Cells[y, x] != 0;
             if (!full) continue;
-            for (int c = x; c > 0; c--) for (int y = 0; y < H; y++) Cells[y, c] = Cells[y, c - 1];
-            for (int y = 0; y < H; y++) Cells[y, 0] = 0;
+            for (int c = x; c > 0; c--) for (int y = 0; y < Rows; y++) Cells[y, c] = Cells[y, c - 1];
+            for (int y = 0; y < Rows; y++) Cells[y, 0] = 0;
             Score++;
             x++;
         }
@@ -107,19 +107,19 @@ class Blocks : Game
     public override int At(int y, int x)
     {
         if (!Over)
-            for (int i = 0; i < 4; i++) if (piece[2 * i] + px == x && piece[2 * i + 1] + py == y) return color;
+            for (int i = 0; i < 4; i++) if (piece[2 * i] + pieceX == x && piece[2 * i + 1] + pieceY == y) return color;
         return Cells[y, x];
     }
 }
 
 abstract class KeyGame : Game
 {
-    protected readonly int[,] keyAt = new int[H, W];
+    protected readonly int[,] keyAt = new int[Rows, Columns];
     protected readonly List<int> board = new List<int>();
 
     protected KeyGame(List<Point>[] cells)
     {
-        for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) keyAt[y, x] = -1;
+        for (int y = 0; y < Rows; y++) for (int x = 0; x < Columns; x++) keyAt[y, x] = -1;
         for (int i = 0; i < cells.Length; i++)
         {
             if (cells[i] == null) continue;
@@ -131,12 +131,12 @@ abstract class KeyGame : Game
     protected Point Move(Point p, int dx, int dy, bool wrap)
     {
         int from = keyAt[p.Y, p.X], x = p.X, y = p.Y;
-        for (int i = 0; i < W * H; i++)
+        for (int i = 0; i < Columns * Rows; i++)
         {
             x += dx;
             y += dy;
-            if (wrap) { x = (x + W) % W; y = (y + H) % H; }
-            else if (x < 0 || x >= W || y < 0 || y >= H) return p;
+            if (wrap) { x = (x + Columns) % Columns; y = (y + Rows) % Rows; }
+            else if (x < 0 || x >= Columns || y < 0 || y >= Rows) return p;
             if (keyAt[y, x] >= 0 && keyAt[y, x] != from) return new Point(x, y);
         }
         return p;
@@ -205,7 +205,7 @@ class Mines : KeyGame
     readonly List<int>[] near;
     readonly Random rng = new Random();
     public bool Placed;
-    Point cur = new Point(W / 2, H / 2);
+    Point cur = new Point(Columns / 2, Rows / 2);
     int flags;
     bool blink;
 
@@ -253,7 +253,7 @@ class Mines : KeyGame
         }
     }
 
-    public int Near(int k)
+    public int MinesAround(int k)
     {
         int n = 0;
         foreach (int j in near[k]) if (Mine[j]) n++;
@@ -273,7 +273,7 @@ class Mines : KeyGame
             if (state[i] != 0) continue;
             state[i] = 1;
             Score++;
-            if (Near(i) == 0) foreach (int j in near[i]) if (state[j] == 0 && !Mine[j]) todo.Push(j);
+            if (MinesAround(i) == 0) foreach (int j in near[i]) if (state[j] == 0 && !Mine[j]) todo.Push(j);
         }
         bool left = false;
         foreach (int i in board) left |= !Mine[i] && state[i] != 1;
@@ -290,6 +290,6 @@ class Mines : KeyGame
         if (Over && Mine[k] && state[k] != 2) return 0xFF3030;
         if (state[k] == 2) return LegendColors[5];
         if (state[k] != 1) return 0;
-        return LegendColors[Math.Min(Near(k), 4)];
+        return LegendColors[Math.Min(MinesAround(k), 4)];
     }
 }

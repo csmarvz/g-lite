@@ -7,26 +7,26 @@ using System.Threading;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
 
-static class GSpeaker
+static class ZoneLighting
 {
     public const int Place = -1;
     public static readonly string[] Names = { "Bottom left", "Bottom right", "Top left", "Top right" };
-    public static readonly EffectDef[] Effects = GMouse.Effects.Concat(new[] { new EffectDef { Id = 0x04, Name = "Wave", Speed = true, Direction = true, MinP = 1000, MaxP = 20000, DefP = 5000 } }).ToArray();
+    public static readonly EffectInfo[] Effects = MouseProtocol.Effects.Concat(new[] { new EffectInfo { Id = 0x04, Name = "Wave", Speed = true, Direction = true, MinPeriod = 1000, MaxPeriod = 20000, DefaultPeriod = 5000 } }).ToArray();
     public static readonly int[] Directions = { 6, 1, 3, 8 };
     public static readonly string[] DirText = { "Left", "Right", "Center out", "Center in" };
 
-    public static EffectDef Def(byte id) { return Effects.FirstOrDefault(e => e.Id == id); }
+    public static EffectInfo EffectById(byte id) { return Effects.FirstOrDefault(e => e.Id == id); }
 
     // A keyboard's key map with each key's 0x8070 zone in "ids". The G213's zones were shown by its owner (docs/G213.md).
-    public static string Picture(Found found)
+    public static string Picture(FoundDevice found)
     {
-        return found.Kind == "keyboard" && found.Short.ToUpper() == "G213" ? "g213.json" : null;
+        return found.Kind == "keyboard" && found.ShortName.ToUpper() == "G213" ? "g213.json" : null;
     }
 
     // Wave 0x04: OpenRGB's layout for the G915 (docs/G915.md): period low at 6, direction 7, intensity 8, period high 9.
     public static byte[] Encode(MouseLight l)
     {
-        if (l.Effect != 0x04) return GMouse.Encode(l);
+        if (l.Effect != 0x04) return MouseProtocol.Encode(l);
         var b = new byte[10];
         b[6] = (byte)l.Period;
         b[7] = (byte)l.Direction;
@@ -35,7 +35,7 @@ static class GSpeaker
         return b;
     }
 
-    public static Color Shown(MouseLight l, double x, double t)
+    public static Color ColorAt(MouseLight l, double x, double t)
     {
         if (l == null || l.Effect == 0x00) return Color.Black;
         var c = Color.FromArgb(l.Color >> 16 & 0xFF, l.Color >> 8 & 0xFF, l.Color & 0xFF);
@@ -62,7 +62,7 @@ static class GSpeaker
 
     public static List<Dictionary<int, int>> Zones(Hidpp h)
     {
-        byte f = h.F(0x8070);
+        byte f = h.FeatureIndex(0x8070);
         var zones = new List<Dictionary<int, int>>();
         int count = h.Call(f, 0)[0];
         for (int zone = 0; zone < count; zone++)
@@ -84,7 +84,7 @@ static class GSpeaker
     {
         int index;
         if (!effects.TryGetValue(light.Effect, out index)) return;
-        h.Call(h.F(0x8070), 3, new byte[] { (byte)zone, (byte)index }.Concat(Encode(light)).ToArray());
+        h.Call(h.FeatureIndex(0x8070), 3, new byte[] { (byte)zone, (byte)index }.Concat(Encode(light)).ToArray());
     }
 
     public static void SetColor(Hidpp h, int zone, Dictionary<int, int> effects, int color, int bright)
@@ -92,13 +92,13 @@ static class GSpeaker
         int index;
         if (!effects.TryGetValue(0x01, out index)) return;
         var light = new MouseLight { Effect = 0x01, Color = color, Bright = bright };
-        h.Quiet(h.F(0x8070), 3, new byte[] { (byte)zone, (byte)index }.Concat(Encode(light)).ToArray());
+        h.CallUnlogged(h.FeatureIndex(0x8070), 3, new byte[] { (byte)zone, (byte)index }.Concat(Encode(light)).ToArray());
     }
 
     public static List<Zone> ScreenZones()
     {
         var areas = new[] { new RectangleF(0.05f, 0.55f, 0.4f, 0.35f), new RectangleF(0.55f, 0.55f, 0.4f, 0.35f), new RectangleF(0.05f, 0.1f, 0.4f, 0.35f), new RectangleF(0.55f, 0.1f, 0.4f, 0.35f) };
-        return areas.Select((area, i) => new Zone { Name = Names[i], Mark = ScreenSetup.Marks[i], Area = area }).ToList();
+        return areas.Select((area, i) => new Zone { Name = Names[i], MarkColor = ScreenSetup.MarkColors[i], Area = area }).ToList();
     }
 
     public static ScreenSetup Screen(string text)
@@ -118,20 +118,20 @@ static class GSpeaker
     {
         var parts = (text ?? "").Split(';');
         var lights = new MouseLight[zones];
-        for (int zone = 0; zone < zones; zone++) lights[zone] = One(parts.Length == 1 ? parts[0] : zone < parts.Length ? parts[zone] : "");
+        for (int zone = 0; zone < zones; zone++) lights[zone] = ParseLight(parts.Length == 1 ? parts[0] : zone < parts.Length ? parts[zone] : "");
         return lights.Any(l => l != null) ? lights : null;
     }
 
-    static MouseLight One(string text)
+    static MouseLight ParseLight(string text)
     {
         var v = text.Split(',');
         byte effect;
         int color, period, bright;
-        if (v.Length < 4 || !byte.TryParse(v[0], out effect) || GSpeaker.Def(effect) == null
+        if (v.Length < 4 || !byte.TryParse(v[0], out effect) || ZoneLighting.EffectById(effect) == null
             || !int.TryParse(v[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out color)
             || !int.TryParse(v[2], out period) || !int.TryParse(v[3], out bright)) return null;
-        var d = GSpeaker.Def(effect);
-        if (d.Speed) period = Math.Max(d.MinP, Math.Min(d.MaxP, period));
+        var d = ZoneLighting.EffectById(effect);
+        if (d.Speed) period = Math.Max(d.MinPeriod, Math.Min(d.MaxPeriod, period));
         int direction;
         if (v.Length < 5 || !int.TryParse(v[4], out direction) || !Directions.Contains(direction)) direction = 6;
         return new MouseLight { Effect = effect, Color = color & 0xFFFFFF, Period = period, Bright = Math.Max(1, Math.Min(100, bright)), Direction = direction };
@@ -155,7 +155,7 @@ class PageSpeaker : DevicePage
     readonly Timer debounce = new Timer { Interval = 120 }, screenTimer = new Timer { Interval = 100 }, snapTimer = new Timer { Interval = 1000 }, frameTimer = new Timer { Interval = 50 };
     readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
     readonly KeyPicture picture;
-    readonly Model iso;
+    readonly KeyLayout iso;
     bool isoShown;
     volatile bool wholeAgain;
     volatile int layout = -1;
@@ -164,20 +164,20 @@ class PageSpeaker : DevicePage
     internal override bool Busy { get { return debounce.Enabled; } }
 
     readonly Label lightHead, zoneHead, colorHead, speedHead, speedValue, brightHead, brightValue, note, boostValue, rateValue, screenBrightValue;
-    readonly Seg zoneSeg, effects, dirs;
+    readonly SegmentedPicker zoneSeg, effects, dirs;
     readonly ColorRow colors;
     readonly Slider speed, bright, boost, rate, screenBright;
-    readonly Box light, areas, settingsBox;
-    readonly Drop monitorDrop;
+    readonly RoundedBox light, areas, settingsBox;
+    readonly Dropdown monitorDrop;
     readonly ScreenPreview preview;
     readonly Toggle smoothToggle, lockToggle;
     readonly List<Control> plainLight = new List<Control>();
 
-    string Remembered { get { return "lighting." + found.Slug; } }
-    string Saved { get { return "screen." + found.Slug; } }
-    string Active { get { return "screen.on." + found.Slug; } }
+    string Remembered { get { return "lighting." + found.SettingsKey; } }
+    string Saved { get { return "screen." + found.SettingsKey; } }
+    string Active { get { return "screen.on." + found.SettingsKey; } }
 
-    public PageSpeaker(Found found, Hidpp fake, MouseEventHandler drag) : base(found, fake, drag, found.Short, found.Kind == "keyboard" ? "keyboard" : "device", "profile." + found.Slug + ".")
+    public PageSpeaker(FoundDevice found, Hidpp fake, MouseEventHandler drag) : base(found, fake, drag, found.ShortName, found.Kind == "keyboard" ? "keyboard" : "device", "profile." + found.SettingsKey + ".")
     {
         keyboard = found.Kind == "keyboard";
         noun = keyboard ? "keyboard" : "speakers";
@@ -185,42 +185,42 @@ class PageSpeaker : DevicePage
         if (!keyboard) segZones = Enumerable.Range(0, Count).ToList();
         sent = new MouseLight[Count];
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };
-        setup = GSpeaker.Screen(Settings.Get(Saved));
+        setup = ZoneLighting.Screen(Settings.Get(Saved));
 
-        var model = GSpeaker.Picture(found);
+        var model = ZoneLighting.Picture(found);
         if (model != null)
         {
-            var pic = Ui.Add(this, new Box(), 20, 118, 616, 209);
-            Ui.Text(pic, "Live on the keyboard", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
-            var ansi = Model.Load(model);
+            var pic = Ui.Add(this, new RoundedBox(), 20, 118, 616, 209);
+            Ui.Text(pic, "Live on the keyboard", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
+            var ansi = KeyLayout.Load(model);
             iso = ansi.Iso();
             picture = Ui.Add(pic, new KeyPicture(ansi) { Live = true }, 14, 36, 588, 161);
         }
-        light = Ui.Add(this, new Box(), 20, picture != null ? 339 : 118, 616, picture != null ? 310 : 330);
-        lightHead = Ui.Text(light, "Lighting", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
+        light = Ui.Add(this, new RoundedBox(), 20, picture != null ? 339 : 118, 616, picture != null ? 310 : 330);
+        lightHead = Ui.Text(light, "Lighting", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         zoneHead = Ui.Text(light, "Zone", 14, 40, () => Theme.Dim, 9f);
-        zoneSeg = Ui.Add(light, new Seg { Items = keyboard ? new[] { "All" } : new[] { "All" }.Concat(GSpeaker.Names).ToArray(), AccessibleName = "Zone", Index = 0 }, 14, 58, 440, 32);
-        zoneSeg.Picked += i => { picked = i; Sync(); };
+        zoneSeg = Ui.Add(light, new SegmentedPicker { Items = keyboard ? new[] { "All" } : new[] { "All" }.Concat(ZoneLighting.Names).ToArray(), AccessibleName = "Zone", Index = 0 }, 14, 58, 440, 32);
+        zoneSeg.Picked += i => { picked = i; RefreshControls(); };
         Ui.Text(light, "Effect", 14, 98, () => Theme.Dim, 9f);
-        var names = GSpeaker.Effects.Select(d => d.Name).ToList();
+        var names = ZoneLighting.Effects.Select(d => d.Name).ToList();
         if (!keyboard) names.Add("Screen");
-        effects = Ui.Add(light, new Seg { Items = names.ToArray(), AccessibleName = "Effect" }, 14, 116, 440, 32);
+        effects = Ui.Add(light, new SegmentedPicker { Items = names.ToArray(), AccessibleName = "Effect" }, 14, 116, 440, 32);
         effects.Picked += i =>
         {
-            if (i == GSpeaker.Effects.Length) { if (!screening) { ScreenOn(); Edited(); } return; }
+            if (i == ZoneLighting.Effects.Length) { if (!screening) { ScreenOn(); Edited(); } return; }
             if (screening) ScreenOff();
-            var d = GSpeaker.Effects[i];
+            var d = ZoneLighting.Effects[i];
             Edit(l =>
             {
                 l.Effect = d.Id;
-                if (d.Speed && (l.Period < d.MinP || l.Period > d.MaxP)) l.Period = d.DefP;
+                if (d.Speed && (l.Period < d.MinPeriod || l.Period > d.MaxPeriod)) l.Period = d.DefaultPeriod;
             }, true);
         };
         colorHead = Ui.Text(light, "Color", 14, 156, () => Theme.Dim, 9f);
         colors = new ColorRow(light, 173);
         colors.Picked += c => Edit(l => l.Color = c, true);
-        dirs = Ui.Add(light, new Seg { Items = GSpeaker.DirText, AccessibleName = "Direction", Visible = false }, 14, 174, 440, 32);
-        dirs.Picked += i => { int direction = GSpeaker.Directions[i]; Edit(l => l.Direction = direction, true); };
+        dirs = Ui.Add(light, new SegmentedPicker { Items = ZoneLighting.DirText, AccessibleName = "Direction", Visible = false }, 14, 174, 440, 32);
+        dirs.Picked += i => { int direction = ZoneLighting.Directions[i]; Edit(l => l.Direction = direction, true); };
 
         brightHead = Ui.Text(light, "Brightness", 14, 214, () => Theme.Dim, 9f);
         brightValue = Value(light, 14, 214, 172);
@@ -231,8 +231,8 @@ class PageSpeaker : DevicePage
         speed = Ui.Add(light, new Slider { AccessibleName = "Speed" }, 194, 234, 172, 24);
         speed.Changed += (s, e) =>
         {
-            var d = GSpeaker.Def(Displayed().Effect);
-            int period = d.MaxP - (d.MaxP - d.MinP) * speed.Value / 100;
+            var d = ZoneLighting.EffectById(Displayed().Effect);
+            int period = d.MaxPeriod - (d.MaxPeriod - d.MinPeriod) * speed.Value / 100;
             Edit(l => l.Period = period, false);
         };
         note = Ui.Text(light, "G-Lite sets the lighting again when it starts and when you open the " + noun + ".", 14, 272, () => Theme.Dim, 9f);
@@ -241,17 +241,17 @@ class PageSpeaker : DevicePage
         plainLight.AddRange(new Control[] { colorHead, brightHead, brightValue, bright, speedHead, speedValue, speed, note });
         plainLight.AddRange(light.Controls.Cast<Control>().Where(c => c is Swatch));
 
-        areas = Ui.Add(this, new Box { Visible = false }, 20, 292, 358, 300);
-        settingsBox = Ui.Add(this, new Box { Visible = false }, 390, 292, 246, 300);
+        areas = Ui.Add(this, new RoundedBox { Visible = false }, 20, 292, 358, 300);
+        settingsBox = Ui.Add(this, new RoundedBox { Visible = false }, 390, 292, 246, 300);
         Ui.Text(areas, "Screen areas", 14, 12, () => Theme.Dim, 9f);
-        var frame = Ui.Add(areas, new Box(), 14, 38, 330, 188);
+        var frame = Ui.Add(areas, new RoundedBox(), 14, 38, 330, 188);
         preview = Ui.Add(frame, new ScreenPreview(), 8, 8, 314, 172);
         preview.Picked += i => { selectedZone = i; preview.Selected = i; preview.Invalidate(); };
         preview.Done += ScreenChanged;
-        var resetAreas = Ui.Add(areas, new Btn { Text = "Reset areas", AccessibleName = "Reset the screen areas" }, 14, 236, 110, 30);
-        resetAreas.Click += (s, e) => { setup.Zones = GSpeaker.ScreenZones(); selectedZone = 0; ScreenChanged(); };
+        var resetAreas = Ui.Add(areas, new FlatButton { Text = "Reset areas", AccessibleName = "Reset the screen areas" }, 14, 236, 110, 30);
+        resetAreas.Click += (s, e) => { setup.Zones = ZoneLighting.ScreenZones(); selectedZone = 0; ScreenChanged(); };
         Ui.Text(settingsBox, "Monitor", 14, 12, () => Theme.Dim, 9f);
-        monitorDrop = Ui.Add(settingsBox, new Drop { AccessibleName = "Monitor" }, 14, 38, 218, 30);
+        monitorDrop = Ui.Add(settingsBox, new Dropdown { AccessibleName = "Monitor" }, 14, 38, 218, 30);
         monitorDrop.Picked += i =>
         {
             var all = Screen.AllScreens;
@@ -292,16 +292,16 @@ class PageSpeaker : DevicePage
                 int at = segZones.IndexOf(keyZones[hits[0]]);
                 if (at < 0) return;
                 picked = at + 1;
-                Sync();
+                RefreshControls();
             };
             frameTimer.Tick += (s, e) => ShowFrame();
             frameTimer.Start();
         }
         snapTimer.Tick += (s, e) => Snap();
 
-        cur = GSpeaker.FromText(Settings.Get(Remembered), Count);
+        cur = ZoneLighting.FromText(Settings.Get(Remembered), Count);
         if (!keyboard && Settings.Get(Active) == "1") ScreenOn();
-        Sync();
+        RefreshControls();
         if (cur != null || screening) Load();
     }
 
@@ -340,7 +340,7 @@ class PageSpeaker : DevicePage
     MouseLight Own(int zone, MouseLight light)
     {
         var listed = zones;
-        if (light == null || zone == 0 || listed == null || zone >= listed.Count || !GSpeaker.IsArea(listed[zone][GSpeaker.Place]) || listed[zone].ContainsKey(light.Effect)) return light;
+        if (light == null || zone == 0 || listed == null || zone >= listed.Count || !ZoneLighting.IsArea(listed[zone][ZoneLighting.Place]) || listed[zone].ContainsKey(light.Effect)) return light;
         var shown = light.Clone();
         shown.Effect = 0x01;
         return shown;
@@ -366,9 +366,9 @@ class PageSpeaker : DevicePage
             cur[zone] = one;
             var listed = known;
             // On the G213, setting one area ends the whole keyboard's effect on all of them (docs/G213.md): the areas that followed it get its colour.
-            if (zone < listed.Count && GSpeaker.IsArea(listed[zone][GSpeaker.Place]))
+            if (zone < listed.Count && ZoneLighting.IsArea(listed[zone][ZoneLighting.Place]))
                 for (int area = 0; area < listed.Count && area < Count; area++)
-                    if (area != zone && GSpeaker.IsArea(listed[area][GSpeaker.Place]) && (cur[area] == null || !listed[area].ContainsKey(cur[area].Effect)))
+                    if (area != zone && ZoneLighting.IsArea(listed[area][ZoneLighting.Place]) && (cur[area] == null || !listed[area].ContainsKey(cur[area].Effect)))
                     {
                         var follow = (cur[0] ?? new MouseLight()).Clone();
                         follow.Effect = (byte)(follow.Effect == 0x00 ? 0x00 : 0x01);
@@ -377,22 +377,22 @@ class PageSpeaker : DevicePage
         }
         seq++;
         Edited();
-        Sync();
+        RefreshControls();
         debounce.Stop();
         if (now) Send(); else debounce.Start();
     }
 
-    public override void Restyle() { Sync(); }
+    public override void Restyle() { RefreshControls(); }
 
-    protected override string Current() { return (cur == null ? "" : GSpeaker.ToText(cur)) + (screening ? "|" + setup.ToText() : ""); }
+    protected override string Current() { return (cur == null ? "" : ZoneLighting.ToText(cur)) + (screening ? "|" + setup.ToText() : ""); }
 
-    protected override void Use(string text)
+    protected override void ApplyPreset(string text)
     {
         var pieces = text.Split('|');
-        var lights = GSpeaker.FromText(pieces[0], Count);
+        var lights = ZoneLighting.FromText(pieces[0], Count);
         bool screen = !keyboard && pieces.Length > 1;
         if (lights == null && !screen) return;
-        if (screen) setup = GSpeaker.Screen(pieces[1]);
+        if (screen) setup = ZoneLighting.Screen(pieces[1]);
         if (screening && !screen) ScreenOff();
         if (lights != null) cur = lights;
         wholeAgain = true;
@@ -403,7 +403,7 @@ class PageSpeaker : DevicePage
             else { screenTimer.Interval = setup.Interval; ScreenChanged(); Snap(); }
         }
         Edited();
-        Sync();
+        RefreshControls();
         Send();
     }
 
@@ -418,12 +418,12 @@ class PageSpeaker : DevicePage
         Settings.Set(Saved, setup.ToText());
         shown = null;
         framed = null;
-        Did("Screen effect on");
+        LogUserAction("Screen effect on");
         screenTimer.Interval = setup.Interval;
         if (!Manual) { screenTimer.Start(); snapTimer.Start(); }
         Snap();
-        Sync();
-        Calm();
+        RefreshControls();
+        ClearStatus();
     }
 
     // Doesn't send: the edit or preset that ends the Screen effect sends next, and sending here too raced it.
@@ -436,8 +436,8 @@ class PageSpeaker : DevicePage
         shown = null;
         framed = null;
         sent = new MouseLight[Count];
-        Did("Screen effect off");
-        Sync();
+        LogUserAction("Screen effect off");
+        RefreshControls();
     }
 
     void ScreenChanged()
@@ -445,7 +445,7 @@ class PageSpeaker : DevicePage
         if (loading) return;
         Settings.Set(Saved, setup.ToText());
         framed = null;
-        Sync();
+        RefreshControls();
         Edited();
     }
 
@@ -486,9 +486,9 @@ class PageSpeaker : DevicePage
         var z0 = zones;
         if (z0 == null) return;
         framing = true;
-        Do(h =>
+        RunOnDevice(h =>
         {
-            try { for (int zone = 0; zone < frame.Length && zone < z0.Count; zone++) GSpeaker.SetColor(h, zone, z0[zone], frame[zone], level); framed = frame; }
+            try { for (int zone = 0; zone < frame.Length && zone < z0.Count; zone++) ZoneLighting.SetColor(h, zone, z0[zone], frame[zone], level); framed = frame; }
             finally { framing = false; }
         }, null, msg => { framed = null; });
     }
@@ -522,44 +522,44 @@ class PageSpeaker : DevicePage
         });
     }
 
-    void Sync()
+    void RefreshControls()
     {
         loading = true;
         var listed = zones;
         bool ready = listed != null && listed.Count > 0;
         var l = Displayed();
         bool known = l != null && !screening;
-        var d = known ? GSpeaker.Def(l.Effect) : null;
+        var d = known ? ZoneLighting.EffectById(l.Effect) : null;
         bool mixed = picked == 0 && cur != null && cur.Any(z => z == null || !z.Same(cur[0]));
         lightHead.Text = listed != null && listed.Count == 0 ? "Lighting (not found on " + (keyboard ? "this keyboard" : "these speakers") + ")" : screening ? "Lighting" : !known ? "Lighting (as on the " + noun + ")" : mixed ? "Lighting (zones differ, a change sets all of them)" : "Lighting";
         zoneSeg.Enabled = ready && !screening;
-        Shade(zoneHead, !screening);
+        SetDimmed(zoneHead, !screening);
         zoneSeg.Index = picked;
         zoneSeg.Invalidate();
         effects.Enabled = ready || screening;
-        effects.Index = screening ? GSpeaker.Effects.Length : known ? Array.FindIndex(GSpeaker.Effects, e => e.Id == l.Effect) : -1;
+        effects.Index = screening ? ZoneLighting.Effects.Length : known ? Array.FindIndex(ZoneLighting.Effects, e => e.Id == l.Effect) : -1;
         var offered = !ready ? null : picked == 0 ? listed : listed.Skip(Zone).Take(1);
-        effects.Off = offered == null ? new int[0] : Enumerable.Range(0, GSpeaker.Effects.Length).Where(i => !offered.Any(zone => zone.ContainsKey(GSpeaker.Effects[i].Id))).ToArray();
+        effects.Off = offered == null ? new int[0] : Enumerable.Range(0, ZoneLighting.Effects.Length).Where(i => !offered.Any(zone => zone.ContainsKey(ZoneLighting.Effects[i].Id))).ToArray();
         effects.Invalidate();
         bool color = known && d.Color, spd = known && d.Speed, br = known && l.Effect != 0;
-        Shade(brightHead, br);
+        SetDimmed(brightHead, br);
         bright.Enabled = br;
         bright.Value = known ? l.Bright : 100;
         brightValue.Text = br ? l.Bright + "%" : "";
         bright.Invalidate();
-        Shade(speedHead, spd);
+        SetDimmed(speedHead, spd);
         speed.Enabled = spd;
-        if (spd) speed.Value = (d.MaxP - l.Period) * 100 / (d.MaxP - d.MinP);
+        if (spd) speed.Value = (d.MaxPeriod - l.Period) * 100 / (d.MaxPeriod - d.MinPeriod);
         speedValue.Text = spd ? speed.Value + "%" : "";
         speed.Invalidate();
         foreach (var c in plainLight) c.Visible = !screening;
-        if (!screening) colors.Sync(known ? l.Color : 0xFFFFFF, color);
+        if (!screening) colors.RefreshControls(known ? l.Color : 0xFFFFFF, color);
         bool wave = known && d.Direction;
         colorHead.Text = wave ? "Direction" : "Color";
-        Shade(colorHead, color || wave);
+        SetDimmed(colorHead, color || wave);
         if (wave) foreach (var c in light.Controls.OfType<Swatch>()) c.Visible = false;
         dirs.Visible = !screening && wave;
-        dirs.Index = wave ? Array.IndexOf(GSpeaker.Directions, l.Direction) : -1;
+        dirs.Index = wave ? Array.IndexOf(ZoneLighting.Directions, l.Direction) : -1;
         dirs.Invalidate();
         if (picture != null) ShowFrame();
         areas.Visible = settingsBox.Visible = screening;
@@ -587,7 +587,7 @@ class PageSpeaker : DevicePage
         loading = false;
     }
 
-    MouseLight Lit(int zone)
+    MouseLight LightOfZone(int zone)
     {
         var listed = zones;
         if (cur == null || listed == null || zone < 0 || zone >= listed.Count || zone >= cur.Length) return null;
@@ -612,7 +612,7 @@ class PageSpeaker : DevicePage
         for (int k = 0; k < picture.Count; k++)
         {
             int zone = keyZones[k];
-            var c = any ? GSpeaker.Shown(Lit(zone), picture.XOf(k), t) : Color.Black;
+            var c = any ? ZoneLighting.ColorAt(LightOfZone(zone), picture.XOf(k), t) : Color.Black;
             int max = Math.Max(c.R, Math.Max(c.G, c.B));
             lit[k] = max == 0 ? Theme.KeyOff : Ui.Mix(Theme.KeyOff, Color.FromArgb(c.R * 255 / max, c.G * 255 / max, c.B * 255 / max), max / 255.0);
             marked[k] = picked > 0 && zone == Zone;
@@ -620,14 +620,14 @@ class PageSpeaker : DevicePage
         picture.ShowLive(lit, marked);
     }
 
-    protected override void Calm()
+    protected override void ClearStatus()
     {
         var listed = zones;
-        if (listed != null && listed.Count == 0) { Say(keyboard ? "This keyboard lists no lighting zones" : "These speakers list no lighting zones", true); return; }
-        if (screening) { Say("Screen effect, not saved to the speakers"); return; }
+        if (listed != null && listed.Count == 0) { ShowStatus(keyboard ? "This keyboard lists no lighting zones" : "These speakers list no lighting zones", true); return; }
+        if (screening) { ShowStatus("Screen effect, not saved to the speakers"); return; }
         // The G213's light button turns the backlight off inside the keyboard: nothing is reported, and lighting sent then stays dark (docs/G213.md).
-        if (cur != null && keyboard && found.Short.ToUpper() == "G213") { Say("Set by G-Lite. Keys dark? Press the light button above Pause"); return; }
-        Say(cur == null ? "" : "Set by G-Lite, not saved to the " + noun);
+        if (cur != null && keyboard && found.ShortName.ToUpper() == "G213") { ShowStatus("Set by G-Lite. Keys dark? Press the light button above Pause"); return; }
+        ShowStatus(cur == null ? "" : "Set by G-Lite, not saved to the " + noun);
     }
 
     void Send()
@@ -635,17 +635,17 @@ class PageSpeaker : DevicePage
         if (cur == null) return;
         var want = cur.Select(l => l == null ? null : l.Clone()).ToArray();
         // Kept while the Screen effect runs too: they're the lights it goes back to, and a preset may have just set them.
-        Settings.Set(Remembered, GSpeaker.ToText(want));
+        Settings.Set(Remembered, ZoneLighting.ToText(want));
         if (screening) return;
         var z = zones;
         int n = ++seq;
-        Do(h =>
+        RunOnDevice(h =>
         {
             if (n != seq || z == null) return;
             bool whole = wholeAgain;
             wholeAgain = false;
             Apply(h, z, want, whole);
-        }, () => { if (n == seq) Calm(); });
+        }, () => { if (n == seq) ClearStatus(); });
     }
 
     void Apply(Hidpp h, List<Dictionary<int, int>> z, MouseLight[] want, bool whole = false)
@@ -653,11 +653,11 @@ class PageSpeaker : DevicePage
         // An area write ends the whole-keyboard effect on the G213 (docs/G213.md), so All and presets send it again even when it looks unchanged.
         if (whole)
             for (int zone = 0; zone < z.Count && zone < Count; zone++)
-                if (z[zone][GSpeaker.Place] == 1 && z.Any(other => GSpeaker.IsArea(other[GSpeaker.Place]))) sent[zone] = null;
+                if (z[zone][ZoneLighting.Place] == 1 && z.Any(other => ZoneLighting.IsArea(other[ZoneLighting.Place]))) sent[zone] = null;
         for (int zone = 0; zone < z.Count && zone < Count; zone++)
         {
             if (want[zone] == null || (sent[zone] != null && sent[zone].Same(want[zone]))) continue;
-            GSpeaker.SetLight(h, zone, z[zone], want[zone]);
+            ZoneLighting.SetLight(h, zone, z[zone], want[zone]);
             sent[zone] = want[zone];
         }
     }
@@ -665,13 +665,13 @@ class PageSpeaker : DevicePage
     public override void Load()
     {
         debounce.Stop();
-        Say("Reading the " + noun + "…");
+        ShowStatus("Reading the " + noun + "…");
         List<Dictionary<int, int>> read = null;
         var want = cur == null || screening ? null : cur.Select(l => l == null ? null : l.Clone()).ToArray();
-        Do(h =>
+        RunOnDevice(h =>
         {
-            read = GSpeaker.Zones(h);
-            if (picture != null && layout < 0 && found.Has(0x4540)) try { layout = h.Call(h.F(0x4540), 0)[0]; } catch (HidppError) { layout = 0; }
+            read = ZoneLighting.Zones(h);
+            if (picture != null && layout < 0 && found.Has(0x4540)) try { layout = h.Call(h.FeatureIndex(0x4540), 0)[0]; } catch (HidppError) { layout = 0; }
             sent = new MouseLight[Count];
             if (want != null) Apply(h, read, want);
         }, () =>
@@ -681,13 +681,13 @@ class PageSpeaker : DevicePage
             if (keyboard)
             {
                 var listed = read.Take(Count).ToList();
-                bool areas = listed.Any(zone => GSpeaker.IsArea(zone[GSpeaker.Place]));
+                bool areas = listed.Any(zone => ZoneLighting.IsArea(zone[ZoneLighting.Place]));
                 // With areas (the G213), the whole-keyboard zone is what All sets.
-                segZones = Enumerable.Range(0, listed.Count).Where(i => !(areas && listed[i][GSpeaker.Place] == 1)).ToList();
-                zoneSeg.Items = new[] { "All" }.Concat(segZones.Select(i => GSpeaker.ZoneName(listed[i][GSpeaker.Place], i))).ToArray();
+                segZones = Enumerable.Range(0, listed.Count).Where(i => !(areas && listed[i][ZoneLighting.Place] == 1)).ToList();
+                zoneSeg.Items = new[] { "All" }.Concat(segZones.Select(i => ZoneLighting.ZoneName(listed[i][ZoneLighting.Place], i))).ToArray();
                 if (picked > segZones.Count) picked = 0;
             }
-            Sync();
+            RefreshControls();
             Loaded();
         });
     }

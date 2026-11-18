@@ -19,18 +19,18 @@ interface IPage
 
 abstract class DevicePage : Control, IPage
 {
-    protected Found found;
+    protected FoundDevice found;
     readonly Hidpp fake;
     Hidpp dev;
     Task queue = Task.FromResult(0);
     const string NoPreset = "None";
     readonly string prefix;
-    readonly SubLine sub;
-    readonly Drop profiles;
-    readonly Field nameField;
-    readonly Btn updateBtn, moreBtn, undoBtn, reportBtn;
+    readonly DeviceSubtitle sub;
+    readonly Dropdown profiles;
+    readonly TextField nameField;
+    readonly FlatButton updateBtn, moreBtn, undoBtn, reportBtn;
     readonly StatusLine status;
-    readonly Btn act;
+    readonly FlatButton act;
     Action actDo;
     readonly ReportView report;
     bool naming, touched, ready, queuedWork, restoring = true;
@@ -38,44 +38,44 @@ abstract class DevicePage : Control, IPage
     readonly Dictionary<string, string[]> drafts = new Dictionary<string, string[]>();
     public string Note;
 
-    protected DevicePage(Found f, Hidpp fake, MouseEventHandler drag, string title, string noun, string prefix)
+    protected DevicePage(FoundDevice f, Hidpp fake, MouseEventHandler drag, string title, string noun, string prefix)
     {
         found = f;
         this.fake = fake;
         this.prefix = prefix;
-        Ui.Style(this, () => BackColor = Theme.Bg);
+        Ui.Style(this, () => BackColor = Theme.Background);
         MouseDown += drag;
-        Ui.Text(this, title, 20, 14, () => Theme.Text, 13.5f, Ui.Semi).MouseDown += drag;
-        sub = Ui.Add(this, new SubLine(), 21, 42, 540, 20);
+        Ui.Text(this, title, 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += drag;
+        sub = Ui.Add(this, new DeviceSubtitle(), 21, 42, 540, 20);
         sub.MouseDown += drag;
-        reportBtn = Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Report", AccessibleName = "Report of the " + noun }, 572 - 80, 10, 80, 28);
+        reportBtn = Ui.Add(this, new FlatButton { Style = ButtonStyle.Ghost, Text = "Report", AccessibleName = "Report of the " + noun }, 572 - 80, 10, 80, 28);
 
         Ui.Text(this, "Preset", 20, 79, () => Theme.Dim, 9.75f);
-        profiles = Ui.Add(this, new Drop { AccessibleName = "Preset" }, 74, 72, 180, 32);
+        profiles = Ui.Add(this, new Dropdown { AccessibleName = "Preset" }, 74, 72, 180, 32);
         profiles.Picked += PickSet;
         profiles.Label = name => name + (drafts.ContainsKey(name) || name == loaded && Changed() ? " •" : "");
-        nameField = Ui.Add(this, new Field { Visible = false }, 74, 72, 180, 32);
+        nameField = Ui.Add(this, new TextField { Visible = false }, 74, 72, 180, 32);
         nameField.Box.KeyDown += (s, e) =>
         {
             if (e.KeyCode == Keys.Enter) { SaveSet(nameField.Box.Text.Trim()); e.SuppressKeyPress = true; }
             if (e.KeyCode == Keys.Escape) { EndName(); e.SuppressKeyPress = true; }
         };
-        updateBtn = Ui.Add(this, new Btn { Text = "Update" }, 262, 72, 76, 32);
+        updateBtn = Ui.Add(this, new FlatButton { Text = "Update" }, 262, 72, 76, 32);
         updateBtn.Click += (s, e) =>
         {
             if (naming) SaveSet(nameField.Box.Text.Trim());
             else if (profiles.Index <= 0) StartName(null);
             else UpdateSet();
         };
-        moreBtn = Ui.Add(this, new Btn { Text = "…", AccessibleName = "More preset actions" }, 346, 72, 36, 32);
+        moreBtn = Ui.Add(this, new FlatButton { Text = "…", AccessibleName = "More preset actions" }, 346, 72, 36, 32);
         moreBtn.Click += (s, e) => { if (naming) EndName(); else PresetMenu(); };
 
         var line = Ui.Add(this, new Control(), 0, 673, 656, 1);
         Ui.Style(line, () => line.BackColor = Theme.Border);
         status = Ui.Add(this, new StatusLine(), 20, 683, 460, 36);
-        undoBtn = Ui.Add(this, new Btn { Text = "Revert", Enabled = false, AccessibleName = "Revert changes" }, 416, 685, 72, 32);
+        undoBtn = Ui.Add(this, new FlatButton { Text = "Revert", Enabled = false, AccessibleName = "Revert changes" }, 416, 685, 72, 32);
         undoBtn.Click += (s, e) => Undo();
-        act = Ui.Add(this, new Btn { Visible = false }, 328, 685, 160, 32);
+        act = Ui.Add(this, new FlatButton { Visible = false }, 328, 685, 160, 32);
         act.TabIndex = 1000;
         act.Click += (s, e) => { if (actDo != null) actDo(); };
         report = Ui.Add(this, new ReportView(noun, () => ReportView.TitleFor(found), Collect), 0, 72, 656, 658);
@@ -95,15 +95,15 @@ abstract class DevicePage : Control, IPage
 
     protected bool Demo { get { return fake != null; } }
 
-    protected Btn BackupsButton(string noun)
+    protected FlatButton BackupsButton(string noun)
     {
         reportBtn.Left = 572 - 80 - 4 - 80;
-        return Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Backups", AccessibleName = "Backups of the " + noun }, 572 - 80, 10, 80, 28);
+        return Ui.Add(this, new FlatButton { Style = ButtonStyle.Ghost, Text = "Backups", AccessibleName = "Backups of the " + noun }, 572 - 80, 10, 80, 28);
     }
 
     public static string When(Backups.Entry e) { return e.When.ToLocalTime().ToString("d MMM HH:mm", CultureInfo.InvariantCulture); }
 
-    protected void BackupMenu(Btn anchor, string device, string factory, Action restoreFactory, Func<Backups.Entry, string> describe, Func<Backups.Entry, bool> good, Action<Backups.Entry> restore)
+    protected void BackupMenu(FlatButton anchor, string device, string factory, Action restoreFactory, Func<Backups.Entry, string> describe, Func<Backups.Entry, bool> good, Action<Backups.Entry> restore)
     {
         var m = new ContextMenuStrip { Renderer = Ui.Menus, Font = Ui.Get(9.75f, Ui.Regular), ShowImageMargin = false };
         m.BackColor = Theme.Card;
@@ -131,7 +131,7 @@ abstract class DevicePage : Control, IPage
         }));
         m.Closed += (s, a) => BeginInvoke((Action)m.Dispose);
         if (Ui.Popped != null) { Ui.Popped(m); return; }
-        m.Show(anchor, new Point(anchor.Width, anchor.Height + (int)(2 * Ui.K)), ToolStripDropDownDirection.BelowLeft);
+        m.Show(anchor, new Point(anchor.Width, anchor.Height + (int)(2 * Ui.DpiScale)), ToolStripDropDownDirection.BelowLeft);
     }
 
     protected override void Dispose(bool disposing)
@@ -154,11 +154,11 @@ abstract class DevicePage : Control, IPage
 
     protected abstract string Current();
 
-    protected abstract void Use(string text);
+    protected abstract void ApplyPreset(string text);
 
     protected abstract void Revert();
 
-    protected virtual void Calm() { Say(""); }
+    protected virtual void ClearStatus() { ShowStatus(""); }
 
     protected virtual bool Unsaved { get { return false; } }
 
@@ -168,7 +168,7 @@ abstract class DevicePage : Control, IPage
 
     protected virtual void Lost() { }
 
-    public void SetFound(Found f)
+    public void SetFound(FoundDevice f)
     {
         found = f;
         ShowSub();
@@ -176,28 +176,28 @@ abstract class DevicePage : Control, IPage
 
     void ShowSub()
     {
-        sub.Set(found.Sub, found.Level, found.BatteryText, "");
+        sub.Set(found.Subtitle, found.Level, found.BatteryText, "");
     }
 
-    public void Say(string text, bool warn = false, Action click = null, string action = null)
+    public void ShowStatus(string text, bool warn = false, Action click = null, string action = null)
     {
         actDo = action != null ? click : null;
         act.Visible = action != null;
         status.Set(text, warn, action != null ? null : click);
         ShowSets();
-        if (action == null) { status.Width = undoBtn.Left - status.Left - (int)(12 * Ui.K); return; }
+        if (action == null) { status.Width = undoBtn.Left - status.Left - (int)(12 * Ui.DpiScale); return; }
         var main = MainButton();
-        act.Look = main == null || !main.Enabled ? Look.Primary : Look.Normal;
+        act.Style = main == null || !main.Enabled ? ButtonStyle.Primary : ButtonStyle.Normal;
         act.Text = action;
-        int w = TextRenderer.MeasureText(action, Ui.Get(9.75f, act.Look == Look.Primary ? Ui.Semi : Ui.Regular)).Width + (int)(28 * Ui.K);
-        int right = undoBtn.Left - (int)(8 * Ui.K);
+        int w = TextRenderer.MeasureText(action, Ui.Get(9.75f, act.Style == ButtonStyle.Primary ? Ui.Semibold : Ui.Regular)).Width + (int)(28 * Ui.DpiScale);
+        int right = undoBtn.Left - (int)(8 * Ui.DpiScale);
         act.Bounds = new Rectangle(right - w, act.Top, w, act.Height);
-        status.Width = act.Left - status.Left - (int)(12 * Ui.K);
+        status.Width = act.Left - status.Left - (int)(12 * Ui.DpiScale);
     }
 
-    protected void Post(string text, bool warn) { if (IsHandleCreated) BeginInvoke((Action)(() => Say(text, warn))); }
+    protected void ShowStatusLater(string text, bool warn) { if (IsHandleCreated) BeginInvoke((Action)(() => ShowStatus(text, warn))); }
 
-    protected static void Shade(Label l, bool on) { l.ForeColor = on ? Theme.Dim : Ui.Off; }
+    protected static void SetDimmed(Label l, bool on) { l.ForeColor = on ? Theme.Dim : Ui.Off; }
 
     protected static Label Value(Control parent, int x, int y, int w)
     {
@@ -217,19 +217,19 @@ abstract class DevicePage : Control, IPage
             Task.Run(() =>
             {
                 string plain = null, err = null;
-                try { plain = Report.Plain(f, screen); }
+                try { plain = Report.PlainHidReport(f, screen); }
                 catch (Exception ex) { err = ex.Message; }
                 if (IsHandleCreated) BeginInvoke((Action)(() => done(plain, err)));
             });
             return;
         }
         string text = null;
-        Do(h => text = found.Hidpp10 ? Report.Registers(h, found, GetType().Name) : Report.Build(h, found, GetType().Name), () => done(text, null), msg => done(null, msg));
+        RunOnDevice(h => text = found.Hidpp10 ? Report.Registers(h, found, GetType().Name) : Report.Build(h, found, GetType().Name), () => done(text, null), msg => done(null, msg));
     }
 
-    protected string Who { get { return found.Short == "" ? found.Name : found.Short; } }
+    protected string DeviceLabel { get { return found.ShortName == "" ? found.Name : found.ShortName; } }
 
-    protected void Did(string what) { Log.Add(Who, "you", what); }
+    protected void LogUserAction(string what) { Log.Add(DeviceLabel, "you", what); }
 
     // A screen that didn't read its device when made, and isn't shown, reads it now, so its preset is sent again without opening it.
     public void LoadForPreset()
@@ -240,7 +240,7 @@ abstract class DevicePage : Control, IPage
         Load();
     }
 
-    protected void Do(Action<Hidpp> a, Action done = null, Action<string> failed = null)
+    protected void RunOnDevice(Action<Hidpp> a, Action done = null, Action<string> failed = null)
     {
         queuedWork = true;
         queue = queue.ContinueWith(_ =>
@@ -250,22 +250,22 @@ abstract class DevicePage : Control, IPage
                 if (dev == null)
                 {
                     dev = fake ?? new Hidpp(found.Path, found.Index, found.ShortPath);
-                    dev.Who = Who;
+                    dev.DeviceLabel = DeviceLabel;
                 }
                 a(dev);
                 if (done != null && IsHandleCreated) BeginInvoke(done);
             }
             catch (Exception ex)
             {
-                Log.Add(Who, "error", ex.Message);
-                if (dev != null && !(ex is HidppError) && !(ex is Refused)) { dev.Dispose(); dev = null; Lost(); }
+                Log.Add(DeviceLabel, "error", ex.Message);
+                if (dev != null && !(ex is HidppError) && !(ex is RefusedException)) { dev.Dispose(); dev = null; Lost(); }
                 if (failed != null && IsHandleCreated) BeginInvoke((Action)(() => failed(ex.Message)));
-                else Post(ex.Message, true);
+                else ShowStatusLater(ex.Message, true);
             }
         });
     }
 
-    string PresetKey { get { return "preset." + found.Slug; } }
+    string PresetKey { get { return "preset." + found.SettingsKey; } }
 
     // The picked preset's name, with "=edited" (a name can't hold "=") once the settings moved away from it:
     // then the next start keeps what the device or lighting.<device> has and shows the dot, instead of sending the preset over it.
@@ -294,8 +294,8 @@ abstract class DevicePage : Control, IPage
         var text = Settings.Get(prefix + name);
         if (!edited && !Damaged && Current() != text)
         {
-            try { Use(text); }
-            catch (Exception) { Say("The preset " + name + " couldn't be read from settings.txt", true); Remember(); return; }
+            try { ApplyPreset(text); }
+            catch (Exception) { ShowStatus("The preset " + name + " couldn't be read from settings.txt", true); Remember(); return; }
         }
         profiles.Index = index;
         loaded = name;
@@ -309,7 +309,7 @@ abstract class DevicePage : Control, IPage
         ready = true;
         ShowSets();
         ShowSub();
-        Calm();
+        ClearStatus();
         RestorePreset();
         if (Note == null || !Visible) return;
         var n = Note;
@@ -319,9 +319,9 @@ abstract class DevicePage : Control, IPage
 
     void Briefly(string n)
     {
-        Say(n);
+        ShowStatus(n);
         var t = new Timer { Interval = 8000 };
-        t.Tick += (s, e) => { t.Dispose(); if (status.Shown == n) Calm(); };
+        t.Tick += (s, e) => { t.Dispose(); if (status.Shown == n) ClearStatus(); };
         t.Start();
     }
 
@@ -334,7 +334,7 @@ abstract class DevicePage : Control, IPage
         ShowSets();
     }
 
-    Btn MainButton() { return Controls.OfType<Btn>().FirstOrDefault(b => b != act && b != undoBtn && b.Look == Look.Primary && b.Visible && b.Top >= act.Top - 4); }
+    FlatButton MainButton() { return Controls.OfType<FlatButton>().FirstOrDefault(b => b != act && b != undoBtn && b.Style == ButtonStyle.Primary && b.Visible && b.Top >= act.Top - 4); }
 
     void ShowSets()
     {
@@ -350,9 +350,9 @@ abstract class DevicePage : Control, IPage
         undoBtn.Enabled = picked ? changed : Unsaved;
         Remember();
         if (!IsHandleCreated || !Visible) return;
-        moreBtn.Width = (int)((naming ? 76 : 36) * Ui.K);
+        moreBtn.Width = (int)((naming ? 76 : 36) * Ui.DpiScale);
         var main = MainButton();
-        undoBtn.Left = (main != null ? main.Left - (int)(8 * Ui.K) : (int)(636 * Ui.K)) - undoBtn.Width;
+        undoBtn.Left = (main != null ? main.Left - (int)(8 * Ui.DpiScale) : (int)(636 * Ui.DpiScale)) - undoBtn.Width;
     }
 
     bool Changed() { return touched && baseline != null && Current() != baseline; }
@@ -362,8 +362,8 @@ abstract class DevicePage : Control, IPage
         if (profiles.Index <= 0 || baseline == null) Revert();
         else
         {
-            try { Use(baseline); }
-            catch (Exception) { Say("This preset couldn't be read from settings.txt", true); }
+            try { ApplyPreset(baseline); }
+            catch (Exception) { ShowStatus("This preset couldn't be read from settings.txt", true); }
         }
         touched = false;
         ShowSets();
@@ -381,7 +381,7 @@ abstract class DevicePage : Control, IPage
         m.Items.Add(new ToolStripMenuItem("Delete", null, (s, e) => DeleteSet(name)) { Enabled = picked });
         m.Closed += (s, a) => BeginInvoke((Action)m.Dispose);
         if (Ui.Popped != null) { Ui.Popped(m); return; }
-        m.Show(moreBtn, new Point(moreBtn.Width, moreBtn.Height + (int)(2 * Ui.K)), ToolStripDropDownDirection.BelowLeft);
+        m.Show(moreBtn, new Point(moreBtn.Width, moreBtn.Height + (int)(2 * Ui.DpiScale)), ToolStripDropDownDirection.BelowLeft);
     }
 
     void StartName(string old)
@@ -418,12 +418,12 @@ abstract class DevicePage : Control, IPage
             try
             {
                 string[] draft;
-                if (drafts.TryGetValue(name, out draft)) { Use(draft[1]); baseline = draft[0]; drafts.Remove(name); }
-                else { Use(Settings.Get(prefix + name)); baseline = Current(); }
+                if (drafts.TryGetValue(name, out draft)) { ApplyPreset(draft[1]); baseline = draft[0]; drafts.Remove(name); }
+                else { ApplyPreset(Settings.Get(prefix + name)); baseline = Current(); }
                 loaded = name;
                 touched = draft != null;
             }
-            catch (Exception) { Say("This preset couldn't be read from settings.txt", true); }
+            catch (Exception) { ShowStatus("This preset couldn't be read from settings.txt", true); }
         }
         restoring = false;
         ShowSets();
@@ -455,10 +455,10 @@ abstract class DevicePage : Control, IPage
 
     void SaveSet(string name)
     {
-        if (name == "") { Say("Type a name for the preset first", true); nameField.Box.Focus(); return; }
-        if (name.Contains("=")) { Say("A preset name can't contain =", true); nameField.Box.Focus(); return; }
+        if (name == "") { ShowStatus("Type a name for the preset first", true); nameField.Box.Focus(); return; }
+        if (name.Contains("=")) { ShowStatus("A preset name can't contain =", true); nameField.Box.Focus(); return; }
         if (name == renaming) { EndName(); return; }
-        if (profiles.Items.Any(item => string.Equals(item, name, StringComparison.OrdinalIgnoreCase))) { Say("There's already a preset called " + name + ". Pick it and press Update to change it.", true); nameField.Box.Focus(); return; }
+        if (profiles.Items.Any(item => string.Equals(item, name, StringComparison.OrdinalIgnoreCase))) { ShowStatus("There's already a preset called " + name + ". Pick it and press Update to change it.", true); nameField.Box.Focus(); return; }
         if (renaming != null)
         {
             var old = renaming;
@@ -515,7 +515,7 @@ class ColorRow
         form.Activate();
     }
 
-    public void Sync(int c, bool on)
+    public void RefreshControls(int c, bool on)
     {
         color = c;
         bool isCustom = !Swatches.Contains(c);
@@ -526,54 +526,54 @@ class ColorRow
         custom.Enabled = on;
         custom.On = on && isCustom;
         custom.Invalidate();
-        more.Left = custom.Left + (custom.Visible ? (int)Math.Round(36 * Ui.K) : 0);
+        more.Left = custom.Left + (custom.Visible ? (int)Math.Round(36 * Ui.DpiScale) : 0);
         more.Enabled = on;
     }
 }
 
 class InfoPage : Control
 {
-    readonly SubLine sub;
+    readonly DeviceSubtitle sub;
     readonly Label title, head, text, link, battery, firmware, features, mediaLabel, mediaNote;
-    readonly Btn again, create, reportBtn;
+    readonly FlatButton again, create, reportBtn;
     readonly Toggle media;
     readonly ReportView report;
-    Found found, applied;
+    FoundDevice found, applied;
 
-    string MediaKey { get { return "fnswap." + found.Slug; } }
+    string MediaKey { get { return "fnswap." + found.SettingsKey; } }
 
-    public InfoPage(Found f, MouseEventHandler drag, Action rescan)
+    public InfoPage(FoundDevice f, MouseEventHandler drag, Action rescan)
     {
-        Ui.Style(this, () => BackColor = Theme.Bg);
+        Ui.Style(this, () => BackColor = Theme.Background);
         MouseDown += drag;
-        title = Ui.Text(this, "", 20, 14, () => Theme.Text, 13.5f, Ui.Semi);
+        title = Ui.Text(this, "", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold);
         title.MouseDown += drag;
-        sub = Ui.Add(this, new SubLine(), 21, 42, 540, 20);
+        sub = Ui.Add(this, new DeviceSubtitle(), 21, 42, 540, 20);
         sub.MouseDown += drag;
 
-        var state = Ui.Add(this, new Box(), 20, 80, 616, 104);
-        head = Ui.Text(state, "", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
+        var state = Ui.Add(this, new RoundedBox(), 20, 80, 616, 104);
+        head = Ui.Text(state, "", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         text = Ui.Text(state, "", 14, 38, () => Theme.Text, 9.75f);
         text.AutoSize = false;
         text.Size = new Size(440, 60);
-        again = Ui.Add(state, new Btn { Text = "Scan again", Icon = "refresh" }, 616 - 14 - 130, 36, 130, 32);
+        again = Ui.Add(state, new FlatButton { Text = "Scan again", Icon = "refresh" }, 616 - 14 - 130, 36, 130, 32);
         again.Click += (s, e) => rescan();
-        create = Ui.Add(state, new Btn { Look = Look.Primary, Text = "Create report" }, 616 - 14 - 130, 36, 130, 32);
+        create = Ui.Add(state, new FlatButton { Style = ButtonStyle.Primary, Text = "Create report" }, 616 - 14 - 130, 36, 130, 32);
         media = Ui.Add(state, new Toggle { AccessibleName = "Use F1–F12 as media keys" }, 14, 42, 34, 18);
         media.Changed += () => SendMedia(media.Checked, true);
         mediaLabel = Ui.Text(state, "Use F1–F12 as media keys", 60, 40, () => Theme.Text, 9.75f);
         media.Follow(mediaLabel);
         mediaNote = Ui.Text(state, "When on, F1–F12 send media actions, and can't be typed.", 60, 62, () => Theme.Dim, 9f);
 
-        var details = Ui.Add(this, new Box(), 20, 196, 616, 196);
-        Ui.Text(details, "Details", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
+        var details = Ui.Add(this, new RoundedBox(), 20, 196, 616, 196);
+        Ui.Text(details, "Details", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         link = Row(details, "Connection", 40);
         battery = Row(details, "Battery", 68);
         firmware = Row(details, "Firmware", 96);
         features = Row(details, "Supports", 124);
         features.AutoSize = false;
         features.Size = new Size(470, 60);
-        reportBtn = Ui.Add(this, new Btn { Look = Look.Ghost, Text = "Report", AccessibleName = "Report of this device" }, 536 - 4 - 80, 10, 80, 28);
+        reportBtn = Ui.Add(this, new FlatButton { Style = ButtonStyle.Ghost, Text = "Report", AccessibleName = "Report of this device" }, 536 - 4 - 80, 10, 80, 28);
         report = Ui.Add(this, new ReportView("device", () => ReportView.TitleFor(found), Collect), 0, 72, 656, 658);
         report.Closed += () => { reportBtn.On = false; reportBtn.Invalidate(); reportBtn.Focus(); };
         reportBtn.Click += (s, e) => { if (report.Visible) report.Close(); else Open(); };
@@ -596,7 +596,7 @@ class InfoPage : Control
             string t = null, err = null;
             try
             {
-                if (f.PlainHid) t = Report.Plain(f, "none, not supported yet");
+                if (f.PlainHid) t = Report.PlainHidReport(f, "none, not supported yet");
                 else using (var h = new Hidpp(f.Path, f.Index, f.ShortPath))
                     t = f.Hidpp10 ? Report.Registers(h, f, "none, not supported yet") : Report.Build(h, f, "none, not supported yet");
             }
@@ -611,7 +611,7 @@ class InfoPage : Control
         if (chosen) Settings.Set(MediaKey, on ? "1" : "0");
         Task.Run(() =>
         {
-            try { using (var h = new Hidpp(f.Path, f.Index, f.ShortPath)) h.Call(h.F(0x40A0), 1, (byte)(on ? 1 : 0)); }
+            try { using (var h = new Hidpp(f.Path, f.Index, f.ShortPath)) h.Call(h.FeatureIndex(0x40A0), 1, (byte)(on ? 1 : 0)); }
             catch (Exception) { }
         });
     }
@@ -622,11 +622,11 @@ class InfoPage : Control
         return Ui.Text(box, "", 120, y, () => Theme.Text, 9.75f);
     }
 
-    public void SetFound(Found f)
+    public void SetFound(FoundDevice f)
     {
         found = f;
-        title.Text = f.Short == "" ? "Logitech device" : f.Short;
-        sub.Set(f.Sub, f.Level, f.BatteryText, "");
+        title.Text = f.ShortName == "" ? "Logitech device" : f.ShortName;
+        sub.Set(f.Subtitle, f.Level, f.BatteryText, "");
         bool keys = f.MediaKeys && !f.Asleep;
         head.Text = f.Asleep ? "Asleep" : keys ? "Keys" : "Not supported yet";
         text.Visible = !keys;
@@ -641,8 +641,8 @@ class InfoPage : Control
         reportBtn.Visible = !f.Asleep;
         create.Visible = !f.Asleep && !keys;
         if (f.Asleep && report.Visible) report.Close();
-        link.Text = f.Link + f.Slot + (f.Wpid != 0 ? ", ID " + f.Wpid.ToString("X4") : "");
-        battery.Text = f.Battery < 0 ? "–" : f.BatteryWords + (f.Charging ? ", charging" : "") + (f.Approx ? " (estimated from the voltage)" : "");
+        link.Text = f.Link + f.Slot + (f.WirelessId != 0 ? ", ID " + f.WirelessId.ToString("X4") : "");
+        battery.Text = f.Battery < 0 ? "–" : f.BatteryWords + (f.Charging ? ", charging" : "") + (f.BatteryFromVoltage ? " (estimated from the voltage)" : "");
         firmware.Text = f.Firmware == "" ? "–" : f.Firmware;
         var known = f.Features.Where(x => x >= 0x0100 && x != 0x1D4B && (x < 0x1000 || x > 0x1004) && Report.Name(x) != "").ToList();
         var named = known.Select(x => Report.Name(x)).Select(n => char.ToUpper(n[0]) + n.Substring(1)).Distinct().ToList();
@@ -654,19 +654,19 @@ class InfoPage : Control
 class EmptyPage : Control
 {
     readonly Label title, text, tips;
-    readonly Btn scan, report;
+    readonly FlatButton scan, report;
 
     public EmptyPage(MouseEventHandler drag, Action rescan)
     {
-        Ui.Style(this, () => BackColor = Theme.Bg);
+        Ui.Style(this, () => BackColor = Theme.Background);
         MouseDown += drag;
-        title = Centered(Ui.Text(this, "", 0, 150, () => Theme.Text, 15f, Ui.Semi), 36);
+        title = Centered(Ui.Text(this, "", 0, 150, () => Theme.Text, 15f, Ui.Semibold), 36);
         title.MouseDown += drag;
         text = Centered(Ui.Text(this, "", 0, 192, () => Theme.Dim, 9.75f), 44);
         text.MouseDown += drag;
-        scan = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Scan again" }, 328 - 8 - 150, 252, 150, 32);
+        scan = Ui.Add(this, new FlatButton { Style = ButtonStyle.Primary, Text = "Scan again" }, 328 - 8 - 150, 252, 150, 32);
         scan.Click += (s, e) => rescan();
-        report = Ui.Add(this, new Btn { Text = "Report your device" }, 328 + 8, 252, 150, 32);
+        report = Ui.Add(this, new FlatButton { Text = "Report your device" }, 328 + 8, 252, 150, 32);
         report.Click += (s, e) => Process.Start("https://github.com/csmarvz/g-lite/issues/new");
         tips = Centered(Ui.Text(this, "Turn the device on and wake it with a key press or a click.\nQuit G HUB, which can hold on to the device.\nPair Bluetooth devices in Windows first.", 0, 320, () => Theme.Dim, 9f), 64);
         tips.MouseDown += drag;
@@ -695,7 +695,7 @@ class ReportView : Control
     const string Issues = "https://github.com/csmarvz/g-lite/issues/new";
     readonly TextBox box;
     readonly Label size;
-    readonly Btn again, issue, copy;
+    readonly FlatButton again, issue, copy;
     readonly StatusLine status;
     readonly Func<string> title;
     readonly Action<Action<string, string>> read;
@@ -723,43 +723,43 @@ class ReportView : Control
         this.title = title;
         this.read = read;
         Visible = false;
-        Ui.Style(this, () => BackColor = Theme.Bg);
+        Ui.Style(this, () => BackColor = Theme.Background);
 
-        var head = Ui.Add(this, new Box(), 20, 8, 616, 84);
-        Ui.Text(head, "Device report", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
+        var head = Ui.Add(this, new RoundedBox(), 20, 8, 616, 84);
+        Ui.Text(head, "Device report", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         var intro = Ui.Text(head, "What G-Lite reads from this " + noun + ". It has no serial number, no name you gave the device and no Windows path.", 14, 34, () => Theme.Text, 9.75f);
         intro.AutoSize = false;
         intro.Size = new Size(440, 40);
-        again = Ui.Add(head, new Btn { Text = "Read again", Icon = "refresh" }, 616 - 14 - 130, 26, 130, 32);
+        again = Ui.Add(head, new FlatButton { Text = "Read again", Icon = "refresh" }, 616 - 14 - 130, 26, 130, 32);
         again.Click += (s, e) => Read();
 
-        var body = Ui.Add(this, new Box(), 20, 104, 616, 485);
-        Ui.Text(body, "Report", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
+        var body = Ui.Add(this, new RoundedBox(), 20, 104, 616, 485);
+        Ui.Text(body, "Report", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         size = Ui.Text(body, "", 300, 12, () => Theme.Dim, 9f);
         size.AutoSize = false;
         size.Size = new Size(302, 18);
         size.TextAlign = ContentAlignment.TopRight;
         var inset = Ui.Add(body, new Control(), 14, 38, 588, 433);
-        Ui.Style(inset, () => inset.BackColor = Theme.Bg);
+        Ui.Style(inset, () => inset.BackColor = Theme.Background);
         box = Ui.Add(inset, new TextBox { Multiline = true, ReadOnly = true, WordWrap = false, ScrollBars = ScrollBars.Both, BorderStyle = BorderStyle.None, AccessibleName = "Device report" }, 8, 6, 576, 423);
         Ui.Font(box, 9f, "Consolas");
-        Ui.Style(box, () => { box.BackColor = Theme.Bg; box.ForeColor = Theme.Text; Dark(); });
+        Ui.Style(box, () => { box.BackColor = Theme.Background; box.ForeColor = Theme.Text; Dark(); });
         box.HandleCreated += (s, e) => Dark();
 
         var line = Ui.Add(this, new Control(), 0, 601, 656, 1);
         Ui.Style(line, () => line.BackColor = Theme.Border);
         status = Ui.Add(this, new StatusLine(), 20, 611, 256, 36);
-        var back = Ui.Add(this, new Btn { Text = "Back" }, 284, 614, 76, 32);
+        var back = Ui.Add(this, new FlatButton { Text = "Back" }, 284, 614, 76, 32);
         back.Click += (s, e) => Close();
-        issue = Ui.Add(this, new Btn { Text = "Open GitHub issue" }, 368, 614, 160, 32);
+        issue = Ui.Add(this, new FlatButton { Text = "Open GitHub issue" }, 368, 614, 160, 32);
         issue.Click += (s, e) => OpenIssue();
-        copy = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Copy" }, 536, 614, 100, 32);
-        copy.Click += (s, e) => { if (Put(text)) status.Set("Copied to the clipboard", false, null); };
+        copy = Ui.Add(this, new FlatButton { Style = ButtonStyle.Primary, Text = "Copy" }, 536, 614, 100, 32);
+        copy.Click += (s, e) => { if (CopyToClipboard(text)) status.Set("Copied to the clipboard", false, null); };
     }
 
-    public static string TitleFor(Found f)
+    public static string TitleFor(FoundDevice f)
     {
-        return "Device report: " + (f.Short == "" ? "Logitech device" : f.Short) + (f.Wpid != 0 ? " (" + f.Wpid.ToString("X4") + ")" : "");
+        return "Device report: " + (f.ShortName == "" ? "Logitech device" : f.ShortName) + (f.WirelessId != 0 ? " (" + f.WirelessId.ToString("X4") + ")" : "");
     }
 
     public void Open()
@@ -808,7 +808,7 @@ class ReportView : Control
         });
     }
 
-    bool Put(string t)
+    bool CopyToClipboard(string t)
     {
         try { Clipboard.SetText(t); return true; }
         catch (Exception) { status.Set("The clipboard is busy. Try again.", true, null); return false; }
@@ -817,7 +817,7 @@ class ReportView : Control
     void OpenIssue()
     {
         var fenced = "```\r\n" + text + "```\r\n";
-        if (!Put(fenced)) return;
+        if (!CopyToClipboard(fenced)) return;
         var url = Issues + "?title=" + Uri.EscapeDataString(title()) + "&body=";
         bool whole = fenced.Length < 4000;
         try
@@ -843,31 +843,31 @@ class LogsPage : Control
     public LogsPage(MouseEventHandler drag)
     {
         Visible = false;
-        Ui.Style(this, () => BackColor = Theme.Bg);
+        Ui.Style(this, () => BackColor = Theme.Background);
         MouseDown += drag;
-        Ui.Text(this, "Logs", 20, 14, () => Theme.Text, 13.5f, Ui.Semi).MouseDown += drag;
+        Ui.Text(this, "Logs", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += drag;
 
-        var body = Ui.Add(this, new Box(), 20, 56, 616, 605);
-        Ui.Text(body, "log.txt, newest last", 14, 12, () => Theme.Dim, 9f, Ui.Semi);
+        var body = Ui.Add(this, new RoundedBox(), 20, 56, 616, 605);
+        Ui.Text(body, "log.txt, newest last", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         count = Ui.Text(body, "", 300, 12, () => Theme.Dim, 9f);
         count.AutoSize = false;
         count.Size = new Size(302, 18);
         count.TextAlign = ContentAlignment.TopRight;
         var inset = Ui.Add(body, new Control(), 14, 38, 588, 553);
-        Ui.Style(inset, () => inset.BackColor = Theme.Bg);
+        Ui.Style(inset, () => inset.BackColor = Theme.Background);
         box = Ui.Add(inset, new RichTextBox { ReadOnly = true, WordWrap = false, ScrollBars = RichTextBoxScrollBars.Both, BorderStyle = BorderStyle.None, DetectUrls = false, AccessibleName = "Log" }, 8, 6, 576, 543);
         Ui.Font(box, 9f, "Consolas");
-        Ui.Style(box, () => { box.BackColor = Theme.Bg; Dark(); if (Visible) Render(); });
+        Ui.Style(box, () => { box.BackColor = Theme.Background; Dark(); if (Visible) Render(); });
         box.HandleCreated += (s, e) => Dark();
 
         var line = Ui.Add(this, new Control(), 0, 673, 656, 1);
         Ui.Style(line, () => line.BackColor = Theme.Border);
         status = Ui.Add(this, new StatusLine(), 20, 683, 280, 36);
-        var clear = Ui.Add(this, new Btn { Text = "Clear" }, 314, 686, 76, 32);
+        var clear = Ui.Add(this, new FlatButton { Text = "Clear" }, 314, 686, 76, 32);
         clear.Click += (s, e) => { Log.Clear(); Render(); status.Set("Log cleared", false, null); };
-        var folder = Ui.Add(this, new Btn { Text = "Open folder" }, 398, 686, 130, 32);
+        var folder = Ui.Add(this, new FlatButton { Text = "Open folder" }, 398, 686, 130, 32);
         folder.Click += (s, e) => OpenFolder();
-        var copy = Ui.Add(this, new Btn { Look = Look.Primary, Text = "Copy" }, 536, 686, 100, 32);
+        var copy = Ui.Add(this, new FlatButton { Style = ButtonStyle.Primary, Text = "Copy" }, 536, 686, 100, 32);
         copy.Click += (s, e) => Copy();
         timer.Tick += (s, e) => { if (Visible && Log.Version != version) Render(); };
     }
@@ -895,7 +895,7 @@ class LogsPage : Control
     {
         version = Log.Version;
         var lines = Log.Read();
-        shown = Log.Fold(lines);
+        shown = Log.MergeRepeatedSends(lines);
         count.Text = lines.Count + " lines, " + (Log.Size() / 1024.0).ToString("0.0", CultureInfo.InvariantCulture) + " KB";
         var rtf = new StringBuilder(@"{\rtf1\ansi\deff0{\fonttbl{\f0 Consolas;}}{\colortbl;" + Rgb(Theme.Text) + Rgb(Theme.Dim) + Rgb(Theme.Accent) + Rgb(Theme.Warn) + "}");
         foreach (var l in shown)
@@ -903,7 +903,7 @@ class LogsPage : Control
             var t = Log.Format(l);
             int split = Math.Min(t.Length, l.Time.Length + 2 + 15);
             int c = l.Bad ? 4 : l.Kind == "you" ? 3 : l.Kind == "sent" ? 2 : 1;
-            rtf.Append(@"\cf2 ").Append(Esc(t.Substring(0, split))).Append(@"\cf" + c + " ").Append(Esc(t.Substring(split))).Append(@"\par ");
+            rtf.Append(@"\cf2 ").Append(EscapeRtf(t.Substring(0, split))).Append(@"\cf" + c + " ").Append(EscapeRtf(t.Substring(split))).Append(@"\par ");
         }
         if (shown.Count == 0) rtf.Append(@"\cf2 Nothing logged yet.");
         rtf.Append("}");
@@ -917,7 +917,7 @@ class LogsPage : Control
 
     static string Rgb(Color c) { return @"\red" + c.R + @"\green" + c.G + @"\blue" + c.B + ";"; }
 
-    static string Esc(string s)
+    static string EscapeRtf(string s)
     {
         var o = new StringBuilder();
         foreach (var ch in s)

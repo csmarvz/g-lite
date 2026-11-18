@@ -9,7 +9,7 @@ using Microsoft.Win32;
 
 static class Theme
 {
-    public static Color Bg, Side, Card, Btn, BtnHover, BtnDown, Border, Text, Dim, Accent, AccentBg, OnAccent, Warn, KeyOff, Bed, Track;
+    public static Color Background, Sidebar, Card, Button, ButtonHover, ButtonPressed, Border, Text, Dim, Accent, AccentBackground, OnAccent, Warn, KeyOff, PictureBackground, Track;
     public static bool Light;
     public static event Action Changed;
     public static readonly string[] Modes = { "system", "dark", "light" };
@@ -45,35 +45,35 @@ static class Theme
         if (Changed != null) Changed();
     }
 
-    public static Color C(int v) { return Color.FromArgb(v >> 16 & 0xFF, v >> 8 & 0xFF, v & 0xFF); }
+    public static Color FromHex(int v) { return Color.FromArgb(v >> 16 & 0xFF, v >> 8 & 0xFF, v & 0xFF); }
 
     static void Set(bool light)
     {
         Light = light;
         if (light)
         {
-            Bg = C(0xF7F7F7); Side = C(0xEDEDED); Card = C(0xFFFFFF); Btn = C(0xECECEC); BtnHover = C(0xE0E0E0); BtnDown = C(0xDADADA); Border = C(0xD4D4D4);
-            Text = C(0x1A1A1A); Dim = C(0x5A5A5A); Accent = C(0x1D7A60); AccentBg = C(0xD9EDE6); OnAccent = C(0xFFFFFF);
-            Warn = C(0x9A5B00); KeyOff = C(0xD6D6D6); Bed = C(0xBDBDBD); Track = C(0xC8C8C8);
+            Background = FromHex(0xF7F7F7); Sidebar = FromHex(0xEDEDED); Card = FromHex(0xFFFFFF); Button = FromHex(0xECECEC); ButtonHover = FromHex(0xE0E0E0); ButtonPressed = FromHex(0xDADADA); Border = FromHex(0xD4D4D4);
+            Text = FromHex(0x1A1A1A); Dim = FromHex(0x5A5A5A); Accent = FromHex(0x1D7A60); AccentBackground = FromHex(0xD9EDE6); OnAccent = FromHex(0xFFFFFF);
+            Warn = FromHex(0x9A5B00); KeyOff = FromHex(0xD6D6D6); PictureBackground = FromHex(0xBDBDBD); Track = FromHex(0xC8C8C8);
         }
         else
         {
-            Bg = C(0x1C1C1C); Side = C(0x161616); Card = C(0x232323); Btn = C(0x2B2B2B); BtnHover = C(0x353535); BtnDown = C(0x242424); Border = C(0x3A3A3A);
-            Text = C(0xE8E8E8); Dim = C(0xA3A3A3); Accent = C(0x3FA98A); AccentBg = C(0x26302D); OnAccent = C(0x0C1A15);
-            Warn = C(0xE0A458); KeyOff = C(0x2E2E2E); Bed = C(0x151515); Track = C(0x444444);
+            Background = FromHex(0x1C1C1C); Sidebar = FromHex(0x161616); Card = FromHex(0x232323); Button = FromHex(0x2B2B2B); ButtonHover = FromHex(0x353535); ButtonPressed = FromHex(0x242424); Border = FromHex(0x3A3A3A);
+            Text = FromHex(0xE8E8E8); Dim = FromHex(0xA3A3A3); Accent = FromHex(0x3FA98A); AccentBackground = FromHex(0x26302D); OnAccent = FromHex(0x0C1A15);
+            Warn = FromHex(0xE0A458); KeyOff = FromHex(0x2E2E2E); PictureBackground = FromHex(0x151515); Track = FromHex(0x444444);
         }
     }
 }
 
 static class Ui
 {
-    public const string Regular = "Segoe UI", Semi = "Segoe UI Semibold";
-    public static float K = 1;
+    public const string Regular = "Segoe UI", Semibold = "Segoe UI Semibold";
+    public static float DpiScale = 1;
     public static Action<ContextMenuStrip> Popped;
     static readonly List<KeyValuePair<Control, Action>> styles = new List<KeyValuePair<Control, Action>>();
     static readonly List<Tuple<Control, float, string>> fonts = new List<Tuple<Control, float, string>>();
     static readonly Dictionary<string, Font> cache = new Dictionary<string, Font>();
-    public static readonly ToolStripRenderer Menus = new MenuLook();
+    public static readonly ToolStripRenderer Menus = new MenuRenderer();
 
     public static T Style<T>(T c, Action a) where T : Control
     {
@@ -84,20 +84,20 @@ static class Ui
 
     public static T Font<T>(T c, float pt, string face) where T : Control
     {
-        c.Font = Win.Px(pt, K, face);
+        c.Font = WindowHelpers.PixelFont(pt, DpiScale, face);
         fonts.Add(Tuple.Create((Control)c, pt, face));
         return c;
     }
 
     public static void Restyle() { styles.RemoveAll(s => s.Key.IsDisposed); foreach (var s in styles) s.Value(); }
 
-    public static void Refont() { fonts.RemoveAll(f => f.Item1.IsDisposed); foreach (var f in fonts) f.Item1.Font = Win.Px(f.Item2, K, f.Item3); }
+    public static void Refont() { fonts.RemoveAll(f => f.Item1.IsDisposed); foreach (var f in fonts) f.Item1.Font = WindowHelpers.PixelFont(f.Item2, DpiScale, f.Item3); }
 
     public static Font Get(float pt, string face)
     {
-        var key = pt + "|" + face + "|" + K;
+        var key = pt + "|" + face + "|" + DpiScale;
         Font f;
-        if (!cache.TryGetValue(key, out f)) cache[key] = f = Win.Px(pt, K, face);
+        if (!cache.TryGetValue(key, out f)) cache[key] = f = WindowHelpers.PixelFont(pt, DpiScale, face);
         return f;
     }
 
@@ -220,7 +220,7 @@ static class Ui
     {
         c.Bounds = new Rectangle(x, y, w, h);
         c.TabIndex = parent.Controls.Count;
-        if (!(c is Ctl) && !(c is TextBoxBase)) c.TabStop = false;
+        if (!(c is DrawnControl) && !(c is TextBoxBase)) c.TabStop = false;
         parent.Controls.Add(c);
         c.BringToFront();
         return c;
@@ -335,7 +335,7 @@ static class Icons
     }
 }
 
-class Ctl : Control
+class DrawnControl : Control
 {
     protected bool hover, down, key;
     Timer anim;
@@ -343,7 +343,7 @@ class Ctl : Control
     DateTime start;
     int length;
 
-    public Ctl()
+    public DrawnControl()
     {
         SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
         Cursor = Cursors.Hand;
@@ -359,7 +359,7 @@ class Ctl : Control
     protected virtual bool Clicks { get { return true; } }
     protected float Now { get { return now; } }
 
-    protected void Jump(float v)
+    protected void SetValueWithoutAnimation(float v)
     {
         from = to = now = v;
         if (anim != null) anim.Stop();
@@ -368,7 +368,7 @@ class Ctl : Control
 
     protected void Glide(float v, int ms)
     {
-        if (!Win.Animations || !Visible || !IsHandleCreated) { Jump(v); return; }
+        if (!WindowHelpers.Animations || !Visible || !IsHandleCreated) { SetValueWithoutAnimation(v); return; }
         from = now;
         to = v;
         length = ms;
@@ -389,15 +389,15 @@ class Ctl : Control
         Invalidate();
     }
 
-    protected void Ring(Graphics g, float rad, Color c)
+    protected void DrawFocusRing(Graphics g, float rad, Color c)
     {
         if (!Focused || !ShowFocusCues || !Enabled) return;
-        using (var p = new Pen(c, 1.5f * K))
-        using (var path = Ui.Round(new RectangleF(K, K, Width - 2 * K - 1, Height - 2 * K - 1), rad))
+        using (var p = new Pen(c, 1.5f * DpiScale))
+        using (var path = Ui.Round(new RectangleF(DpiScale, DpiScale, Width - 2 * DpiScale - 1, Height - 2 * DpiScale - 1), rad))
             g.DrawPath(p, path);
     }
 
-    protected void Ring(Graphics g, float rad) { Ring(g, rad, Theme.Text); }
+    protected void DrawFocusRing(Graphics g, float rad) { DrawFocusRing(g, rad, Theme.Text); }
 
     protected override void OnMouseDown(MouseEventArgs e) { if (e.Button == MouseButtons.Left) { down = true; Invalidate(); } base.OnMouseDown(e); }
     protected override void OnMouseUp(MouseEventArgs e) { if (down) { down = false; Invalidate(); } base.OnMouseUp(e); }
@@ -442,8 +442,8 @@ class Ctl : Control
         base.Dispose(disposing);
     }
 
-    protected static float K { get { return Ui.K; } }
-    protected Color Under { get { return Parent != null ? Parent.BackColor : Theme.Bg; } }
+    protected static float DpiScale { get { return Ui.DpiScale; } }
+    protected Color Under { get { return Parent != null ? Parent.BackColor : Theme.Background; } }
 
     protected Graphics Begin(PaintEventArgs e)
     {
@@ -459,9 +459,9 @@ class Ctl : Control
     protected override void OnTextChanged(EventArgs e) { Invalidate(); base.OnTextChanged(e); }
 }
 
-class Box : Control
+class RoundedBox : Control
 {
-    public Box()
+    public RoundedBox()
     {
         SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
         Ui.Style(this, () => BackColor = Theme.Card);
@@ -470,53 +470,53 @@ class Box : Control
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = e.Graphics;
-        g.Clear(Parent != null ? Parent.BackColor : Theme.Bg);
+        g.Clear(Parent != null ? Parent.BackColor : Theme.Background);
         g.SmoothingMode = SmoothingMode.AntiAlias;
-        Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 8 * Ui.K, Theme.Card, Theme.Border);
+        Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 8 * Ui.DpiScale, Theme.Card, Theme.Border);
         base.OnPaint(e);
     }
 }
 
-enum Look { Normal, Primary, Ghost, Solid }
+enum ButtonStyle { Normal, Primary, Ghost, Solid }
 
-class Btn : Ctl
+class FlatButton : DrawnControl
 {
-    public Look Look;
+    public ButtonStyle Style;
     public string Icon;
     public bool On;
 
-    public Btn() { AccessibleRole = AccessibleRole.PushButton; }
+    public FlatButton() { AccessibleRole = AccessibleRole.PushButton; }
 
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = Begin(e);
         Color fill, edge, fore;
         bool lit = Enabled && hover;
-        if (Look == Look.Primary || Look == Look.Solid) { fill = edge = Pressed ? Ui.Mix(Theme.Accent, Color.Black, 0.18) : lit ? Ui.Mix(Theme.Accent, Theme.Text, 0.12) : Theme.Accent; fore = Theme.OnAccent; }
-        else if (Look == Look.Ghost) { fill = edge = Pressed ? Theme.BtnDown : On ? Theme.AccentBg : lit ? Theme.Btn : Under; fore = On || lit ? Theme.Text : Theme.Dim; }
-        else { fill = Pressed ? Theme.BtnDown : lit ? Theme.BtnHover : Theme.Btn; edge = Theme.Border; fore = Theme.Text; }
+        if (Style == ButtonStyle.Primary || Style == ButtonStyle.Solid) { fill = edge = Pressed ? Ui.Mix(Theme.Accent, Color.Black, 0.18) : lit ? Ui.Mix(Theme.Accent, Theme.Text, 0.12) : Theme.Accent; fore = Theme.OnAccent; }
+        else if (Style == ButtonStyle.Ghost) { fill = edge = Pressed ? Theme.ButtonPressed : On ? Theme.AccentBackground : lit ? Theme.Button : Under; fore = On || lit ? Theme.Text : Theme.Dim; }
+        else { fill = Pressed ? Theme.ButtonPressed : lit ? Theme.ButtonHover : Theme.Button; edge = Theme.Border; fore = Theme.Text; }
         if (!Enabled) { fill = Ui.Mix(Under, fill, 0.5); edge = Ui.Mix(Under, edge, 0.5); fore = Ui.Mix(Under, fore, 0.45); }
-        Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * K, fill, edge);
-        if (Look == Look.Solid && On)
-            using (var p = new Pen(Theme.OnAccent, 1.5f * K))
-            using (var path = Ui.Round(new RectangleF(2.5f * K, 2.5f * K, Width - 5 * K - 1, Height - 5 * K - 1), 4.5f * K))
+        Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * DpiScale, fill, edge);
+        if (Style == ButtonStyle.Solid && On)
+            using (var p = new Pen(Theme.OnAccent, 1.5f * DpiScale))
+            using (var path = Ui.Round(new RectangleF(2.5f * DpiScale, 2.5f * DpiScale, Width - 5 * DpiScale - 1, Height - 5 * DpiScale - 1), 4.5f * DpiScale))
                 g.DrawPath(p, path);
-        Ring(g, 6 * K);
-        var font = Ui.Get(9.75f, Look == Look.Primary || Look == Look.Solid ? Ui.Semi : Ui.Regular);
-        float icon = 16 * K;
+        DrawFocusRing(g, 6 * DpiScale);
+        var font = Ui.Get(9.75f, Style == ButtonStyle.Primary || Style == ButtonStyle.Solid ? Ui.Semibold : Ui.Regular);
+        float icon = 16 * DpiScale;
         if (Text == "")
         {
             if (Icon != null) Icons.Draw(g, Icon, new RectangleF((Width - icon) / 2, (Height - icon) / 2, icon, icon), fore);
             return;
         }
         float tw = TextRenderer.MeasureText(g, Text, font, Size.Empty, TextFormatFlags.NoPadding).Width;
-        float x = (Look == Look.Ghost || Look == Look.Solid) && Icon != null ? 10 * K : (Width - tw - (Icon != null ? icon + 8 * K : 0)) / 2;
-        if (Icon != null) { Icons.Draw(g, Icon, new RectangleF(x, (Height - icon) / 2, icon, icon), fore); x += icon + 8 * K; }
-        Ui.Draw(g, Text, font, new RectangleF(x, 0, Width - x - 4 * K, Height), fore, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+        float x = (Style == ButtonStyle.Ghost || Style == ButtonStyle.Solid) && Icon != null ? 10 * DpiScale : (Width - tw - (Icon != null ? icon + 8 * DpiScale : 0)) / 2;
+        if (Icon != null) { Icons.Draw(g, Icon, new RectangleF(x, (Height - icon) / 2, icon, icon), fore); x += icon + 8 * DpiScale; }
+        Ui.Draw(g, Text, font, new RectangleF(x, 0, Width - x - 4 * DpiScale, Height), fore, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
     }
 }
 
-class Seg : Ctl
+class SegmentedPicker : DrawnControl
 {
     public string[] Items = new string[0];
     public int[] Off = new int[0];
@@ -526,13 +526,13 @@ class Seg : Ctl
 
     readonly Timer later = new Timer { Interval = 250 };
 
-    public Seg()
+    public SegmentedPicker()
     {
         AccessibleRole = AccessibleRole.PageTabList;
         later.Tick += (s, e) => { later.Stop(); if (Picked != null) Picked(index); };
     }
 
-    public int Index { get { return index; } set { if (value == index) return; index = value; Jump(value); } }
+    public int Index { get { return index; } set { if (value == index) return; index = value; SetValueWithoutAnimation(value); } }
 
     public void Pick(int i)
     {
@@ -545,7 +545,7 @@ class Seg : Ctl
 
     RectangleF Cell(float i)
     {
-        float pad = 2 * K, w = (Width - 2 * pad - (Items.Length - 1) * pad) / Items.Length;
+        float pad = 2 * DpiScale, w = (Width - 2 * pad - (Items.Length - 1) * pad) / Items.Length;
         return new RectangleF(pad + i * (w + pad), pad, w, Height - 2 * pad);
     }
 
@@ -554,7 +554,7 @@ class Seg : Ctl
         if (i == index) return;
         bool had = index >= 0;
         index = i;
-        if (had) Glide(i, 160); else Jump(i);
+        if (had) Glide(i, 160); else SetValueWithoutAnimation(i);
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
@@ -600,24 +600,24 @@ class Seg : Ctl
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = Begin(e);
-        Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * K, Theme.Btn, Theme.Border);
-        if (hot >= 0 && hot != index && Enabled) Ui.Fill(g, Cell(hot), 4 * K, Theme.BtnHover, Theme.BtnHover);
-        var fill = Enabled ? Theme.Accent : Ui.Mix(Theme.Btn, Theme.Accent, 0.35);
-        if (index >= 0 && index < Items.Length) Ui.Fill(g, Cell(Now), 4 * K, fill, fill);
-        Ring(g, 6 * K);
+        Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * DpiScale, Theme.Button, Theme.Border);
+        if (hot >= 0 && hot != index && Enabled) Ui.Fill(g, Cell(hot), 4 * DpiScale, Theme.ButtonHover, Theme.ButtonHover);
+        var fill = Enabled ? Theme.Accent : Ui.Mix(Theme.Button, Theme.Accent, 0.35);
+        if (index >= 0 && index < Items.Length) Ui.Fill(g, Cell(Now), 4 * DpiScale, fill, fill);
+        DrawFocusRing(g, 6 * DpiScale);
         for (int i = 0; i < Items.Length; i++)
         {
             var r = Cell(i);
             bool lit = Math.Abs(Now - i) < 0.5f && index >= 0;
             Color fore = lit ? Theme.OnAccent : Theme.Text;
-            if (!Enabled || Off.Contains(i)) fore = Ui.Mix(lit ? fill : Theme.Btn, fore, lit ? 0.7 : 0.45);
-            Ui.Draw(g, Items[i], Ui.Get(9.4f, lit ? Ui.Semi : Ui.Regular), r, fore,
+            if (!Enabled || Off.Contains(i)) fore = Ui.Mix(lit ? fill : Theme.Button, fore, lit ? 0.7 : 0.45);
+            Ui.Draw(g, Items[i], Ui.Get(9.4f, lit ? Ui.Semibold : Ui.Regular), r, fore,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
         }
     }
 }
 
-class Swatch : Ctl
+class Swatch : DrawnControl
 {
     public Color? Fill;
     public bool On;
@@ -628,17 +628,17 @@ class Swatch : Ctl
     {
         var g = Begin(e);
         double fade = Enabled ? 1 : 0.35;
-        if (On) using (var path = Ui.Round(new RectangleF(K, K, Width - 2 * K, Height - 2 * K), 7 * K)) using (var p = new Pen(Ui.Mix(Under, Theme.Text, fade), 2 * K)) g.DrawPath(p, path);
-        float inset = Pressed ? 5 * K : 4 * K;
+        if (On) using (var path = Ui.Round(new RectangleF(DpiScale, DpiScale, Width - 2 * DpiScale, Height - 2 * DpiScale), 7 * DpiScale)) using (var p = new Pen(Ui.Mix(Under, Theme.Text, fade), 2 * DpiScale)) g.DrawPath(p, path);
+        float inset = Pressed ? 5 * DpiScale : 4 * DpiScale;
         var r = new RectangleF(inset, inset, Width - 2 * inset - 1, Height - 2 * inset - 1);
-        var fill = Fill ?? (Pressed ? Theme.BtnDown : hover && Enabled ? Theme.BtnHover : Theme.Btn);
+        var fill = Fill ?? (Pressed ? Theme.ButtonPressed : hover && Enabled ? Theme.ButtonHover : Theme.Button);
         bool ring = Focused && ShowFocusCues && Enabled;
-        Ui.Fill(g, r, 4 * K, Ui.Mix(Under, fill, fade), ring ? Theme.Text : Ui.Mix(Under, Theme.Border, fade));
-        if (Fill == null) Icons.Draw(g, "plus", new RectangleF(Width / 2f - 7 * K, Height / 2f - 7 * K, 14 * K, 14 * K), Ui.Mix(Under, Theme.Dim, fade));
+        Ui.Fill(g, r, 4 * DpiScale, Ui.Mix(Under, fill, fade), ring ? Theme.Text : Ui.Mix(Under, Theme.Border, fade));
+        if (Fill == null) Icons.Draw(g, "plus", new RectangleF(Width / 2f - 7 * DpiScale, Height / 2f - 7 * DpiScale, 14 * DpiScale, 14 * DpiScale), Ui.Mix(Under, Theme.Dim, fade));
     }
 }
 
-class Toggle : Ctl
+class Toggle : DrawnControl
 {
     bool on;
     Control follower;
@@ -657,7 +657,7 @@ class Toggle : Ctl
         label.DoubleClick += (s, e) => { if (Enabled) OnClick(EventArgs.Empty); };
     }
 
-    public bool Checked { get { return on; } set { on = value; Jump(value ? 1 : 0); } }
+    public bool Checked { get { return on; } set { on = value; SetValueWithoutAnimation(value ? 1 : 0); } }
 
     protected override void OnClick(EventArgs e)
     {
@@ -684,24 +684,24 @@ class Toggle : Ctl
         var r = new RectangleF(0.5f, 0.5f, Width - 1, Height - 1);
         float t = Now;
         float faded = Enabled ? 0 : 0.6f;
-        Ui.Fill(g, r, r.Height / 2, Ui.Mix(Ui.Mix(Theme.Btn, Theme.Accent, t), Theme.Card, faded), Ui.Mix(Ui.Mix(Theme.Border, Theme.Accent, t), Theme.Card, faded));
-        Ring(g, r.Height / 2);
-        float d = Height - 8 * K;
-        float stretch = Pressed ? 4 * K : 0;
+        Ui.Fill(g, r, r.Height / 2, Ui.Mix(Ui.Mix(Theme.Button, Theme.Accent, t), Theme.Card, faded), Ui.Mix(Ui.Mix(Theme.Border, Theme.Accent, t), Theme.Card, faded));
+        DrawFocusRing(g, r.Height / 2);
+        float d = Height - 8 * DpiScale;
+        float stretch = Pressed ? 4 * DpiScale : 0;
         using (var b = new SolidBrush(Ui.Mix(Ui.Mix(Theme.Dim, Theme.OnAccent, t), Theme.Card, faded)))
-        using (var path = Ui.Round(new RectangleF(4 * K + t * (Width - 8 * K - d - stretch), 4 * K, d + stretch, d), d / 2))
+        using (var path = Ui.Round(new RectangleF(4 * DpiScale + t * (Width - 8 * DpiScale - d - stretch), 4 * DpiScale, d + stretch, d), d / 2))
             g.FillPath(b, path);
     }
 }
 
-class Drop : Ctl
+class Dropdown : DrawnControl
 {
     public readonly List<string> Items = new List<string>();
     public event Action<int> Picked;
     public Func<string, string> Label;
     int index = -1;
 
-    public Drop() { AccessibleRole = AccessibleRole.ComboBox; }
+    public Dropdown() { AccessibleRole = AccessibleRole.ComboBox; }
 
     public int Index
     {
@@ -732,30 +732,30 @@ class Drop : Ctl
         }
         m.MinimumSize = new Size(Width, 0);
         m.Closed += (s, a) => BeginInvoke((Action)m.Dispose);
-        m.Show(this, new Point(0, Height + (int)(2 * K)));
+        m.Show(this, new Point(0, Height + (int)(2 * DpiScale)));
     }
 
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = Begin(e);
-        Color fore = Enabled ? Theme.Text : Ui.Mix(Theme.Btn, Theme.Text, 0.45);
-        Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * K, Pressed ? Theme.BtnDown : Enabled && hover ? Theme.BtnHover : Theme.Btn, Theme.Border);
-        Ring(g, 6 * K);
-        Ui.Draw(g, Text, Ui.Get(9.75f, Ui.Regular), new RectangleF(10 * K, 0, Width - 38 * K, Height), fore, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
-        Icons.Draw(g, "chevron", new RectangleF(Width - 26 * K, (Height - 16 * K) / 2, 16 * K, 16 * K), Enabled ? Theme.Dim : fore);
+        Color fore = Enabled ? Theme.Text : Ui.Mix(Theme.Button, Theme.Text, 0.45);
+        Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * DpiScale, Pressed ? Theme.ButtonPressed : Enabled && hover ? Theme.ButtonHover : Theme.Button, Theme.Border);
+        DrawFocusRing(g, 6 * DpiScale);
+        Ui.Draw(g, Text, Ui.Get(9.75f, Ui.Regular), new RectangleF(10 * DpiScale, 0, Width - 38 * DpiScale, Height), fore, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+        Icons.Draw(g, "chevron", new RectangleF(Width - 26 * DpiScale, (Height - 16 * DpiScale) / 2, 16 * DpiScale, 16 * DpiScale), Enabled ? Theme.Dim : fore);
     }
 }
 
-class Field : Ctl
+class TextField : DrawnControl
 {
     public readonly TextBox Box = new TextBox { BorderStyle = BorderStyle.None };
 
-    public Field()
+    public TextField()
     {
         Cursor = Cursors.IBeam;
         TabStop = false;
         Controls.Add(Box);
-        Ui.Style(Box, () => { Box.BackColor = Theme.Btn; Box.ForeColor = Theme.Text; });
+        Ui.Style(Box, () => { Box.BackColor = Theme.Button; Box.ForeColor = Theme.Text; });
         Box.GotFocus += (s, e) => Invalidate();
         Box.LostFocus += (s, e) => Invalidate();
     }
@@ -766,18 +766,18 @@ class Field : Ctl
     {
         base.OnLayout(e);
         Box.Font = Ui.Get(9.75f, Ui.Regular);
-        Box.Width = Width - (int)(20 * K);
-        Box.Location = new Point((int)(10 * K), (Height - Box.Height) / 2);
+        Box.Width = Width - (int)(20 * DpiScale);
+        Box.Location = new Point((int)(10 * DpiScale), (Height - Box.Height) / 2);
     }
 
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = Begin(e);
-        Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * K, Theme.Btn, Box.Focused ? Theme.Accent : Theme.Border);
+        Ui.Fill(g, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * DpiScale, Theme.Button, Box.Focused ? Theme.Accent : Theme.Border);
     }
 }
 
-class Slider : Ctl
+class Slider : DrawnControl
 {
     public int Max = 100, Value, Step = 5;
     public event EventHandler Changed;
@@ -806,7 +806,7 @@ class Slider : Ctl
             default: return;
         }
         e.Handled = true;
-        Put(v);
+        SetValue(v);
     }
 
     protected override void OnMouseWheel(MouseEventArgs e)
@@ -819,10 +819,10 @@ class Slider : Ctl
         int notches = wheel / 120;
         if (notches == 0) return;
         wheel -= notches * 120;
-        Put(Value + notches * Step);
+        SetValue(Value + notches * Step);
     }
 
-    public void Put(int v)
+    public void SetValue(int v)
     {
         v = Math.Max(0, Math.Min(Max, v));
         if (v == Value) return;
@@ -831,21 +831,21 @@ class Slider : Ctl
         if (Changed != null) Changed(this, EventArgs.Empty);
     }
 
-    float X(int v) { return 7 * K + (float)((long)v * (Width - 14 * K) / Max); }
+    float X(int v) { return 7 * DpiScale + (float)((long)v * (Width - 14 * DpiScale) / Max); }
 
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = Begin(e);
         var c = Enabled ? Theme.Accent : Theme.Border;
         float mid = Height / 2f;
-        using (var track = new SolidBrush(Theme.Track)) g.FillRectangle(track, 7 * K, mid - 2 * K, Width - 14 * K, 4 * K);
+        using (var track = new SolidBrush(Theme.Track)) g.FillRectangle(track, 7 * DpiScale, mid - 2 * DpiScale, Width - 14 * DpiScale, 4 * DpiScale);
         using (var b = new SolidBrush(c))
         {
-            g.FillRectangle(b, 7 * K, mid - 2 * K, X(Value) - 7 * K, 4 * K);
-            g.FillEllipse(b, X(Value) - 7 * K, mid - 7 * K, 14 * K, 14 * K);
+            g.FillRectangle(b, 7 * DpiScale, mid - 2 * DpiScale, X(Value) - 7 * DpiScale, 4 * DpiScale);
+            g.FillEllipse(b, X(Value) - 7 * DpiScale, mid - 7 * DpiScale, 14 * DpiScale, 14 * DpiScale);
         }
         if (Focused && ShowFocusCues && Enabled)
-            using (var p = new Pen(Theme.Text, 2 * K)) g.DrawEllipse(p, X(Value) - 6 * K, mid - 6 * K, 12 * K, 12 * K);
+            using (var p = new Pen(Theme.Text, 2 * DpiScale)) g.DrawEllipse(p, X(Value) - 6 * DpiScale, mid - 6 * DpiScale, 12 * DpiScale, 12 * DpiScale);
     }
 
     protected override void OnMouseDown(MouseEventArgs e)
@@ -853,7 +853,7 @@ class Slider : Ctl
         base.OnMouseDown(e);
         if (e.Button != MouseButtons.Left) return;
         float at = X(Value);
-        grab = Math.Abs(e.X - at) <= 9 * K ? (int)(e.X - at) : 0;
+        grab = Math.Abs(e.X - at) <= 9 * DpiScale ? (int)(e.X - at) : 0;
         Set(e.X - grab);
     }
 
@@ -861,11 +861,11 @@ class Slider : Ctl
 
     void Set(int px)
     {
-        if (Max > 0) Put((int)Math.Round((px - 7 * K) * Max / (Width - 14 * K)));
+        if (Max > 0) SetValue((int)Math.Round((px - 7 * DpiScale) * Max / (Width - 14 * DpiScale)));
     }
 }
 
-class StatusLine : Ctl
+class StatusLine : DrawnControl
 {
     string text = "";
     bool warn;
@@ -891,11 +891,11 @@ class StatusLine : Ctl
     {
         var g = Begin(e);
         if (text == "") return;
-        using (var b = new SolidBrush(warn ? Theme.Warn : Theme.Accent)) g.FillEllipse(b, 0, Height / 2f - 4 * K, 8 * K, 8 * K);
+        using (var b = new SolidBrush(warn ? Theme.Warn : Theme.Accent)) g.FillEllipse(b, 0, Height / 2f - 4 * DpiScale, 8 * DpiScale, 8 * DpiScale);
         var font = Ui.Get(9f, Ui.Regular);
         var flags = TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding;
-        int w = Width - (int)(16 * K), h = Math.Min(Height, TextRenderer.MeasureText(g, text, font, new Size(w, Height), flags).Height);
-        TextRenderer.DrawText(g, text, font, new Rectangle((int)(16 * K), (Height - h) / 2, w, h), warn ? Theme.Text : Theme.Dim, flags);
+        int w = Width - (int)(16 * DpiScale), h = Math.Min(Height, TextRenderer.MeasureText(g, text, font, new Size(w, Height), flags).Height);
+        TextRenderer.DrawText(g, text, font, new Rectangle((int)(16 * DpiScale), (Height - h) / 2, w, h), warn ? Theme.Text : Theme.Dim, flags);
     }
 }
 
@@ -907,7 +907,7 @@ class DeviceList : Control
     public DeviceList()
     {
         SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
-        Ui.Style(this, () => BackColor = Theme.Side);
+        Ui.Style(this, () => BackColor = Theme.Sidebar);
         glide.Tick += (s, e) => Glide();
     }
 
@@ -938,7 +938,7 @@ class DeviceList : Control
 
     void Wheel(int delta)
     {
-        target = Clamp(target - delta * (int)Math.Round(50 * Ui.K) / 120);
+        target = Clamp(target - delta * (int)Math.Round(50 * Ui.DpiScale) / 120);
         if (target != offset) glide.Start();
     }
 
@@ -987,67 +987,67 @@ class DeviceList : Control
 
     public void Fade(Graphics g, Control item)
     {
-        float zone = 32 * Ui.K, ramp = 46 * Ui.K;
-        Shade(g, item, Height - zone, zone, false, (content - Height - offset) / ramp);
-        Shade(g, item, 0, zone, true, offset / ramp);
+        float zone = 32 * Ui.DpiScale, ramp = 46 * Ui.DpiScale;
+        DrawEdgeFade(g, item, Height - zone, zone, false, (content - Height - offset) / ramp);
+        DrawEdgeFade(g, item, 0, zone, true, offset / ramp);
     }
 
-    static void Shade(Graphics g, Control item, float top, float height, bool fromTop, float strength)
+    static void DrawEdgeFade(Graphics g, Control item, float top, float height, bool fromTop, float strength)
     {
         strength = Math.Min(1, strength);
         var area = new RectangleF(0, top - item.Top, item.Width, height);
         if (strength <= 0 || area.Bottom <= 0 || area.Top >= item.Height) return;
-        Color clear = Color.FromArgb(0, Theme.Side), solid = Color.FromArgb((int)Math.Round(255 * strength), Theme.Side);
+        Color clear = Color.FromArgb(0, Theme.Sidebar), solid = Color.FromArgb((int)Math.Round(255 * strength), Theme.Sidebar);
         using (var brush = new LinearGradientBrush(new RectangleF(0, area.Top - 1, 1, area.Height + 2), fromTop ? solid : clear, fromTop ? clear : solid, LinearGradientMode.Vertical))
             g.FillRectangle(brush, area);
     }
 }
 
-class DevItem : Ctl
+class DeviceListItem : DrawnControl
 {
-    public string Title = "", Sub = "", Icon = "keyboard", Value = "";
+    public string Title = "", Subtitle = "", Icon = "keyboard", Value = "";
     public int Level = -1;
     public bool On;
 
-    public DevItem() { AccessibleRole = AccessibleRole.PushButton; }
+    public DeviceListItem() { AccessibleRole = AccessibleRole.PushButton; }
 
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = Begin(e);
-        if (On || hover) { var c = On ? Theme.AccentBg : Pressed ? Theme.BtnDown : Theme.Btn; Ui.Fill(g, new RectangleF(0, 0, Width, Height), 6 * K, c, c); }
-        Ring(g, 6 * K);
-        float s = 32 * K, y = (Height - s) / 2;
-        Ui.Fill(g, new RectangleF(8 * K, y, s, s), 6 * K, Theme.Btn, Theme.Btn);
-        Icons.Draw(g, Icon, new RectangleF(8 * K + 7 * K, y + 7 * K, 18 * K, 18 * K), On ? Theme.Accent : Theme.Dim);
-        float x = 8 * K + s + 10 * K;
-        Ui.Draw(g, Title, Ui.Get(9.75f, Ui.Semi), new RectangleF(x, 0, Width - x - 4 * K, Height / 2f + 1), Theme.Text, TextFormatFlags.Bottom | TextFormatFlags.EndEllipsis);
+        if (On || hover) { var c = On ? Theme.AccentBackground : Pressed ? Theme.ButtonPressed : Theme.Button; Ui.Fill(g, new RectangleF(0, 0, Width, Height), 6 * DpiScale, c, c); }
+        DrawFocusRing(g, 6 * DpiScale);
+        float s = 32 * DpiScale, y = (Height - s) / 2;
+        Ui.Fill(g, new RectangleF(8 * DpiScale, y, s, s), 6 * DpiScale, Theme.Button, Theme.Button);
+        Icons.Draw(g, Icon, new RectangleF(8 * DpiScale + 7 * DpiScale, y + 7 * DpiScale, 18 * DpiScale, 18 * DpiScale), On ? Theme.Accent : Theme.Dim);
+        float x = 8 * DpiScale + s + 10 * DpiScale;
+        Ui.Draw(g, Title, Ui.Get(9.75f, Ui.Semibold), new RectangleF(x, 0, Width - x - 4 * DpiScale, Height / 2f + 1), Theme.Text, TextFormatFlags.Bottom | TextFormatFlags.EndEllipsis);
         var font = Ui.Get(8.6f, Ui.Regular);
         float top = Height / 2f + 1;
-        float right = Width - 10 * K;
+        float right = Width - 10 * DpiScale;
         if (Level != -1)
         {
-            right -= Ui.BatteryWidth(K);
-            Ui.Battery(g, right, top + (font.Height - Ui.BatteryHeight(K)) / 2f, Level, K, Theme.Dim);
+            right -= Ui.BatteryWidth(DpiScale);
+            Ui.Battery(g, right, top + (font.Height - Ui.BatteryHeight(DpiScale)) / 2f, Level, DpiScale, Theme.Dim);
             if (Value != "")
             {
                 float valueWidth = TextRenderer.MeasureText(g, Value, font, Size.Empty, TextFormatFlags.NoPadding).Width;
-                right -= 5 * K + valueWidth;
-                Ui.Draw(g, Value, font, new RectangleF(right, top, valueWidth + 4 * K, Height / 2f), Theme.Dim, TextFormatFlags.Top);
+                right -= 5 * DpiScale + valueWidth;
+                Ui.Draw(g, Value, font, new RectangleF(right, top, valueWidth + 4 * DpiScale, Height / 2f), Theme.Dim, TextFormatFlags.Top);
             }
-            right -= 6 * K;
+            right -= 6 * DpiScale;
         }
-        Ui.Draw(g, Sub, font, new RectangleF(x, top, right - x, Height / 2f), Theme.Dim, TextFormatFlags.Top | TextFormatFlags.EndEllipsis);
+        Ui.Draw(g, Subtitle, font, new RectangleF(x, top, right - x, Height / 2f), Theme.Dim, TextFormatFlags.Top | TextFormatFlags.EndEllipsis);
         var list = Parent as DeviceList;
         if (list != null) list.Fade(g, this);
     }
 }
 
-class SubLine : Control
+class DeviceSubtitle : Control
 {
     string before = "", value = "", after = "";
     int level = -1;
 
-    public SubLine()
+    public DeviceSubtitle()
     {
         SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.SupportsTransparentBackColor, true);
         BackColor = Color.Transparent;
@@ -1068,7 +1068,7 @@ class SubLine : Control
         var g = e.Graphics;
         var font = Ui.Get(9f, Ui.Regular);
         var flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix;
-        float k = Ui.K, x = 0;
+        float k = Ui.DpiScale, x = 0;
         int y = (Height - font.Height) / 2;
         Action<string> text = s =>
         {
@@ -1091,37 +1091,37 @@ class SubLine : Control
     }
 }
 
-class Brand : Ctl
+class TitleLogo : DrawnControl
 {
-    public Brand() { Cursor = Cursors.Default; TabStop = false; }
+    public TitleLogo() { Cursor = Cursors.Default; TabStop = false; }
 
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = Begin(e);
-        float x = 8 * K;
-        Ui.Draw(g, "G-Lite", Ui.Get(10.5f, Ui.Semi), new RectangleF(x, 0, Width - x, Height), Theme.Text, TextFormatFlags.VerticalCenter);
+        float x = 8 * DpiScale;
+        Ui.Draw(g, "G-Lite", Ui.Get(10.5f, Ui.Semibold), new RectangleF(x, 0, Width - x, Height), Theme.Text, TextFormatFlags.VerticalCenter);
     }
 }
 
-class MenuColors : ProfessionalColorTable
+class MenuColorTable : ProfessionalColorTable
 {
     public override Color MenuBorder { get { return Theme.Border; } }
-    public override Color MenuItemBorder { get { return Theme.BtnHover; } }
-    public override Color MenuItemSelected { get { return Theme.BtnHover; } }
+    public override Color MenuItemBorder { get { return Theme.ButtonHover; } }
+    public override Color MenuItemSelected { get { return Theme.ButtonHover; } }
     public override Color ToolStripDropDownBackground { get { return Theme.Card; } }
     public override Color ImageMarginGradientBegin { get { return Theme.Card; } }
     public override Color ImageMarginGradientMiddle { get { return Theme.Card; } }
     public override Color ImageMarginGradientEnd { get { return Theme.Card; } }
     public override Color CheckBackground { get { return Theme.Card; } }
-    public override Color CheckSelectedBackground { get { return Theme.BtnHover; } }
-    public override Color CheckPressedBackground { get { return Theme.BtnHover; } }
+    public override Color CheckSelectedBackground { get { return Theme.ButtonHover; } }
+    public override Color CheckPressedBackground { get { return Theme.ButtonHover; } }
     public override Color SeparatorDark { get { return Theme.Border; } }
     public override Color SeparatorLight { get { return Theme.Border; } }
 }
 
-class MenuLook : ToolStripProfessionalRenderer
+class MenuRenderer : ToolStripProfessionalRenderer
 {
-    public MenuLook() : base(new MenuColors()) { RoundedEdges = false; }
+    public MenuRenderer() : base(new MenuColorTable()) { RoundedEdges = false; }
 
     protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
     {
@@ -1134,7 +1134,7 @@ class MenuLook : ToolStripProfessionalRenderer
 
     protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
     {
-        if (Equals(e.ToolStrip.Tag, "round") && Win.Rounded) return;
+        if (Equals(e.ToolStrip.Tag, "round") && WindowHelpers.Rounded) return;
         base.OnRenderToolStripBorder(e);
     }
 
@@ -1172,7 +1172,7 @@ class TrayTip : Form
         StartPosition = FormStartPosition.Manual;
         TopMost = true;
         DoubleBuffered = true;
-        Win.Round(this, 3);
+        WindowHelpers.Round(this, 3);
         watch.Tick += (s, e) => Tick();
     }
 
@@ -1204,7 +1204,7 @@ class TrayTip : Form
         }
     }
 
-    public void Moved()
+    public void PointerMoved()
     {
         var now = DateTime.UtcNow;
         if (!hovering) { hovering = true; firstAt = now; watch.Start(); }
@@ -1212,7 +1212,7 @@ class TrayTip : Form
         movedAt = now;
     }
 
-    public void Gone()
+    public void Dismiss()
     {
         hovering = false;
         watch.Stop();
@@ -1222,7 +1222,7 @@ class TrayTip : Form
     void Tick()
     {
         var now = DateTime.UtcNow;
-        if (Cursor.Position != anchor && (now - movedAt).TotalMilliseconds > 250) { Gone(); return; }
+        if (Cursor.Position != anchor && (now - movedAt).TotalMilliseconds > 250) { Dismiss(); return; }
         if (!Visible && (now - firstAt).TotalMilliseconds < 400) return;
         if (Visible && (now - filledAt).TotalMilliseconds < 1000) return;
         filledAt = now;
@@ -1235,9 +1235,9 @@ class TrayTip : Form
         rows = Rows();
         var icon = IconBounds();
         var center = new Point(icon.X + icon.Width / 2, icon.Y + icon.Height / 2);
-        scale = Win.At(center);
+        scale = WindowHelpers.At(center);
         if (font != null) font.Dispose();
-        font = Win.Px(9, scale);
+        font = WindowHelpers.PixelFont(9, scale);
         int pad = S(10), gap = S(24), valueWidth = 0;
         nameWidth = 0;
         rowHeight = font.Height + S(4);
@@ -1263,13 +1263,13 @@ class TrayTip : Form
         Bounds = new Rectangle(new Point(x, y), size);
         // The system's tray tooltips follow the taskbar's theme; colours from the Tooltip and DarkMode_Explorer::Tooltip theme parts.
         bool light = Theme.TaskbarLight();
-        back = Theme.C(light ? 0xF9F9F9 : 0x2B2B2B);
-        edge = Theme.C(light ? 0xE5E5E5 : 0x767676);
-        nameColor = Theme.C(light ? 0x575757 : 0xABABAB);
-        valueColor = Theme.C(light ? 0x1A1A1A : 0xFFFFFF);
+        back = Theme.FromHex(light ? 0xF9F9F9 : 0x2B2B2B);
+        edge = Theme.FromHex(light ? 0xE5E5E5 : 0x767676);
+        nameColor = Theme.FromHex(light ? 0x575757 : 0xABABAB);
+        valueColor = Theme.FromHex(light ? 0x1A1A1A : 0xFFFFFF);
         BackColor = back;
         if (!Visible) Show();
-        Win.Border(this, edge);
+        WindowHelpers.Border(this, edge);
         Invalidate();
     }
 
@@ -1303,7 +1303,7 @@ class TrayTip : Form
             }
             TextRenderer.DrawText(g, rows[i][1], font, new Point(right - width, y), valueColor, flags);
         }
-        if (!Win.Rounded) using (var pen = new Pen(edge)) g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+        if (!WindowHelpers.Rounded) using (var pen = new Pen(edge)) g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
     }
 }
 

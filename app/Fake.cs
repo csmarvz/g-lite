@@ -17,7 +17,7 @@ static class Latency
     public static void Pause() { if (Ms > 0) Thread.Sleep(Ms); }
 }
 
-class Model
+class KeyLayout
 {
     public string Name { get; set; }
     public string[] Rows { get; set; }
@@ -29,7 +29,7 @@ class Model
     // the Tab row (it keeps its id), the Caps row's Enter becomes #, the left Shift shortens for <>, the right Alt is AltGr.
     // # and <> are lighting ids 2F and 61 (USB codes minus 3), or on a layout of zones the zone of the key they replace or sit by.
     // Null for a layout without these keys.
-    public Model Iso()
+    public KeyLayout Iso()
     {
         var rows = Rows.Select(row => row.Split('|').ToList()).ToArray();
         var ids = Rows.Select((row, r) => Ids != null && r < Ids.Length ? Ids[r].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList() : new List<string>()).ToArray();
@@ -58,7 +58,7 @@ class Model
             var alts = Enumerable.Range(0, row.Count).Where(t => row[t].Split(':')[0] == "Alt").ToList();
             if (alts.Count == 2) row[alts[1]] = "AltGr" + row[alts[1]].Substring(3);
         }
-        return new Model { Name = Name, Zones = Zones, Rows = rows.Select(row => string.Join("|", row)).ToArray(), Ids = Ids == null ? null : ids.Select(row => string.Join(" ", row)).ToArray() };
+        return new KeyLayout { Name = Name, Zones = Zones, Rows = rows.Select(row => string.Join("|", row)).ToArray(), Ids = Ids == null ? null : ids.Select(row => string.Join(" ", row)).ToArray() };
     }
 
     static int KeyIndex(List<string> row, int token) { return row.Take(token).Count(t => !t.StartsWith("_")); }
@@ -80,10 +80,10 @@ class Model
         return all;
     }
 
-    public static Model Load(string file)
+    public static KeyLayout Load(string file)
     {
         string text;
-        using (var stream = typeof(Model).Assembly.GetManifestResourceStream(file))
+        using (var stream = typeof(KeyLayout).Assembly.GetManifestResourceStream(file))
         using (var reader = new System.IO.StreamReader(stream)) text = reader.ReadToEnd();
         return Parse(text);
     }
@@ -96,10 +96,10 @@ class Model
         return "{\n  \"name\": " + quote(Name) + ",\n" + (Zones ? "  \"kind\": \"zones\",\n" : "") + "  \"rows\": " + list(Rows) + ",\n  \"ids\": " + list(Ids ?? new string[0]) + "\n}\n";
     }
 
-    public static Model Parse(string text)
+    public static KeyLayout Parse(string text)
     {
         var kind = Strings(text, "kind");
-        return new Model { Name = Strings(text, "name")[0], Rows = Strings(text, "rows"), Ids = Strings(text, "ids"), Zones = kind != null && kind[0] == "zones" };
+        return new KeyLayout { Name = Strings(text, "name")[0], Rows = Strings(text, "rows"), Ids = Strings(text, "ids"), Zones = kind != null && kind[0] == "zones" };
     }
 
     static string[] Strings(string text, string key)
@@ -438,7 +438,7 @@ class FakeMouse : Hidpp
         cycle.CopyTo(rom, 0xDB);
         var user = (byte[])rom.Clone();
         Encoding.Unicode.GetBytes("Default").CopyTo(user, 0xA0);
-        int c = GMouse.Crc(user, 253);
+        int c = MouseProtocol.Crc(user, 253);
         user[253] = (byte)(c >> 8);
         user[254] = (byte)c;
         Sectors[0x0101] = rom;
@@ -459,7 +459,7 @@ class FakeMouse : Hidpp
             var profile = mouse.Sectors[sector];
             for (int i = 0; i < bindings.Length; i++) FakeHidpp.Hex(bindings[i]).CopyTo(profile, 0x20 + 4 * i);
         }
-        GMouse.Seal(mouse.Sectors[0x0001]);
+        MouseProtocol.WriteChecksum(mouse.Sectors[0x0001]);
         return mouse;
     }
 
@@ -474,7 +474,7 @@ class FakeMouse : Hidpp
         return mouse;
     }
 
-    public static FakeMouse For(Found f) { return f.Models.Contains("C08B") ? Hero() : f.Wpid == 0x407F ? G502() : new FakeMouse(); }
+    public static FakeMouse For(FoundDevice f) { return f.Models.Contains("C08B") ? Hero() : f.WirelessId == 0x407F ? G502() : new FakeMouse(); }
 
     public static FakeMouse G305()
     {
@@ -488,13 +488,13 @@ class FakeMouse : Hidpp
         var mouse = new FakeMouse { Wide = true, ZoneCount = 0, Info = "0106010501051000ff0a04", Dpi = 800, Stage = 1, Rate = 3 };
         var profile = Enumerable.Repeat((byte)0xFF, 255).ToArray();
         FakeHidpp.Hex("03030100" + "9001900102" + "2003200302" + "4006400602" + "800C800C02" + "0000000000").CopyTo(profile, 0);
-        GMouse.Seal(profile);
+        MouseProtocol.WriteChecksum(profile);
         mouse.Sectors[0x0001] = profile;
         mouse.Sectors[0x0101] = (byte[])profile.Clone();
         return mouse;
     }
 
-    int[] Stages { get { return Wide ? GMouse.WideStages(Sectors[current], new[] { 100, 32000 }) : GMouse.StagesOf(Sectors[current]); } }
+    int[] Stages { get { return Wide ? MouseProtocol.WideStages(Sectors[current], new[] { 100, 32000 }) : MouseProtocol.StagesOf(Sectors[current]); } }
 
     public override void Dispose() { }
 
@@ -623,7 +623,7 @@ class FakeG9x : Hidpp
     {
         var page = Enumerable.Repeat((byte)0xFF, 512).ToArray();
         FakeHidpp.Hex(start).CopyTo(page, 0);
-        GMouse.Seal(page);
+        MouseProtocol.WriteChecksum(page);
         return page;
     }
 
@@ -690,7 +690,7 @@ class FakeG9x : Hidpp
 
 class FakeHeadset : Hidpp
 {
-    public int Sidetone = 30, Off = 30;
+    public int Sidetone = 30, AutoOffMinutes = 30;
 
     public FakeHeadset() : base(false) { }
 
@@ -705,8 +705,8 @@ class FakeHeadset : Hidpp
         else if (feat == 2)
         {
             if (fn == 0) { r[0] = 0x0F; r[1] = 0x56; r[2] = 1; }
-            if (fn == 1) r[0] = (byte)Off;
-            if (fn == 2) Off = p[0];
+            if (fn == 1) r[0] = (byte)AutoOffMinutes;
+            if (fn == 2) AutoOffMinutes = p[0];
         }
         return r;
     }
@@ -790,14 +790,14 @@ class FakeOther : Hidpp
 
 class KeyboardView : Form
 {
-    const float U = 40, Pad = 16, Head = 40;
+    const float KeyUnit = 40, Pad = 16, HeaderHeight = 40;
     [DllImport("user32.dll")] static extern bool ReleaseCapture();
     [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, IntPtr l);
     readonly FakeHidpp kb;
     readonly List<Tuple<RectangleF, string>> keys = new List<Tuple<RectangleF, string>>();
     readonly List<Tuple<PointF, double>> ripples = new List<Tuple<PointF, double>>();
     readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
-    float width, height, bw, bh, scale = 1;
+    float width, height, boardWidth, boardHeight, scale = 1;
     List<Point>[] cells;
     Game game;
     Func<Game> make;
@@ -805,22 +805,22 @@ class KeyboardView : Form
 
     protected override bool ShowWithoutActivation { get { return true; } }
 
-    public KeyboardView(FakeHidpp kb, Model model)
+    public KeyboardView(FakeHidpp kb, KeyLayout model)
     {
         this.kb = kb;
-        Win.Round(this);
+        WindowHelpers.Round(this);
         foreach (var row in model.Rows)
         {
             float x = 0, y = height, tall = 0;
             foreach (var t in row.Split('|'))
             {
-                if (t.StartsWith("_")) { x += float.Parse(t.Substring(1), System.Globalization.CultureInfo.InvariantCulture) * U; continue; }
+                if (t.StartsWith("_")) { x += float.Parse(t.Substring(1), System.Globalization.CultureInfo.InvariantCulture) * KeyUnit; continue; }
                 var parts = t.Split(':');
-                float w = parts.Length > 1 ? float.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture) * U : U;
-                float h = parts.Length > 2 ? float.Parse(parts[2], System.Globalization.CultureInfo.InvariantCulture) * U : U;
-                keys.Add(Tuple.Create(new RectangleF(Pad + x, Head + Pad + y, w - 4, h - 4), parts[0]));
+                float w = parts.Length > 1 ? float.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture) * KeyUnit : KeyUnit;
+                float h = parts.Length > 2 ? float.Parse(parts[2], System.Globalization.CultureInfo.InvariantCulture) * KeyUnit : KeyUnit;
+                keys.Add(Tuple.Create(new RectangleF(Pad + x, HeaderHeight + Pad + y, w - 4, h - 4), parts[0]));
                 x += w;
-                tall = Math.Max(tall, Math.Min(h, U));
+                tall = Math.Max(tall, Math.Min(h, KeyUnit));
                 width = Math.Max(width, x);
             }
             height += tall > 0 ? tall : x;
@@ -828,16 +828,16 @@ class KeyboardView : Form
         var rows = keys.Select(k => k.Item1.Y).Distinct().OrderBy(v => v).ToList();
         cells = keys.Select(k =>
         {
-            int r = rows.IndexOf(k.Item1.Y) - (rows.Count - Game.H);
+            int r = rows.IndexOf(k.Item1.Y) - (rows.Count - Game.Rows);
             if (r < 0) return null;
-            var l = Enumerable.Range(0, Game.W).Where(c => Pad + (c + 0.5f) * U >= k.Item1.X && Pad + (c + 0.5f) * U < k.Item1.Right + 4).Select(c => new Point(c, r)).ToList();
+            var l = Enumerable.Range(0, Game.Columns).Where(c => Pad + (c + 0.5f) * KeyUnit >= k.Item1.X && Pad + (c + 0.5f) * KeyUnit < k.Item1.Right + 4).Select(c => new Point(c, r)).ToList();
             return l.Count > 0 ? l : null;
         }).ToArray();
         Text = model.Name;
         mines = Button("Mines", () => Play(() => new Mines(keys.Select(k => k.Item1).ToArray(), cells)));
         blocks = Button("Blocks", () => Play(() => new Blocks()));
         snake = Button("Snake", () => Play(() => new Snake(cells)));
-        stop = Button("Stop", () => { game = null; Sync(); });
+        stop = Button("Stop", () => { game = null; RefreshControls(); });
         close = Button("", Hide);
         close.Icon = "close";
         close.AccessibleName = "Close";
@@ -845,9 +845,9 @@ class KeyboardView : Form
         DoubleBuffered = true;
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
-        bw = width + 2 * Pad;
-        bh = Head + height + 2 * Pad + 20;
-        Rescale(Win.At(Point.Empty));
+        boardWidth = width + 2 * Pad;
+        boardHeight = HeaderHeight + height + 2 * Pad + 20;
+        Rescale(WindowHelpers.At(Point.Empty));
         var timer = new System.Windows.Forms.Timer { Interval = 33 };
         timer.Tick += (s, e) => { Tick(); Invalidate(); };
         timer.Start();
@@ -856,7 +856,7 @@ class KeyboardView : Form
         {
             if (e.Button != MouseButtons.Left) return;
             float ex = e.X / scale, ey = e.Y / scale;
-            if (ey >= Head + Pad / 2) { ripples.Add(Tuple.Create(new PointF(ex, ey), clock.Elapsed.TotalSeconds)); return; }
+            if (ey >= HeaderHeight + Pad / 2) { ripples.Add(Tuple.Create(new PointF(ex, ey), clock.Elapsed.TotalSeconds)); return; }
             ReleaseCapture();
             SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero);
         };
@@ -865,8 +865,8 @@ class KeyboardView : Form
     public void Rescale(float ns)
     {
         scale = ns;
-        ClientSize = new Size((int)Math.Ceiling(bw * scale), (int)Math.Ceiling(bh * scale));
-        float right = bw - 12;
+        ClientSize = new Size((int)Math.Ceiling(boardWidth * scale), (int)Math.Ceiling(boardHeight * scale));
+        float right = boardWidth - 12;
         Place(close, ref right, 36);
         right -= 4;
         float playing = right;
@@ -874,27 +874,27 @@ class KeyboardView : Form
         Place(blocks, ref right, 72);
         Place(mines, ref right, 72);
         Place(stop, ref playing, 72);
-        Sync();
+        RefreshControls();
         Invalidate();
     }
 
-    readonly Btn mines, blocks, snake, stop, close;
+    readonly FlatButton mines, blocks, snake, stop, close;
 
-    Btn Button(string text, Action click)
+    FlatButton Button(string text, Action click)
     {
-        var button = new Btn { Look = Look.Ghost, Text = text, AccessibleName = text };
+        var button = new FlatButton { Style = ButtonStyle.Ghost, Text = text, AccessibleName = text };
         button.Click += (s, e) => click();
         Controls.Add(button);
         return button;
     }
 
-    void Place(Btn button, ref float right, float width)
+    void Place(FlatButton button, ref float right, float width)
     {
         right -= width;
         button.Bounds = new Rectangle((int)Math.Round(right * scale), (int)Math.Round(10 * scale), (int)Math.Round(width * scale), (int)Math.Round(28 * scale));
     }
 
-    void Sync()
+    void RefreshControls()
     {
         if (mines == null) return;
         bool on = game != null;
@@ -904,7 +904,7 @@ class KeyboardView : Form
 
     protected override void WndProc(ref Message m)
     {
-        if (m.Msg == Win.DpiChanged) Rescale(Win.FromMessage(m));
+        if (m.Msg == WindowHelpers.DpiChanged) Rescale(WindowHelpers.FromMessage(m));
         base.WndProc(ref m);
     }
 
@@ -912,7 +912,7 @@ class KeyboardView : Form
     {
         make = m;
         game = m();
-        Sync();
+        RefreshControls();
         nextStep = clock.Elapsed.TotalMilliseconds + game.Interval;
         Activate();
     }
@@ -928,7 +928,7 @@ class KeyboardView : Form
     protected override bool ProcessCmdKey(ref Message msg, Keys key)
     {
         if (game == null) return base.ProcessCmdKey(ref msg, key);
-        if (key == Keys.Escape) { game = null; Sync(); } else if (game.Over) Play(make); else game.Key(key);
+        if (key == Keys.Escape) { game = null; RefreshControls(); } else if (game.Over) Play(make); else game.Key(key);
         Invalidate();
         return true;
     }
@@ -940,9 +940,9 @@ class KeyboardView : Form
         return period <= 0 ? 5 : period;
     }
 
-    public static Color Lit(byte id, byte[] p, double x, double y, double t, double ripple)
+    public static Color EffectColorAt(byte id, byte[] p, double x, double y, double t, double ripple)
     {
-        if (G515.Def(id) == null) return Hsv(t / 8 - x, 1, 1);
+        if (G515Profile.EffectById(id) == null) return Hsv(t / 8 - x, 1, 1);
         var color = Color.FromArgb(p[0], p[1], p[2]);
         double period = PeriodOf(id, p);
         int dir = p[9];
@@ -978,29 +978,29 @@ class KeyboardView : Form
     {
         byte id; byte[] p; int bright;
         kb.State(out id, out p, out bright);
-        var def = G515.Def(id);
+        var def = G515Profile.EffectById(id);
         double t = clock.Elapsed.TotalSeconds;
         double period = PeriodOf(id, p);
         ripples.RemoveAll(r => t - r.Item2 > 3);
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
         g.ScaleTransform(scale, scale);
-        using (var font = Win.Px(7.5f, 1))
+        using (var font = WindowHelpers.PixelFont(7.5f, 1))
         for (int ki = 0; ki < keys.Count; ki++)
         {
             var k = keys[ki];
             var r = k.Item1;
             Color fill = Color.FromArgb(30, 30, 32);
-            double x = (r.X + r.Width / 2 - Pad) / width, y = (r.Y - Head - Pad) / height;
+            double x = (r.X + r.Width / 2 - Pad) / width, y = (r.Y - HeaderHeight - Pad) / height;
             double glow = 0;
             if (id == 0x17)
                 foreach (var rp in ripples)
                 {
-                    double d = Math.Sqrt(Math.Pow(r.X + r.Width / 2 - rp.Item1.X, 2) + Math.Pow(r.Y + r.Height / 2 - rp.Item1.Y, 2)) / U;
+                    double d = Math.Sqrt(Math.Pow(r.X + r.Width / 2 - rp.Item1.X, 2) + Math.Pow(r.Y + r.Height / 2 - rp.Item1.Y, 2)) / KeyUnit;
                     double front = (t - rp.Item2) * 8 / period;
                     glow = Math.Max(glow, Math.Max(0, 1 - Math.Abs(d - front)) * Math.Max(0, 1 - (t - rp.Item2) / 3));
                 }
-            Color c = Lit(id, p, x, y, t, glow);
+            Color c = EffectColorAt(id, p, x, y, t, glow);
             if (game != null)
             {
                 int hit = 0;
@@ -1026,8 +1026,8 @@ class KeyboardView : Form
                 using (var under = new SolidBrush(Color.FromArgb(90, c))) g.FillRectangle(under, r.X + 6, r.Bottom - 4, r.Width - 12, 2);
             }
         }
-        if (!Win.Rounded) using (var pen = new Pen(Color.FromArgb(58, 58, 58))) g.DrawRectangle(pen, 0, 0, bw - 1, bh - 1);
-        using (var f = Win.Px(9, 1))
+        if (!WindowHelpers.Rounded) using (var pen = new Pen(Color.FromArgb(58, 58, 58))) g.DrawRectangle(pen, 0, 0, boardWidth - 1, boardHeight - 1);
+        using (var f = WindowHelpers.PixelFont(9, 1))
         using (var b = new SolidBrush(Color.FromArgb(150, 150, 150)))
         {
             g.DrawString(Text, f, b, Pad, 17);
@@ -1035,19 +1035,19 @@ class KeyboardView : Form
         string what = def == null ? "factory animation (approximation)" : def.Name;
         if (id == 0x17) what += " — click the keys";
         if (game != null) what = game.Over ? "game over      score " + game.Score + "      any key to play again" : game.Help;
-        using (var f = Win.Px(9, 1))
+        using (var f = WindowHelpers.PixelFont(9, 1))
         using (var b = new SolidBrush(Color.FromArgb(150, 150, 150)))
         {
-            g.DrawString(what + "      brightness " + bright + "%", f, b, Pad, bh - 26);
+            g.DrawString(what + "      brightness " + bright + "%", f, b, Pad, boardHeight - 26);
             if (game is Mines && !game.Over)
             {
-                float lx = bw - Pad;
+                float lx = boardWidth - Pad;
                 for (int i = Mines.LegendNames.Length - 1; i >= 0; i--)
                 {
                     lx -= g.MeasureString(Mines.LegendNames[i], f).Width;
-                    g.DrawString(Mines.LegendNames[i], f, b, lx, bh - 26);
+                    g.DrawString(Mines.LegendNames[i], f, b, lx, boardHeight - 26);
                     lx -= 12;
-                    using (var sw = new SolidBrush(Color.FromArgb(Mines.LegendColors[i] | unchecked((int)0xFF000000)))) g.FillRectangle(sw, lx, bh - 23, 10, 10);
+                    using (var sw = new SolidBrush(Color.FromArgb(Mines.LegendColors[i] | unchecked((int)0xFF000000)))) g.FillRectangle(sw, lx, boardHeight - 23, 10, 10);
                     lx -= 12;
                 }
             }

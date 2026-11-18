@@ -18,10 +18,10 @@ class Release
 static class Updater
 {
     public const string Repo = "https://github.com/csmarvz/g-lite";
-    const string Raw = "https://raw.githubusercontent.com/csmarvz/g-lite/v";
+    const string RawUrl = "https://raw.githubusercontent.com/csmarvz/g-lite/v";
     static readonly string Temp = Path.Combine(Path.GetTempPath(), "GLite-update.exe");
 
-    public static bool Check { get { return Settings.Get("check-updates") != "0"; } set { Settings.Set("check-updates", value ? "1" : "0"); } }
+    public static bool CheckForUpdates { get { return Settings.Get("check-updates") != "0"; } set { Settings.Set("check-updates", value ? "1" : "0"); } }
     public static bool Auto { get { return Settings.Get("auto-update") == "1"; } set { Settings.Set("auto-update", value ? "1" : "0"); } }
     public static string Skipped { get { return Settings.Get("skip-version"); } set { Settings.Set("skip-version", value); } }
 
@@ -34,7 +34,7 @@ static class Updater
         return i < 0 ? null : location.Substring(i + 5);
     }
 
-    public static bool Newer(string a, string b)
+    public static bool IsNewerVersion(string a, string b)
     {
         a = a.TrimStart('v');
         b = b.TrimStart('v');
@@ -85,7 +85,7 @@ static class Updater
 
     public static List<Release> Between(List<Release> all, string installed, string latest)
     {
-        return all.Where(r => { try { return Newer(r.Version, installed) && !Newer(r.Version, latest); } catch (Exception) { return false; } }).ToList();
+        return all.Where(r => { try { return IsNewerVersion(r.Version, installed) && !IsNewerVersion(r.Version, latest); } catch (Exception) { return false; } }).ToList();
     }
 
     public static string Changelog(string version)
@@ -94,7 +94,7 @@ static class Updater
         using (var w = new WebClient { Encoding = Encoding.UTF8 })
         {
             w.Headers["User-Agent"] = "G-Lite";
-            return w.DownloadString(Raw + version + "/CHANGELOG.md");
+            return w.DownloadString(RawUrl + version + "/CHANGELOG.md");
         }
     }
 
