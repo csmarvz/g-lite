@@ -729,10 +729,10 @@ static class G915Lighting
         return parameters;
     }
 
-    public static byte[] Build(byte[] profile, List<byte[]> clusters, Lighting lighting, Lighting others)
+    public static byte[] Build(byte[] profile, List<byte[]> clusters, Lighting lighting, Lighting others, bool idleTimes)
     {
         if (clusters.Count != 2) throw new RefusedException("Saving isn't supported on this keyboard (" + clusters.Count + " lighting clusters)");
-        if (lighting.Idle <= 0 || lighting.Sleep <= 0) throw new RefusedException("This keyboard can't keep its lighting on forever: 0 dims and turns it off at once");
+        if (idleTimes && (lighting.Idle <= 0 || lighting.Sleep <= 0)) throw new RefusedException("This keyboard can't keep its lighting on forever: 0 dims and turns it off at once");
         var built = (byte[])profile.Clone();
         int keys = Keys(clusters);
         for (int cluster = 0; cluster < 2; cluster++)
@@ -745,10 +745,13 @@ static class G915Lighting
             built[Records + 11 * cluster] = id;
             parameters.CopyTo(built, Records + 11 * cluster + 1);
             built[Records + 11 * (2 + cluster)] = id;
-            Dimmed(id, parameters, lighting.Dim).CopyTo(built, Records + 11 * (2 + cluster) + 1);
+            Dimmed(id, parameters, idleTimes ? lighting.Dim : 100).CopyTo(built, Records + 11 * (2 + cluster) + 1);
         }
-        built[0x1C] = (byte)lighting.Idle; built[0x1D] = (byte)(lighting.Idle >> 8);
-        built[0x1E] = (byte)lighting.Sleep; built[0x1F] = (byte)(lighting.Sleep >> 8);
+        if (idleTimes)
+        {
+            built[0x1C] = (byte)lighting.Idle; built[0x1D] = (byte)(lighting.Idle >> 8);
+            built[0x1E] = (byte)lighting.Sleep; built[0x1F] = (byte)(lighting.Sleep >> 8);
+        }
         MouseProtocol.WriteChecksum(built);
         return built;
     }

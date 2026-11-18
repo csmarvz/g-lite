@@ -261,6 +261,8 @@ class KeyboardKinds
     public KeyLayout Iso { get { if (!isoBuilt) { iso = Keys.Iso(); isoBuilt = true; } return iso; } }
     public string Prefix;
     public bool Saves, Profile, Guessed;
+    // The G815 is wired: its profiles hold 0 for both idle times, and G HUB writes the power-save records as copies of the others.
+    public bool NoIdleTimes;
     public int[] Bar;
 
     public static string File(string name)
@@ -293,7 +295,7 @@ class KeyboardKinds
         G515 = new KeyboardKinds { Keys = KeyLayout.Load("g515-tkl.json"), Prefix = "profile.g515.", Saves = true },
         G915Tkl = new KeyboardKinds { Keys = KeyLayout.Load("g915-tkl.json"), Prefix = "profile.g915.", Profile = true },
         G915 = new KeyboardKinds { Keys = KeyLayout.Load("g915.json"), Prefix = "profile.g915.", Profile = true },
-        G815 = new KeyboardKinds { Keys = LoadLayout("g915.json", "G815"), Prefix = "profile.g815.", Profile = true },
+        G815 = new KeyboardKinds { Keys = LoadLayout("g915.json", "G815"), Prefix = "profile.g815.", Profile = true, NoIdleTimes = true },
         G512X = new KeyboardKinds { Keys = KeyLayout.Load("g512-x-75.json"), Prefix = "profile.g512x.", Bar = Enumerable.Range(0xA0, 33).ToArray() };
 }
 
@@ -986,7 +988,7 @@ class Page515 : DevicePage
         foreach (var control in plainLight) control.Visible = !screening;
         foreach (var control in screenLight) control.Visible = screening;
         screenBox.Visible = screening;
-        idleArea.Visible = !screening;
+        idleArea.Visible = !screening && !kind.NoIdleTimes;
         if (picture.Live != screening) picture.Live = screening;
         var view = Viewed;
         var effect = G515Profile.EffectById(view.Effect);
@@ -1197,7 +1199,7 @@ class Page515 : DevicePage
             if (clusters == null) clusters = G915Lighting.Clusters(hidpp);
             int sector;
             var profile = G915Lighting.ReadProfile(hidpp, out sector);
-            var built = G915Lighting.Build(profile, clusters, lighting, others);
+            var built = G915Lighting.Build(profile, clusters, lighting, others, !kind.NoIdleTimes);
             Backups.Save(ProfileBackups, new Dictionary<string, byte[]> { { sector.ToString("X4"), profile } }, DeviceLabel);
             G915Lighting.Store(hidpp, sector, built);
             claimed = false;

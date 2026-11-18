@@ -440,12 +440,21 @@ static class SelfTest
         var g9Saved = G915Lighting.Decode(g9Profile, 1);
         Check(g9Sector == 1 && g9Saved.Effect == 0x15 && g9Saved.Period == 10000 && g9Saved.Idle == 60 && g9Saved.Sleep == 300 && g9Saved.Dim == 50,
             "the G915 TKL's profile reads as Cycle at 10 s, dimmed to half after 60 s, off after 300 s");
-        var g9Built = G915Lighting.Build(g9Profile, clusters, new Lighting { Effect = 0x16, Period = 3000, Direction = 1, Dim = 50, Idle = 15, Sleep = 600 }, null);
+        var g9Built = G915Lighting.Build(g9Profile, clusters, new Lighting { Effect = 0x16, Period = 3000, Direction = 1, Dim = 50, Idle = 15, Sleep = 600 }, null, true);
         // Profile 3 of the same keyboard, Cycle on the logo and Wave on the keys, normal then dimmed (its Wave also has FF in its first and sixth parameter bytes).
         var g9Want = FakeHidpp.Hex("0300000000000BB864000004000000000000B801640B0300000000000BB832000004000000000000B801320B");
         Check(g9Built.Skip(0xD0).Take(44).SequenceEqual(g9Want) && MouseProtocol.Valid(g9Built) && g9Built[0x1C] == 15 && g9Built[0x1E] == 0x58 && g9Built[0x1F] == 2
             && g9Built.Take(0xD0).Where((x, i) => i < 0x1C || i > 0x1F).SequenceEqual(g9Profile.Take(0xD0).Where((x, i) => i < 0x1C || i > 0x1F)),
             "saving Wave on the G915 writes the records the keyboard's own Wave profile has, the idle times, and keeps every other byte");
+        // Profile 2 of an owner's G815 (256-byte sectors, the CRC as reported): Breathe, no idle times, the power-save records copies of the others.
+        var g815Profile = FakeHidpp.Hex("01000000000000000000000000" + new string('F', 30) + "00000000" + "8002001E8002001F800200208002002180020022900DFF01900DFF02900DFF03"
+            + new string('F', 192) + new string('0', 96) + string.Concat(Enumerable.Repeat("0A00DCFF0BB80000000000", 4)) + "FFFF74A5");
+        var g815Saved = G915Lighting.Decode(g815Profile, 1);
+        var g815Built = G915Lighting.Build(g815Profile, clusters, new Lighting { Effect = 0x01, Color = 0xFF0000, Dim = 50, Idle = 60, Sleep = 300 }, null, false);
+        Check(g815Profile.Length == 256 && MouseProtocol.Valid(g815Profile) && g815Saved.Effect == 0x0A && g815Saved.Color == 0x00DCFF && g815Saved.Period == 3000 && g815Saved.Idle == 0
+            && MouseProtocol.Valid(g815Built) && g815Built.Skip(0xD0).Take(22).SequenceEqual(g815Built.Skip(0xE6).Take(22)) && g815Built[0xDB] == 0x01 && g815Built[0xDC] == 0xFF
+            && g815Built.Take(0xD0).SequenceEqual(g815Profile.Take(0xD0)) && g815Built.Skip(0xFC).Take(2).All(value => value == 0xFF),
+            "the G815's profile reads, and saving keeps its idle times at 0 and writes the power-save records as copies, as G HUB does");
         G915Lighting.Claim(g915);
         G915Lighting.Store(g915, g9Sector, g9Built);
         Check(g915.Sectors[1].SequenceEqual(g9Built) && g915.Reloads == 1 && g915.Claimed == 0, "the G915's profile is written, loaded again, and the lighting given back");

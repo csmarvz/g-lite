@@ -34,7 +34,7 @@ From what's known about these models, not checked:
 
 - G513, G413 (single colour), G910 and G810 may also use 0x8070 and 0x8080. Only a report tells.
 - The G213 uses 0x8070 with six zones: the whole keyboard and five areas that take Static only. See [G213.md](G213.md).
-- The G815 is the wired G915 and likely uses 0x8071 like it. If its report shows 0x8071 and 0x8040, `IsG915` should match it (wired, index 0xFF) once its name is accepted.
+- The G815 is the wired G915: its report shows 0x8071, 0x8040 and 0x8100 like the G915 TKL, and it gets the G915 screen. See [G915.md](G915.md).
 
 ## Effects
 
