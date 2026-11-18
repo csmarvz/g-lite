@@ -96,6 +96,15 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
   - Sector 0x0000 (the profile directory) is written only by `MouseProtocol.Setup`, on a mouse that runs a factory profile and has no directory (fn 5 answers error 02, like the G305), an empty one, or a sector of all `00` or all `FF` (`MouseProtocol.Unwritten`: the G502 HERO reads zeros, per Solaar #2313) (`State.Fresh`). The first Save to mouse then writes the profile, built from the factory one, to 0x0001, then the directory `MouseProtocol.Directory` builds (`00 01 01 00`, `FF FF 00 00`, `FF` to the end, CRC-16), then loads 0x0001 with fn 3. `WriteSector` still refuses 0x0000. Same layout as libratbag's `hidpp20_onboard_profiles_write_dict`. G HUB writes each entry as `00 0N <enabled> FF` instead (seen on a G502 LIGHTSPEED: five profiles, the first enabled); both are read the same, and G-Lite never rewrites a list that exists.
 - The PRO X Wireless dongle (PID 0ABA) answers HID++ itself at index 0xFF. Its sidetone only plays while an app uses the microphone. It stores an equalizer (0x8310: fn 2 reads one signed byte per band, fn 3 writes a persistence byte followed by them) but doesn't apply it, so G-Lite doesn't show it. Logitech's spec (x8310 v2) explains why: persistence 2 is EEPROM only, 1 is RAM and EEPROM, 0 RAM only; fn 2 takes a location byte, 0 the stored EQ, 1 the active one. Trying `01` on the PRO X is the next step (the G733 refuses 0 and 1, `docs/research/more-references.md`). G HUB applies EQ on the PC.
 
+## Code conventions
+
+- Names say what they hold, in full words: classes, methods, fields, parameters, locals and lambda parameters. No abbreviations or one-letter names (`reply`, not `r`; `saveButton`, not `saveBtn`; `featureIndex`, not `feat`).
+  - Exceptions: `i` and `j` as loop counters; `x`, `y`, `dx`, `dy` as coordinates; `(s, e)` in event handlers and `e` in overrides like `OnPaint(PaintEventArgs e)`; `ex` in `catch`; `fn` for a HID++ function number, as in the docs.
+  - A `Hidpp` is `hidpp`. A feature's runtime index is named after the feature (`dpiFeature`, `lightFeature`) or `feature` when there's only one; the feature's id stays a hex literal (`0x8070`).
+  - A page's snapshot of its sequence before a send or load is `startedAt`.
+- A parameter or local must not share a name with a field of its class: C# lets it hide the field without an error, and code meant for the field then reads the local. When a parameter sets a field, name it apart (`newColor` for the field `color`) or assign with `this.`.
+- When renaming, rename by symbol, not text: strings, comments and other members with the same name stay. The traces must pass without `--record`.
+
 ## Rules
 
 - The repo is MIT. Don't bring in code from GPL projects.
