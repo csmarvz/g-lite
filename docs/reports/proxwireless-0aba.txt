@@ -1,0 +1,35 @@
+G-Lite device report
+G-Lite 0.0.32-alpha, Windows 11 build 26200
+2026-11-18 21:50 UTC
+
+Device    PRO X Wireless Gaming Headset
+Kind      headset
+Link      LIGHTSPEED, USB 046D:0ABA
+Model     0ABA
+Firmware  U1 12.01, build 0203
+Battery   44%, 3766 mV
+Screen    PageHeadset
+
+Features
+01 0001 v0  feature set
+02 0003 v0  firmware
+03 0005 v0  name
+04 8310 v0  equalizer
+05 8300 v0  sidetone
+06 1F20 v0  battery and auto-off
+
+0003 firmware
+entity 0=00 55 31 20 12 01 02 03 01 0A BA 00 00 00 00 00
+
+8310 equalizer
+info=0A 0C 01 00 00 00 00 00 00 00 00 00 00 00 00 00
+frequencies 0=00 00 20 00 40 00 7D 00 FA 01 F4 03 E8 07 D0 00
+frequencies 7=07 0F A0 1F 40 3E 80 00 00 00 00 00 00 00 00 00
+bands=00 00 00 00 00 01 03 05 06 06 00 00 00 00 00 00
+
+8300 sidetone
+sidetone=00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+1F20 battery and auto-off
+battery=0E B5 01 00 00 00 00 00 00 00 00 00 00 00 00 00
+auto-off=00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
