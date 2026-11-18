@@ -60,46 +60,46 @@ static class Report
         public string Error;
         int misses;
 
-        public byte[] ReadOnlyCall(int feature, int fn, params byte[] p)
+        public byte[] ReadOnlyCall(int feature, int fn, params byte[] parameters)
         {
-            int[] ok;
-            if (!Reads.TryGetValue(feature, out ok) || !ok.Contains(fn)) throw new RefusedException(string.Format("Not a known read: feature {0:X4} fn {1}", feature, fn));
+            int[] functions;
+            if (!Reads.TryGetValue(feature, out functions) || !functions.Contains(fn)) throw new RefusedException(string.Format("Not a known read: feature {0:X4} fn {1}", feature, fn));
             Error = null;
             if (misses >= 2) { Error = "no answer"; return null; }
             try
             {
-                var r = Device.Call(Device.FeatureIndex(feature), fn, p);
+                var reply = Device.Call(Device.FeatureIndex(feature), fn, parameters);
                 misses = 0;
-                return r;
+                return reply;
             }
-            catch (HidppError e) { Error = "error " + e.Code.ToString("X2"); }
+            catch (HidppError error) { Error = "error " + error.Code.ToString("X2"); }
             catch (NotSupportedException) { Error = "missing"; }
             catch (TimeoutException) { misses++; Error = "no answer"; }
             return null;
         }
 
-        public byte[] Show(string label, int feature, int fn, params byte[] p)
+        public byte[] Show(string label, int feature, int fn, params byte[] parameters)
         {
-            var r = ReadOnlyCall(feature, fn, p);
-            Output.AppendLine(label + "=" + (r == null ? Error : Hex(r, " ")));
-            return r;
+            var reply = ReadOnlyCall(feature, fn, parameters);
+            Output.AppendLine(label + "=" + (reply == null ? Error : Hex(reply, " ")));
+            return reply;
         }
     }
 
-    public static string Build(Hidpp h, FoundDevice f, string screen)
+    public static string Build(Hidpp hidpp, FoundDevice found, string screen)
     {
-        var r = new Reader { Device = h };
-        var s = r.Output;
-        WriteHeader(s, f, screen, () => f.Battery >= 0 || !f.Has(0x1F20) ? (f.Battery < 0 ? "–" : f.Battery + "%") + (f.Millivolts > 0 ? ", " + f.Millivolts + " mV" : "") + (f.Charging ? ", charging" : "") : HeadsetBattery(r));
+        var reader = new Reader { Device = hidpp };
+        var output = reader.Output;
+        WriteHeader(output, found, screen, () => found.Battery >= 0 || !found.Has(0x1F20) ? (found.Battery < 0 ? "–" : found.Battery + "%") + (found.Millivolts > 0 ? ", " + found.Millivolts + " mV" : "") + (found.Charging ? ", charging" : "") : HeadsetBattery(reader));
 
-        var ids = Features(r, f);
-        foreach (var id in ids.Where(Reads.ContainsKey).Where(x => x != 0x0001))
+        var ids = Features(reader, found);
+        foreach (var id in ids.Where(Reads.ContainsKey).Where(feature => feature != 0x0001))
         {
-            s.AppendLine();
-            s.AppendLine(id.ToString("X4") + " " + Name(id));
-            Section(r, f, id);
+            output.AppendLine();
+            output.AppendLine(id.ToString("X4") + " " + Name(id));
+            Section(reader, found, id);
         }
-        return s.ToString();
+        return output.ToString();
     }
 
     public static string Registers(Hidpp device, FoundDevice found, string screen)
@@ -131,7 +131,7 @@ static class Report
             for (int offset = 0; offset < 512; offset += 16)
             {
                 var row = page.Skip(offset).Take(16).ToArray();
-                if (offset > 0 && offset < 496 && (row.All(b => b == 0xFF) || row.All(b => b == 0))) continue;
+                if (offset > 0 && offset < 496 && (row.All(value => value == 0xFF) || row.All(value => value == 0))) continue;
                 text.AppendLine(offset.ToString("X3") + "=" + Hex(row, " "));
             }
         }
@@ -193,7 +193,7 @@ static class Report
                 FeatureIds(ids, data, caps[29], true);
                 FeatureIds(ids, data, caps[30], false);
                 if (caps[4] <= 0 || ids.Count == 0) return;
-                text.AppendLine("feature ids=" + string.Join(" ", ids.Select(n => n.ToString("X2"))));
+                text.AppendLine("feature ids=" + string.Join(" ", ids.Select(id => id.ToString("X2"))));
                 foreach (var reportId in ids)
                 {
                     var buffer = new byte[caps[4]];
@@ -216,12 +216,12 @@ static class Report
         for (int i = 0; i < length; i++)
         {
             int at = 72 * i;
-            Func<int, int> u16 = o => caps[at + o] | caps[at + o + 1] << 8;
-            Func<int, int> s32 = o => BitConverter.ToInt32(caps, at + o);
+            Func<int, int> readUInt16 = offset => caps[at + offset] | caps[at + offset + 1] << 8;
+            Func<int, int> readInt32 = offset => BitConverter.ToInt32(caps, at + offset);
             bool range = caps[at + 12] != 0;
-            string usage = u16(56).ToString("X4") + (range ? "-" + u16(58).ToString("X4") : "");
-            string line = kind + (buttons ? " buttons" : " value") + " id=" + caps[at + 2].ToString("X2") + " page=" + u16(0).ToString("X4") + " usage=" + usage;
-            if (!buttons) line += " bits=" + u16(18) + " count=" + u16(20) + " logical=" + s32(40) + ".." + s32(44) + (caps[at + 16] != 0 ? " null" : "");
+            string usage = readUInt16(56).ToString("X4") + (range ? "-" + readUInt16(58).ToString("X4") : "");
+            string line = kind + (buttons ? " buttons" : " value") + " id=" + caps[at + 2].ToString("X2") + " page=" + readUInt16(0).ToString("X4") + " usage=" + usage;
+            if (!buttons) line += " bits=" + readUInt16(18) + " count=" + readUInt16(20) + " logical=" + readInt32(40) + ".." + readInt32(44) + (caps[at + 16] != 0 ? " null" : "");
             text.AppendLine(line);
         }
         return length > 0 ? caps[2] : -1;
@@ -252,115 +252,115 @@ static class Report
         catch (TimeoutException) { return null; }
     }
 
-    static void WriteHeader(StringBuilder s, FoundDevice f, string screen, Func<string> battery)
+    static void WriteHeader(StringBuilder text, FoundDevice found, string screen, Func<string> battery)
     {
-        s.AppendLine("G-Lite device report");
-        s.AppendLine("G-Lite " + Version() + ", " + Windows());
-        s.AppendLine(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm 'UTC'", System.Globalization.CultureInfo.InvariantCulture));
-        s.AppendLine();
-        Row(s, "Device", f.Name == "" ? "–" : f.Name);
-        Row(s, "Kind", f.Kind);
-        Row(s, "Link", f.Link + f.Slot + (f.Hidpp10 ? ", HID++ 1.0" : "") + (f.WirelessId != 0 ? ", ID " + f.WirelessId.ToString("X4") : "") + Usb(f.Path));
-        Row(s, "Model", f.Models == "" ? "–" : f.Models);
-        Row(s, "Firmware", f.Firmware == "" ? "–" : f.Firmware);
-        Row(s, "Battery", battery());
-        Row(s, "Screen", screen);
+        text.AppendLine("G-Lite device report");
+        text.AppendLine("G-Lite " + Version() + ", " + Windows());
+        text.AppendLine(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm 'UTC'", System.Globalization.CultureInfo.InvariantCulture));
+        text.AppendLine();
+        Row(text, "Device", found.Name == "" ? "–" : found.Name);
+        Row(text, "Kind", found.Kind);
+        Row(text, "Link", found.Link + found.Slot + (found.Hidpp10 ? ", HID++ 1.0" : "") + (found.WirelessId != 0 ? ", ID " + found.WirelessId.ToString("X4") : "") + Usb(found.Path));
+        Row(text, "Model", found.Models == "" ? "–" : found.Models);
+        Row(text, "Firmware", found.Firmware == "" ? "–" : found.Firmware);
+        Row(text, "Battery", battery());
+        Row(text, "Screen", screen);
     }
 
-    static List<int> Features(Reader r, FoundDevice f)
+    static List<int> Features(Reader reader, FoundDevice found)
     {
-        var s = r.Output;
+        var output = reader.Output;
         var ids = new List<int>();
-        s.AppendLine();
-        var count = r.ReadOnlyCall(0x0001, 0);
+        output.AppendLine();
+        var count = reader.ReadOnlyCall(0x0001, 0);
         if (count == null)
         {
-            s.AppendLine("Features (from the scan)");
-            ids.AddRange(f.Features);
-            foreach (var id in ids) s.AppendLine(id.ToString("X4") + "  " + Name(id));
+            output.AppendLine("Features (from the scan)");
+            ids.AddRange(found.Features);
+            foreach (var id in ids) output.AppendLine(id.ToString("X4") + "  " + Name(id));
             return ids;
         }
-        s.AppendLine("Features");
+        output.AppendLine("Features");
         for (int i = 1; i <= count[0]; i++)
         {
-            var x = r.ReadOnlyCall(0x0001, 1, (byte)i);
-            if (x == null) { s.AppendLine(i.ToString("X2") + " " + r.Error); continue; }
-            int id = x[0] << 8 | x[1];
+            var entry = reader.ReadOnlyCall(0x0001, 1, (byte)i);
+            if (entry == null) { output.AppendLine(i.ToString("X2") + " " + reader.Error); continue; }
+            int id = entry[0] << 8 | entry[1];
             ids.Add(id);
-            var flags = ((x[2] & 0x80) != 0 ? " obsolete" : "") + ((x[2] & 0x40) != 0 ? " hidden" : "") + ((x[2] & 0x20) != 0 ? " internal" : "");
-            s.AppendLine(string.Format("{0:X2} {1:X4} v{2,-2} {3}", i, id, x[3], (Name(id) + flags).Trim()).TrimEnd());
+            var flags = ((entry[2] & 0x80) != 0 ? " obsolete" : "") + ((entry[2] & 0x40) != 0 ? " hidden" : "") + ((entry[2] & 0x20) != 0 ? " internal" : "");
+            output.AppendLine(string.Format("{0:X2} {1:X4} v{2,-2} {3}", i, id, entry[3], (Name(id) + flags).Trim()).TrimEnd());
         }
         return ids;
     }
 
-    static void Section(Reader r, FoundDevice f, int id)
+    static void Section(Reader reader, FoundDevice found, int id)
     {
         switch (id)
         {
             case 0x0003:
                 {
-                    var c = r.ReadOnlyCall(0x0003, 0);
-                    for (int e = 0; c != null && e < Math.Min((int)c[0], 8); e++)
+                    var count = reader.ReadOnlyCall(0x0003, 0);
+                    for (int entity = 0; count != null && entity < Math.Min((int)count[0], 8); entity++)
                     {
-                        var x = r.ReadOnlyCall(0x0003, 1, (byte)e);
-                        if (x != null) for (int i = 11; i < x.Length; i++) x[i] = 0;
-                        r.Output.AppendLine("entity " + e + "=" + (x == null ? r.Error : Hex(x, " ")));
+                        var info = reader.ReadOnlyCall(0x0003, 1, (byte)entity);
+                        if (info != null) for (int i = 11; i < info.Length; i++) info[i] = 0;
+                        reader.Output.AppendLine("entity " + entity + "=" + (info == null ? reader.Error : Hex(info, " ")));
                     }
                     break;
                 }
             case 0x1B04:
                 {
-                    var c = r.Show("count", 0x1B04, 0);
-                    for (int i = 0; c != null && i < Math.Min((int)c[0], 48); i++) r.Show("control " + i, 0x1B04, 1, (byte)i);
+                    var count = reader.Show("count", 0x1B04, 0);
+                    for (int i = 0; count != null && i < Math.Min((int)count[0], 48); i++) reader.Show("control " + i, 0x1B04, 1, (byte)i);
                     break;
                 }
-            case 0x1990: r.Show("on", id, 0); r.Show("brightness info", id, 2); r.Show("brightness", id, 3); r.Show("temperature info", id, 7); r.Show("temperature", id, 8); break;
-            case 0x1F20: r.Show("battery", id, 0); r.Show("auto-off", id, 1); break;
-            case 0x2121: r.Show("wheel", id, 0); r.Show("mode", id, 1); r.Show("ratchet", id, 3); break;
-            case 0x2110: r.Show("smartshift", id, 0); break;
-            case 0x2111: r.Show("capabilities", id, 0); r.Show("smartshift", id, 1); break;
-            case 0x2150: r.Show("info", id, 0); r.Show("status", id, 1); break;
-            case 0x1982: r.Show("config", id, 0); r.Show("info", id, 2); break;
-            case 0x1814: r.Show("hosts", id, 0); break;
+            case 0x1990: reader.Show("on", id, 0); reader.Show("brightness info", id, 2); reader.Show("brightness", id, 3); reader.Show("temperature info", id, 7); reader.Show("temperature", id, 8); break;
+            case 0x1F20: reader.Show("battery", id, 0); reader.Show("auto-off", id, 1); break;
+            case 0x2121: reader.Show("wheel", id, 0); reader.Show("mode", id, 1); reader.Show("ratchet", id, 3); break;
+            case 0x2110: reader.Show("smartshift", id, 0); break;
+            case 0x2111: reader.Show("capabilities", id, 0); reader.Show("smartshift", id, 1); break;
+            case 0x2150: reader.Show("info", id, 0); reader.Show("status", id, 1); break;
+            case 0x1982: reader.Show("config", id, 0); reader.Show("info", id, 2); break;
+            case 0x1814: reader.Show("hosts", id, 0); break;
             case 0x1815:
                 {
                     // fn 1 gives each computer's status, bus and name length. Its name (fn 3) stays out: it's often the owner's name.
-                    var info = r.Show("info", id, 0);
-                    for (int host = 0; info != null && host < Math.Min((int)info[2], 6); host++) r.Show("host " + host, id, 1, (byte)host);
+                    var info = reader.Show("info", id, 0);
+                    for (int host = 0; info != null && host < Math.Min((int)info[2], 6); host++) reader.Show("host " + host, id, 1, (byte)host);
                     break;
                 }
-            case 0x2201: r.Show("sensors", id, 0); r.Show("dpi list", id, 1, 0); r.Show("dpi", id, 2, 0); break;
-            case 0x2202: r.Show("sensors", id, 0); r.Show("sensor", id, 1, 0); r.Show("dpi ranges", id, 2, 0, 0, 0); r.Show("dpi ranges, page 1", id, 2, 0, 0, 1); r.Show("dpi list", id, 3, 0, 0); r.Show("lift-off list", id, 4, 0); r.Show("dpi", id, 5, 0); break;
-            case 0x8061: r.Show("rates, wired", id, 0, 0); r.Show("rates, wireless", id, 0, 1); r.Show("rates now", id, 1); r.Show("now, wired", id, 2, 0); r.Show("now, wireless", id, 2, 1); break;
-            case 0x4540: r.Show("layout", id, 0); break;
+            case 0x2201: reader.Show("sensors", id, 0); reader.Show("dpi list", id, 1, 0); reader.Show("dpi", id, 2, 0); break;
+            case 0x2202: reader.Show("sensors", id, 0); reader.Show("sensor", id, 1, 0); reader.Show("dpi ranges", id, 2, 0, 0, 0); reader.Show("dpi ranges, page 1", id, 2, 0, 0, 1); reader.Show("dpi list", id, 3, 0, 0); reader.Show("lift-off list", id, 4, 0); reader.Show("dpi", id, 5, 0); break;
+            case 0x8061: reader.Show("rates, wired", id, 0, 0); reader.Show("rates, wireless", id, 0, 1); reader.Show("rates now", id, 1); reader.Show("now, wired", id, 2, 0); reader.Show("now, wireless", id, 2, 1); break;
+            case 0x4540: reader.Show("layout", id, 0); break;
             case 0x8010:
-            case 0x8020: r.Show("count", id, 0); break;
-            case 0x8040: r.Show("info", id, 0); r.Show("now", id, 1); break;
-            case 0x8060: r.Show("rates", id, 0); r.Show("now", id, 1); break;
+            case 0x8020: reader.Show("count", id, 0); break;
+            case 0x8040: reader.Show("info", id, 0); reader.Show("now", id, 1); break;
+            case 0x8060: reader.Show("rates", id, 0); reader.Show("now", id, 1); break;
             case 0x8070:
                 {
-                    var info = r.Show("info", id, 0);
-                    for (int z = 0; info != null && z < Math.Min((int)info[0], 8); z++)
+                    var info = reader.Show("info", id, 0);
+                    for (int zoneIndex = 0; info != null && zoneIndex < Math.Min((int)info[0], 8); zoneIndex++)
                     {
-                        var zone = r.Show("zone " + z, id, 1, (byte)z, 0xFF, 0);
-                        for (int e = 0; zone != null && e < Math.Min((int)zone[3], 32); e++) r.Show("zone " + z + " effect " + e, id, 2, (byte)z, (byte)e, 0xFF, 0);
+                        var zone = reader.Show("zone " + zoneIndex, id, 1, (byte)zoneIndex, 0xFF, 0);
+                        for (int effect = 0; zone != null && effect < Math.Min((int)zone[3], 32); effect++) reader.Show("zone " + zoneIndex + " effect " + effect, id, 2, (byte)zoneIndex, (byte)effect, 0xFF, 0);
                     }
                     break;
                 }
             case 0x8071:
-                for (int c = 0; c < 8; c++)
+                for (int cluster = 0; cluster < 8; cluster++)
                 {
-                    var where = r.ReadOnlyCall(id, 0, (byte)c, 0xFF, 0);
-                    if (where != null) r.Output.AppendLine("cluster " + c + "=" + Hex(where, " "));
-                    int n = 0;
-                    for (int e = 0; e < 32; e++)
+                    var where = reader.ReadOnlyCall(id, 0, (byte)cluster, 0xFF, 0);
+                    if (where != null) reader.Output.AppendLine("cluster " + cluster + "=" + Hex(where, " "));
+                    int effects = 0;
+                    for (int effect = 0; effect < 32; effect++)
                     {
-                        var x = r.ReadOnlyCall(id, 0, (byte)c, (byte)e, 0);
-                        if (x == null) break;
-                        r.Output.AppendLine("cluster " + c + " effect " + e + "=" + Hex(x, " "));
-                        n++;
+                        var info = reader.ReadOnlyCall(id, 0, (byte)cluster, (byte)effect, 0);
+                        if (info == null) break;
+                        reader.Output.AppendLine("cluster " + cluster + " effect " + effect + "=" + Hex(info, " "));
+                        effects++;
                     }
-                    if (n == 0) break;
+                    if (effects == 0) break;
                 }
                 break;
             case 0x8081:
@@ -368,92 +368,92 @@ static class Report
                     var lit = new List<int>();
                     for (int page = 0; page < 3; page++)
                     {
-                        var x = r.Show("page " + page, id, 0, 0, (byte)page, 0);
-                        for (int i = 0; x != null && i < 14; i++)
+                        var bits = reader.Show("page " + page, id, 0, 0, (byte)page, 0);
+                        for (int i = 0; bits != null && i < 14; i++)
                             for (int bit = 0; bit < 8; bit++)
-                                if ((x[2 + i] >> bit & 1) != 0) lit.Add(page * 112 + i * 8 + bit);
+                                if ((bits[2 + i] >> bit & 1) != 0) lit.Add(page * 112 + i * 8 + bit);
                     }
-                    r.Output.AppendLine("lit ids=" + string.Join(" ", lit.Select(n => n.ToString("X2"))));
+                    reader.Output.AppendLine("lit ids=" + string.Join(" ", lit.Select(litId => litId.ToString("X2"))));
                     break;
                 }
-            case 0x8100: Profiles(r); break;
+            case 0x8100: Profiles(reader); break;
             case 0x8101:
                 {
-                    var user = File(r, 0x0000, 16);
-                    if (f.Kind == "keyboard") File(r, 0x0008, ProfileSize(user));
-                    var factory = File(r, 0x0100, 16);
-                    if (f.Kind == "keyboard") File(r, 0x0101, ProfileSize(factory));
+                    var user = File(reader, 0x0000, 16);
+                    if (found.Kind == "keyboard") File(reader, 0x0008, ProfileSize(user));
+                    var factory = File(reader, 0x0100, 16);
+                    if (found.Kind == "keyboard") File(reader, 0x0101, ProfileSize(factory));
                     break;
                 }
-            case 0x8110: r.Show("buttons", id, 0); break;
-            case 0x8300: r.Show("sidetone", id, 0); break;
+            case 0x8110: reader.Show("buttons", id, 0); break;
+            case 0x8300: reader.Show("sidetone", id, 0); break;
             case 0x8310:
                 {
-                    var info = r.Show("info", id, 0);
+                    var info = reader.Show("info", id, 0);
                     int count = info == null ? 0 : Math.Min((int)info[0], 32);
-                    for (int start = 0; start < count; start += 7) r.Show("frequencies " + start, id, 1, (byte)start);
-                    r.Show("bands", id, 2);
+                    for (int start = 0; start < count; start += 7) reader.Show("frequencies " + start, id, 1, (byte)start);
+                    reader.Show("bands", id, 2);
                     break;
                 }
         }
     }
 
-    static string HeadsetBattery(Reader r)
+    static string HeadsetBattery(Reader reader)
     {
-        var b = r.ReadOnlyCall(0x1F20, 0);
-        if (b == null) return "–";
-        int mv = b[0] << 8 | b[1];
-        return "~" + (b[2] == 3 ? FoundDevice.FromChargingVolts(mv) : FoundDevice.FromVolts(mv)) + "%, " + mv + " mV" + (b[2] == 3 ? ", charging" : "");
+        var reply = reader.ReadOnlyCall(0x1F20, 0);
+        if (reply == null) return "–";
+        int millivolts = reply[0] << 8 | reply[1];
+        return "~" + (reply[2] == 3 ? FoundDevice.FromChargingVolts(millivolts) : FoundDevice.FromVolts(millivolts)) + "%, " + millivolts + " mV" + (reply[2] == 3 ? ", charging" : "");
     }
 
-    static void Profiles(Reader r)
+    static void Profiles(Reader reader)
     {
-        var desc = r.Show("info", 0x8100, 0);
-        r.Show("mode", 0x8100, 2);
-        r.Show("current", 0x8100, 4);
-        r.Show("dpi index", 0x8100, 0xB);
-        if (desc == null) return;
-        int size = desc[7] << 8 | desc[8];
-        if (size < 16 || size > 0x1000) { r.Output.AppendLine("sector size " + size + ", not read"); return; }
-        var dir = Sector(r, 0x0000, size);
+        var info = reader.Show("info", 0x8100, 0);
+        reader.Show("mode", 0x8100, 2);
+        reader.Show("current", 0x8100, 4);
+        reader.Show("dpi index", 0x8100, 0xB);
+        if (info == null) return;
+        int size = info[7] << 8 | info[8];
+        if (size < 16 || size > 0x1000) { reader.Output.AppendLine("sector size " + size + ", not read"); return; }
+        var directory = Sector(reader, 0x0000, size);
         var sectors = new List<int>();
-        for (int i = 0; dir != null && i + 1 < dir.Length && sectors.Count < 8; i += 4)
+        for (int i = 0; directory != null && i + 1 < directory.Length && sectors.Count < 8; i += 4)
         {
-            int at = dir[i] << 8 | dir[i + 1];
+            int at = directory[i] << 8 | directory[i + 1];
             if (at == 0xFFFF) break;
             if (at > 0 && at < 0x100 && !sectors.Contains(at)) sectors.Add(at);
         }
-        foreach (var at in sectors) Sector(r, at, size);
-        Sector(r, 0x0100, size);
-        for (int k = 1; k <= Math.Min((int)desc[4], 8); k++) Sector(r, 0x0100 + k, size);
+        foreach (var at in sectors) Sector(reader, at, size);
+        Sector(reader, 0x0100, size);
+        for (int profile = 1; profile <= Math.Min((int)info[4], 8); profile++) Sector(reader, 0x0100 + profile, size);
     }
 
-    static byte[] Sector(Reader r, int sector, int size)
+    static byte[] Sector(Reader reader, int sector, int size)
     {
-        var p = new byte[size];
-        for (int off = 0; off < size; off += 16)
+        var data = new byte[size];
+        for (int offset = 0; offset < size; offset += 16)
         {
-            int at = Math.Min(off, size - 16);
-            var x = r.ReadOnlyCall(0x8100, 5, (byte)(sector >> 8), (byte)sector, (byte)(at >> 8), (byte)at);
-            if (x == null) { r.Output.AppendLine(sector.ToString("X4") + "=" + r.Error); return null; }
-            Array.Copy(x, off - at, p, off, Math.Min(16, size - off));
+            int at = Math.Min(offset, size - 16);
+            var chunk = reader.ReadOnlyCall(0x8100, 5, (byte)(sector >> 8), (byte)sector, (byte)(at >> 8), (byte)at);
+            if (chunk == null) { reader.Output.AppendLine(sector.ToString("X4") + "=" + reader.Error); return null; }
+            Array.Copy(chunk, offset - at, data, offset, Math.Min(16, size - offset));
         }
-        r.Output.AppendLine(sector.ToString("X4") + "=" + Hex(p, ""));
-        return p;
+        reader.Output.AppendLine(sector.ToString("X4") + "=" + Hex(data, ""));
+        return data;
     }
 
-    static byte[] File(Reader r, int addr, int size)
+    static byte[] File(Reader reader, int address, int size)
     {
-        if (r.ReadOnlyCall(0x8101, 8, (byte)(addr >> 8), (byte)addr, (byte)(size >> 8), (byte)size) == null) { r.Output.AppendLine(addr.ToString("X4") + "=" + r.Error); return null; }
-        var o = new List<byte>();
-        for (int off = 0; off < size; off += 16)
+        if (reader.ReadOnlyCall(0x8101, 8, (byte)(address >> 8), (byte)address, (byte)(size >> 8), (byte)size) == null) { reader.Output.AppendLine(address.ToString("X4") + "=" + reader.Error); return null; }
+        var collected = new List<byte>();
+        for (int offset = 0; offset < size; offset += 16)
         {
-            var x = r.ReadOnlyCall(0x8101, 0xC, (byte)(off >> 8), (byte)off);
-            if (x == null) { r.Output.AppendLine(addr.ToString("X4") + "=" + r.Error); return null; }
-            o.AddRange(x);
+            var chunk = reader.ReadOnlyCall(0x8101, 0xC, (byte)(offset >> 8), (byte)offset);
+            if (chunk == null) { reader.Output.AppendLine(address.ToString("X4") + "=" + reader.Error); return null; }
+            collected.AddRange(chunk);
         }
-        var data = o.Take(size).ToArray();
-        r.Output.AppendLine(addr.ToString("X4") + "=" + Hex(data, ""));
+        var data = collected.Take(size).ToArray();
+        reader.Output.AppendLine(address.ToString("X4") + "=" + Hex(data, ""));
         return data;
     }
 
@@ -463,34 +463,34 @@ static class Report
         return entry && directory[9] >= 16 ? directory[9] : 99;
     }
 
-    public static string Name(int id) { string n; return Names.TryGetValue(id, out n) ? n : ""; }
+    public static string Name(int id) { string name; return Names.TryGetValue(id, out name) ? name : ""; }
 
-    static void Row(StringBuilder s, string name, string value) { s.AppendLine(name.PadRight(10) + value); }
+    static void Row(StringBuilder text, string name, string value) { text.AppendLine(name.PadRight(10) + value); }
 
-    static string Hex(byte[] b, string gap) { return BitConverter.ToString(b).Replace("-", gap); }
+    static string Hex(byte[] bytes, string gap) { return BitConverter.ToString(bytes).Replace("-", gap); }
 
     static string Usb(string path)
     {
-        var m = Regex.Match(path ?? "", @"VID_([0-9A-F]{4})&PID_([0-9A-F]{4})", RegexOptions.IgnoreCase);
-        return m.Success ? ", USB " + m.Groups[1].Value.ToUpper() + ":" + m.Groups[2].Value.ToUpper() : "";
+        var match = Regex.Match(path ?? "", @"VID_([0-9A-F]{4})&PID_([0-9A-F]{4})", RegexOptions.IgnoreCase);
+        return match.Success ? ", USB " + match.Groups[1].Value.ToUpper() + ":" + match.Groups[2].Value.ToUpper() : "";
     }
 
     static string Version()
     {
-        var a = (AssemblyInformationalVersionAttribute)Attribute.GetCustomAttribute(Assembly.GetExecutingAssembly(), typeof(AssemblyInformationalVersionAttribute));
-        return a == null ? "?" : a.InformationalVersion;
+        var attribute = (AssemblyInformationalVersionAttribute)Attribute.GetCustomAttribute(Assembly.GetExecutingAssembly(), typeof(AssemblyInformationalVersionAttribute));
+        return attribute == null ? "?" : attribute.InformationalVersion;
     }
 
     public static string Windows()
     {
         try
         {
-            using (var k = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion"))
+            using (var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion"))
             {
-                var b = k == null ? null : k.GetValue("CurrentBuild") as string;
-                int n;
-                int.TryParse(b, out n);
-                return (n >= 22000 ? "Windows 11" : n >= 10240 ? "Windows 10" : "Windows") + (b != null ? " build " + b : "");
+                var build = key == null ? null : key.GetValue("CurrentBuild") as string;
+                int buildNumber;
+                int.TryParse(build, out buildNumber);
+                return (buildNumber >= 22000 ? "Windows 11" : buildNumber >= 10240 ? "Windows 10" : "Windows") + (build != null ? " build " + build : "");
             }
         }
         catch (Exception) { return "Windows"; }

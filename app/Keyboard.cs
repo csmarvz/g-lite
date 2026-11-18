@@ -9,17 +9,17 @@ using Microsoft.Win32.SafeHandles;
 class HidppError : Exception
 {
     public int Code;
-    public HidppError(int code, string msg) : base(msg) { Code = code; }
+    public HidppError(int code, string message) : base(message) { Code = code; }
 }
 
 class RefusedException : Exception
 {
-    public RefusedException(string msg) : base(msg) { }
+    public RefusedException(string message) : base(message) { }
 }
 
 class HalfWrittenException : RefusedException
 {
-    public HalfWrittenException(string msg) : base(msg) { }
+    public HalfWrittenException(string message) : base(message) { }
 }
 
 class Hidpp : IDisposable
@@ -42,23 +42,23 @@ class Hidpp : IDisposable
     [DllImport("hid.dll")] static extern bool HidD_FreePreparsedData(IntPtr data);
     [DllImport("hid.dll")] static extern int HidP_GetCaps(IntPtr data, short[] caps);
 
-    static string Bytes(byte[] p, int most)
+    static string Bytes(byte[] bytes, int most)
     {
-        var used = p.Take(most).ToArray();
-        int n = used.Length;
-        while (n > 0 && used[n - 1] == 0) n--;
-        return n == 0 ? "" : "  " + BitConverter.ToString(used, 0, n).Replace("-", " ");
+        var used = bytes.Take(most).ToArray();
+        int length = used.Length;
+        while (length > 0 && used[length - 1] == 0) length--;
+        return length == 0 ? "" : "  " + BitConverter.ToString(used, 0, length).Replace("-", " ");
     }
 
-    void Record(byte feat, int fn, byte[] p)
+    void Record(byte featureIndex, int fn, byte[] parameters)
     {
-        if (Tap == null || feat == 0) return;
-        int id = features.Where(x => x.Value == feat).Select(x => x.Key).FirstOrDefault();
-        Tap((id != 0 ? id.ToString("X4") : "index " + feat.ToString("X2")) + " fn" + fn.ToString("X") + Bytes(p, 16));
+        if (Tap == null || featureIndex == 0) return;
+        int id = features.Where(pair => pair.Value == featureIndex).Select(pair => pair.Key).FirstOrDefault();
+        Tap((id != 0 ? id.ToString("X4") : "index " + featureIndex.ToString("X2")) + " fn" + fn.ToString("X") + Bytes(parameters, 16));
     }
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr sec, uint disp, uint flags, IntPtr tmpl);
+    static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr security, uint disposition, uint flags, IntPtr template);
 
     protected Hidpp(bool open) { }
 
@@ -66,9 +66,9 @@ class Hidpp : IDisposable
     {
         DeviceIndex = index;
         this.path = path;
-        var h = CreateFile(path, 0xC0000000, 3, IntPtr.Zero, 3, 0x40000000, IntPtr.Zero);
-        if (h.IsInvalid) throw new IOException("Can't open the device (error " + Marshal.GetLastWin32Error() + ")");
-        longStream = new FileStream(h, FileAccess.ReadWrite, 1, true);
+        var handle = CreateFile(path, 0xC0000000, 3, IntPtr.Zero, 3, 0x40000000, IntPtr.Zero);
+        if (handle.IsInvalid) throw new IOException("Can't open the device (error " + Marshal.GetLastWin32Error() + ")");
+        longStream = new FileStream(handle, FileAccess.ReadWrite, 1, true);
     }
 
     public Hidpp(string path, byte index, string shortPath) : this(path, index)
@@ -90,7 +90,7 @@ class Hidpp : IDisposable
             if (isSet && DeviceLabel != null) Log.Register(DeviceLabel, register, parameters, "ok");
             return reply;
         }
-        catch (HidppError e) { if (isSet && DeviceLabel != null) Log.Register(DeviceLabel, register, parameters, "error " + e.Code.ToString("X2")); throw; }
+        catch (HidppError ex) { if (isSet && DeviceLabel != null) Log.Register(DeviceLabel, register, parameters, "error " + ex.Code.ToString("X2")); throw; }
         catch (TimeoutException) { if (DeviceLabel != null) Log.Register(DeviceLabel, register, parameters, "no answer"); throw; }
     }
 
@@ -125,7 +125,7 @@ class Hidpp : IDisposable
             SendUpload(subId, sequence, data);
             if (DeviceLabel != null) Log.Upload(DeviceLabel, subId, sequence, "ok");
         }
-        catch (HidppError e) { if (DeviceLabel != null) Log.Upload(DeviceLabel, subId, sequence, "error " + e.Code.ToString("X2")); throw; }
+        catch (HidppError ex) { if (DeviceLabel != null) Log.Upload(DeviceLabel, subId, sequence, "error " + ex.Code.ToString("X2")); throw; }
         catch (TimeoutException) { if (DeviceLabel != null) Log.Upload(DeviceLabel, subId, sequence, "no answer"); throw; }
     }
 
@@ -158,9 +158,9 @@ class Hidpp : IDisposable
     {
         if (pending == null) pending = longStream.ReadAsync(longBuffer, 0, 20);
         if (shortPending == null) shortPending = shortStream.ReadAsync(shortBuffer, 0, 7);
-        var ms = (int)(deadline - DateTime.UtcNow).TotalMilliseconds;
-        if (ms <= 0) return null;
-        int which = Task.WaitAny(new Task[] { pending, shortPending }, ms);
+        var milliseconds = (int)(deadline - DateTime.UtcNow).TotalMilliseconds;
+        if (milliseconds <= 0) return null;
+        int which = Task.WaitAny(new Task[] { pending, shortPending }, milliseconds);
         if (which < 0) return null;
         var done = which == 0 ? pending : shortPending;
         if (which == 0) pending = null; else shortPending = null;
@@ -171,63 +171,63 @@ class Hidpp : IDisposable
         return reply;
     }
 
-    public byte[] Call(byte feat, int fn, params byte[] p)
+    public byte[] Call(byte featureIndex, int fn, params byte[] parameters)
     {
-        Record(feat, fn, p);
-        if (DeviceLabel == null || feat == 0) return Send(feat, fn, p);
-        int id = features.Where(x => x.Value == feat).Select(x => x.Key).FirstOrDefault();
+        Record(featureIndex, fn, parameters);
+        if (DeviceLabel == null || featureIndex == 0) return Send(featureIndex, fn, parameters);
+        int id = features.Where(pair => pair.Value == featureIndex).Select(pair => pair.Key).FirstOrDefault();
         bool read = Log.Reads(id, fn);
         try
         {
-            var r = Send(feat, fn, p);
-            if (!read) Log.Sent(DeviceLabel, id, fn, p, "ok");
-            return r;
+            var reply = Send(featureIndex, fn, parameters);
+            if (!read) Log.Sent(DeviceLabel, id, fn, parameters, "ok");
+            return reply;
         }
-        catch (HidppError e) { if (!read) Log.Sent(DeviceLabel, id, fn, p, "error " + e.Code.ToString("X2")); throw; }
-        catch (TimeoutException) { Log.Sent(DeviceLabel, id, fn, p, "no answer"); throw; }
+        catch (HidppError ex) { if (!read) Log.Sent(DeviceLabel, id, fn, parameters, "error " + ex.Code.ToString("X2")); throw; }
+        catch (TimeoutException) { Log.Sent(DeviceLabel, id, fn, parameters, "no answer"); throw; }
     }
 
-    public byte[] CallUnlogged(byte feat, int fn, params byte[] p) { Record(feat, fn, p); return Send(feat, fn, p); }
+    public byte[] CallUnlogged(byte featureIndex, int fn, params byte[] parameters) { Record(featureIndex, fn, parameters); return Send(featureIndex, fn, parameters); }
 
     // For a call the device doesn't answer, like 0x1814 fn 1: it switches to another computer first.
-    public void SendWithoutReply(byte feat, int fn, params byte[] p)
+    public void SendWithoutReply(byte featureIndex, int fn, params byte[] parameters)
     {
-        Record(feat, fn, p);
-        Write(feat, fn, p);
-        if (DeviceLabel != null) Log.Sent(DeviceLabel, features.Where(pair => pair.Value == feat).Select(pair => pair.Key).FirstOrDefault(), fn, p, "sent");
+        Record(featureIndex, fn, parameters);
+        Write(featureIndex, fn, parameters);
+        if (DeviceLabel != null) Log.Sent(DeviceLabel, features.Where(pair => pair.Value == featureIndex).Select(pair => pair.Key).FirstOrDefault(), fn, parameters, "sent");
     }
 
-    protected virtual void Write(byte feat, int fn, byte[] p) { Message(feat, fn, p); }
+    protected virtual void Write(byte featureIndex, int fn, byte[] parameters) { Message(featureIndex, fn, parameters); }
 
-    byte[] Message(byte feat, int fn, byte[] p)
+    byte[] Message(byte featureIndex, int fn, byte[] parameters)
     {
-        var msg = new byte[20];
-        msg[0] = 0x11; msg[1] = DeviceIndex; msg[2] = feat; msg[3] = (byte)(fn << 4 | 1 + (System.Threading.Interlocked.Increment(ref calls) & 0x7FFFFFFF) % 12);
-        Array.Copy(p, 0, msg, 4, p.Length);
-        longStream.Write(msg, 0, 20);
-        return msg;
+        var message = new byte[20];
+        message[0] = 0x11; message[1] = DeviceIndex; message[2] = featureIndex; message[3] = (byte)(fn << 4 | 1 + (System.Threading.Interlocked.Increment(ref calls) & 0x7FFFFFFF) % 12);
+        Array.Copy(parameters, 0, message, 4, parameters.Length);
+        longStream.Write(message, 0, 20);
+        return message;
     }
 
-    protected virtual byte[] Send(byte feat, int fn, byte[] p)
+    protected virtual byte[] Send(byte featureIndex, int fn, byte[] parameters)
     {
-        var msg = Message(feat, fn, p);
+        var message = Message(featureIndex, fn, parameters);
         var deadline = DateTime.UtcNow.AddSeconds(3);
         while (true)
         {
-            var r = Read(deadline);
-            if (r == null) throw new TimeoutException("The device didn't answer. Is it on?");
-            if (r[1] != DeviceIndex) continue;
-            if (r[2] == 0xFF && r[3] == feat && r[4] == msg[3])
-                throw new HidppError(r[5], string.Format("HID++ error 0x{0:x2} (feature {1}, fn {2})", r[5], feat, fn));
-            if (r[2] == feat && r[3] == msg[3]) return r.Skip(4).ToArray();
+            var reply = Read(deadline);
+            if (reply == null) throw new TimeoutException("The device didn't answer. Is it on?");
+            if (reply[1] != DeviceIndex) continue;
+            if (reply[2] == 0xFF && reply[3] == featureIndex && reply[4] == message[3])
+                throw new HidppError(reply[5], string.Format("HID++ error 0x{0:x2} (feature {1}, fn {2})", reply[5], featureIndex, fn));
+            if (reply[2] == featureIndex && reply[3] == message[3]) return reply.Skip(4).ToArray();
         }
     }
 
     byte[] Read(DateTime deadline)
     {
         if (pending == null) pending = longStream.ReadAsync(longBuffer, 0, 20);
-        var ms = (int)(deadline - DateTime.UtcNow).TotalMilliseconds;
-        if (ms <= 0 || !pending.Wait(ms)) return null;
+        var milliseconds = (int)(deadline - DateTime.UtcNow).TotalMilliseconds;
+        if (milliseconds <= 0 || !pending.Wait(milliseconds)) return null;
         pending = null;
         return (byte[])longBuffer.Clone();
     }
@@ -250,7 +250,7 @@ class Hidpp : IDisposable
         catch (IOException) { if (DeviceLabel != null) Log.Add(DeviceLabel, "sent", "feature" + Bytes(report, 16), "error"); throw; }
     }
 
-    // For animation frames: tapped for traces but kept out of the log, like Quiet.
+    // For animation frames: tapped for traces but kept out of the log, like CallUnlogged.
     public void SetFeatureUnlogged(params byte[] report)
     {
         if (Tap != null) Tap("set feature" + Bytes(report, 16));
@@ -292,13 +292,13 @@ class Hidpp : IDisposable
 
     public byte FeatureIndex(int id)
     {
-        byte i;
-        if (!features.TryGetValue(id, out i))
+        byte index;
+        if (!features.TryGetValue(id, out index))
         {
-            features[id] = i = Call(0, 0, (byte)(id >> 8), (byte)id)[0];
+            features[id] = index = Call(0, 0, (byte)(id >> 8), (byte)id)[0];
         }
-        if (i == 0) throw new NotSupportedException(string.Format("The device lacks feature {0:x4}", id));
-        return i;
+        if (index == 0) throw new NotSupportedException(string.Format("The device lacks feature {0:x4}", id));
+        return index;
     }
 }
 
@@ -323,18 +323,18 @@ class Lighting
 
     public static Lighting FromText(string text, out int brightness)
     {
-        var v = text.Split(',');
-        brightness = int.Parse(v[7]);
+        var parts = text.Split(',');
+        brightness = int.Parse(parts[7]);
         return new Lighting
         {
-            Effect = byte.Parse(v[0]), Color = int.Parse(v[1], System.Globalization.NumberStyles.HexNumber), Period = int.Parse(v[2]),
-            Direction = int.Parse(v[3]), Dim = int.Parse(v[4]), Idle = int.Parse(v[5]), Sleep = int.Parse(v[6]),
+            Effect = byte.Parse(parts[0]), Color = int.Parse(parts[1], System.Globalization.NumberStyles.HexNumber), Period = int.Parse(parts[2]),
+            Direction = int.Parse(parts[3]), Dim = int.Parse(parts[4]), Idle = int.Parse(parts[5]), Sleep = int.Parse(parts[6]),
         };
     }
-    public bool Same(Lighting o)
+    public bool Same(Lighting other)
     {
-        return o != null && Effect == o.Effect && Color == o.Color && Period == o.Period && Direction == o.Direction
-            && Dim == o.Dim && Idle == o.Idle && Sleep == o.Sleep;
+        return other != null && Effect == other.Effect && Color == other.Color && Period == other.Period && Direction == other.Direction
+            && Dim == other.Dim && Idle == other.Idle && Sleep == other.Sleep;
     }
 }
 
@@ -350,235 +350,235 @@ static class G515Profile
         new EffectInfo { Id = 0x17, Name = "Ripple", Color = true, Speed = true, MinPeriod = 2, MaxPeriod = 200, DefaultPeriod = 20 },
     };
 
-    public static EffectInfo EffectById(byte id) { return Effects.FirstOrDefault(e => e.Id == id); }
+    public static EffectInfo EffectById(byte id) { return Effects.FirstOrDefault(effect => effect.Id == id); }
 
-    static int Scale(int c, int pct)
+    static int Scale(int color, int percent)
     {
-        return ((c >> 16 & 0xFF) * pct / 100) << 16 | ((c >> 8 & 0xFF) * pct / 100) << 8 | (c & 0xFF) * pct / 100;
+        return ((color >> 16 & 0xFF) * percent / 100) << 16 | ((color >> 8 & 0xFF) * percent / 100) << 8 | (color & 0xFF) * percent / 100;
     }
 
-    public static byte[] Encode(Lighting l, int pct)
+    public static byte[] Encode(Lighting lighting, int percent)
     {
-        var b = new byte[10];
-        int c = Scale(l.Color, pct), inten = Math.Max(1, pct);
-        Action rgb = () => { b[0] = (byte)(c >> 16); b[1] = (byte)(c >> 8); b[2] = (byte)c; };
-        switch (l.Effect)
+        var parameters = new byte[10];
+        int color = Scale(lighting.Color, percent), intensity = Math.Max(1, percent);
+        Action putColor = () => { parameters[0] = (byte)(color >> 16); parameters[1] = (byte)(color >> 8); parameters[2] = (byte)color; };
+        switch (lighting.Effect)
         {
-            case 0x01: rgb(); b[3] = 0x02; break;
-            case 0x0A: rgb(); b[3] = (byte)(l.Period >> 8); b[4] = (byte)l.Period; b[6] = (byte)inten; break;
+            case 0x01: putColor(); parameters[3] = 0x02; break;
+            case 0x0A: putColor(); parameters[3] = (byte)(lighting.Period >> 8); parameters[4] = (byte)lighting.Period; parameters[6] = (byte)intensity; break;
             case 0x15:
             case 0x16:
-                b[1] = 0xFF; b[6] = (byte)(l.Period >> 8); b[7] = (byte)l.Period; b[8] = (byte)inten;
-                if (l.Effect == 0x16) b[9] = (byte)l.Direction;
+                parameters[1] = 0xFF; parameters[6] = (byte)(lighting.Period >> 8); parameters[7] = (byte)lighting.Period; parameters[8] = (byte)intensity;
+                if (lighting.Effect == 0x16) parameters[9] = (byte)lighting.Direction;
                 break;
-            case 0x17: rgb(); b[3] = 0xFF; b[6] = (byte)(l.Period >> 8); b[7] = (byte)l.Period; break;
+            case 0x17: putColor(); parameters[3] = 0xFF; parameters[6] = (byte)(lighting.Period >> 8); parameters[7] = (byte)lighting.Period; break;
         }
-        return b;
+        return parameters;
     }
 
-    static int Rgb(byte[] r, int o) { return r[o] << 16 | r[o + 1] << 8 | r[o + 2]; }
-    static int Max3(int c) { return Math.Max(c >> 16 & 0xFF, Math.Max(c >> 8 & 0xFF, c & 0xFF)); }
-    static int ReadUInt16BigEndian(byte[] b, int o) { return b[o] << 8 | b[o + 1]; }
-    static void Put16(byte[] b, int o, int v) { b[o] = (byte)(v >> 8); b[o + 1] = (byte)v; }
-    static void Put32(byte[] b, int o, uint v) { b[o] = (byte)(v >> 24); b[o + 1] = (byte)(v >> 16); b[o + 2] = (byte)(v >> 8); b[o + 3] = (byte)v; }
+    static int Rgb(byte[] bytes, int offset) { return bytes[offset] << 16 | bytes[offset + 1] << 8 | bytes[offset + 2]; }
+    static int Max3(int color) { return Math.Max(color >> 16 & 0xFF, Math.Max(color >> 8 & 0xFF, color & 0xFF)); }
+    static int ReadUInt16BigEndian(byte[] bytes, int offset) { return bytes[offset] << 8 | bytes[offset + 1]; }
+    static void Put16(byte[] bytes, int offset, int value) { bytes[offset] = (byte)(value >> 8); bytes[offset + 1] = (byte)value; }
+    static void Put32(byte[] bytes, int offset, uint value) { bytes[offset] = (byte)(value >> 24); bytes[offset + 1] = (byte)(value >> 16); bytes[offset + 2] = (byte)(value >> 8); bytes[offset + 3] = (byte)value; }
 
     // Returns null when the profile holds an effect this app doesn't know (the factory animation).
-    public static Lighting Decode(byte[] p)
+    public static Lighting Decode(byte[] profile)
     {
-        var rec = p.Skip(30 + ((p[74] & 1) != 0 ? 0 : 11)).Take(11).ToArray();
-        var dim = p.Skip(30 + ((p[74] & 2) != 0 ? 22 : 33)).Take(11).ToArray();
-        var def = EffectById(rec[0]);
-        if (def == null) return null;
-        var l = new Lighting { Effect = rec[0] };
-        int idle = ReadUInt16BigEndian(p, 2), sleep = ReadUInt16BigEndian(p, 4);
-        l.Idle = idle == 0xFFFF ? 0 : idle;
-        l.Sleep = sleep == 0xFFFF ? 0 : sleep;
-        if (def.Color) l.Color = Rgb(rec, 1);
-        if (def.Speed) l.Period = Math.Min(def.MaxPeriod, Math.Max(def.MinPeriod, rec[0] == 0x0A ? ReadUInt16BigEndian(rec, 4) : ReadUInt16BigEndian(rec, 7)));
-        if (def.Direction) l.Direction = rec[10];
-        if (dim[0] == rec[0])
+        var record = profile.Skip(30 + ((profile[74] & 1) != 0 ? 0 : 11)).Take(11).ToArray();
+        var dim = profile.Skip(30 + ((profile[74] & 2) != 0 ? 22 : 33)).Take(11).ToArray();
+        var effect = EffectById(record[0]);
+        if (effect == null) return null;
+        var lighting = new Lighting { Effect = record[0] };
+        int idle = ReadUInt16BigEndian(profile, 2), sleep = ReadUInt16BigEndian(profile, 4);
+        lighting.Idle = idle == 0xFFFF ? 0 : idle;
+        lighting.Sleep = sleep == 0xFFFF ? 0 : sleep;
+        if (effect.Color) lighting.Color = Rgb(record, 1);
+        if (effect.Speed) lighting.Period = Math.Min(effect.MaxPeriod, Math.Max(effect.MinPeriod, record[0] == 0x0A ? ReadUInt16BigEndian(record, 4) : ReadUInt16BigEndian(record, 7)));
+        if (effect.Direction) lighting.Direction = record[10];
+        if (dim[0] == record[0])
         {
-            if (def.Color && Max3(l.Color) > 0) l.Dim = (Max3(Rgb(dim, 1)) * 100 + Max3(l.Color) / 2) / Max3(l.Color);
-            else if (rec[0] == 0x15 || rec[0] == 0x16) l.Dim = dim[9];
+            if (effect.Color && Max3(lighting.Color) > 0) lighting.Dim = (Max3(Rgb(dim, 1)) * 100 + Max3(lighting.Color) / 2) / Max3(lighting.Color);
+            else if (record[0] == 0x15 || record[0] == 0x16) lighting.Dim = dim[9];
         }
-        return l;
+        return lighting;
     }
 
-    public static byte[] BuildProfile(byte[] baseProfile, Lighting l)
+    public static byte[] BuildProfile(byte[] baseProfile, Lighting lighting)
     {
-        var p = (byte[])baseProfile.Clone();
-        Put16(p, 2, l.Idle <= 0 ? 0xFFFF : l.Idle);
-        Put16(p, 4, l.Sleep <= 0 ? 0xFFFF : l.Sleep);
-        Array.Clear(p, 30, 44);
-        p[41] = l.Effect; Array.Copy(Encode(l, 100), 0, p, 42, 10);
-        p[63] = l.Effect; Array.Copy(Encode(l, l.Dim), 0, p, 64, 10);
-        p[74] = 0;
-        return p;
+        var profile = (byte[])baseProfile.Clone();
+        Put16(profile, 2, lighting.Idle <= 0 ? 0xFFFF : lighting.Idle);
+        Put16(profile, 4, lighting.Sleep <= 0 ? 0xFFFF : lighting.Sleep);
+        Array.Clear(profile, 30, 44);
+        profile[41] = lighting.Effect; Array.Copy(Encode(lighting, 100), 0, profile, 42, 10);
+        profile[63] = lighting.Effect; Array.Copy(Encode(lighting, lighting.Dim), 0, profile, 64, 10);
+        profile[74] = 0;
+        return profile;
     }
 
     public static byte[] BuildDirectory(byte[] factoryDir, byte[] profile)
     {
-        var d = (byte[])factoryDir.Clone();
-        Put32(d, 10, Crc32(profile));
-        d[14] = 8;
-        Put32(d, 0, Crc32(d.Skip(4).ToArray()));
-        return d;
+        var directory = (byte[])factoryDir.Clone();
+        Put32(directory, 10, Crc32(profile));
+        directory[14] = 8;
+        Put32(directory, 0, Crc32(directory.Skip(4).ToArray()));
+        return directory;
     }
 
     public static uint Crc32(byte[] data)
     {
-        uint c = 0xFFFFFFFF;
-        foreach (var x in data)
+        uint crc = 0xFFFFFFFF;
+        foreach (var value in data)
         {
-            c ^= x;
-            for (int k = 0; k < 8; k++) c = (c >> 1) ^ (0xEDB88320 & (uint)-(int)(c & 1));
+            crc ^= value;
+            for (int bit = 0; bit < 8; bit++) crc = (crc >> 1) ^ (0xEDB88320 & (uint)-(int)(crc & 1));
         }
-        return ~c;
+        return ~crc;
     }
 
     static readonly byte[] DirHeader = { 0x01, 0x01, 0x81, 0x01, 0x40, 0x63 };
 
-    public static bool ValidProfile(byte[] p) { return p != null && p.Length == 99 && p[0] == 1 && p[1] == 1; }
+    public static bool ValidProfile(byte[] profile) { return profile != null && profile.Length == 99 && profile[0] == 1 && profile[1] == 1; }
 
-    static bool ValidDir(byte[] d)
+    static bool ValidDir(byte[] directory)
     {
-        return d != null && d.Length == 16 && d.Skip(4).Take(6).SequenceEqual(DirHeader) && d[15] == 0xFF
-            && Crc32(d.Skip(4).ToArray()) == (uint)(d[0] << 24 | d[1] << 16 | d[2] << 8 | d[3]);
+        return directory != null && directory.Length == 16 && directory.Skip(4).Take(6).SequenceEqual(DirHeader) && directory[15] == 0xFF
+            && Crc32(directory.Skip(4).ToArray()) == (uint)(directory[0] << 24 | directory[1] << 16 | directory[2] << 8 | directory[3]);
     }
 
     // ---- device operations ----
 
-    static byte[] ReadBuffer(Hidpp h, int size)
+    static byte[] ReadBuffer(Hidpp hidpp, int size)
     {
-        var o = new List<byte>();
-        for (int off = 0; off < size; off += 16) o.AddRange(h.Call(h.FeatureIndex(0x8101), 0xC, (byte)(off >> 8), (byte)off));
-        return o.Take(size).ToArray();
+        var collected = new List<byte>();
+        for (int offset = 0; offset < size; offset += 16) collected.AddRange(hidpp.Call(hidpp.FeatureIndex(0x8101), 0xC, (byte)(offset >> 8), (byte)offset));
+        return collected.Take(size).ToArray();
     }
 
-    static byte[] ReadFile(Hidpp h, int addr, int size)
+    static byte[] ReadFile(Hidpp hidpp, int address, int size)
     {
-        try { h.Call(h.FeatureIndex(0x8101), 8, (byte)(addr >> 8), (byte)addr, (byte)(size >> 8), (byte)size); }
-        catch (HidppError e) { if (e.Code == 4 && addr < 0x0100) return null; throw; }
-        return ReadBuffer(h, size);
+        try { hidpp.Call(hidpp.FeatureIndex(0x8101), 8, (byte)(address >> 8), (byte)address, (byte)(size >> 8), (byte)size); }
+        catch (HidppError ex) { if (ex.Code == 4 && address < 0x0100) return null; throw; }
+        return ReadBuffer(hidpp, size);
     }
 
-    static void SaveFile(Hidpp h, int addr, byte[] data, uint checksum)
+    static void SaveFile(Hidpp hidpp, int address, byte[] data, uint checksum)
     {
-        if (addr != 0x0000 && addr != 0x0008) throw new InvalidOperationException("refusing to write factory storage");
-        byte f = h.FeatureIndex(0x8101);
-        h.Call(f, 2, 0, (byte)data.Length);
-        for (int o = 0; o < data.Length; o += 16) h.Call(f, 3, data.Skip(o).Take(16).ToArray());
-        if (!ReadBuffer(h, data.Length).SequenceEqual(data)) throw new IOException("Staging buffer mismatch, nothing written");
-        var c = new byte[4]; Put32(c, 0, checksum);
-        h.Call(f, 7, (byte)(addr >> 8), (byte)addr, 0, (byte)data.Length, c[0], c[1], c[2], c[3]);
-        if (!data.SequenceEqual(ReadFile(h, addr, data.Length) ?? new byte[0])) throw new IOException("Flash readback mismatch");
+        if (address != 0x0000 && address != 0x0008) throw new InvalidOperationException("refusing to write factory storage");
+        byte feature = hidpp.FeatureIndex(0x8101);
+        hidpp.Call(feature, 2, 0, (byte)data.Length);
+        for (int offset = 0; offset < data.Length; offset += 16) hidpp.Call(feature, 3, data.Skip(offset).Take(16).ToArray());
+        if (!ReadBuffer(hidpp, data.Length).SequenceEqual(data)) throw new IOException("Staging buffer mismatch, nothing written");
+        var crc = new byte[4]; Put32(crc, 0, checksum);
+        hidpp.Call(feature, 7, (byte)(address >> 8), (byte)address, 0, (byte)data.Length, crc[0], crc[1], crc[2], crc[3]);
+        if (!data.SequenceEqual(ReadFile(hidpp, address, data.Length) ?? new byte[0])) throw new IOException("Flash readback mismatch");
     }
 
     public class Files { public byte[] FactoryProfile, FactoryDir, UserProfile, UserDir; }
 
-    public static Files Read(Hidpp h)
+    public static Files Read(Hidpp hidpp)
     {
         return new Files
         {
-            FactoryProfile = ReadFile(h, 0x0101, 99),
-            FactoryDir = ReadFile(h, 0x0100, 16),
-            UserProfile = ReadFile(h, 0x0008, 99),
-            UserDir = ReadFile(h, 0x0000, 16),
+            FactoryProfile = ReadFile(hidpp, 0x0101, 99),
+            FactoryDir = ReadFile(hidpp, 0x0100, 16),
+            UserProfile = ReadFile(hidpp, 0x0008, 99),
+            UserDir = ReadFile(hidpp, 0x0000, 16),
         };
     }
 
-    public static void CheckFiles(Files f)
+    public static void CheckFiles(Files files)
     {
-        if (!ValidProfile(f.FactoryProfile) || !ValidDir(f.FactoryDir)) throw new RefusedException("Unknown onboard profile layout, not touching it");
-        if (f.UserProfile == null && f.UserDir == null) return;
-        bool ours = f.UserDir == null || (ValidDir(f.UserDir) && f.UserDir[14] == 8);
-        if (ours && (f.UserProfile == null || f.UserDir == null)) throw new HalfWrittenException("User profile is half written, not touching it");
-        if (!ours || !ValidProfile(f.UserProfile))
+        if (!ValidProfile(files.FactoryProfile) || !ValidDir(files.FactoryDir)) throw new RefusedException("Unknown onboard profile layout, not touching it");
+        if (files.UserProfile == null && files.UserDir == null) return;
+        bool ours = files.UserDir == null || (ValidDir(files.UserDir) && files.UserDir[14] == 8);
+        if (ours && (files.UserProfile == null || files.UserDir == null)) throw new HalfWrittenException("User profile is half written, not touching it");
+        if (!ours || !ValidProfile(files.UserProfile))
             throw new RefusedException("The profiles saved on the keyboard aren't laid out the way G-Lite writes them, not touching them");
-        if (Crc32(f.UserProfile) != (uint)(f.UserDir[10] << 24 | f.UserDir[11] << 16 | f.UserDir[12] << 8 | f.UserDir[13]))
+        if (Crc32(files.UserProfile) != (uint)(files.UserDir[10] << 24 | files.UserDir[11] << 16 | files.UserDir[12] << 8 | files.UserDir[13]))
             throw new HalfWrittenException("User profile doesn't match its directory entry, not touching it");
     }
 
-    public static bool FilesAreValid(Files f)
+    public static bool FilesAreValid(Files files)
     {
-        try { CheckFiles(f); return true; } catch (RefusedException) { return false; }
+        try { CheckFiles(files); return true; } catch (RefusedException) { return false; }
     }
 
-    public static Files Snapshot(Hidpp h)
+    public static Files Snapshot(Hidpp hidpp)
     {
-        var f = Read(h);
-        CheckFiles(f);
-        return f;
+        var files = Read(hidpp);
+        CheckFiles(files);
+        return files;
     }
 
-    public static int Brightness(Hidpp h) { var r = h.Call(h.FeatureIndex(0x8040), 1); return ReadUInt16BigEndian(r, 0); }
-    public static void SetBrightness(Hidpp h, int v) { h.Call(h.FeatureIndex(0x8040), 2, (byte)(v >> 8), (byte)v); }
+    public static int Brightness(Hidpp hidpp) { var reply = hidpp.Call(hidpp.FeatureIndex(0x8040), 1); return ReadUInt16BigEndian(reply, 0); }
+    public static void SetBrightness(Hidpp hidpp, int value) { hidpp.Call(hidpp.FeatureIndex(0x8040), 2, (byte)(value >> 8), (byte)value); }
 
-    public static void Claim(Hidpp h)
+    public static void Claim(Hidpp hidpp)
     {
-        h.Call(h.FeatureIndex(0x8101), 6, 0x05);
-        h.Call(h.FeatureIndex(0x8071), 5, 0x01, 0x03, 0x04);
+        hidpp.Call(hidpp.FeatureIndex(0x8101), 6, 0x05);
+        hidpp.Call(hidpp.FeatureIndex(0x8071), 5, 0x01, 0x03, 0x04);
     }
 
-    public static void Release(Hidpp h)
+    public static void Release(Hidpp hidpp)
     {
-        h.Call(h.FeatureIndex(0x8071), 5, 0x01, 0x00, 0x00);
-        h.Call(h.FeatureIndex(0x8101), 6, 0x03);
+        hidpp.Call(hidpp.FeatureIndex(0x8071), 5, 0x01, 0x00, 0x00);
+        hidpp.Call(hidpp.FeatureIndex(0x8101), 6, 0x03);
     }
 
-    public static void Preview(Hidpp h, Lighting l) { Preview(h, l, 100); }
+    public static void Preview(Hidpp hidpp, Lighting lighting) { Preview(hidpp, lighting, 100); }
 
-    public static void Preview(Hidpp h, Lighting l, int level)
+    public static void Preview(Hidpp hidpp, Lighting lighting, int level)
     {
-        byte rgb = h.FeatureIndex(0x8071);
+        byte feature = hidpp.FeatureIndex(0x8071);
         int index = -1;
-        for (int e = 0; e < 16 && index < 0; e++)
-            if (h.Call(rgb, 0, 0, (byte)e, 0)[3] == l.Effect) index = e;
+        for (int effectIndex = 0; effectIndex < 16 && index < 0; effectIndex++)
+            if (hidpp.Call(feature, 0, 0, (byte)effectIndex, 0)[3] == lighting.Effect) index = effectIndex;
         if (index < 0) throw new NotSupportedException("Effect not supported by this keyboard");
-        h.Call(rgb, 1, new byte[] { 0, (byte)index }.Concat(Encode(l, level)).Concat(new byte[] { 0x01 }).ToArray());
+        hidpp.Call(feature, 1, new byte[] { 0, (byte)index }.Concat(Encode(lighting, level)).Concat(new byte[] { 0x01 }).ToArray());
     }
 
-    public static void Store(Hidpp h, Lighting l) { Store(h, Snapshot(h), l); }
+    public static void Store(Hidpp hidpp, Lighting lighting) { Store(hidpp, Snapshot(hidpp), lighting); }
 
-    public static void Store(Hidpp h, Files f, Lighting l)
+    public static void Store(Hidpp hidpp, Files files, Lighting lighting)
     {
-        var p = BuildProfile(f.UserProfile ?? f.FactoryProfile, l);
-        WriteFiles(h, f, p, BuildDirectory(f.FactoryDir, p));
+        var profile = BuildProfile(files.UserProfile ?? files.FactoryProfile, lighting);
+        WriteFiles(hidpp, files, profile, BuildDirectory(files.FactoryDir, profile));
     }
 
-    public static void Restore(Hidpp h, Files backup)
+    public static void Restore(Hidpp hidpp, Files backup)
     {
-        var now = Read(h);
+        var now = Read(hidpp);
         if (!ValidProfile(now.FactoryProfile) || !ValidDir(now.FactoryDir)) throw new RefusedException("Unknown onboard profile layout, not touching it");
         if (backup.FactoryProfile != null && (!backup.FactoryProfile.SequenceEqual(now.FactoryProfile) || !backup.FactoryDir.SequenceEqual(now.FactoryDir)))
             throw new RefusedException("This backup is from a different keyboard, not restoring it");
         if (backup.UserProfile == null)
         {
-            var p = (byte[])now.FactoryProfile.Clone();
-            WriteFiles(h, now, p, BuildDirectory(now.FactoryDir, p));
+            var profile = (byte[])now.FactoryProfile.Clone();
+            WriteFiles(hidpp, now, profile, BuildDirectory(now.FactoryDir, profile));
             return;
         }
         CheckFiles(new Files { FactoryProfile = now.FactoryProfile, FactoryDir = now.FactoryDir, UserProfile = backup.UserProfile, UserDir = backup.UserDir });
-        WriteFiles(h, now, backup.UserProfile, backup.UserDir);
+        WriteFiles(hidpp, now, backup.UserProfile, backup.UserDir);
     }
 
-    static void WriteFiles(Hidpp h, Files now, byte[] p, byte[] d)
+    static void WriteFiles(Hidpp hidpp, Files now, byte[] profile, byte[] directory)
     {
-        if (now.UserProfile == null || !p.SequenceEqual(now.UserProfile)) SaveFile(h, 0x0008, p, Crc32(p));
-        if (now.UserDir == null || !d.SequenceEqual(now.UserDir)) SaveFile(h, 0x0000, d, Crc32(d.Skip(4).ToArray()));
-        Activate(h, p);
+        if (now.UserProfile == null || !profile.SequenceEqual(now.UserProfile)) SaveFile(hidpp, 0x0008, profile, Crc32(profile));
+        if (now.UserDir == null || !directory.SequenceEqual(now.UserDir)) SaveFile(hidpp, 0x0000, directory, Crc32(directory.Skip(4).ToArray()));
+        Activate(hidpp, profile);
     }
 
-    public static void Activate(Hidpp h, byte[] p)
+    public static void Activate(Hidpp hidpp, byte[] profile)
     {
-        h.Call(h.FeatureIndex(0x8071), 5, 0x01, 0x00, 0x00);
-        byte f = h.FeatureIndex(0x8101);
-        h.Call(f, 6, 0x0B);
-        var cfg = new byte[] { 0x81, 0x01, 0x01, 0x00, 0x01, 0x00, 0x63, 0, 0, 0, 0 };
-        Put32(cfg, 7, Crc32(p));
-        h.Call(f, 9, cfg);
-        var m = h.Call(f, 6, 0x00);
-        if ((m[0] & 1) == 0 || m[1] != 0 || m[2] != 1) throw new IOException(string.Format("Unexpected state {0:x2} {1:x2} {2:x2} after activating", m[0], m[1], m[2]));
+        hidpp.Call(hidpp.FeatureIndex(0x8071), 5, 0x01, 0x00, 0x00);
+        byte feature = hidpp.FeatureIndex(0x8101);
+        hidpp.Call(feature, 6, 0x0B);
+        var config = new byte[] { 0x81, 0x01, 0x01, 0x00, 0x01, 0x00, 0x63, 0, 0, 0, 0 };
+        Put32(config, 7, Crc32(profile));
+        hidpp.Call(feature, 9, config);
+        var reply = hidpp.Call(feature, 6, 0x00);
+        if ((reply[0] & 1) == 0 || reply[1] != 0 || reply[2] != 1) throw new IOException(string.Format("Unexpected state {0:x2} {1:x2} {2:x2} after activating", reply[0], reply[1], reply[2]));
     }
 }
 
@@ -596,16 +596,16 @@ static class G915Lighting
 
     static readonly Dictionary<byte, byte> Instead = new Dictionary<byte, byte> { { 0x16, 0x15 }, { 0x17, 0x01 } };
 
-    public static List<byte[]> Clusters(Hidpp h)
+    public static List<byte[]> Clusters(Hidpp hidpp)
     {
-        byte f = h.FeatureIndex(0x8071);
+        byte feature = hidpp.FeatureIndex(0x8071);
         var all = new List<byte[]>();
-        for (int c = 0; c < 8; c++)
+        for (int cluster = 0; cluster < 8; cluster++)
         {
             var ids = new List<byte>();
-            for (int e = 0; e < 32; e++)
+            for (int effectIndex = 0; effectIndex < 32; effectIndex++)
             {
-                try { ids.Add(h.Call(f, 0, (byte)c, (byte)e, 0)[3]); }
+                try { ids.Add(hidpp.Call(feature, 0, (byte)cluster, (byte)effectIndex, 0)[3]); }
                 catch (HidppError) { break; }
             }
             if (ids.Count == 0) break;
@@ -617,9 +617,9 @@ static class G915Lighting
 
     public static int Keys(List<byte[]> clusters)
     {
-        int k = 0;
-        for (int c = 1; c < clusters.Count; c++) if (clusters[c].Length > clusters[k].Length) k = c;
-        return k;
+        int largestIndex = 0;
+        for (int cluster = 1; cluster < clusters.Count; cluster++) if (clusters[cluster].Length > clusters[largestIndex].Length) largestIndex = cluster;
+        return largestIndex;
     }
 
     public static int Pick(byte want, byte[] has, bool loose)
@@ -630,163 +630,163 @@ static class G915Lighting
             if (Alike.TryGetValue(want, out ids))
                 foreach (var id in ids)
                 {
-                    int i = Array.IndexOf(has, id);
-                    if (i >= 0) return i;
+                    int index = Array.IndexOf(has, id);
+                    if (index >= 0) return index;
                 }
             if (!loose || !Instead.TryGetValue(want, out want)) return -1;
         }
     }
 
-    public static byte[] Encode(byte id, Lighting l)
+    public static byte[] Encode(byte id, Lighting lighting)
     {
-        var b = new byte[10];
-        int c = l.Color;
+        var parameters = new byte[10];
+        int color = lighting.Color;
         switch (id)
         {
-            case 0x03: b[5] = (byte)(l.Period >> 8); b[6] = (byte)l.Period; b[7] = 100; return b;
-            case 0x04: b[6] = (byte)l.Period; b[7] = (byte)l.Direction; b[8] = 100; b[9] = (byte)(l.Period >> 8); return b;
-            case 0x0B: b[0] = (byte)(c >> 16); b[1] = (byte)(c >> 8); b[2] = (byte)c; b[4] = (byte)(l.Period >> 8); b[5] = (byte)l.Period; return b;
+            case 0x03: parameters[5] = (byte)(lighting.Period >> 8); parameters[6] = (byte)lighting.Period; parameters[7] = 100; return parameters;
+            case 0x04: parameters[6] = (byte)lighting.Period; parameters[7] = (byte)lighting.Direction; parameters[8] = 100; parameters[9] = (byte)(lighting.Period >> 8); return parameters;
+            case 0x0B: parameters[0] = (byte)(color >> 16); parameters[1] = (byte)(color >> 8); parameters[2] = (byte)color; parameters[4] = (byte)(lighting.Period >> 8); parameters[5] = (byte)lighting.Period; return parameters;
         }
-        var s = l.Clone();
-        s.Effect = id;
-        return G515Profile.Encode(s, 100);
+        var copy = lighting.Clone();
+        copy.Effect = id;
+        return G515Profile.Encode(copy, 100);
     }
 
     // The G915 TKL turns itself off after its timeout even while G-Lite holds the power modes, and wakes in mode 3 (off) on its own
     // lighting, ignoring effects until fn 8 sets full power again (tested on an owner's keyboard).
-    public static void Claim(Hidpp h)
+    public static void Claim(Hidpp hidpp)
     {
-        byte f = h.FeatureIndex(0x8071);
-        h.Call(f, 5, 0x01, 0x03, 0x04);
-        try { h.Call(f, 8, 0x01, 0x01, 0x00); } catch (HidppError) { }
+        byte feature = hidpp.FeatureIndex(0x8071);
+        hidpp.Call(feature, 5, 0x01, 0x03, 0x04);
+        try { hidpp.Call(feature, 8, 0x01, 0x01, 0x00); } catch (HidppError) { }
     }
 
-    public static void Release(Hidpp h) { h.Call(h.FeatureIndex(0x8071), 5, 0x01, 0x00, 0x00); }
+    public static void Release(Hidpp hidpp) { hidpp.Call(hidpp.FeatureIndex(0x8071), 5, 0x01, 0x00, 0x00); }
 
     // The onboard profile, format 4, from a G915 TKL's report (docs/G915.md): power save and off after (seconds, little-endian) at
     // 0x1C and 0x1E, then four 11-byte lighting records from 0xD0, one per cluster, then the same dimmed for power save.
     const int Records = 0xD0;
 
-    public static byte[] ReadProfile(Hidpp h, out int sector)
+    public static byte[] ReadProfile(Hidpp hidpp, out int sector)
     {
-        byte o = h.FeatureIndex(0x8100);
-        if (h.Call(o, 2)[0] != 1) throw new RefusedException("The keyboard isn't on its onboard profiles");
-        var info = h.Call(o, 0);
+        byte feature = hidpp.FeatureIndex(0x8100);
+        if (hidpp.Call(feature, 2)[0] != 1) throw new RefusedException("The keyboard isn't on its onboard profiles");
+        var info = hidpp.Call(feature, 0);
         int size = info[7] << 8 | info[8];
         if (info[1] != 4 || size < Records + 44 + 2 || size > 0x1000) throw new RefusedException("Saving isn't supported on this keyboard (profile format " + info[1] + ")");
-        var current = h.Call(o, 4);
+        var current = hidpp.Call(feature, 4);
         sector = current[0] << 8 | current[1];
         if (sector == 0 || sector >= 0x100) throw new RefusedException("The keyboard runs a factory profile");
-        var p = MouseProtocol.ReadSector(h, sector, size);
-        if (!MouseProtocol.Valid(p)) throw new RefusedException("The keyboard's profile has a bad checksum");
-        return p;
+        var profile = MouseProtocol.ReadSector(hidpp, sector, size);
+        if (!MouseProtocol.Valid(profile)) throw new RefusedException("The keyboard's profile has a bad checksum");
+        return profile;
     }
 
     // Returns null when the keys hold an effect this app doesn't know.
-    public static Lighting Decode(byte[] p, int keys)
+    public static Lighting Decode(byte[] profile, int keys)
     {
-        var r = p.Skip(Records + 11 * keys).Take(11).ToArray();
-        var l = new Lighting { Idle = p[0x1C] | p[0x1D] << 8, Sleep = p[0x1E] | p[0x1F] << 8, Color = r[1] << 16 | r[2] << 8 | r[3] };
-        switch (r[0])
+        var record = profile.Skip(Records + 11 * keys).Take(11).ToArray();
+        var lighting = new Lighting { Idle = profile[0x1C] | profile[0x1D] << 8, Sleep = profile[0x1E] | profile[0x1F] << 8, Color = record[1] << 16 | record[2] << 8 | record[3] };
+        switch (record[0])
         {
-            case 0x00: l.Effect = 0x00; break;
-            case 0x01: l.Effect = 0x01; break;
-            case 0x0A: l.Effect = 0x0A; l.Period = r[4] << 8 | r[5]; break;
-            case 0x03: l.Effect = 0x15; l.Period = r[6] << 8 | r[7]; break;
-            case 0x04: l.Effect = 0x16; l.Period = r[10] << 8 | r[7]; l.Direction = r[8]; break;
-            case 0x0B: l.Effect = 0x17; l.Period = r[5] << 8 | r[6]; break;
+            case 0x00: lighting.Effect = 0x00; break;
+            case 0x01: lighting.Effect = 0x01; break;
+            case 0x0A: lighting.Effect = 0x0A; lighting.Period = record[4] << 8 | record[5]; break;
+            case 0x03: lighting.Effect = 0x15; lighting.Period = record[6] << 8 | record[7]; break;
+            case 0x04: lighting.Effect = 0x16; lighting.Period = record[10] << 8 | record[7]; lighting.Direction = record[8]; break;
+            case 0x0B: lighting.Effect = 0x17; lighting.Period = record[5] << 8 | record[6]; break;
             default: return null;
         }
-        if (l.Effect != 0x01 && l.Effect != 0x0A && l.Effect != 0x17) l.Color = 0xFFFFFF;
-        var dim = p.Skip(Records + 11 * (2 + keys)).Take(11).ToArray();
-        l.Dim = dim[0] == r[0] && Level(r) > 0 ? Math.Min(100, Level(dim) * 100 / Level(r)) : 50;
-        return l;
+        if (lighting.Effect != 0x01 && lighting.Effect != 0x0A && lighting.Effect != 0x17) lighting.Color = 0xFFFFFF;
+        var dim = profile.Skip(Records + 11 * (2 + keys)).Take(11).ToArray();
+        lighting.Dim = dim[0] == record[0] && Level(record) > 0 ? Math.Min(100, Level(dim) * 100 / Level(record)) : 50;
+        return lighting;
     }
 
-    static int Level(byte[] r)
+    static int Level(byte[] record)
     {
-        switch (r[0])
+        switch (record[0])
         {
-            case 0x03: return r[8];
-            case 0x04: return r[9];
-            case 0x0A: return r[7];
-            default: return Math.Max(r[1], Math.Max(r[2], r[3]));
+            case 0x03: return record[8];
+            case 0x04: return record[9];
+            case 0x0A: return record[7];
+            default: return Math.Max(record[1], Math.Max(record[2], record[3]));
         }
     }
 
     // The dimmed records keep the colour and lower the intensity, as the keyboard's own profiles do; Static and Ripple have no
     // intensity, so their colour is scaled.
-    static byte[] Dimmed(byte id, byte[] b, int pct)
+    static byte[] Dimmed(byte id, byte[] parameters, int percent)
     {
-        b = (byte[])b.Clone();
+        parameters = (byte[])parameters.Clone();
         switch (id)
         {
-            case 0x03: b[7] = (byte)Math.Max(1, pct); break;
-            case 0x04: b[8] = (byte)Math.Max(1, pct); break;
-            case 0x0A: b[6] = (byte)Math.Max(1, pct); break;
-            default: for (int i = 0; i < 3; i++) b[i] = (byte)(b[i] * pct / 100); break;
+            case 0x03: parameters[7] = (byte)Math.Max(1, percent); break;
+            case 0x04: parameters[8] = (byte)Math.Max(1, percent); break;
+            case 0x0A: parameters[6] = (byte)Math.Max(1, percent); break;
+            default: for (int i = 0; i < 3; i++) parameters[i] = (byte)(parameters[i] * percent / 100); break;
         }
-        return b;
+        return parameters;
     }
 
-    public static byte[] Build(byte[] profile, List<byte[]> clusters, Lighting l, Lighting others)
+    public static byte[] Build(byte[] profile, List<byte[]> clusters, Lighting lighting, Lighting others)
     {
         if (clusters.Count != 2) throw new RefusedException("Saving isn't supported on this keyboard (" + clusters.Count + " lighting clusters)");
-        if (l.Idle <= 0 || l.Sleep <= 0) throw new RefusedException("This keyboard can't keep its lighting on forever: 0 dims and turns it off at once");
-        var p = (byte[])profile.Clone();
+        if (lighting.Idle <= 0 || lighting.Sleep <= 0) throw new RefusedException("This keyboard can't keep its lighting on forever: 0 dims and turns it off at once");
+        var built = (byte[])profile.Clone();
         int keys = Keys(clusters);
-        for (int c = 0; c < 2; c++)
+        for (int cluster = 0; cluster < 2; cluster++)
         {
-            var light = c == keys || others == null ? l : others;
-            int i = Pick(light.Effect, clusters[c], c != keys);
-            if (i < 0) throw new RefusedException("This keyboard doesn't have that effect");
-            byte id = clusters[c][i];
-            var b = Encode(id, light);
-            p[Records + 11 * c] = id;
-            b.CopyTo(p, Records + 11 * c + 1);
-            p[Records + 11 * (2 + c)] = id;
-            Dimmed(id, b, l.Dim).CopyTo(p, Records + 11 * (2 + c) + 1);
+            var light = cluster == keys || others == null ? lighting : others;
+            int effectIndex = Pick(light.Effect, clusters[cluster], cluster != keys);
+            if (effectIndex < 0) throw new RefusedException("This keyboard doesn't have that effect");
+            byte id = clusters[cluster][effectIndex];
+            var parameters = Encode(id, light);
+            built[Records + 11 * cluster] = id;
+            parameters.CopyTo(built, Records + 11 * cluster + 1);
+            built[Records + 11 * (2 + cluster)] = id;
+            Dimmed(id, parameters, lighting.Dim).CopyTo(built, Records + 11 * (2 + cluster) + 1);
         }
-        p[0x1C] = (byte)l.Idle; p[0x1D] = (byte)(l.Idle >> 8);
-        p[0x1E] = (byte)l.Sleep; p[0x1F] = (byte)(l.Sleep >> 8);
-        MouseProtocol.WriteChecksum(p);
-        return p;
+        built[0x1C] = (byte)lighting.Idle; built[0x1D] = (byte)(lighting.Idle >> 8);
+        built[0x1E] = (byte)lighting.Sleep; built[0x1F] = (byte)(lighting.Sleep >> 8);
+        MouseProtocol.WriteChecksum(built);
+        return built;
     }
 
     // The lighting and idle times of the factory copy of the profile at `sector` (0101 for 0001 on the G915 TKL), into a copy of
     // `profile`. Only those: a whole factory profile would drop what else the user changed, like G-shift macros.
-    public static byte[] FactoryLighting(Hidpp h, int sector, byte[] profile)
+    public static byte[] FactoryLighting(Hidpp hidpp, int sector, byte[] profile)
     {
-        var rom = MouseProtocol.ReadSector(h, 0x100 + sector, profile.Length);
-        if (rom.Skip(Records).Take(44).All(b => b == 0xFF) || rom[0x1C] == 0xFF) throw new RefusedException("Couldn't read the keyboard's factory lighting");
-        var p = (byte[])profile.Clone();
-        Array.Copy(rom, 0x1C, p, 0x1C, 4);
-        Array.Copy(rom, Records, p, Records, 44);
-        MouseProtocol.WriteChecksum(p);
-        return p;
+        var rom = MouseProtocol.ReadSector(hidpp, 0x100 + sector, profile.Length);
+        if (rom.Skip(Records).Take(44).All(value => value == 0xFF) || rom[0x1C] == 0xFF) throw new RefusedException("Couldn't read the keyboard's factory lighting");
+        var built = (byte[])profile.Clone();
+        Array.Copy(rom, 0x1C, built, 0x1C, 4);
+        Array.Copy(rom, Records, built, Records, 44);
+        MouseProtocol.WriteChecksum(built);
+        return built;
     }
 
-    // Writes the profile (GMouse.WriteSector refuses 0000 and the factory sectors, and reads it back), loads it again and gives
+    // Writes the profile (MouseProtocol.WriteSector refuses 0000 and the factory sectors, and reads it back), loads it again and gives
     // the lighting back, so the keyboard runs it, its power save included.
-    public static void Store(Hidpp h, int sector, byte[] p)
+    public static void Store(Hidpp hidpp, int sector, byte[] profile)
     {
-        MouseProtocol.WriteSector(h, sector, p);
-        try { h.Call(h.FeatureIndex(0x8100), 3, (byte)(sector >> 8), (byte)sector); }
+        MouseProtocol.WriteSector(hidpp, sector, profile);
+        try { hidpp.Call(hidpp.FeatureIndex(0x8100), 3, (byte)(sector >> 8), (byte)sector); }
         catch (HidppError) { }
-        Release(h);
+        Release(hidpp);
     }
 
-    public static void Preview(Hidpp h, List<byte[]> clusters, Lighting l, Lighting others = null)
+    public static void Preview(Hidpp hidpp, List<byte[]> clusters, Lighting lighting, Lighting others = null)
     {
-        byte f = h.FeatureIndex(0x8071);
+        byte feature = hidpp.FeatureIndex(0x8071);
         int keys = Keys(clusters);
-        if (Pick(l.Effect, clusters[keys], false) < 0) throw new RefusedException("This keyboard doesn't have that effect");
-        for (int c = 0; c < clusters.Count; c++)
+        if (Pick(lighting.Effect, clusters[keys], false) < 0) throw new RefusedException("This keyboard doesn't have that effect");
+        for (int cluster = 0; cluster < clusters.Count; cluster++)
         {
-            var light = c == keys || others == null ? l : others;
-            int i = Pick(light.Effect, clusters[c], c != keys);
-            if (i < 0) continue;
-            h.Call(f, 1, new byte[] { (byte)c, (byte)i }.Concat(Encode(clusters[c][i], light)).Concat(new byte[] { 0x01 }).ToArray());
+            var light = cluster == keys || others == null ? lighting : others;
+            int effectIndex = Pick(light.Effect, clusters[cluster], cluster != keys);
+            if (effectIndex < 0) continue;
+            hidpp.Call(feature, 1, new byte[] { (byte)cluster, (byte)effectIndex }.Concat(Encode(clusters[cluster][effectIndex], light)).Concat(new byte[] { 0x01 }).ToArray());
         }
     }
 }

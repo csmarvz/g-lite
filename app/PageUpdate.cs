@@ -10,8 +10,8 @@ using System.Windows.Forms;
 
 class PageUpdate : Control
 {
-    [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)] static extern int SetWindowTheme(IntPtr h, string app, string id);
-    readonly Label big, meta, link, whatsNew;
+    [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)] static extern int SetWindowTheme(IntPtr window, string subAppName, string subIdList);
+    readonly Label heading, meta, link, whatsNew;
     readonly RoundedBox notesBox;
     readonly RichTextBox notes;
     readonly StatusLine status;
@@ -35,7 +35,7 @@ class PageUpdate : Control
         Ui.Text(this, "Update", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += drag;
 
         var hero = Ui.Add(this, new RoundedBox(), 20, 64, 616, 92);
-        big = Ui.Text(hero, "", 18, 12, () => Theme.Text, 12.75f, Ui.Semibold);
+        heading = Ui.Text(hero, "", 18, 12, () => Theme.Text, 12.75f, Ui.Semibold);
         meta = Ui.Text(hero, "", 18, 42, () => Theme.Dim, 9f);
         meta.AutoSize = false;
         meta.AutoEllipsis = true;
@@ -81,7 +81,7 @@ class PageUpdate : Control
     {
         var context = SynchronizationContext.Current;
         if (context == null) { action(); return; }
-        context.Post(x => { if (!IsDisposed) action(); }, null);
+        context.Post(ignored => { if (!IsDisposed) action(); }, null);
     }
 
     void Primary()
@@ -119,45 +119,45 @@ class PageUpdate : Control
         Load();
     }
 
-    public void Available(string v)
+    public void Available(string newVersion)
     {
         if (Busy) return;
-        Set("available", v, "Version " + v, "");
+        Set("available", newVersion, "Version " + newVersion, "");
         status.Set("Downloads from GitHub and checks it against checksums.txt", false, null);
         Load();
     }
 
-    public void Progress(string v, int percent)
+    public void Progress(string newVersion, int percent)
     {
-        if (state != "downloading") Set("downloading", v, "Version " + v, "");
+        if (state != "downloading") Set("downloading", newVersion, "Version " + newVersion, "");
         meta.Text = percent < 0 ? "Downloading GLite.exe…" : "Downloading GLite.exe… " + percent + "%";
         status.Set("When it's done, restart G-Lite to use it", false, null);
     }
 
-    public void Failed(string v, string error)
+    public void Failed(string newVersion, string error)
     {
-        Set("failed", v, "Version " + v, "The update failed");
+        Set("failed", newVersion, "Version " + newVersion, "The update failed");
         status.Set("Update failed: " + error, true, null);
         Load();
     }
 
-    public void Ready(string v)
+    public void Ready(string newVersion)
     {
-        Set("ready", v, "Version " + v, "Installed. Restart G-Lite to use it.");
+        Set("ready", newVersion, "Version " + newVersion, "Installed. Restart G-Lite to use it.");
         status.Set("G-Lite runs " + installed + " until it restarts", false, null);
         Load();
     }
 
     public void Note(string text, bool warn) { status.Set(text, warn, null); }
 
-    void Set(string newState, string v, string title, string detail)
+    void Set(string newState, string newVersion, string title, string detail)
     {
         state = newState;
-        version = v;
-        big.Text = title;
+        version = newVersion;
+        heading.Text = title;
         meta.Text = detail;
-        link.Visible = v != null;
-        whatsNew.Visible = notesBox.Visible = v != null;
+        link.Visible = newVersion != null;
+        whatsNew.Visible = notesBox.Visible = newVersion != null;
         whatsNew.Text = newState == "current" ? "What's new in " + installed : "What's new";
         showSkip = newState == "available" || newState == "failed" || newState == "downloading";
         skip.Enabled = primary.Enabled = newState != "downloading";
@@ -172,16 +172,16 @@ class PageUpdate : Control
         back.Visible = fromSettings;
         skip.Visible = showSkip;
         primary.Visible = showPrimary;
-        float k = Width / 656f;
-        int x = (int)Math.Round(636 * k);
-        foreach (var b in new[] { primary, skip, back })
+        float scale = Width / 656f;
+        int x = (int)Math.Round(636 * scale);
+        foreach (var button in new[] { primary, skip, back })
         {
-            if (b == back ? !fromSettings : b == skip ? !showSkip : !showPrimary) continue;
-            x -= b.Width;
-            b.Left = x;
-            x -= (int)Math.Round(8 * k);
+            if (button == back ? !fromSettings : button == skip ? !showSkip : !showPrimary) continue;
+            x -= button.Width;
+            button.Left = x;
+            x -= (int)Math.Round(8 * scale);
         }
-        status.Width = Math.Max(0, x + (int)Math.Round(8 * k) - status.Left - (int)Math.Round(12 * k));
+        status.Width = Math.Max(0, x + (int)Math.Round(8 * scale) - status.Left - (int)Math.Round(12 * scale));
     }
 
     void Load()
@@ -196,7 +196,7 @@ class PageUpdate : Control
             List<Release> list = null;
             string error = null;
             try { list = Updater.Releases(Fetch(tag)); } catch (Exception ex) { error = ex.Message; }
-            context.Post(x =>
+            context.Post(ignored =>
             {
                 loading.Remove(tag);
                 if (IsDisposed) return;
@@ -210,7 +210,7 @@ class PageUpdate : Control
     {
         List<Release> all;
         if (version == null || !changelogs.TryGetValue(version, out all)) return null;
-        if (state == "current") return all.Where(r => r.Version == installed).ToList();
+        if (state == "current") return all.Where(release => release.Version == installed).ToList();
         return Updater.Between(all, installed, version);
     }
 
@@ -236,7 +236,7 @@ class PageUpdate : Control
         var list = Listed();
         if (state != "current" && list != null)
         {
-            var newest = list.FirstOrDefault(r => r.Version == version);
+            var newest = list.FirstOrDefault(release => release.Version == version);
             if (state == "available" && newest != null && newest.Date != "") meta.Text = "Released " + newest.Date + (list.Count > 1 ? ", " + list.Count + " versions newer than yours" : "");
             if (list.Count > 1) whatsNew.Text = "What's new since " + installed;
         }

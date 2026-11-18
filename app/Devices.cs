@@ -16,10 +16,10 @@ class FoundDevice
     public bool BatteryFromVoltage, Charging, Asleep, Hidpp10, PlainHid, BatteryGoodOrLowOnly, HasVendorCollection;
     public int[] Features = new int[0];
 
-    public bool Has(int f) { return Features.Contains(f); }
+    public bool Has(int feature) { return Features.Contains(feature); }
     public string Slot { get { return Index == 0xFF || Hidpp10 ? "" : ", slot " + Index; } }
-    public bool IsG515 { get { var n = Name.ToUpper(); return n.Contains("G515") && !n.Contains("RAPID") && Has(0x8071) && Has(0x8040) && Has(0x8101); } }
-    public bool IsG915 { get { var n = Name.ToUpper(); return (n.Contains("G915") || n.Contains("G815")) && !n.Contains("G915 X") && Has(0x8071) && Has(0x8040) && Has(0x8100) && !Has(0x8101); } }
+    public bool IsG515 { get { var upper = Name.ToUpper(); return upper.Contains("G515") && !upper.Contains("RAPID") && Has(0x8071) && Has(0x8040) && Has(0x8101); } }
+    public bool IsG915 { get { var upper = Name.ToUpper(); return (upper.Contains("G915") || upper.Contains("G815")) && !upper.Contains("G915 X") && Has(0x8071) && Has(0x8040) && Has(0x8100) && !Has(0x8101); } }
     public bool IsG512X { get { return Name.ToUpper().Contains("G512 X 75") && Has(0x8071) && Has(0x8040) && Has(0x8081); } }
     public bool IsRgbKeyboard { get { return Kind == "keyboard" && Has(0x8071) && Has(0x8040); } }
     public bool IsLedKeyboard { get { return Kind == "keyboard" && Has(0x8070) && !Has(0x8071); } }
@@ -92,21 +92,21 @@ class FoundDevice
 
     public static string FirmwareText(byte[] info)
     {
-        var prefix = new string(info.Skip(1).Take(3).TakeWhile(b => b >= 0x20 && b < 0x7F).Select(b => (char)b).ToArray()).Trim();
+        var prefix = new string(info.Skip(1).Take(3).TakeWhile(value => value >= 0x20 && value < 0x7F).Select(value => (char)value).ToArray()).Trim();
         return (prefix + " " + info[4].ToString("X2") + "." + info[5].ToString("X2") + ", build " + info[6].ToString("X2") + info[7].ToString("X2")).Trim();
     }
 
-    public static int FromVolts(int mv) { return Math.Max(0, Math.Min(100, (mv - 3500) * 100 / 600)); }
+    public static int FromVolts(int millivolts) { return Math.Max(0, Math.Min(100, (millivolts - 3500) * 100 / 600)); }
 
     static readonly int[] ChargingCurve = { 3270, 2, 3670, 3, 3790, 5, 3910, 8, 4000, 20, 4050, 33, 4100, 46, 4150, 57, 4200, 68 };
 
-    public static int FromChargingVolts(int mv)
+    public static int FromChargingVolts(int millivolts)
     {
-        var c = ChargingCurve;
-        if (mv <= c[0]) return c[1];
-        for (int i = 2; i < c.Length; i += 2)
-            if (mv <= c[i]) return c[i - 1] + (mv - c[i - 2]) * (c[i + 1] - c[i - 1]) / (c[i] - c[i - 2]);
-        return c[c.Length - 1];
+        var curve = ChargingCurve;
+        if (millivolts <= curve[0]) return curve[1];
+        for (int i = 2; i < curve.Length; i += 2)
+            if (millivolts <= curve[i]) return curve[i - 1] + (millivolts - curve[i - 2]) * (curve[i + 1] - curve[i - 1]) / (curve[i] - curve[i - 2]);
+        return curve[curve.Length - 1];
     }
 }
 
@@ -116,11 +116,11 @@ static class Devices
     public static readonly string[] Kinds = { "keyboard", "device", "device", "mouse", "mouse", "mouse", "device", "device", "headset" };
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr sec, uint disp, uint flags, IntPtr tmpl);
-    [DllImport("hid.dll")] static extern bool HidD_GetPreparsedData(SafeFileHandle h, out IntPtr p);
-    [DllImport("hid.dll")] static extern bool HidD_FreePreparsedData(IntPtr p);
-    [DllImport("hid.dll")] static extern int HidP_GetCaps(IntPtr p, short[] caps);
-    [DllImport("hid.dll", CharSet = CharSet.Unicode)] static extern bool HidD_GetProductString(SafeFileHandle h, System.Text.StringBuilder b, int len);
+    static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr security, uint disposition, uint flags, IntPtr template);
+    [DllImport("hid.dll")] static extern bool HidD_GetPreparsedData(SafeFileHandle handle, out IntPtr data);
+    [DllImport("hid.dll")] static extern bool HidD_FreePreparsedData(IntPtr data);
+    [DllImport("hid.dll")] static extern int HidP_GetCaps(IntPtr data, short[] caps);
+    [DllImport("hid.dll", CharSet = CharSet.Unicode)] static extern bool HidD_GetProductString(SafeFileHandle handle, System.Text.StringBuilder buffer, int length);
 
     [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)] static extern int CM_Get_Device_Interface_List_Size(out int length, ref Guid interfaceClass, string deviceId, int flags);
     [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)] static extern int CM_Get_Device_Interface_List(ref Guid interfaceClass, string deviceId, char[] buffer, int length, int flags);
@@ -198,9 +198,9 @@ static class Devices
 
     static List<FoundDevice> FindPlainHid(string[] ids, List<FoundDevice> found)
     {
-        var foundPaths = found.Select(f => f.Path).ToList();
+        var foundPaths = found.Select(device => device.Path).ToList();
         var plain = new List<FoundDevice>();
-        foreach (var pid in ids.Select(id => PlainModels.Match(id)).Where(m => m.Success).Select(m => m.Groups[1].Value.ToUpperInvariant()).Concat(ids.Select(id => Unfound(id, foundPaths)).Where(pid => pid != null)).Distinct())
+        foreach (var pid in ids.Select(id => PlainModels.Match(id)).Where(match => match.Success).Select(match => match.Groups[1].Value.ToUpperInvariant()).Concat(ids.Select(id => Unfound(id, foundPaths)).Where(pid => pid != null)).Distinct())
         {
             var paths = ids.Where(id => id.Contains("PID_" + pid)).OrderBy(id => id).Select(PathOf).ToList();
             string[] known;
@@ -210,7 +210,7 @@ static class Devices
             if (name == null || name.EndsWith("Charger", StringComparison.OrdinalIgnoreCase)) continue;
             string kind = known != null ? known[1] : name.ToUpper().Contains("SPEAKER") ? "device" : "headset";
             // The G510 takes its feature reports on its vendor collection (usage page FF00, MI_01&COL02 in an owner's report).
-            var vendor = pid == "C22D" || pid == "C22E" ? paths.FirstOrDefault(path => { int page, outLen; ReadHidCaps(path, out page, out outLen); return page == 0xFF00; }) : null;
+            var vendor = pid == "C22D" || pid == "C22E" ? paths.FirstOrDefault(path => { int page, outputLength; ReadHidCaps(path, out page, out outputLength); return page == 0xFF00; }) : null;
             plain.Add(new FoundDevice { Key = "plain|" + pid, Path = vendor ?? paths[0], HasVendorCollection = vendor != null, Name = name, Kind = kind, Link = "USB", Index = 0xFF, Models = "USB " + pid, PlainHid = true });
         }
         return plain;
@@ -218,19 +218,19 @@ static class Devices
 
     class HidPort { public string Id, Group, LongPath, ShortPath; }
 
-    static void ReadHidCaps(string path, out int page, out int outLen)
+    static void ReadHidCaps(string path, out int page, out int outputLength)
     {
-        page = 0; outLen = 0;
-        using (var h = Open(path))
+        page = 0; outputLength = 0;
+        using (var handle = Open(path))
         {
-            if (h.IsInvalid) return;
-            IntPtr pp;
-            if (!HidD_GetPreparsedData(h, out pp)) return;
-            var c = new short[32];
-            HidP_GetCaps(pp, c);
-            HidD_FreePreparsedData(pp);
-            page = (ushort)c[1];
-            outLen = c[3];
+            if (handle.IsInvalid) return;
+            IntPtr data;
+            if (!HidD_GetPreparsedData(handle, out data)) return;
+            var caps = new short[32];
+            HidP_GetCaps(data, caps);
+            HidD_FreePreparsedData(data);
+            page = (ushort)caps[1];
+            outputLength = caps[3];
         }
     }
 
@@ -239,18 +239,18 @@ static class Devices
         var groups = new Dictionary<string, HidPort>();
         foreach (var id in ids)
             {
-                int col = id.IndexOf("&COL", StringComparison.OrdinalIgnoreCase), slash = id.LastIndexOf('\\'), amp = id.LastIndexOf('&');
-                if (col < 0 || slash < 0 || amp < slash || PlainModels.IsMatch(id)) continue;
-                var group = id.Substring(0, col) + "|" + id.Substring(slash, amp - slash);
-                int page, len;
+                int colAt = id.IndexOf("&COL", StringComparison.OrdinalIgnoreCase), slash = id.LastIndexOf('\\'), ampAt = id.LastIndexOf('&');
+                if (colAt < 0 || slash < 0 || ampAt < slash || PlainModels.IsMatch(id)) continue;
+                var group = id.Substring(0, colAt) + "|" + id.Substring(slash, ampAt - slash);
+                int page, outputLength;
                 var path = PathOf(id);
-                ReadHidCaps(path, out page, out len);
-                if (page < 0xFF00 || (len != 20 && len != 7)) continue;
-                HidPort p;
-                if (!groups.TryGetValue(group, out p)) groups[group] = p = new HidPort { Group = group };
-                if (len == 20) { p.LongPath = path; p.Id = id; } else p.ShortPath = path;
+                ReadHidCaps(path, out page, out outputLength);
+                if (page < 0xFF00 || (outputLength != 20 && outputLength != 7)) continue;
+                HidPort port;
+                if (!groups.TryGetValue(group, out port)) groups[group] = port = new HidPort { Group = group };
+                if (outputLength == 20) { port.LongPath = path; port.Id = id; } else port.ShortPath = path;
             }
-        return groups.Values.Where(p => p.LongPath != null).ToList();
+        return groups.Values.Where(port => port.LongPath != null).ToList();
     }
 
     public static Dictionary<string, string> Shorts = new Dictionary<string, string>();
@@ -261,97 +261,97 @@ static class Devices
     {
         var ids = HidIds();
         var ports = Ports(ids);
-        Shorts = ports.Where(p => p.ShortPath != null).GroupBy(p => p.LongPath).ToDictionary(g => g.Key, g => g.First().ShortPath);
-        var tasks = ports.Select(p => Task.Run(() => { try { return ScanPort(p); } catch (Exception) { return new List<FoundDevice>(); } })).ToArray();
+        Shorts = ports.Where(port => port.ShortPath != null).GroupBy(port => port.LongPath).ToDictionary(group => group.Key, group => group.First().ShortPath);
+        var tasks = ports.Select(port => Task.Run(() => { try { return ScanPort(port); } catch (Exception) { return new List<FoundDevice>(); } })).ToArray();
         Task.WaitAll(tasks, 20000);
-        var all = tasks.Where(t => t.IsCompleted).SelectMany(t => t.Result).ToList();
+        var all = tasks.Where(task => task.IsCompleted).SelectMany(task => task.Result).ToList();
         try { all.AddRange(FindPlainHid(ids, all)); } catch (Exception) { }
-        all.RemoveAll(f => f.Asleep && f.WirelessId != 0 && all.Any(o => !o.Asleep && Regex.IsMatch(o.Models, @"\b" + f.WirelessId.ToString("X4") + @"\b")));
-        foreach (var f in all.Where(f => !f.Asleep && f.BatteryFromVoltage && f.Battery >= 0)) Remember(f, DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute);
-        foreach (var f in all.Where(f => Others.ContainsKey(f.WirelessId))) { f.Name = Others[f.WirelessId]; f.BatteryGoodOrLowOnly = true; }
-        foreach (var f in all.Where(f => f.IsLitra)) f.Kind = "light";
-        foreach (var f in all.Where(f => !f.Asleep && f.WirelessId != 0)) Settings.Set("seen." + f.WirelessId.ToString("X4"), f.Name + "|" + f.Kind);
-        return all.Where(f => f.Name != "").OrderBy(f => f.PlainHid || f.IsG || Others.ContainsKey(f.WirelessId) ? 0 : 1).ThenBy(f => f.Kind == "keyboard" ? 0 : f.Kind == "mouse" ? 1 : f.Kind == "headset" ? 2 : 3).ThenBy(f => f.Name).ToList();
+        all.RemoveAll(device => device.Asleep && device.WirelessId != 0 && all.Any(other => !other.Asleep && Regex.IsMatch(other.Models, @"\b" + device.WirelessId.ToString("X4") + @"\b")));
+        foreach (var device in all.Where(device => !device.Asleep && device.BatteryFromVoltage && device.Battery >= 0)) Remember(device, DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute);
+        foreach (var device in all.Where(device => Others.ContainsKey(device.WirelessId))) { device.Name = Others[device.WirelessId]; device.BatteryGoodOrLowOnly = true; }
+        foreach (var device in all.Where(device => device.IsLitra)) device.Kind = "light";
+        foreach (var device in all.Where(device => !device.Asleep && device.WirelessId != 0)) Settings.Set("seen." + device.WirelessId.ToString("X4"), device.Name + "|" + device.Kind);
+        return all.Where(device => device.Name != "").OrderBy(device => device.PlainHid || device.IsG || Others.ContainsKey(device.WirelessId) ? 0 : 1).ThenBy(device => device.Kind == "keyboard" ? 0 : device.Kind == "mouse" ? 1 : device.Kind == "headset" ? 2 : 3).ThenBy(device => device.Name).ToList();
     }
 
-    public static void Remember(FoundDevice f, long minute)
+    public static void Remember(FoundDevice device, long minute)
     {
-        var key = "battery." + f.SettingsKey;
+        var key = "battery." + device.SettingsKey;
         var saved = Settings.Get(key).Split('|');
         int level, wasCharging;
         long at;
-        if (f.Charging && saved.Length == 3 && int.TryParse(saved[0], out level) && long.TryParse(saved[1], out at) && int.TryParse(saved[2], out wasCharging))
+        if (device.Charging && saved.Length == 3 && int.TryParse(saved[0], out level) && long.TryParse(saved[1], out at) && int.TryParse(saved[2], out wasCharging))
         {
             long minutes = minute - at;
-            if (wasCharging == 1) f.Battery = Math.Max(f.Battery, (int)Math.Min(100, level + minutes));
-            else if (minutes < 60) f.Battery = Math.Max(f.Battery, level);
+            if (wasCharging == 1) device.Battery = Math.Max(device.Battery, (int)Math.Min(100, level + minutes));
+            else if (minutes < 60) device.Battery = Math.Max(device.Battery, level);
         }
-        Settings.Set(key, f.Battery + "|" + minute + "|" + (f.Charging ? 1 : 0));
+        Settings.Set(key, device.Battery + "|" + minute + "|" + (device.Charging ? 1 : 0));
     }
 
     static string LinkOf(string id)
     {
         if (id.Contains("{00001812")) return "Bluetooth";
-        var m = Regex.Match(id, @"PID_([0-9A-F]{4})", RegexOptions.IgnoreCase);
-        var pid = m.Success ? m.Groups[1].Value.ToUpper() : "";
+        var match = Regex.Match(id, @"PID_([0-9A-F]{4})", RegexOptions.IgnoreCase);
+        var pid = match.Success ? match.Groups[1].Value.ToUpper() : "";
         if (pid == "C52B" || pid == "C532" || pid == "C534") return "Unifying";
         if (pid == "C548") return "Bolt";
         if (pid == "C531") return "Wireless";
         return "LIGHTSPEED";
     }
 
-    static List<FoundDevice> ScanPort(HidPort p)
+    static List<FoundDevice> ScanPort(HidPort port)
     {
-        var r = new List<FoundDevice>();
-        using (var pr = new ScanProbe(p.LongPath, p.ShortPath))
+        var found = new List<FoundDevice>();
+        using (var probe = new ScanProbe(port.LongPath, port.ShortPath))
         {
-            if (pr.Ping(0xFF, 800) >= 2)
+            if (probe.Ping(0xFF, 800) >= 2)
             {
-                var f = Describe(pr, p, 0xFF, p.Id.Contains("{00001812") ? "Bluetooth" : "USB");
-                if (f.Link == "USB" && f.Kind == "headset" && (f.Has(0x1F20) || f.Has(0x1004) || f.Has(0x1000) || f.Has(0x1001))) f.Link = "LIGHTSPEED";
-                r.Add(f);
-                return r;
+                var device = Describe(probe, port, 0xFF, port.Id.Contains("{00001812") ? "Bluetooth" : "USB");
+                if (device.Link == "USB" && device.Kind == "headset" && (device.Has(0x1F20) || device.Has(0x1004) || device.Has(0x1000) || device.Has(0x1001))) device.Link = "LIGHTSPEED";
+                found.Add(device);
+                return found;
             }
-            if (p.ShortPath == null) return r;
-            var link = LinkOf(p.Id);
-            for (byte n = 1; n <= 6; n++)
+            if (port.ShortPath == null) return found;
+            var link = LinkOf(port.Id);
+            for (byte slot = 1; slot <= 6; slot++)
             {
-                var pair = pr.Register(0xFF, 0x83, 0xB5, (byte)(0x20 + n - 1));
-                int wpid, kind;
-                if (pair != null) { wpid = pair[3] << 8 | pair[4]; kind = pair[7]; }
+                var pair = probe.Register(0xFF, 0x83, 0xB5, (byte)(0x20 + slot - 1));
+                int wirelessId, kind;
+                if (pair != null) { wirelessId = pair[3] << 8 | pair[4]; kind = pair[7]; }
                 else
                 {
                     // Bolt receivers keep pairings in 0x5N, with the wireless id's bytes swapped (Solaar's BoltReceiver).
-                    pair = link == "Bolt" ? pr.Register(0xFF, 0x83, 0xB5, (byte)(0x50 + n)) : null;
+                    pair = link == "Bolt" ? probe.Register(0xFF, 0x83, 0xB5, (byte)(0x50 + slot)) : null;
                     // The G700's receiver (C531) is a Nano receiver with one device (Solaar); whether it lists it in 0xB5 isn't known, so slot 1 is tried anyway.
-                    if (pair == null && !(link == "Wireless" && n == 1)) continue;
-                    wpid = pair == null ? 0 : pair[3] << 8 | pair[2];
+                    if (pair == null && !(link == "Wireless" && slot == 1)) continue;
+                    wirelessId = pair == null ? 0 : pair[3] << 8 | pair[2];
                     kind = pair == null ? 2 : pair[1] & 0x0F;
                 }
-                FoundDevice f;
+                FoundDevice device;
                 // A slot the receiver didn't list (the C531's slot 1) gets a short ping: an asleep or absent mouse shouldn't hold up every scan.
-                int protocol = pr.Ping(n, pair == null ? 1000 : 3500);
-                if (protocol >= 2) f = Describe(pr, p, n, link);
-                else if (protocol == 1) f = ProbeHidpp10(pr, p, n, link, wpid);
+                int protocol = probe.Ping(slot, pair == null ? 1000 : 3500);
+                if (protocol >= 2) device = Describe(probe, port, slot, link);
+                else if (protocol == 1) device = ProbeHidpp10(probe, port, slot, link, wirelessId);
                 else
                 {
-                    f = new FoundDevice { Path = p.LongPath, Index = n, Link = link, Asleep = true };
-                    var seen = Settings.Get("seen." + wpid.ToString("X4")).Split('|');
-                    f.Name = seen[0] != "" ? seen[0] : link == "LIGHTSPEED" ? "G device" : "";
-                    f.Kind = seen.Length > 1 ? seen[1] : kind == 1 ? "keyboard" : kind == 2 ? "mouse" : "device";
+                    device = new FoundDevice { Path = port.LongPath, Index = slot, Link = link, Asleep = true };
+                    var seen = Settings.Get("seen." + wirelessId.ToString("X4")).Split('|');
+                    device.Name = seen[0] != "" ? seen[0] : link == "LIGHTSPEED" ? "G device" : "";
+                    device.Kind = seen.Length > 1 ? seen[1] : kind == 1 ? "keyboard" : kind == 2 ? "mouse" : "device";
                 }
-                f.WirelessId = wpid;
-                f.Key = p.LongPath + "|" + n;
-                r.Add(f);
+                device.WirelessId = wirelessId;
+                device.Key = port.LongPath + "|" + slot;
+                found.Add(device);
             }
-            if (r.Count == 0)
+            if (found.Count == 0)
             {
-                var v = pr.Register(0x00, 0x81, 0xF1, 0x01);
-                var o = v == null ? null : ProbeHidpp10(pr, p, v);
-                if (o != null && o.Kind != "device") r.Add(o);
+                var firmware = probe.Register(0x00, 0x81, 0xF1, 0x01);
+                var usbDevice = firmware == null ? null : ProbeHidpp10(probe, port, firmware);
+                if (usbDevice != null && usbDevice.Kind != "device") found.Add(usbDevice);
             }
         }
-        return r;
+        return found;
     }
 
     // Wireless HID++ 1.0 devices, named by their wireless id (Solaar's descriptors).
@@ -362,126 +362,126 @@ static class Devices
     };
 
     // A HID++ 1.0 device in a receiver slot: it answered the HID++ 2.0 ping with "invalid sub-ID".
-    static FoundDevice ProbeHidpp10(ScanProbe pr, HidPort p, byte n, string link, int wpid)
+    static FoundDevice ProbeHidpp10(ScanProbe probe, HidPort port, byte slot, string link, int wirelessId)
     {
-        var v = pr.Register(n, 0x81, 0xF1, 0x01);
-        var b = v == null ? null : pr.Register(n, 0x81, 0xF1, 0x02);
+        var firmware = probe.Register(slot, 0x81, 0xF1, 0x01);
+        var build = firmware == null ? null : probe.Register(slot, 0x81, 0xF1, 0x02);
         string[] known;
-        if (!OldWireless.TryGetValue(wpid, out known)) known = new[] { link == "Wireless" ? "G700 / G700s" : "", "mouse" };
+        if (!OldWireless.TryGetValue(wirelessId, out known)) known = new[] { link == "Wireless" ? "G700 / G700s" : "", "mouse" };
         return new FoundDevice
         {
-            Path = p.LongPath, ShortPath = p.ShortPath, Index = n, Link = link, Hidpp10 = true, Name = known[0], Kind = known[1],
-            Firmware = v == null ? "" : v[1].ToString("X2") + "." + v[2].ToString("X2") + (b != null ? ", build " + b[1].ToString("X2") + b[2].ToString("X2") : ""),
-            Models = wpid == 0 ? "" : link + " " + wpid.ToString("X4")
+            Path = port.LongPath, ShortPath = port.ShortPath, Index = slot, Link = link, Hidpp10 = true, Name = known[0], Kind = known[1],
+            Firmware = firmware == null ? "" : firmware[1].ToString("X2") + "." + firmware[2].ToString("X2") + (build != null ? ", build " + build[1].ToString("X2") + build[2].ToString("X2") : ""),
+            Models = wirelessId == 0 ? "" : link + " " + wirelessId.ToString("X4")
         };
     }
 
-    static FoundDevice ProbeHidpp10(ScanProbe pr, HidPort p, byte[] v)
+    static FoundDevice ProbeHidpp10(ScanProbe probe, HidPort port, byte[] firmware)
     {
-        var b = pr.Register(0x00, 0x81, 0xF1, 0x02);
-        var name = Product(p.LongPath);
-        var low = name.ToLower();
+        var build = probe.Register(0x00, 0x81, 0xF1, 0x02);
+        var name = Product(port.LongPath);
+        var lower = name.ToLower();
         return new FoundDevice
         {
-            Path = p.LongPath, ShortPath = p.ShortPath, Index = 0, Key = p.LongPath + "|0", Link = "USB", Hidpp10 = true, Name = name,
-            Kind = low.Contains("mouse") ? "mouse" : low.Contains("keyboard") ? "keyboard" : low.Contains("headset") ? "headset" : "device",
-            Firmware = v[1].ToString("X2") + "." + v[2].ToString("X2") + (b != null ? ", build " + b[1].ToString("X2") + b[2].ToString("X2") : ""),
-            Models = Regex.IsMatch(p.LongPath, @"PID_[0-9A-F]{4}", RegexOptions.IgnoreCase) ? "USB " + Regex.Match(p.LongPath, @"PID_([0-9A-F]{4})", RegexOptions.IgnoreCase).Groups[1].Value.ToUpper() : ""
+            Path = port.LongPath, ShortPath = port.ShortPath, Index = 0, Key = port.LongPath + "|0", Link = "USB", Hidpp10 = true, Name = name,
+            Kind = lower.Contains("mouse") ? "mouse" : lower.Contains("keyboard") ? "keyboard" : lower.Contains("headset") ? "headset" : "device",
+            Firmware = firmware[1].ToString("X2") + "." + firmware[2].ToString("X2") + (build != null ? ", build " + build[1].ToString("X2") + build[2].ToString("X2") : ""),
+            Models = Regex.IsMatch(port.LongPath, @"PID_[0-9A-F]{4}", RegexOptions.IgnoreCase) ? "USB " + Regex.Match(port.LongPath, @"PID_([0-9A-F]{4})", RegexOptions.IgnoreCase).Groups[1].Value.ToUpper() : ""
         };
     }
 
     static string Product(string path)
     {
-        using (var h = Open(path))
+        using (var handle = Open(path))
         {
-            var sb = new System.Text.StringBuilder(128);
-            return !h.IsInvalid && HidD_GetProductString(h, sb, 256) ? sb.ToString().Trim() : "";
+            var text = new System.Text.StringBuilder(128);
+            return !handle.IsInvalid && HidD_GetProductString(handle, text, 256) ? text.ToString().Trim() : "";
         }
     }
 
-    static FoundDevice Describe(ScanProbe pr, HidPort p, byte idx, string link)
+    static FoundDevice Describe(ScanProbe probe, HidPort port, byte index, string link)
     {
-        var f = new FoundDevice { Path = p.LongPath, Index = idx, Link = link, Key = p.LongPath + "|" + idx };
-        byte fs = pr.Feature(idx, 0x0001);
+        var device = new FoundDevice { Path = port.LongPath, Index = index, Link = link, Key = port.LongPath + "|" + index };
+        byte featureSet = probe.Feature(index, 0x0001);
         var list = new List<int>();
-        var count = fs == 0 ? null : pr.Call(idx, fs, 0);
+        var count = featureSet == 0 ? null : probe.Call(index, featureSet, 0);
         if (count != null)
             for (int i = 1; i <= count[0]; i++)
             {
-                var id = pr.Call(idx, fs, 1, (byte)i);
+                var id = probe.Call(index, featureSet, 1, (byte)i);
                 if (id != null) list.Add(id[0] << 8 | id[1]);
             }
-        f.Features = list.ToArray();
-        byte nm = pr.Feature(idx, 0x0005);
-        if (nm != 0)
+        device.Features = list.ToArray();
+        byte nameFeature = probe.Feature(index, 0x0005);
+        if (nameFeature != 0)
         {
-            var len = pr.Call(idx, nm, 0);
+            var nameLength = probe.Call(index, nameFeature, 0);
             var name = "";
-            for (int o = 0; len != null && o < len[0]; o += 16)
+            for (int offset = 0; nameLength != null && offset < nameLength[0]; offset += 16)
             {
-                var part = pr.Call(idx, nm, 1, (byte)o);
+                var part = probe.Call(index, nameFeature, 1, (byte)offset);
                 if (part == null) break;
-                name += new string(part.Take(16).TakeWhile(b => b != 0).Select(b => (char)b).ToArray());
+                name += new string(part.Take(16).TakeWhile(value => value != 0).Select(value => (char)value).ToArray());
             }
-            f.Name = (len == null ? name : name.Substring(0, Math.Min(name.Length, len[0]))).Trim();
-            var type = pr.Call(idx, nm, 2);
-            if (type != null && type[0] < Kinds.Length) f.Kind = Kinds[type[0]];
+            device.Name = (nameLength == null ? name : name.Substring(0, Math.Min(name.Length, nameLength[0]))).Trim();
+            var type = probe.Call(index, nameFeature, 2);
+            if (type != null && type[0] < Kinds.Length) device.Kind = Kinds[type[0]];
         }
-        if (f.Name == "" && idx == 0xFF) f.Name = Regex.Replace(Product(p.LongPath), @"^Logitech\s+", "", RegexOptions.IgnoreCase);
-        byte fw = pr.Feature(idx, 0x0003);
-        var entities = fw == 0 ? null : pr.Call(idx, fw, 0);
-        f.Models = FoundDevice.ModelText(entities);
+        if (device.Name == "" && index == 0xFF) device.Name = Regex.Replace(Product(port.LongPath), @"^Logitech\s+", "", RegexOptions.IgnoreCase);
+        byte firmwareFeature = probe.Feature(index, 0x0003);
+        var entities = firmwareFeature == 0 ? null : probe.Call(index, firmwareFeature, 0);
+        device.Models = FoundDevice.ModelText(entities);
         // The running firmware is the main application (type 0) marked active, byte 8 bit 0: "exactly one entity will return 1" (spec x0003 v4).
         byte[] info = null;
-        for (int e = 0; entities != null && e < entities[0] && (info == null || (info[8] & 1) == 0); e++)
+        for (int entity = 0; entities != null && entity < entities[0] && (info == null || (info[8] & 1) == 0); entity++)
         {
-            var r = pr.Call(idx, fw, 1, (byte)e);
-            if (r != null && r[0] == 0 && (info == null || (r[8] & 1) != 0)) info = r;
+            var reply = probe.Call(index, firmwareFeature, 1, (byte)entity);
+            if (reply != null && reply[0] == 0 && (info == null || (reply[8] & 1) != 0)) info = reply;
         }
         if (info != null)
-            f.Firmware = FoundDevice.FirmwareText(info);
-        Battery(pr, f);
-        return f;
+            device.Firmware = FoundDevice.FirmwareText(info);
+        Battery(probe, device);
+        return device;
     }
 
     static readonly int[] BatteryFeatures = { 0x1004, 0x1000, 0x1001, 0x1F20 };
 
-    public static FoundDevice ReadBattery(FoundDevice f)
+    public static FoundDevice ReadBattery(FoundDevice device)
     {
-        if (f.BatteryFeature == 0) return null;
-        var copy = new FoundDevice { Name = f.Name, Index = f.Index, BatteryFeature = f.BatteryFeature, BatteryId = f.BatteryId };
-        byte[] r;
-        try { using (var pr = new ScanProbe(f.Path, f.ShortPath)) r = pr.Call(f.Index, f.BatteryFeature, f.BatteryId == 0x1004 ? 1 : 0); }
+        if (device.BatteryFeature == 0) return null;
+        var copy = new FoundDevice { Name = device.Name, Index = device.Index, BatteryFeature = device.BatteryFeature, BatteryId = device.BatteryId };
+        byte[] reply;
+        try { using (var probe = new ScanProbe(device.Path, device.ShortPath)) reply = probe.Call(device.Index, device.BatteryFeature, device.BatteryId == 0x1004 ? 1 : 0); }
         catch (Exception) { return null; }
-        if (r == null) return null;
-        Decode(copy, r);
+        if (reply == null) return null;
+        Decode(copy, reply);
         if (copy.BatteryFromVoltage) Remember(copy, DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute);
         return copy;
     }
 
-    static void Battery(ScanProbe pr, FoundDevice f)
+    static void Battery(ScanProbe probe, FoundDevice device)
     {
         foreach (var id in BatteryFeatures)
         {
-            var i = pr.Feature(f.Index, id);
-            if (i == 0) continue;
-            var r = pr.Call(f.Index, i, id == 0x1004 ? 1 : 0);
-            if (r == null) continue;
-            f.BatteryFeature = i;
-            f.BatteryId = id;
-            Decode(f, r);
+            var featureIndex = probe.Feature(device.Index, id);
+            if (featureIndex == 0) continue;
+            var reply = probe.Call(device.Index, featureIndex, id == 0x1004 ? 1 : 0);
+            if (reply == null) continue;
+            device.BatteryFeature = featureIndex;
+            device.BatteryId = id;
+            Decode(device, reply);
             return;
         }
     }
 
-    public static void Decode(FoundDevice f, byte[] r)
+    public static void Decode(FoundDevice device, byte[] reply)
     {
-        if (f.BatteryId == 0x1004) { f.Battery = r[0]; f.Charging = r[2] == 1 || r[2] == 2; return; }
-        if (f.BatteryId == 0x1000) { f.Battery = r[0]; f.Charging = r[2] == 1 || r[2] == 2 || r[2] == 4; return; }
-        f.Millivolts = r[0] << 8 | r[1];
-        f.BatteryFromVoltage = true;
-        f.Charging = f.BatteryId == 0x1001 ? (r[2] & 0x80) != 0 : r[2] == 3;
-        f.Battery = !f.Charging ? FoundDevice.FromVolts(f.Millivolts) : f.BatteryId == 0x1001 && (r[2] & 0x07) == 1 ? 100 : FoundDevice.FromChargingVolts(f.Millivolts);
+        if (device.BatteryId == 0x1004) { device.Battery = reply[0]; device.Charging = reply[2] == 1 || reply[2] == 2; return; }
+        if (device.BatteryId == 0x1000) { device.Battery = reply[0]; device.Charging = reply[2] == 1 || reply[2] == 2 || reply[2] == 4; return; }
+        device.Millivolts = reply[0] << 8 | reply[1];
+        device.BatteryFromVoltage = true;
+        device.Charging = device.BatteryId == 0x1001 ? (reply[2] & 0x80) != 0 : reply[2] == 3;
+        device.Battery = !device.Charging ? FoundDevice.FromVolts(device.Millivolts) : device.BatteryId == 0x1001 && (reply[2] & 0x07) == 1 ? 100 : FoundDevice.FromChargingVolts(device.Millivolts);
     }
 }
 
@@ -511,15 +511,15 @@ class DeviceWatcher : IDisposable
             var buffer = new byte[size];
             while (!done)
             {
-                int n;
-                try { n = stream.Read(buffer, 0, size); }
+                int read;
+                try { read = stream.Read(buffer, 0, size); }
                 catch (Exception) { return; }
-                if (n >= 7) heard(key, (byte[])buffer.Clone());
+                if (read >= 7) heard(key, (byte[])buffer.Clone());
             }
         });
     }
 
-    public void Dispose() { done = true; foreach (var s in streams) s.Dispose(); }
+    public void Dispose() { done = true; foreach (var stream in streams) stream.Dispose(); }
 }
 
 class ScanProbe : IDisposable
@@ -527,84 +527,84 @@ class ScanProbe : IDisposable
     const byte SoftwareId = 0x0D;
     readonly FileStream longStream, shortStream;
     readonly byte[] longBuffer = new byte[20], shortBuffer = new byte[7];
-    Task<int> lread, sread;
+    Task<int> longRead, shortRead;
 
     public ScanProbe(string longPath, string shortPath)
     {
-        var h = Devices.Open(longPath);
-        if (h.IsInvalid) throw new IOException("can't open " + longPath);
-        longStream = new FileStream(h, FileAccess.ReadWrite, 1, true);
+        var longHandle = Devices.Open(longPath);
+        if (longHandle.IsInvalid) throw new IOException("can't open " + longPath);
+        longStream = new FileStream(longHandle, FileAccess.ReadWrite, 1, true);
         if (shortPath == null) return;
-        var s = Devices.Open(shortPath);
-        if (!s.IsInvalid) shortStream = new FileStream(s, FileAccess.ReadWrite, 1, true);
+        var shortHandle = Devices.Open(shortPath);
+        if (!shortHandle.IsInvalid) shortStream = new FileStream(shortHandle, FileAccess.ReadWrite, 1, true);
     }
 
     public void Dispose() { longStream.Dispose(); if (shortStream != null) shortStream.Dispose(); }
 
     byte[] Next(DateTime end)
     {
-        if (lread == null) lread = longStream.ReadAsync(longBuffer, 0, 20);
-        if (shortStream != null && sread == null) sread = shortStream.ReadAsync(shortBuffer, 0, 7);
-        int ms = (int)(end - DateTime.UtcNow).TotalMilliseconds;
-        if (ms <= 0) return null;
-        int w = shortStream == null ? (lread.Wait(ms) ? 0 : -1) : Task.WaitAny(new Task[] { lread, sread }, ms);
-        if (w < 0) return null;
-        if (w == 0) { lread = null; return (byte[])longBuffer.Clone(); }
-        sread = null;
-        var r = new byte[20];
-        Array.Copy(shortBuffer, r, 7);
-        return r;
+        if (longRead == null) longRead = longStream.ReadAsync(longBuffer, 0, 20);
+        if (shortStream != null && shortRead == null) shortRead = shortStream.ReadAsync(shortBuffer, 0, 7);
+        int milliseconds = (int)(end - DateTime.UtcNow).TotalMilliseconds;
+        if (milliseconds <= 0) return null;
+        int which = shortStream == null ? (longRead.Wait(milliseconds) ? 0 : -1) : Task.WaitAny(new Task[] { longRead, shortRead }, milliseconds);
+        if (which < 0) return null;
+        if (which == 0) { longRead = null; return (byte[])longBuffer.Clone(); }
+        shortRead = null;
+        var message = new byte[20];
+        Array.Copy(shortBuffer, message, 7);
+        return message;
     }
 
     // 1 for a HID++ 1.0 device: it answers with error 01, invalid sub-ID (Solaar's base.ping). 0 for no answer.
-    public int Ping(byte idx, int ms)
+    public int Ping(byte index, int timeout)
     {
         lastError = -1;
-        var r = Send(idx, 0, 1, ms, 0, 0, 0x5A);
-        return r != null ? r[0] : lastError == 0x01 ? 1 : 0;
+        var reply = Send(index, 0, 1, timeout, 0, 0, 0x5A);
+        return reply != null ? reply[0] : lastError == 0x01 ? 1 : 0;
     }
 
     int lastError;
 
-    public byte Feature(byte idx, int id)
+    public byte Feature(byte index, int id)
     {
-        var r = Call(idx, 0, 0, (byte)(id >> 8), (byte)id);
-        return r == null ? (byte)0 : r[0];
+        var reply = Call(index, 0, 0, (byte)(id >> 8), (byte)id);
+        return reply == null ? (byte)0 : reply[0];
     }
 
-    public byte[] Call(byte idx, byte feat, int fn, params byte[] p) { return Send(idx, feat, fn, 3000, p); }
+    public byte[] Call(byte index, byte feature, int fn, params byte[] parameters) { return Send(index, feature, fn, 3000, parameters); }
 
-    byte[] Send(byte idx, byte feat, int fn, int ms, params byte[] p)
+    byte[] Send(byte index, byte feature, int fn, int timeout, params byte[] parameters)
     {
-        var m = new byte[20];
-        m[0] = 0x11; m[1] = idx; m[2] = feat; m[3] = (byte)(fn << 4 | SoftwareId);
-        Array.Copy(p, 0, m, 4, Math.Min(p.Length, 16));
-        longStream.Write(m, 0, 20);
-        var end = DateTime.UtcNow.AddMilliseconds(ms);
+        var message = new byte[20];
+        message[0] = 0x11; message[1] = index; message[2] = feature; message[3] = (byte)(fn << 4 | SoftwareId);
+        Array.Copy(parameters, 0, message, 4, Math.Min(parameters.Length, 16));
+        longStream.Write(message, 0, 20);
+        var end = DateTime.UtcNow.AddMilliseconds(timeout);
         while (true)
         {
-            var r = Next(end);
-            if (r == null) return null;
-            if (r[1] != idx) continue;
-            if (r[2] == 0x8F && r[3] == feat) { lastError = r[5]; return null; }
-            if (r[2] == 0xFF && r[3] == feat && r[4] == m[3]) return null;
-            if (r[2] == feat && r[3] == m[3]) return r.Skip(4).ToArray();
+            var reply = Next(end);
+            if (reply == null) return null;
+            if (reply[1] != index) continue;
+            if (reply[2] == 0x8F && reply[3] == feature) { lastError = reply[5]; return null; }
+            if (reply[2] == 0xFF && reply[3] == feature && reply[4] == message[3]) return null;
+            if (reply[2] == feature && reply[3] == message[3]) return reply.Skip(4).ToArray();
         }
     }
 
-    public byte[] Register(byte idx, byte sub, byte addr, byte param)
+    public byte[] Register(byte index, byte subId, byte register, byte parameter)
     {
         if (shortStream == null) return null;
-        var m = new byte[] { 0x10, idx, sub, addr, param, 0, 0 };
-        shortStream.Write(m, 0, 7);
+        var message = new byte[] { 0x10, index, subId, register, parameter, 0, 0 };
+        shortStream.Write(message, 0, 7);
         var end = DateTime.UtcNow.AddMilliseconds(1000);
         while (true)
         {
-            var r = Next(end);
-            if (r == null) return null;
-            if (r[1] != idx) continue;
-            if (r[2] == 0x8F && r[3] == sub) return null;
-            if (r[2] == sub && r[3] == addr) return r.Skip(4).ToArray();
+            var reply = Next(end);
+            if (reply == null) return null;
+            if (reply[1] != index) continue;
+            if (reply[2] == 0x8F && reply[3] == subId) return null;
+            if (reply[2] == subId && reply[3] == register) return reply.Skip(4).ToArray();
         }
     }
 }

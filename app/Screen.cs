@@ -49,7 +49,7 @@ class ScreenSetup
     public int Add()
     {
         if (Zones.Count >= MaxZones) return -1;
-        int mark = MarkColors.First(m => Zones.All(z => z.MarkColor != m));
+        int mark = MarkColors.First(color => Zones.All(zone => zone.MarkColor != color));
         Zones.Add(new Zone { Name = "Zone " + (Zones.Count + 1), MarkColor = mark, Area = new RectangleF(0.375f, 0.3f, 0.25f, 0.3f) });
         return Zones.Count - 1;
     }
@@ -66,7 +66,7 @@ class ScreenSetup
         }
     }
 
-    static string FormatNumber(float v) { return v.ToString("0.###", CultureInfo.InvariantCulture); }
+    static string FormatNumber(float value) { return value.ToString("0.###", CultureInfo.InvariantCulture); }
 
     public string ToText()
     {
@@ -78,14 +78,14 @@ class ScreenSetup
             "smooth:" + (Smooth ? 1 : 0),
             "bat:" + (PauseOnBattery ? 1 : 0),
             "lock:" + (PauseWhenLocked ? 1 : 0),
-            "zones:" + string.Join("/", Zones.Select(z => z.Name + "," + z.MarkColor.ToString("X6") + "," + FormatNumber(z.Area.X) + "," + FormatNumber(z.Area.Y) + "," + FormatNumber(z.Area.Width) + "," + FormatNumber(z.Area.Height))),
-            "keys:" + string.Join(",", Keys.OrderBy(k => k.Key).Select(k => k.Key.ToString("X2") + "." + k.Value)));
+            "zones:" + string.Join("/", Zones.Select(zone => zone.Name + "," + zone.MarkColor.ToString("X6") + "," + FormatNumber(zone.Area.X) + "," + FormatNumber(zone.Area.Y) + "," + FormatNumber(zone.Area.Width) + "," + FormatNumber(zone.Area.Height))),
+            "keys:" + string.Join(",", Keys.OrderBy(pair => pair.Key).Select(pair => pair.Key.ToString("X2") + "." + pair.Value)));
     }
 
     public static ScreenSetup FromText(string text)
     {
-        var s = new ScreenSetup();
-        if (string.IsNullOrEmpty(text)) return s;
+        var setup = new ScreenSetup();
+        if (string.IsNullOrEmpty(text)) return setup;
         try
         {
             foreach (var part in text.Split(';'))
@@ -96,39 +96,39 @@ class ScreenSetup
                 var bits = value.Split(':');
                 switch (key)
                 {
-                    case "mon": s.Monitor = value; break;
-                    case "boost": s.Boost = Clamp(int.Parse(value), 0, 100); break;
-                    case "bright": s.Bright = Clamp(int.Parse(value), 1, 100); break;
-                    case "ms": s.Interval = Clamp(int.Parse(value) / 100 * 100, 100, 1000); break;
-                    case "smooth": s.Smooth = value == "1"; break;
-                    case "bat": s.PauseOnBattery = bits[0] == "1"; break;
-                    case "lock": s.PauseWhenLocked = value == "1"; break;
+                    case "mon": setup.Monitor = value; break;
+                    case "boost": setup.Boost = Clamp(int.Parse(value), 0, 100); break;
+                    case "bright": setup.Bright = Clamp(int.Parse(value), 1, 100); break;
+                    case "ms": setup.Interval = Clamp(int.Parse(value) / 100 * 100, 100, 1000); break;
+                    case "smooth": setup.Smooth = value == "1"; break;
+                    case "bat": setup.PauseOnBattery = bits[0] == "1"; break;
+                    case "lock": setup.PauseWhenLocked = value == "1"; break;
                     case "zones":
                         var zones = new List<Zone>();
-                        foreach (var z in value.Split('/'))
+                        foreach (var zoneText in value.Split('/'))
                         {
-                            var f = z.Split(',');
-                            if (f.Length < 6) continue;
-                            Func<int, float> n = i => Math.Max(0, Math.Min(1, float.Parse(f[i], CultureInfo.InvariantCulture)));
-                            zones.Add(new Zone { Name = f[0], MarkColor = int.Parse(f[1], NumberStyles.HexNumber), Area = new RectangleF(n(2), n(3), n(4), n(5)) });
+                            var fields = zoneText.Split(',');
+                            if (fields.Length < 6) continue;
+                            Func<int, float> fraction = i => Math.Max(0, Math.Min(1, float.Parse(fields[i], CultureInfo.InvariantCulture)));
+                            zones.Add(new Zone { Name = fields[0], MarkColor = int.Parse(fields[1], NumberStyles.HexNumber), Area = new RectangleF(fraction(2), fraction(3), fraction(4), fraction(5)) });
                         }
-                        if (zones.Count > 0) s.Zones = zones.Take(MarkColors.Length).ToList();
+                        if (zones.Count > 0) setup.Zones = zones.Take(MarkColors.Length).ToList();
                         break;
                     case "keys":
-                        foreach (var k in value.Split(',').Where(k => k.Contains('.')))
+                        foreach (var entry in value.Split(',').Where(entry => entry.Contains('.')))
                         {
-                            var f = k.Split('.');
-                            s.Keys[int.Parse(f[0], NumberStyles.HexNumber)] = int.Parse(f[1]);
+                            var parts = entry.Split('.');
+                            setup.Keys[int.Parse(parts[0], NumberStyles.HexNumber)] = int.Parse(parts[1]);
                         }
                         break;
                 }
             }
         }
         catch (Exception) { return new ScreenSetup(); }
-        return s;
+        return setup;
     }
 
-    static int Clamp(int v, int low, int high) { return Math.Max(low, Math.Min(high, v)); }
+    static int Clamp(int value, int low, int high) { return Math.Max(low, Math.Min(high, value)); }
 }
 
 static class ScreenCapture
@@ -141,10 +141,10 @@ static class ScreenCapture
 
     public static Screen Find(string monitor)
     {
-        return Screen.AllScreens.FirstOrDefault(s => monitor != "" && s.DeviceName == monitor) ?? Screen.PrimaryScreen;
+        return Screen.AllScreens.FirstOrDefault(screen => monitor != "" && screen.DeviceName == monitor) ?? Screen.PrimaryScreen;
     }
 
-    public static bool Missing(string monitor) { return monitor != "" && Screen.AllScreens.All(s => s.DeviceName != monitor); }
+    public static bool Missing(string monitor) { return monitor != "" && Screen.AllScreens.All(screen => screen.DeviceName != monitor); }
 
     public static string Label(Screen screen)
     {
@@ -156,14 +156,14 @@ static class ScreenCapture
     {
         var bitmap = new Bitmap(Math.Max(1, width), Math.Max(1, height), PixelFormat.Format32bppRgb);
         if (source.Width <= 0 || source.Height <= 0) return bitmap;
-        using (var g = Graphics.FromImage(bitmap))
+        using (var graphics = Graphics.FromImage(bitmap))
         {
-            IntPtr target = g.GetHdc(), screen = GetDC(IntPtr.Zero);
+            IntPtr target = graphics.GetHdc(), screen = GetDC(IntPtr.Zero);
             SetStretchBltMode(target, 4);
             SetBrushOrgEx(target, 0, 0, IntPtr.Zero);
             StretchBlt(target, 0, 0, bitmap.Width, bitmap.Height, screen, source.X, source.Y, source.Width, source.Height, 0x00CC0020);
             ReleaseDC(IntPtr.Zero, screen);
-            g.ReleaseHdc(target);
+            graphics.ReleaseHdc(target);
         }
         return bitmap;
     }
@@ -190,23 +190,23 @@ static class ScreenCapture
 
     public static int[] Sample(Rectangle monitor, List<Zone> zones)
     {
-        return zones.Select(z => { using (var b = Shrink(Pixels(monitor, z.Area), 8, 8)) return Average(b); }).ToArray();
+        return zones.Select(zone => { using (var shrunk = Shrink(Pixels(monitor, zone.Area), 8, 8)) return Average(shrunk); }).ToArray();
     }
 
     public static int Boost(int color, int boost)
     {
-        double r = color >> 16 & 0xFF, g = color >> 8 & 0xFF, b = color & 0xFF, mean = (r + g + b) / 3, factor = 1 + boost / 50.0;
-        r = Math.Max(0, Math.Min(255, mean + (r - mean) * factor));
-        g = Math.Max(0, Math.Min(255, mean + (g - mean) * factor));
-        b = Math.Max(0, Math.Min(255, mean + (b - mean) * factor));
-        double max = Math.Max(r, Math.Max(g, b));
+        double red = color >> 16 & 0xFF, green = color >> 8 & 0xFF, blue = color & 0xFF, mean = (red + green + blue) / 3, factor = 1 + boost / 50.0;
+        red = Math.Max(0, Math.Min(255, mean + (red - mean) * factor));
+        green = Math.Max(0, Math.Min(255, mean + (green - mean) * factor));
+        blue = Math.Max(0, Math.Min(255, mean + (blue - mean) * factor));
+        double max = Math.Max(red, Math.Max(green, blue));
         if (max < 12) return 0;
-        return (int)(r * 255 / max) << 16 | (int)(g * 255 / max) << 8 | (int)(b * 255 / max);
+        return (int)(red * 255 / max) << 16 | (int)(green * 255 / max) << 8 | (int)(blue * 255 / max);
     }
 
-    public static int Blend(int from, int to, double t)
+    public static int Blend(int from, int to, double fraction)
     {
-        Func<int, int> mix = shift => (int)Math.Round((from >> shift & 0xFF) + ((to >> shift & 0xFF) - (from >> shift & 0xFF)) * t);
+        Func<int, int> mix = shift => (int)Math.Round((from >> shift & 0xFF) + ((to >> shift & 0xFF) - (from >> shift & 0xFF)) * fraction);
         return mix(16) << 16 | mix(8) << 8 | mix(0);
     }
 
@@ -218,13 +218,13 @@ static class ScreenCapture
 
 static class KeyLights
 {
-    public static HashSet<int> Present(Hidpp h)
+    public static HashSet<int> Present(Hidpp hidpp)
     {
-        byte feature = h.FeatureIndex(0x8081);
+        byte feature = hidpp.FeatureIndex(0x8081);
         var present = new HashSet<int>();
         for (int page = 0; page < 3; page++)
         {
-            var bits = h.Call(feature, 0, 0, (byte)page, 0);
+            var bits = hidpp.Call(feature, 0, 0, (byte)page, 0);
             for (int i = 0; i < 14; i++)
                 for (int bit = 0; bit < 8; bit++)
                     if ((bits[2 + i] >> bit & 1) != 0) present.Add(page * 112 + i * 8 + bit);
@@ -232,17 +232,17 @@ static class KeyLights
         return present;
     }
 
-    public static void Send(Hidpp h, Dictionary<int, List<int>> idsByColor)
+    public static void Send(Hidpp hidpp, Dictionary<int, List<int>> idsByColor)
     {
-        byte feature = h.FeatureIndex(0x8081);
+        byte feature = hidpp.FeatureIndex(0x8081);
         foreach (var group in idsByColor)
             for (int start = 0; start < group.Value.Count; start += 13)
             {
                 var parameters = new List<byte> { (byte)(group.Key >> 16), (byte)(group.Key >> 8), (byte)group.Key };
                 parameters.AddRange(group.Value.Skip(start).Take(13).Select(id => (byte)id));
-                h.CallUnlogged(feature, 6, parameters.ToArray());
+                hidpp.CallUnlogged(feature, 6, parameters.ToArray());
             }
-        h.CallUnlogged(feature, 7, 0, 0, 0, 0, 0);
+        hidpp.CallUnlogged(feature, 7, 0, 0, 0, 0, 0);
     }
 }
 
@@ -265,20 +265,20 @@ static class Presence
         };
     }
 
-    public static void Power(Message m)
+    public static void Power(Message message)
     {
-        if (m.Msg != 0x0218 || (int)m.WParam != 0x8013 || m.LParam == IntPtr.Zero) return;
-        var setting = (Guid)Marshal.PtrToStructure(m.LParam, typeof(Guid));
+        if (message.Msg != 0x0218 || (int)message.WParam != 0x8013 || message.LParam == IntPtr.Zero) return;
+        var setting = (Guid)Marshal.PtrToStructure(message.LParam, typeof(Guid));
         if (setting != DisplayState) return;
-        int state = Marshal.ReadInt32(m.LParam, 20);
+        int state = Marshal.ReadInt32(message.LParam, 20);
         Set(Locked, state == 0);
     }
 
-    public static void Set(bool locked, bool off)
+    public static void Set(bool locked, bool displayOff)
     {
-        if (locked == Locked && off == DisplayOff) return;
+        if (locked == Locked && displayOff == DisplayOff) return;
         Locked = locked;
-        DisplayOff = off;
+        DisplayOff = displayOff;
         if (Changed != null) Changed();
     }
 }
@@ -302,26 +302,26 @@ class ScreenPreview : DrawnControl
     RectangleF Picture()
     {
         float scale = Math.Min((float)Width / Monitor.Width, (float)Height / Monitor.Height);
-        float w = Monitor.Width * scale, h = Monitor.Height * scale;
-        return new RectangleF((Width - w) / 2, (Height - h) / 2, w, h);
+        float width = Monitor.Width * scale, height = Monitor.Height * scale;
+        return new RectangleF((Width - width) / 2, (Height - height) / 2, width, height);
     }
 
-    RectangleF Box(Zone z)
+    RectangleF Box(Zone zone)
     {
-        var p = Picture();
-        return new RectangleF(p.X + z.Area.X * p.Width, p.Y + z.Area.Y * p.Height, z.Area.Width * p.Width, z.Area.Height * p.Height);
+        var picture = Picture();
+        return new RectangleF(picture.X + zone.Area.X * picture.Width, picture.Y + zone.Area.Y * picture.Height, zone.Area.Width * picture.Width, zone.Area.Height * picture.Height);
     }
 
-    int Edges(RectangleF r, Point at)
+    int Edges(RectangleF box, Point at)
     {
         float near = 6 * DpiScale;
-        if (!RectangleF.Inflate(r, near, near).Contains(at)) return -1;
-        int e = 0;
-        if (Math.Abs(at.X - r.Left) <= near) e |= 1;
-        if (Math.Abs(at.X - r.Right) <= near) e |= 2;
-        if (Math.Abs(at.Y - r.Top) <= near) e |= 4;
-        if (Math.Abs(at.Y - r.Bottom) <= near) e |= 8;
-        return e;
+        if (!RectangleF.Inflate(box, near, near).Contains(at)) return -1;
+        int hitEdges = 0;
+        if (Math.Abs(at.X - box.Left) <= near) hitEdges |= 1;
+        if (Math.Abs(at.X - box.Right) <= near) hitEdges |= 2;
+        if (Math.Abs(at.Y - box.Top) <= near) hitEdges |= 4;
+        if (Math.Abs(at.Y - box.Bottom) <= near) hitEdges |= 8;
+        return hitEdges;
     }
 
     int Hit(Point at, out int found)
@@ -330,18 +330,18 @@ class ScreenPreview : DrawnControl
         var order = Enumerable.Range(0, Zones.Count).OrderBy(i => i == Selected ? 0 : 1).ToList();
         foreach (int i in order)
         {
-            int e = Edges(Box(Zones[i]), at);
-            if (e >= 0 && (e != 0 || Box(Zones[i]).Contains(at))) { found = e; return i; }
+            int hitEdges = Edges(Box(Zones[i]), at);
+            if (hitEdges >= 0 && (hitEdges != 0 || Box(Zones[i]).Contains(at))) { found = hitEdges; return i; }
         }
         return -1;
     }
 
-    static Cursor CursorFor(int e)
+    static Cursor CursorFor(int hitEdges)
     {
-        if (e == 5 || e == 10) return Cursors.SizeNWSE;
-        if (e == 6 || e == 9) return Cursors.SizeNESW;
-        if ((e & 3) != 0) return Cursors.SizeWE;
-        if ((e & 12) != 0) return Cursors.SizeNS;
+        if (hitEdges == 5 || hitEdges == 10) return Cursors.SizeNWSE;
+        if (hitEdges == 6 || hitEdges == 9) return Cursors.SizeNESW;
+        if ((hitEdges & 3) != 0) return Cursors.SizeWE;
+        if ((hitEdges & 12) != 0) return Cursors.SizeNS;
         return Cursors.SizeAll;
     }
 
@@ -369,8 +369,8 @@ class ScreenPreview : DrawnControl
             Cursor = i < 0 ? Cursors.Default : CursorFor(found);
             return;
         }
-        var p = Picture();
-        float dx = (e.X - from.X) / p.Width, dy = (e.Y - from.Y) / p.Height, min = 0.03f;
+        var picture = Picture();
+        float dx = (e.X - from.X) / picture.Width, dy = (e.Y - from.Y) / picture.Height, min = 0.03f;
         float left = start.Left, top = start.Top, right = start.Right, bottom = start.Bottom;
         if (edges == 0)
         {
@@ -406,10 +406,10 @@ class ScreenPreview : DrawnControl
         if (e.KeyCode == Keys.Tab && e.Control) return;
         if (dx == 0 && dy == 0) return;
         e.Handled = true;
-        var a = Zones[Selected].Area;
-        a.X = Math.Max(0, Math.Min(1 - a.Width, a.X + dx));
-        a.Y = Math.Max(0, Math.Min(1 - a.Height, a.Y + dy));
-        Zones[Selected].Area = a;
+        var area = Zones[Selected].Area;
+        area.X = Math.Max(0, Math.Min(1 - area.Width, area.X + dx));
+        area.Y = Math.Max(0, Math.Min(1 - area.Height, area.Y + dy));
+        Zones[Selected].Area = area;
         Invalidate();
         if (Moved != null) Moved();
         if (Done != null) Done();
@@ -417,40 +417,40 @@ class ScreenPreview : DrawnControl
 
     protected override void OnPaint(PaintEventArgs e)
     {
-        var g = Begin(e);
-        var p = Picture();
-        using (var b = new SolidBrush(Theme.PictureBackground)) g.FillRectangle(b, p);
+        var graphics = Begin(e);
+        var picture = Picture();
+        using (var brush = new SolidBrush(Theme.PictureBackground)) graphics.FillRectangle(brush, picture);
         if (Image != null)
         {
-            g.InterpolationMode = InterpolationMode.HighQualityBilinear;
-            g.DrawImage(Image, p);
+            graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+            graphics.DrawImage(Image, picture);
         }
         var font = Ui.Get(7.5f, Ui.Semibold);
         for (int i = 0; i < Zones.Count; i++)
         {
             if (i == Selected) continue;
-            Draw(g, Zones[i], false, font);
+            Draw(graphics, Zones[i], false, font);
         }
-        if (Selected >= 0 && Selected < Zones.Count) Draw(g, Zones[Selected], true, font);
-        if (Focused && ShowFocusCues) using (var pen = new Pen(Theme.Text, 1.5f * DpiScale)) g.DrawRectangle(pen, p.X + DpiScale, p.Y + DpiScale, p.Width - 2 * DpiScale, p.Height - 2 * DpiScale);
+        if (Selected >= 0 && Selected < Zones.Count) Draw(graphics, Zones[Selected], true, font);
+        if (Focused && ShowFocusCues) using (var pen = new Pen(Theme.Text, 1.5f * DpiScale)) graphics.DrawRectangle(pen, picture.X + DpiScale, picture.Y + DpiScale, picture.Width - 2 * DpiScale, picture.Height - 2 * DpiScale);
     }
 
-    void Draw(Graphics g, Zone z, bool on, Font font)
+    void Draw(Graphics graphics, Zone zone, bool on, Font font)
     {
-        var r = Box(z);
-        var mark = Color.FromArgb(z.MarkColor >> 16 & 0xFF, z.MarkColor >> 8 & 0xFF, z.MarkColor & 0xFF);
-        using (var fill = new SolidBrush(Color.FromArgb(on ? 40 : 18, 255, 255, 255))) g.FillRectangle(fill, r);
-        if (on) using (var ring = new Pen(Theme.Accent, 2 * DpiScale)) g.DrawRectangle(ring, r.X - 2 * DpiScale, r.Y - 2 * DpiScale, r.Width + 4 * DpiScale, r.Height + 4 * DpiScale);
+        var box = Box(zone);
+        var mark = Color.FromArgb(zone.MarkColor >> 16 & 0xFF, zone.MarkColor >> 8 & 0xFF, zone.MarkColor & 0xFF);
+        using (var fill = new SolidBrush(Color.FromArgb(on ? 40 : 18, 255, 255, 255))) graphics.FillRectangle(fill, box);
+        if (on) using (var ring = new Pen(Theme.Accent, 2 * DpiScale)) graphics.DrawRectangle(ring, box.X - 2 * DpiScale, box.Y - 2 * DpiScale, box.Width + 4 * DpiScale, box.Height + 4 * DpiScale);
         using (var pen = new Pen(mark, (on ? 2.5f : 1.5f) * DpiScale))
         {
             if (!on) pen.DashStyle = DashStyle.Dash;
-            g.DrawRectangle(pen, r.X, r.Y, r.Width, r.Height);
+            graphics.DrawRectangle(pen, box.X, box.Y, box.Width, box.Height);
         }
-        var size = TextRenderer.MeasureText(g, z.Name, font, Size.Empty, TextFormatFlags.NoPadding);
-        var tag = new RectangleF(r.X + 2 * DpiScale, r.Y + 2 * DpiScale, Math.Min(r.Width - 4 * DpiScale, size.Width + 6 * DpiScale), size.Height + 2 * DpiScale);
-        if (tag.Width < 8 * DpiScale || tag.Height > r.Height) return;
-        using (var b = new SolidBrush(mark)) g.FillRectangle(b, tag);
-        Ui.Draw(g, z.Name, font, new RectangleF(tag.X + 3 * DpiScale, tag.Y + DpiScale, tag.Width - 4 * DpiScale, tag.Height), Color.FromArgb(16, 16, 16), TextFormatFlags.EndEllipsis);
+        var size = TextRenderer.MeasureText(graphics, zone.Name, font, Size.Empty, TextFormatFlags.NoPadding);
+        var tag = new RectangleF(box.X + 2 * DpiScale, box.Y + 2 * DpiScale, Math.Min(box.Width - 4 * DpiScale, size.Width + 6 * DpiScale), size.Height + 2 * DpiScale);
+        if (tag.Width < 8 * DpiScale || tag.Height > box.Height) return;
+        using (var brush = new SolidBrush(mark)) graphics.FillRectangle(brush, tag);
+        Ui.Draw(graphics, zone.Name, font, new RectangleF(tag.X + 3 * DpiScale, tag.Y + DpiScale, tag.Width - 4 * DpiScale, tag.Height), Color.FromArgb(16, 16, 16), TextFormatFlags.EndEllipsis);
     }
 }
 
@@ -495,22 +495,22 @@ class ZoneList : DrawnControl
 
     protected override void OnPaint(PaintEventArgs e)
     {
-        var g = Begin(e);
+        var graphics = Begin(e);
         var font = Ui.Get(9f, Ui.Regular);
         for (int i = 0; i < Zones.Count; i++)
         {
-            var r = new RectangleF(0.5f, i * Row + 1, Width - 1, Row - 2);
+            var rowBox = new RectangleF(0.5f, i * Row + 1, Width - 1, Row - 2);
             bool on = i == Selected;
-            Ui.Fill(g, r, 4 * DpiScale, on ? Theme.AccentBackground : Theme.Button, on ? Theme.Accent : Theme.Button);
-            var z = Zones[i];
-            using (var b = new SolidBrush(Color.FromArgb(z.MarkColor >> 16 & 0xFF, z.MarkColor >> 8 & 0xFF, z.MarkColor & 0xFF)))
-                g.FillRectangle(b, 7 * DpiScale, r.Y + (r.Height - 9 * DpiScale) / 2, 9 * DpiScale, 9 * DpiScale);
+            Ui.Fill(graphics, rowBox, 4 * DpiScale, on ? Theme.AccentBackground : Theme.Button, on ? Theme.Accent : Theme.Button);
+            var zone = Zones[i];
+            using (var brush = new SolidBrush(Color.FromArgb(zone.MarkColor >> 16 & 0xFF, zone.MarkColor >> 8 & 0xFF, zone.MarkColor & 0xFF)))
+                graphics.FillRectangle(brush, 7 * DpiScale, rowBox.Y + (rowBox.Height - 9 * DpiScale) / 2, 9 * DpiScale, 9 * DpiScale);
             float right = on && Zones.Count > 1 ? Row : 6 * DpiScale;
-            Ui.Draw(g, Count(i).ToString(), Ui.Get(8.25f, Ui.Regular), new RectangleF(0, r.Y, Width - right - 2 * DpiScale, r.Height), Theme.Dim, TextFormatFlags.Right | TextFormatFlags.VerticalCenter);
-            Ui.Draw(g, z.Name, font, new RectangleF(22 * DpiScale, r.Y, Width - 22 * DpiScale - right - 26 * DpiScale, r.Height), Theme.Text, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
-            if (on && Zones.Count > 1) Icons.Draw(g, "close", new RectangleF(Width - Row + 5 * DpiScale, r.Y + (r.Height - 12 * DpiScale) / 2, 12 * DpiScale, 12 * DpiScale), Theme.Dim);
+            Ui.Draw(graphics, Count(i).ToString(), Ui.Get(8.25f, Ui.Regular), new RectangleF(0, rowBox.Y, Width - right - 2 * DpiScale, rowBox.Height), Theme.Dim, TextFormatFlags.Right | TextFormatFlags.VerticalCenter);
+            Ui.Draw(graphics, zone.Name, font, new RectangleF(22 * DpiScale, rowBox.Y, Width - 22 * DpiScale - right - 26 * DpiScale, rowBox.Height), Theme.Text, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+            if (on && Zones.Count > 1) Icons.Draw(graphics, "close", new RectangleF(Width - Row + 5 * DpiScale, rowBox.Y + (rowBox.Height - 12 * DpiScale) / 2, 12 * DpiScale, 12 * DpiScale), Theme.Dim);
         }
         if (Focused && ShowFocusCues && Selected >= 0 && Selected < Zones.Count)
-            using (var pen = new Pen(Theme.Text, 1.5f * DpiScale)) g.DrawRectangle(pen, 1, Selected * Row + 1, Width - 3, Row - 3);
+            using (var pen = new Pen(Theme.Text, 1.5f * DpiScale)) graphics.DrawRectangle(pen, 1, Selected * Row + 1, Width - 3, Row - 3);
     }
 }

@@ -52,11 +52,11 @@ static class WindowHelpers
         }
     }
 
-    [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr h, int attr, ref int value, int size);
+    [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr window, int attribute, ref int value, int size);
     [DllImport("user32.dll")] static extern bool SetProcessDpiAwarenessContext(IntPtr context);
     [DllImport("user32.dll")] static extern bool SetProcessDPIAware();
-    [DllImport("user32.dll")] static extern IntPtr MonitorFromPoint(Point p, int flags);
-    [DllImport("shcore.dll")] static extern int GetDpiForMonitor(IntPtr monitor, int type, out uint x, out uint y);
+    [DllImport("user32.dll")] static extern IntPtr MonitorFromPoint(Point point, int flags);
+    [DllImport("shcore.dll")] static extern int GetDpiForMonitor(IntPtr monitor, int type, out uint dpiX, out uint dpiY);
 
     public static void EnableDpiAwareness()
     {
@@ -64,30 +64,30 @@ static class WindowHelpers
         try { SetProcessDPIAware(); } catch (EntryPointNotFoundException) { }
     }
 
-    public static float At(Point p)
+    public static float At(Point point)
     {
         try
         {
-            uint x, y;
-            if (GetDpiForMonitor(MonitorFromPoint(p, 2), 0, out x, out y) == 0) return x / 96f;
+            uint dpiX, dpiY;
+            if (GetDpiForMonitor(MonitorFromPoint(point, 2), 0, out dpiX, out dpiY) == 0) return dpiX / 96f;
         }
         catch (DllNotFoundException) { }
         catch (EntryPointNotFoundException) { }
-        using (var g = Graphics.FromHwnd(IntPtr.Zero)) return g.DpiX / 96f;
+        using (var graphics = Graphics.FromHwnd(IntPtr.Zero)) return graphics.DpiX / 96f;
     }
 
-    public static float FromMessage(Message m) { return (m.WParam.ToInt64() & 0xFFFF) / 96f; }
+    public static float FromMessage(Message message) { return (message.WParam.ToInt64() & 0xFFFF) / 96f; }
 
     public static Font PixelFont(float points, float scale, string face = "Segoe UI")
     {
         return new Font(face, points * 96f / 72f * scale, FontStyle.Regular, GraphicsUnit.Pixel);
     }
 
-    public static void Border(Form f, Color c)
+    public static void Border(Form form, Color color)
     {
-        if (!f.IsHandleCreated) return;
-        int v = c.R | c.G << 8 | c.B << 16;
-        try { DwmSetWindowAttribute(f.Handle, 34, ref v, 4); } catch (DllNotFoundException) { }
+        if (!form.IsHandleCreated) return;
+        int colorRef = color.R | color.G << 8 | color.B << 16;
+        try { DwmSetWindowAttribute(form.Handle, 34, ref colorRef, 4); } catch (DllNotFoundException) { }
     }
 
     public static bool Corners(IntPtr handle, Color border)
@@ -98,12 +98,12 @@ static class WindowHelpers
     }
 
     // corners: 2 rounds like a window, 3 like a tooltip or menu (DWMWCP_ROUNDSMALL).
-    public static void Round(Form f, int corners = 2)
+    public static void Round(Form form, int corners = 2)
     {
-        f.HandleCreated += (s, e) =>
+        form.HandleCreated += (s, e) =>
         {
             int round = corners, border = 0x3A3A3A;
-            try { Rounded = DwmSetWindowAttribute(f.Handle, 33, ref round, 4) == 0 && DwmSetWindowAttribute(f.Handle, 34, ref border, 4) == 0; }
+            try { Rounded = DwmSetWindowAttribute(form.Handle, 33, ref round, 4) == 0 && DwmSetWindowAttribute(form.Handle, 34, ref border, 4) == 0; }
             catch (DllNotFoundException) { }
         };
     }

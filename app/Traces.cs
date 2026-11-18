@@ -16,9 +16,9 @@ class TraceHost : Form
     {
         get
         {
-            var p = base.CreateParams;
-            p.ExStyle |= 0x08000000 | 0x80;
-            return p;
+            var createParams = base.CreateParams;
+            createParams.ExStyle |= 0x08000000 | 0x80;
+            return createParams;
         }
     }
 }
@@ -77,8 +77,8 @@ class Script : IDisposable
     {
         Do("pick " + name + " " + item, () =>
         {
-            var seg = All<SegmentedPicker>().FirstOrDefault(c => c.Visible && c.AccessibleName == name);
-            if (seg != null) { seg.Pick(Index(seg.Items.ToList(), item, name)); return; }
+            var picker = All<SegmentedPicker>().FirstOrDefault(control => control.Visible && control.AccessibleName == name);
+            if (picker != null) { picker.Pick(Index(picker.Items.ToList(), item, name)); return; }
             var drop = Find<Dropdown>(name);
             drop.Pick(Index(drop.Items, item, name));
         });
@@ -94,14 +94,14 @@ class Script : IDisposable
         });
     }
 
-    public void Type(string text) { Do("type " + text, () => All<TextField>().First(f => f.Visible).Box.Text = text); }
+    public void Type(string text) { Do("type " + text, () => All<TextField>().First(field => field.Visible).Box.Text = text); }
 
     public void Menu(string button, string item)
     {
         Do("menu " + button + " > " + item, () =>
         {
             ContextMenuStrip menu = null;
-            Ui.Popped = m => menu = m;
+            Ui.Popped = popped => menu = popped;
             try { Find<DrawnControl>(button).Press(); }
             finally { Ui.Popped = null; }
             if (menu == null) throw new InvalidOperationException(button + " didn't open a menu");
@@ -128,15 +128,15 @@ class Script : IDisposable
         stack.Push(Page);
         while (stack.Count > 0)
         {
-            var c = stack.Pop();
-            if (c is T) yield return (T)c;
-            foreach (Control child in c.Controls) stack.Push(child);
+            var control = stack.Pop();
+            if (control is T) yield return (T)control;
+            foreach (Control child in control.Controls) stack.Push(child);
         }
     }
 
     T Find<T>(string name) where T : Control
     {
-        var found = All<T>().Where(c => c.Visible && (c.AccessibleName == name || c.Text == name)).ToList();
+        var found = All<T>().Where(control => control.Visible && (control.AccessibleName == name || control.Text == name)).ToList();
         if (found.Count == 0) throw new InvalidOperationException("no " + name + " on the screen");
         if (found.Count > 1) throw new InvalidOperationException(found.Count + " controls named " + name + " on the screen");
         return found[0];
@@ -154,35 +154,35 @@ class Script : IDisposable
             Application.DoEvents();
             Thread.Sleep(5);
             queue = ((IPage)Page).Queue;
-            int n;
-            lock (gate) n = lines.Count;
-            if (n != count || !queue.IsCompleted || page != null && page.Busy) { count = n; still = DateTime.UtcNow; }
+            int lineCount;
+            lock (gate) lineCount = lines.Count;
+            if (lineCount != count || !queue.IsCompleted || page != null && page.Busy) { count = lineCount; still = DateTime.UtcNow; }
             else if ((DateTime.UtcNow - still).TotalMilliseconds > 150) return;
             if (DateTime.UtcNow > end) throw new TimeoutException("the screen didn't settle");
         }
     }
 
-    Point Where(Control c)
+    Point Where(Control control)
     {
-        var p = Point.Empty;
-        for (var x = c; x != null && x != Page; x = x.Parent) p.Offset(x.Left, x.Top);
-        return p;
+        var offset = Point.Empty;
+        for (var ancestor = control; ancestor != null && ancestor != Page; ancestor = ancestor.Parent) offset.Offset(ancestor.Left, ancestor.Top);
+        return offset;
     }
 
     string State()
     {
         var parts = new List<string>();
-        var status = All<StatusLine>().FirstOrDefault(s => s.Visible);
+        var status = All<StatusLine>().FirstOrDefault(line => line.Visible);
         parts.Add("status " + (status == null ? "-" : "\"" + status.Shown + "\""));
-        foreach (var c in All<Control>().Where(c => c.Visible).OrderBy(c => Where(c).Y).ThenBy(c => Where(c).X))
+        foreach (var control in All<Control>().Where(control => control.Visible).OrderBy(control => Where(control).Y).ThenBy(control => Where(control).X))
         {
-            string off = c.Enabled ? "" : " (off)";
-            if (c is FlatButton && c.Text != "") parts.Add("[" + c.Text + off + "]");
-            else if (c is SegmentedPicker) { var s = (SegmentedPicker)c; parts.Add(c.AccessibleName + "=" + (s.Index >= 0 && s.Index < s.Items.Length ? s.Items[s.Index] : "-") + off + (s.Off.Length == 0 ? "" : " (no " + string.Join(", ", s.Off.Where(i => i >= 0 && i < s.Items.Length).Select(i => s.Items[i])) + ")")); }
-            else if (c is Dropdown) parts.Add(c.AccessibleName + "=" + (c.AccessibleName == "Monitor" ? "<monitor>" : c.Text == "" ? "-" : c.Text) + off);
-            else if (c is Slider) parts.Add(c.AccessibleName + "=" + ((Slider)c).Value + off);
-            else if (c is Toggle) parts.Add(c.AccessibleName + "=" + (((Toggle)c).Checked ? "on" : "off") + off);
-            else if (c is Swatch && ((Swatch)c).On) parts.Add("<" + c.AccessibleName + ">");
+            string disabled = control.Enabled ? "" : " (off)";
+            if (control is FlatButton && control.Text != "") parts.Add("[" + control.Text + disabled + "]");
+            else if (control is SegmentedPicker) { var picker = (SegmentedPicker)control; parts.Add(control.AccessibleName + "=" + (picker.Index >= 0 && picker.Index < picker.Items.Length ? picker.Items[picker.Index] : "-") + disabled + (picker.Off.Length == 0 ? "" : " (no " + string.Join(", ", picker.Off.Where(i => i >= 0 && i < picker.Items.Length).Select(i => picker.Items[i])) + ")")); }
+            else if (control is Dropdown) parts.Add(control.AccessibleName + "=" + (control.AccessibleName == "Monitor" ? "<monitor>" : control.Text == "" ? "-" : control.Text) + disabled);
+            else if (control is Slider) parts.Add(control.AccessibleName + "=" + ((Slider)control).Value + disabled);
+            else if (control is Toggle) parts.Add(control.AccessibleName + "=" + (((Toggle)control).Checked ? "on" : "off") + disabled);
+            else if (control is Swatch && ((Swatch)control).On) parts.Add("<" + control.AccessibleName + ">");
         }
         return NormalizeForTrace(string.Join(" ", parts));
     }
@@ -232,36 +232,36 @@ static class Traces
         var device = new FakeHidpp();
         var found = new FoundDevice { Key = "trace|g515", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40B4, Features = Keyboard };
         Page515 page = null;
-        using (var s = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, device, null)))
+        using (var script = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, device, null)))
         {
-            s.Pick("Effect", "Static");
-            s.Press("Color FF2020");
-            s.Slide("Brightness", 40);
-            s.Pick("Effect", "Breathe");
-            s.Slide("Speed", 30);
-            s.Press("Revert changes");
-            s.Pick("Effect", "Static");
-            s.Press("Color 3080FF");
-            s.Pick("Dim after", "1 min");
-            s.Press("Save to keyboard");
-            s.Menu("More preset actions", "Save as new preset…");
-            s.Type("Night");
-            s.Press("Save");
-            s.Press("Color FFD000");
-            s.Pick("Preset", "None");
-            s.Pick("Preset", "Night");
-            s.Press("Update");
-            s.Pick("Effect", "Wave");
-            s.Do("idle 70 s", () => { WindowHelpers.TestIdle = 70; page.Watch(); });
-            s.Do("idle 4000 s", () => { WindowHelpers.TestIdle = 4000; page.Watch(); });
-            s.Do("back", () => { WindowHelpers.TestIdle = 0; page.Watch(); });
-            s.Do("lock", () => Presence.Set(true, false));
-            s.Do("unlock", () => Presence.Set(false, false));
-            s.Do("power cycle", () => { device.PowerCycle(); for (int i = 0; i < 6; i++) page.Watch(); });
-            s.Menu("Backups", "Restore the factory lighting");
-            s.Pick("Effect", "Cycle");
-            s.Do("quit", () => page.Exiting());
-            return s.Text;
+            script.Pick("Effect", "Static");
+            script.Press("Color FF2020");
+            script.Slide("Brightness", 40);
+            script.Pick("Effect", "Breathe");
+            script.Slide("Speed", 30);
+            script.Press("Revert changes");
+            script.Pick("Effect", "Static");
+            script.Press("Color 3080FF");
+            script.Pick("Dim after", "1 min");
+            script.Press("Save to keyboard");
+            script.Menu("More preset actions", "Save as new preset…");
+            script.Type("Night");
+            script.Press("Save");
+            script.Press("Color FFD000");
+            script.Pick("Preset", "None");
+            script.Pick("Preset", "Night");
+            script.Press("Update");
+            script.Pick("Effect", "Wave");
+            script.Do("idle 70 s", () => { WindowHelpers.TestIdle = 70; page.Watch(); });
+            script.Do("idle 4000 s", () => { WindowHelpers.TestIdle = 4000; page.Watch(); });
+            script.Do("back", () => { WindowHelpers.TestIdle = 0; page.Watch(); });
+            script.Do("lock", () => Presence.Set(true, false));
+            script.Do("unlock", () => Presence.Set(false, false));
+            script.Do("power cycle", () => { device.PowerCycle(); for (int i = 0; i < 6; i++) page.Watch(); });
+            script.Menu("Backups", "Restore the factory lighting");
+            script.Pick("Effect", "Cycle");
+            script.Do("quit", () => page.Exiting());
+            return script.Text;
         }
     }
 
@@ -269,25 +269,25 @@ static class Traces
     {
         var found = new FoundDevice { Key = "trace|g915", Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x408E, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 } };
         Page515 page = null;
-        using (var s = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, new FakeG915(), null)))
+        using (var script = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, new FakeG915(), null)))
         {
-            s.Pick("Effect", "Static");
-            s.Press("Color 30D050");
-            s.Slide("Brightness", 50);
-            s.Menu("More preset actions", "Save as new preset…");
-            s.Type("Green");
-            s.Press("Save");
-            s.Pick("Effect", "Breathe");
-            s.Pick("Preset", "None");
-            s.Pick("Preset", "Green");
-            s.Pick("Dim after", "15 s");
-            s.Pick("Turn off after", "10 min");
-            s.Press("Save to keyboard");
-            s.Pick("Effect", "Wave");
-            s.Press("Revert");
-            s.Menu("Backups", "Restore the factory lighting");
-            s.Do("quit", () => page.Exiting());
-            return s.Text;
+            script.Pick("Effect", "Static");
+            script.Press("Color 30D050");
+            script.Slide("Brightness", 50);
+            script.Menu("More preset actions", "Save as new preset…");
+            script.Type("Green");
+            script.Press("Save");
+            script.Pick("Effect", "Breathe");
+            script.Pick("Preset", "None");
+            script.Pick("Preset", "Green");
+            script.Pick("Dim after", "15 s");
+            script.Pick("Turn off after", "10 min");
+            script.Press("Save to keyboard");
+            script.Pick("Effect", "Wave");
+            script.Press("Revert");
+            script.Menu("Backups", "Restore the factory lighting");
+            script.Do("quit", () => page.Exiting());
+            return script.Text;
         }
     }
 
@@ -295,28 +295,28 @@ static class Traces
     {
         var found = new FoundDevice { Key = "trace|g512x", Name = "G512 X 75", Kind = "keyboard", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x8071, 0x8081, 0x8040, 0x8101, 0x4540 } };
         Page515 page = null;
-        using (var s = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, FakeG915.G512X(), null)))
+        using (var script = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, FakeG915.G512X(), null)))
         {
-            s.Pick("Effect", "Static");
-            s.Press("Color 30D050");
-            s.Pick("Effect", "Wave");
-            s.Pick("Effect", "Ripple");
-            s.Slide("Brightness", 50);
-            s.Press("Lighting per zone");
-            s.Pick("Part", "Light bar");
-            s.Pick("Effect", "Breathe");
-            s.Press("Color FF2020");
-            s.Pick("Part", "Keys");
-            s.Pick("Effect", "Cycle");
-            s.Menu("More preset actions", "Save as new preset…");
-            s.Type("Split");
-            s.Press("Save");
-            s.Slide("Brightness", 70);
-            s.Press("Revert changes");
-            s.Press("Lighting per zone");
-            s.Press("Revert changes");
-            s.Do("quit", () => page.Exiting());
-            return s.Text;
+            script.Pick("Effect", "Static");
+            script.Press("Color 30D050");
+            script.Pick("Effect", "Wave");
+            script.Pick("Effect", "Ripple");
+            script.Slide("Brightness", 50);
+            script.Press("Lighting per zone");
+            script.Pick("Part", "Light bar");
+            script.Pick("Effect", "Breathe");
+            script.Press("Color FF2020");
+            script.Pick("Part", "Keys");
+            script.Pick("Effect", "Cycle");
+            script.Menu("More preset actions", "Save as new preset…");
+            script.Type("Split");
+            script.Press("Save");
+            script.Slide("Brightness", 70);
+            script.Press("Revert changes");
+            script.Press("Lighting per zone");
+            script.Press("Revert changes");
+            script.Do("quit", () => page.Exiting());
+            return script.Text;
         }
     }
 
@@ -324,88 +324,88 @@ static class Traces
     {
         var found = new FoundDevice { Key = "trace|prox60", Name = "PRO X 60", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } };
         Page515 page = null;
-        using (var s = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, FakeG915.G512X(), null)))
+        using (var script = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, FakeG915.G512X(), null)))
         {
-            s.Pick("Effect", "Static");
-            s.Press("Color 30D050");
-            s.Pick("Effect", "Wave");
-            s.Slide("Brightness", 50);
-            s.Do("quit", () => page.Exiting());
-            return s.Text;
+            script.Pick("Effect", "Static");
+            script.Press("Color 30D050");
+            script.Pick("Effect", "Wave");
+            script.Slide("Brightness", 50);
+            script.Do("quit", () => page.Exiting());
+            return script.Text;
         }
     }
 
     static string G512()
     {
         var found = new FoundDevice { Key = "trace|g512", Name = "G512 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8060, 0x8070, 0x8080 } };
-        using (var s = Begin(() => DeviceTable.For(found).Make(found, new FakeSpeaker { Count = 2 }, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeSpeaker { Count = 2 }, null)))
         {
-            s.Pick("Effect", "Static");
-            s.Press("Color 30D050");
-            s.Slide("Brightness", 50);
-            s.Pick("Zone", "Logo");
-            s.Pick("Effect", "Breathe");
-            s.Slide("Speed", 80);
-            s.Pick("Zone", "All");
-            s.Pick("Effect", "Cycle");
-            s.Pick("Effect", "Off");
-            return s.Text;
+            script.Pick("Effect", "Static");
+            script.Press("Color 30D050");
+            script.Slide("Brightness", 50);
+            script.Pick("Zone", "Logo");
+            script.Pick("Effect", "Breathe");
+            script.Slide("Speed", 80);
+            script.Pick("Zone", "All");
+            script.Pick("Effect", "Cycle");
+            script.Pick("Effect", "Off");
+            return script.Text;
         }
     }
 
     static string G213()
     {
         var found = new FoundDevice { Key = "trace|g213", Name = "Gaming Keyboard G213", Kind = "keyboard", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x1E00, 0x4540, 0x1EB0, 0x8060, 0x00C2, 0x1801, 0x1802, 0x8070, 0x1821, 0x1BC0, 0x1806 } };
-        using (var s = Begin(() => DeviceTable.For(found).Make(found, new FakeSpeaker { Count = 6, G213 = true }, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeSpeaker { Count = 6, G213 = true }, null)))
         {
-            s.Pick("Effect", "Static");
-            s.Press("Color 30D050");
-            s.Pick("Zone", "Zone 3");
-            s.Press("Color 3080FF");
-            s.Pick("Effect", "Off");
-            s.Pick("Zone", "All");
-            s.Pick("Effect", "Breathe");
-            s.Pick("Effect", "Cycle");
-            s.Pick("Effect", "Wave");
-            s.Pick("Direction", "Center out");
-            s.Slide("Speed", 50);
-            s.Pick("Zone", "Zone 2");
-            s.Pick("Effect", "Static");
-            s.Press("Color FF2020");
-            s.Pick("Zone", "All");
-            s.Pick("Effect", "Breathe");
-            s.Pick("Zone", "Zone 4");
-            s.Pick("Effect", "Off");
-            s.Pick("Zone", "All");
-            s.Pick("Effect", "Breathe");
-            s.Pick("Zone", "Zone 2");
-            s.Press("Color 3080FF");
-            s.Menu("More preset actions", "Save as new preset…");
-            s.Type("Wave");
-            s.Press("Save");
-            return s.Text;
+            script.Pick("Effect", "Static");
+            script.Press("Color 30D050");
+            script.Pick("Zone", "Zone 3");
+            script.Press("Color 3080FF");
+            script.Pick("Effect", "Off");
+            script.Pick("Zone", "All");
+            script.Pick("Effect", "Breathe");
+            script.Pick("Effect", "Cycle");
+            script.Pick("Effect", "Wave");
+            script.Pick("Direction", "Center out");
+            script.Slide("Speed", 50);
+            script.Pick("Zone", "Zone 2");
+            script.Pick("Effect", "Static");
+            script.Press("Color FF2020");
+            script.Pick("Zone", "All");
+            script.Pick("Effect", "Breathe");
+            script.Pick("Zone", "Zone 4");
+            script.Pick("Effect", "Off");
+            script.Pick("Zone", "All");
+            script.Pick("Effect", "Breathe");
+            script.Pick("Zone", "Zone 2");
+            script.Press("Color 3080FF");
+            script.Menu("More preset actions", "Save as new preset…");
+            script.Type("Wave");
+            script.Press("Save");
+            return script.Text;
         }
     }
 
     static string G510()
     {
         var found = new FoundDevice { Key = "trace|g510", Name = "G510s Gaming Keyboard", Kind = "keyboard", Link = "USB", Index = 0xFF, PlainHid = true, HasVendorCollection = true, Path = @"\\?\hid#vid_046d&pid_c22d&mi_01&col02" };
-        using (var s = Begin(() => DeviceTable.For(found).Make(found, new FakeG510(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeG510(), null)))
         {
-            s.Press("Color FF2020");
-            s.Slide("Brightness", 50);
-            s.Pick("Effect", "Off");
-            s.Pick("Effect", "Static");
-            s.Menu("More preset actions", "Save as new preset…");
-            s.Type("Red");
-            s.Press("Save");
-            s.Press("Color 3080FF");
-            s.Pick("Effect", "Breathe");
-            s.Slide("Speed", 50);
-            s.Pick("Effect", "Cycle");
-            s.Pick("Effect", "Static");
-            s.Pick("Preset", "None");
-            return s.Text;
+            script.Press("Color FF2020");
+            script.Slide("Brightness", 50);
+            script.Pick("Effect", "Off");
+            script.Pick("Effect", "Static");
+            script.Menu("More preset actions", "Save as new preset…");
+            script.Type("Red");
+            script.Press("Save");
+            script.Press("Color 3080FF");
+            script.Pick("Effect", "Breathe");
+            script.Slide("Speed", 50);
+            script.Pick("Effect", "Cycle");
+            script.Pick("Effect", "Static");
+            script.Pick("Preset", "None");
+            return script.Text;
         }
     }
 
@@ -413,33 +413,33 @@ static class Traces
     {
         var found = new FoundDevice { Key = "trace|g560", Name = "G560 Gaming Speaker", Kind = "device", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 } };
         string text;
-        using (var s = Begin(() => DeviceTable.For(found).Make(found, new FakeSpeaker(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeSpeaker(), null)))
         {
-            s.Pick("Effect", "Static");
-            s.Press("Color 30D050");
-            s.Slide("Brightness", 50);
-            s.Pick("Effect", "Breathe");
-            s.Slide("Speed", 80);
-            s.Menu("More preset actions", "Save as new preset…");
-            s.Type("Green");
-            s.Press("Save");
-            s.Pick("Zone", "Bottom right");
-            s.Pick("Effect", "Static");
-            s.Press("Color 3080FF");
-            s.Pick("Zone", "All");
-            s.Pick("Effect", "Cycle");
-            s.Pick("Effect", "Off");
-            s.Pick("Preset", "None");
-            s.Pick("Preset", "Green");
-            s.Pick("Effect", "Screen");
-            s.Press("Update");
-            s.Slide("Color boost", 80);
-            s.Press("Revert changes");
-            s.Pick("Preset", "None");
-            s.Pick("Preset", "Green");
-            s.Pick("Effect", "Static");
-            s.Press("Revert changes");
-            text = s.Text;
+            script.Pick("Effect", "Static");
+            script.Press("Color 30D050");
+            script.Slide("Brightness", 50);
+            script.Pick("Effect", "Breathe");
+            script.Slide("Speed", 80);
+            script.Menu("More preset actions", "Save as new preset…");
+            script.Type("Green");
+            script.Press("Save");
+            script.Pick("Zone", "Bottom right");
+            script.Pick("Effect", "Static");
+            script.Press("Color 3080FF");
+            script.Pick("Zone", "All");
+            script.Pick("Effect", "Cycle");
+            script.Pick("Effect", "Off");
+            script.Pick("Preset", "None");
+            script.Pick("Preset", "Green");
+            script.Pick("Effect", "Screen");
+            script.Press("Update");
+            script.Slide("Color boost", 80);
+            script.Press("Revert changes");
+            script.Pick("Preset", "None");
+            script.Pick("Preset", "Green");
+            script.Pick("Effect", "Static");
+            script.Press("Revert changes");
+            text = script.Text;
         }
         return text + Restart(found, () => new FakeSpeaker());
     }
@@ -449,52 +449,52 @@ static class Traces
     static string Restart(FoundDevice found, Func<Hidpp> device)
     {
         string text;
-        using (var s = Begin(() => DeviceTable.For(found).Make(found, device(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device(), null)))
         {
-            s.Pick("Effect", "Static");
-            s.Press("Update");
-            text = "restart\n" + s.Text;
+            script.Pick("Effect", "Static");
+            script.Press("Update");
+            text = "restart\n" + script.Text;
         }
-        using (var s = Begin(() => DeviceTable.For(found).Make(found, device(), null)))
-            return text + "restart\n" + s.Text;
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device(), null)))
+            return text + "restart\n" + script.Text;
     }
 
     static string Litra()
     {
         var found = new FoundDevice { Key = "trace|litra", Name = "Litra Beam LX", Kind = "light", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1990, 0x8040, 0x8071, 0x8081 } };
         string text;
-        using (var s = Begin(() => DeviceTable.For(found).Make(found, new FakeLight(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeLight(), null)))
         {
-            s.Press("Front light on");
-            s.Slide("Front brightness", 50);
-            s.Slide("Color temperature", 10);
-            s.Slide("Back brightness", 40);
-            s.Press("Color FF2020");
-            s.Pick("Zone", "3");
-            s.Press("Color 3080FF");
-            s.Menu("More preset actions", "Save as new preset…");
-            s.Type("Desk");
-            s.Press("Save");
-            s.Press("Back light on");
-            s.Pick("Zone", "All");
-            s.Press("Color FFFFFF");
-            s.Press("Revert changes");
-            s.Pick("Effect", "Breathe");
-            s.Slide("Speed", 80);
-            s.Pick("Effect", "Wave");
-            s.Menu("Try the light's own effects", "Group 0: Breathe");
-            s.Menu("Try the light's own effects", "Group 1: Smooth colour wave");
-            s.Menu("Try the light's own effects", "Back to G-Lite's colours");
-            s.Pick("Effect", "Static");
-            s.Pick("Effect", "Screen");
-            s.Press("Update");
-            s.Slide("Color boost", 80);
-            s.Press("Revert changes");
-            s.Pick("Preset", "None");
-            s.Pick("Preset", "Desk");
-            s.Pick("Effect", "Static");
-            s.Press("Revert changes");
-            text = s.Text;
+            script.Press("Front light on");
+            script.Slide("Front brightness", 50);
+            script.Slide("Color temperature", 10);
+            script.Slide("Back brightness", 40);
+            script.Press("Color FF2020");
+            script.Pick("Zone", "3");
+            script.Press("Color 3080FF");
+            script.Menu("More preset actions", "Save as new preset…");
+            script.Type("Desk");
+            script.Press("Save");
+            script.Press("Back light on");
+            script.Pick("Zone", "All");
+            script.Press("Color FFFFFF");
+            script.Press("Revert changes");
+            script.Pick("Effect", "Breathe");
+            script.Slide("Speed", 80);
+            script.Pick("Effect", "Wave");
+            script.Menu("Try the light's own effects", "Group 0: Breathe");
+            script.Menu("Try the light's own effects", "Group 1: Smooth colour wave");
+            script.Menu("Try the light's own effects", "Back to G-Lite's colours");
+            script.Pick("Effect", "Static");
+            script.Pick("Effect", "Screen");
+            script.Press("Update");
+            script.Slide("Color boost", 80);
+            script.Press("Revert changes");
+            script.Pick("Preset", "None");
+            script.Pick("Preset", "Desk");
+            script.Pick("Effect", "Static");
+            script.Press("Revert changes");
+            text = script.Text;
         }
         return text + Restart(found, () => new FakeLight());
     }
@@ -503,89 +503,89 @@ static class Traces
     {
         var found = new FoundDevice { Key = "trace|mxmaster", Name = "MX Master 3S", Kind = "mouse", Link = "Bolt receiver", Index = 2, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x2110, 0x2121, 0x2150, 0x2201 } };
         string first;
-        using (var s = Begin(() => DeviceTable.For(found).Make(found, new FakeOther(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeOther(), null)))
         {
-            s.Slide("Speed", 36);
-            s.Slide("Switch to free spin at", 19);
-            s.Press("SmartShift");
-            s.Press("Invert scrolling");
-            s.Press("Invert the thumb wheel");
-            s.Menu("More preset actions", "Save as new preset…");
-            s.Type("Work");
-            s.Press("Save");
-            s.Press("SmartShift");
-            s.Press("Revert changes");
-            s.Pick("Computer", "3: –");
-            s.Pick("Computer", "2: MacBook");
-            s.Press("Switch");
-            first = s.Text;
+            script.Slide("Speed", 36);
+            script.Slide("Switch to free spin at", 19);
+            script.Press("SmartShift");
+            script.Press("Invert scrolling");
+            script.Press("Invert the thumb wheel");
+            script.Menu("More preset actions", "Save as new preset…");
+            script.Type("Work");
+            script.Press("Save");
+            script.Press("SmartShift");
+            script.Press("Revert changes");
+            script.Pick("Computer", "3: –");
+            script.Pick("Computer", "2: MacBook");
+            script.Press("Switch");
+            first = script.Text;
         }
-        using (var s = Begin(() => DeviceTable.For(found).Make(found, new FakeOther(), null)))
-            return first + "reopen on a device that forgot\n" + s.Text;
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeOther(), null)))
+            return first + "reopen on a device that forgot\n" + script.Text;
     }
 
     static string MxKeys()
     {
         var found = new FoundDevice { Key = "trace|mxkeys", Name = "MX Keys S", Kind = "keyboard", Link = "Bolt receiver", Index = 3, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x1982, 0x40A3 } };
-        using (var s = Begin(() => DeviceTable.For(found).Make(found, new FakeOther(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeOther(), null)))
         {
-            s.Slide("Level", 5);
-            s.Press("Automatic");
-            s.Press("Backlight");
-            s.Press("Backlight");
-            s.Press("Automatic");
-            s.Pick("Fades after, hands away", "2 min");
-            s.Pick("Fades after, plugged in", "1 h");
-            s.Press("Revert changes");
-            return s.Text;
+            script.Slide("Level", 5);
+            script.Press("Automatic");
+            script.Press("Backlight");
+            script.Press("Backlight");
+            script.Press("Automatic");
+            script.Pick("Fades after, hands away", "2 min");
+            script.Pick("Fades after, plugged in", "1 h");
+            script.Press("Revert changes");
+            return script.Text;
         }
     }
 
     static string Keypad()
     {
         var found = new FoundDevice { Key = "trace|keypad", Name = "MX Creative Keypad", Kind = "device", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1B04, 0x8040 } };
-        using (var s = Begin(() => DeviceTable.For(found).Make(found, new FakeOther(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeOther(), null)))
         {
-            s.Slide("Brightness", 40);
-            s.Press("Revert changes");
-            return s.Text;
+            script.Slide("Brightness", 40);
+            script.Press("Revert changes");
+            return script.Text;
         }
     }
 
     static string Mouse(string name, FakeMouse device, int[] features)
     {
         var found = new FoundDevice { Key = "trace|" + name, Name = name, Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x4079, Features = features };
-        using (var s = Begin(() => DeviceTable.For(found).Make(found, device, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device, null)))
         {
-            s.Slide("DPI", 20);
-            s.Pick("DPI stage", "400");
-            s.Pick("Effect", "Static");
-            s.Press("Color FFD000");
-            s.Slide("Brightness", 60);
-            s.Pick("Report rate", "500");
-            s.Press("Save to mouse");
-            s.Pick("Effect", "Breathe");
-            s.Press("Revert changes");
-            s.Menu("More preset actions", "Save as new preset…");
-            s.Type("Work");
-            s.Press("Save");
-            s.Pick("DPI stage", "3200");
-            s.Press("Update");
-            s.Pick("Preset", "None");
-            s.Menu("Backups", "Restore the factory profile");
-            return s.Text;
+            script.Slide("DPI", 20);
+            script.Pick("DPI stage", "400");
+            script.Pick("Effect", "Static");
+            script.Press("Color FFD000");
+            script.Slide("Brightness", 60);
+            script.Pick("Report rate", "500");
+            script.Press("Save to mouse");
+            script.Pick("Effect", "Breathe");
+            script.Press("Revert changes");
+            script.Menu("More preset actions", "Save as new preset…");
+            script.Type("Work");
+            script.Press("Save");
+            script.Pick("DPI stage", "3200");
+            script.Press("Update");
+            script.Pick("Preset", "None");
+            script.Menu("Backups", "Restore the factory profile");
+            return script.Text;
         }
     }
 
     static string TraceWideDpiMouse()
     {
         var found = new FoundDevice { Key = "trace|superlight2", Name = "PRO X SUPERLIGHT 2", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40A9, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2202, 0x8061, 0x8100 } };
-        using (var s = Begin(() => DeviceTable.For(found).Make(found, FakeMouse.ProX2(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, FakeMouse.ProX2(), null)))
         {
-            s.Slide("DPI", 20);
-            s.Pick("DPI stage", "1600");
-            s.Pick("DPI stage", "400");
-            return s.Text;
+            script.Slide("DPI", 20);
+            script.Pick("DPI stage", "1600");
+            script.Pick("DPI stage", "400");
+            return script.Text;
         }
     }
 
@@ -594,15 +594,15 @@ static class Traces
         var device = new FakeMouse { Wheel = true };
         var found = new FoundDevice { Key = "trace|wheel", Name = "G502 LIGHTSPEED Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x407F, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2121, 0x2201, 0x8060, 0x8070, 0x8100 } };
         PageMouse page = null;
-        using (var s = Begin(() => page = (PageMouse)DeviceTable.For(found).Make(found, device, null)))
+        using (var script = Begin(() => page = (PageMouse)DeviceTable.For(found).Make(found, device, null)))
         {
-            s.Do("watch, off", () => page.Watch());
-            s.Press("Invert scrolling");
-            s.Do("watch, on", () => page.Watch());
-            s.Do("power cycle, then watch", () => { device.WheelMode = 0; page.Watch(); });
-            s.Press("Invert scrolling");
-            s.Do("watch, off", () => page.Watch());
-            return s.Text;
+            script.Do("watch, off", () => page.Watch());
+            script.Press("Invert scrolling");
+            script.Do("watch, on", () => page.Watch());
+            script.Do("power cycle, then watch", () => { device.WheelMode = 0; page.Watch(); });
+            script.Press("Invert scrolling");
+            script.Do("watch, off", () => page.Watch());
+            return script.Text;
         }
     }
 
@@ -611,65 +611,65 @@ static class Traces
         var device = FakeMouse.G502();
         var found = new FoundDevice { Key = "trace|buttons", Name = "G502 LIGHTSPEED Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x407F, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2121, 0x2201, 0x8060, 0x8070, 0x8100, 0x8110 } };
         PageMouse page = null;
-        using (var s = Begin(() => page = (PageMouse)DeviceTable.For(found).Make(found, device, null)))
+        using (var script = Begin(() => page = (PageMouse)DeviceTable.For(found).Make(found, device, null)))
         {
-            s.Pick("View", "Buttons");
-            s.Do("G7 pressed on the mouse", () => page.Pressed(0x0040));
-            s.Pick("G7", "Next profile");
-            s.Pick("Thumb, front", "Keystroke…");
-            s.Do("keys Ctrl + Shift + M", () => page.Recorded(Keys.Control | Keys.Shift | Keys.M));
-            s.Press("Save to mouse");
-            s.Pick("G8", "Disabled");
-            s.Press("Revert changes");
-            s.Menu("More preset actions", "Save as new preset…");
-            s.Type("Keys");
-            s.Press("Save");
-            s.Pick("G9", "Mute");
-            s.Pick("View", "Settings");
-            s.Pick("Report rate", "250");
-            s.Press("Revert changes");
-            s.Pick("Preset", "None");
-            s.Pick("Report rate", "500");
-            s.Press("Save to mouse");
-            s.Pick("Preset", "Keys");
-            s.Pick("View", "Buttons");
-            s.Pick("Left button", "Back");
-            s.Pick("Thumb, back", "Left click");
-            s.Press("Save to mouse");
-            return s.Text;
+            script.Pick("View", "Buttons");
+            script.Do("G7 pressed on the mouse", () => page.Pressed(0x0040));
+            script.Pick("G7", "Next profile");
+            script.Pick("Thumb, front", "Keystroke…");
+            script.Do("keys Ctrl + Shift + M", () => page.Recorded(Keys.Control | Keys.Shift | Keys.M));
+            script.Press("Save to mouse");
+            script.Pick("G8", "Disabled");
+            script.Press("Revert changes");
+            script.Menu("More preset actions", "Save as new preset…");
+            script.Type("Keys");
+            script.Press("Save");
+            script.Pick("G9", "Mute");
+            script.Pick("View", "Settings");
+            script.Pick("Report rate", "250");
+            script.Press("Revert changes");
+            script.Pick("Preset", "None");
+            script.Pick("Report rate", "500");
+            script.Press("Save to mouse");
+            script.Pick("Preset", "Keys");
+            script.Pick("View", "Buttons");
+            script.Pick("Left button", "Back");
+            script.Pick("Thumb, back", "Left click");
+            script.Press("Save to mouse");
+            return script.Text;
         }
     }
 
     static string G9x()
     {
         var found = new FoundDevice { Key = "trace|g9x", Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04" };
-        using (var s = Begin(() => DeviceTable.For(found).Make(found, new FakeG9x(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeG9x(), null)))
         {
-            s.Slide("DPI", 30);
-            s.Pick("Effect", "Static");
-            s.Press("Color 3080FF");
-            s.Pick("Report rate", "500");
-            s.Press("Save to mouse");
-            s.Pick("Effect", "Off");
-            s.Press("Revert changes");
-            return s.Text;
+            script.Slide("DPI", 30);
+            script.Pick("Effect", "Static");
+            script.Press("Color 3080FF");
+            script.Pick("Report rate", "500");
+            script.Press("Save to mouse");
+            script.Pick("Effect", "Off");
+            script.Press("Revert changes");
+            return script.Text;
         }
     }
 
     static string Headset()
     {
         var found = new FoundDevice { Key = "trace|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "LIGHTSPEED", Index = 0xFF, Path = @"\\?\hid#vid_046d&pid_0aba&mi_03&col01", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300 } };
-        using (var s = Begin(() => DeviceTable.For(found).Make(found, new FakeHeadset(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeHeadset(), null)))
         {
-            s.Slide("Sidetone", 40);
-            s.Pick("Turn off after", "30 min");
-            s.Menu("More preset actions", "Save as new preset…");
-            s.Type("Calls");
-            s.Press("Save");
-            s.Slide("Sidetone", 10);
-            s.Press("Revert changes");
-            s.Pick("Preset", "None");
-            return s.Text;
+            script.Slide("Sidetone", 40);
+            script.Pick("Turn off after", "30 min");
+            script.Menu("More preset actions", "Save as new preset…");
+            script.Type("Calls");
+            script.Press("Save");
+            script.Slide("Sidetone", 10);
+            script.Press("Revert changes");
+            script.Pick("Preset", "None");
+            return script.Text;
         }
     }
 
@@ -703,26 +703,26 @@ static class Traces
         try { if (Directory.Exists(Backups.Root)) Directory.Delete(Backups.Root, true); } catch (Exception) { }
     }
 
-    public static List<string> Run(string dir, bool record)
+    public static List<string> Run(string folder, bool record)
     {
         Script.Timing = Environment.GetEnvironmentVariable("GLITE_TIMING") == "1";
         var failures = new List<string>();
-        Directory.CreateDirectory(dir);
+        Directory.CreateDirectory(folder);
         foreach (var trace in All())
         {
             Fresh();
             var began = DateTime.UtcNow;
             string text;
             try { text = trace.Value(); }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                failures.Add(trace.Key + ": " + e.GetType().Name + ": " + e.Message);
-                if (last != null) File.WriteAllText(Path.Combine(dir, trace.Key + ".fail.txt"), last.Text);
+                failures.Add(trace.Key + ": " + ex.GetType().Name + ": " + ex.Message);
+                if (last != null) File.WriteAllText(Path.Combine(folder, trace.Key + ".fail.txt"), last.Text);
                 continue;
             }
             finally { DeleteTestFiles(); }
             if (Script.Timing) Console.WriteLine(trace.Key + " " + (int)(DateTime.UtcNow - began).TotalMilliseconds + " ms");
-            var file = Path.Combine(dir, trace.Key + ".txt");
+            var file = Path.Combine(folder, trace.Key + ".txt");
             if (record) { File.WriteAllText(file, text); continue; }
             if (!File.Exists(file)) { failures.Add(trace.Key + ": nothing recorded yet, run build\\selftest.exe --record"); continue; }
             var want = File.ReadAllText(file).Replace("\r\n", "\n").Split('\n');

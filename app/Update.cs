@@ -30,36 +30,36 @@ static class Updater
     public static string TagFrom(string location)
     {
         if (location == null) return null;
-        int i = location.LastIndexOf("/tag/");
-        return i < 0 ? null : location.Substring(i + 5);
+        int tagAt = location.LastIndexOf("/tag/");
+        return tagAt < 0 ? null : location.Substring(tagAt + 5);
     }
 
-    public static bool IsNewerVersion(string a, string b)
+    public static bool IsNewerVersion(string version, string other)
     {
-        a = a.TrimStart('v');
-        b = b.TrimStart('v');
-        int ia = a.IndexOf('-'), ib = b.IndexOf('-');
-        var va = new Version(ia < 0 ? a : a.Substring(0, ia));
-        var vb = new Version(ib < 0 ? b : b.Substring(0, ib));
-        if (va != vb) return va > vb;
-        string pa = ia < 0 ? "" : a.Substring(ia + 1), pb = ib < 0 ? "" : b.Substring(ib + 1);
-        if (pa == pb) return false;
-        if (pa == "") return true;
-        if (pb == "") return false;
-        return string.CompareOrdinal(pa, pb) > 0;
+        version = version.TrimStart('v');
+        other = other.TrimStart('v');
+        int versionDash = version.IndexOf('-'), otherDash = other.IndexOf('-');
+        var versionNumber = new Version(versionDash < 0 ? version : version.Substring(0, versionDash));
+        var otherNumber = new Version(otherDash < 0 ? other : other.Substring(0, otherDash));
+        if (versionNumber != otherNumber) return versionNumber > otherNumber;
+        string versionLabel = versionDash < 0 ? "" : version.Substring(versionDash + 1), otherLabel = otherDash < 0 ? "" : other.Substring(otherDash + 1);
+        if (versionLabel == otherLabel) return false;
+        if (versionLabel == "") return true;
+        if (otherLabel == "") return false;
+        return string.CompareOrdinal(versionLabel, otherLabel) > 0;
     }
 
     public static string Latest()
     {
         ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-        var r = (HttpWebRequest)WebRequest.Create(Repo + "/releases/latest");
-        r.Method = "HEAD";
-        r.AllowAutoRedirect = false;
-        r.UserAgent = "G-Lite";
-        r.Timeout = 15000;
-        using (var res = (HttpWebResponse)r.GetResponse())
+        var request = (HttpWebRequest)WebRequest.Create(Repo + "/releases/latest");
+        request.Method = "HEAD";
+        request.AllowAutoRedirect = false;
+        request.UserAgent = "G-Lite";
+        request.Timeout = 15000;
+        using (var response = (HttpWebResponse)request.GetResponse())
         {
-            var tag = TagFrom(res.Headers["Location"]);
+            var tag = TagFrom(response.Headers["Location"]);
             return tag == null ? null : tag.TrimStart('v');
         }
     }
@@ -85,29 +85,29 @@ static class Updater
 
     public static List<Release> Between(List<Release> all, string installed, string latest)
     {
-        return all.Where(r => { try { return IsNewerVersion(r.Version, installed) && !IsNewerVersion(r.Version, latest); } catch (Exception) { return false; } }).ToList();
+        return all.Where(release => { try { return IsNewerVersion(release.Version, installed) && !IsNewerVersion(release.Version, latest); } catch (Exception) { return false; } }).ToList();
     }
 
     public static string Changelog(string version)
     {
         ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-        using (var w = new WebClient { Encoding = Encoding.UTF8 })
+        using (var client = new WebClient { Encoding = Encoding.UTF8 })
         {
-            w.Headers["User-Agent"] = "G-Lite";
-            return w.DownloadString(RawUrl + version + "/CHANGELOG.md");
+            client.Headers["User-Agent"] = "G-Lite";
+            return client.DownloadString(RawUrl + version + "/CHANGELOG.md");
         }
     }
 
     static byte[] Download(string url, Action<int> progress)
     {
-        var r = (HttpWebRequest)WebRequest.Create(url);
-        r.UserAgent = "G-Lite";
-        r.Timeout = 30000;
-        using (var res = r.GetResponse())
-        using (var stream = res.GetResponseStream())
+        var request = (HttpWebRequest)WebRequest.Create(url);
+        request.UserAgent = "G-Lite";
+        request.Timeout = 30000;
+        using (var response = request.GetResponse())
+        using (var stream = response.GetResponseStream())
         using (var memory = new MemoryStream())
         {
-            long total = res.ContentLength;
+            long total = response.ContentLength;
             var buffer = new byte[65536];
             int read, last = -1;
             while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
@@ -124,21 +124,21 @@ static class Updater
     {
         ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
         string url = Repo + "/releases/download/v" + version + "/", exe = Exe;
-        byte[] bin = Download(url + "GLite.exe", progress);
+        byte[] exeBytes = Download(url + "GLite.exe", progress);
         string sums;
-        using (var w = new WebClient())
+        using (var client = new WebClient())
         {
-            w.Headers["User-Agent"] = "G-Lite";
-            sums = w.DownloadString(url + "checksums.txt");
+            client.Headers["User-Agent"] = "G-Lite";
+            sums = client.DownloadString(url + "checksums.txt");
         }
         string hash;
-        using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(bin)).Replace("-", "").ToLowerInvariant();
-        if (!sums.Split('\n').Any(l => l.Contains("GLite.exe") && l.Trim().StartsWith(hash)))
+        using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(exeBytes)).Replace("-", "").ToLowerInvariant();
+        if (!sums.Split('\n').Any(line => line.Contains("GLite.exe") && line.Trim().StartsWith(hash)))
             throw new Exception("the download doesn't match its checksum, so nothing was changed");
-        Log.Add("", "update", "Downloaded " + version + ", " + bin.Length / 1024 + " KB, checksum ok");
+        Log.Add("", "update", "Downloaded " + version + ", " + exeBytes.Length / 1024 + " KB, checksum ok");
         try
         {
-            File.WriteAllBytes(exe + ".new", bin);
+            File.WriteAllBytes(exe + ".new", exeBytes);
             if (File.Exists(exe + ".old")) File.Delete(exe + ".old");
             File.Move(exe, exe + ".old");
             try { File.Move(exe + ".new", exe); }
@@ -148,25 +148,25 @@ static class Updater
         catch (UnauthorizedAccessException)
         {
             Log.Add("", "update", "The folder isn't writable, asking for administrator rights");
-            Elevated(exe, bin);
+            Elevated(exe, exeBytes);
             Log.Add("", "update", "Replaced GLite.exe with " + version + " with administrator rights");
         }
     }
 
     public static void Restart()
     {
-        var args = Environment.GetCommandLineArgs().Skip(1).Where(a => a != "--restart" && a != "--tray").Concat(new[] { "--restart" });
+        var args = Environment.GetCommandLineArgs().Skip(1).Where(arg => arg != "--restart" && arg != "--tray").Concat(new[] { "--restart" });
         Process.Start(Exe, string.Join(" ", args));
     }
 
-    static void Elevated(string exe, byte[] bin)
+    static void Elevated(string exe, byte[] exeBytes)
     {
-        File.WriteAllBytes(Temp, bin);
-        Process p;
-        try { p = Process.Start(new ProcessStartInfo(Temp, "--swap \"" + exe + "\"") { Verb = "runas", UseShellExecute = true }); }
+        File.WriteAllBytes(Temp, exeBytes);
+        Process process;
+        try { process = Process.Start(new ProcessStartInfo(Temp, "--swap \"" + exe + "\"") { Verb = "runas", UseShellExecute = true }); }
         catch (System.ComponentModel.Win32Exception) { throw new Exception("the update needs administrator rights, and they weren't given"); }
-        p.WaitForExit();
-        if (p.ExitCode != 0) throw new Exception("couldn't replace " + exe);
+        process.WaitForExit();
+        if (process.ExitCode != 0) throw new Exception("couldn't replace " + exe);
     }
 
     public static int Swap(string exe)

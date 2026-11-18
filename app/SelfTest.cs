@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 static class SelfTest
 {
-    static byte[] Hex(string s) { return Enumerable.Range(0, s.Length / 2).Select(i => Convert.ToByte(s.Substring(i * 2, 2), 16)).ToArray(); }
+    static byte[] Hex(string hex) { return Enumerable.Range(0, hex.Length / 2).Select(i => Convert.ToByte(hex.Substring(i * 2, 2), 16)).ToArray(); }
 
     static void Check(bool ok, string what) { if (!ok) { Console.WriteLine("FAIL " + what); Environment.Exit(1); } }
 
@@ -25,14 +25,14 @@ static class SelfTest
         Check(G515Profile.BuildProfile(factory, white).SequenceEqual(expected), "static white profile");
         Check(G515Profile.Decode(factory) == null, "factory animation is unknown");
 
-        foreach (var d in G515Profile.Effects)
+        foreach (var effect in G515Profile.Effects)
         {
-            var l = new Lighting { Effect = d.Id, Color = 0x3080FF, Period = d.Speed ? (d.MinPeriod + d.MaxPeriod) / 2 : 5000, Direction = 6, Dim = 25, Idle = 0, Sleep = 900 };
-            var back = G515Profile.Decode(G515Profile.BuildProfile(factory, l));
-            Check(back != null && back.Effect == l.Effect && back.Idle == 0 && back.Sleep == 900, d.Name + " effect/timers");
-            if (d.Color) Check(back.Color == l.Color && back.Dim == 25, d.Name + " color/dim");
-            if (d.Speed) Check(back.Period == l.Period, d.Name + " period");
-            if (d.Direction) Check(back.Direction == 6, d.Name + " direction");
+            var lighting = new Lighting { Effect = effect.Id, Color = 0x3080FF, Period = effect.Speed ? (effect.MinPeriod + effect.MaxPeriod) / 2 : 5000, Direction = 6, Dim = 25, Idle = 0, Sleep = 900 };
+            var back = G515Profile.Decode(G515Profile.BuildProfile(factory, lighting));
+            Check(back != null && back.Effect == lighting.Effect && back.Idle == 0 && back.Sleep == 900, effect.Name + " effect/timers");
+            if (effect.Color) Check(back.Color == lighting.Color && back.Dim == 25, effect.Name + " color/dim");
+            if (effect.Speed) Check(back.Period == lighting.Period, effect.Name + " period");
+            if (effect.Direction) Check(back.Direction == 6, effect.Name + " direction");
         }
         var fake = new FakeHidpp();
         Check(G515Profile.Decode(G515Profile.Snapshot(fake).FactoryProfile) == null, "fake starts on factory profile");
@@ -46,64 +46,64 @@ static class SelfTest
         Check(G515Profile.Decode(G515Profile.Snapshot(fake).UserProfile).Same(white), "second store overwrites");
 
         Backups.Root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "glite-selftest-" + Guid.NewGuid().ToString("N"));
-        var kb = new FakeHidpp();
-        G515Profile.Store(kb, blue);
-        Backups.Save("T", G515Profile.Read(kb));
-        Backups.Save("T", G515Profile.Read(kb));
+        var keyboard = new FakeHidpp();
+        G515Profile.Store(keyboard, blue);
+        Backups.Save("T", G515Profile.Read(keyboard));
+        Backups.Save("T", G515Profile.Read(keyboard));
         var saved = Backups.List("T");
         Check(saved.Count == 1 && saved[0].First && Backups.Describe(saved[0].Files) == "Breathe", "first backup, and no copy of an unchanged keyboard");
-        G515Profile.Store(kb, white);
-        G515Profile.Restore(kb, saved[0].Files);
-        Check(G515Profile.Decode(G515Profile.Snapshot(kb).UserProfile).Same(blue), "restoring a backup brings its lighting back");
-        G515Profile.Restore(kb, new G515Profile.Files());
-        Check(G515Profile.Decode(G515Profile.Snapshot(kb).UserProfile) == null, "restoring the factory lighting brings the factory animation back");
-        kb.Flash[0x0008] = G515Profile.BuildProfile(kb.Flash[0x0008], white);
+        G515Profile.Store(keyboard, white);
+        G515Profile.Restore(keyboard, saved[0].Files);
+        Check(G515Profile.Decode(G515Profile.Snapshot(keyboard).UserProfile).Same(blue), "restoring a backup brings its lighting back");
+        G515Profile.Restore(keyboard, new G515Profile.Files());
+        Check(G515Profile.Decode(G515Profile.Snapshot(keyboard).UserProfile) == null, "restoring the factory lighting brings the factory animation back");
+        keyboard.Flash[0x0008] = G515Profile.BuildProfile(keyboard.Flash[0x0008], white);
         bool half = false;
-        try { G515Profile.Snapshot(kb); } catch (HalfWrittenException) { half = true; }
-        Check(half && !G515Profile.FilesAreValid(G515Profile.Read(kb)), "a directory that doesn't match its profile is caught");
-        G515Profile.Restore(kb, saved[0].Files);
-        Check(G515Profile.Decode(G515Profile.Snapshot(kb).UserProfile).Same(blue), "a backup repairs a half written keyboard");
+        try { G515Profile.Snapshot(keyboard); } catch (HalfWrittenException) { half = true; }
+        Check(half && !G515Profile.FilesAreValid(G515Profile.Read(keyboard)), "a directory that doesn't match its profile is caught");
+        G515Profile.Restore(keyboard, saved[0].Files);
+        Check(G515Profile.Decode(G515Profile.Snapshot(keyboard).UserProfile).Same(blue), "a backup repairs a half written keyboard");
         var stranger = new G515Profile.Files { FactoryProfile = saved[0].Files.FactoryProfile, FactoryDir = (byte[])saved[0].Files.FactoryDir.Clone(), UserProfile = saved[0].Files.UserProfile, UserDir = saved[0].Files.UserDir };
         stranger.FactoryDir[11] ^= 1;
         bool refused = false;
-        try { G515Profile.Restore(kb, stranger); } catch (RefusedException) { refused = true; }
+        try { G515Profile.Restore(keyboard, stranger); } catch (RefusedException) { refused = true; }
         Check(refused, "a backup from another keyboard is refused");
-        var foreign = G515Profile.Read(kb);
+        var foreign = G515Profile.Read(keyboard);
         foreign.UserDir = (byte[])foreign.UserDir.Clone();
         foreign.UserDir[15] = 0x00;
         bool other = false, offered = false;
         try { G515Profile.CheckFiles(foreign); } catch (HalfWrittenException) { offered = true; } catch (RefusedException) { other = true; }
         Check(other && !offered, "profiles G-Lite didn't write are refused, not offered for restore");
         System.IO.File.WriteAllLines(System.IO.Path.Combine(Backups.Folder("T"), "20250101-120000-000.txt"), System.IO.File.ReadAllLines(saved[0].File));
-        Check(Backups.List("T").Any(e => e.When == new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Local).ToUniversalTime()), "backups named in local time still read");
+        Check(Backups.List("T").Any(entry => entry.When == new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Local).ToUniversalTime()), "backups named in local time still read");
         System.IO.File.Delete(System.IO.Path.Combine(Backups.Folder("T"), "20250101-120000-000.txt"));
         for (int i = 0; i < Backups.Keep + 3; i++)
         {
-            G515Profile.Store(kb, new Lighting { Effect = 0x01, Color = i + 1 });
-            Backups.Save("T", G515Profile.Read(kb));
+            G515Profile.Store(keyboard, new Lighting { Effect = 0x01, Color = i + 1 });
+            Backups.Save("T", G515Profile.Read(keyboard));
         }
         saved = Backups.List("T");
-        Check(saved.Count == Backups.Keep + 1 && saved.Count(e => e.First) == 1 && saved.Last().First, "the first backup stays, with the last ten");
+        Check(saved.Count == Backups.Keep + 1 && saved.Count(entry => entry.First) == 1 && saved.Last().First, "the first backup stays, with the last ten");
         System.IO.Directory.Delete(Backups.Root, true);
 
         var dpis = MouseProtocol.DpiList(Hex("000064e0326400"));
         Check(dpis.Length == 511 && dpis[0] == 100 && dpis[1] == 150 && dpis.Last() == 25600, "DPI range with a step");
         Check(MouseProtocol.RateList(0x8B).SequenceEqual(new[] { 125, 250, 500, 1000 }), "report rates from their bits");
-        foreach (var d in MouseProtocol.Effects)
+        foreach (var effect in MouseProtocol.Effects)
         {
-            var l = new MouseLight { Effect = d.Id, Color = 0x3080FF, Period = 4000, Bright = 50 };
-            var back = MouseProtocol.Decode(new[] { d.Id }.Concat(MouseProtocol.Encode(l)).ToArray());
-            Check(back != null && back.Effect == d.Id, d.Name + " mouse effect");
-            if (d.Id != 0) Check(back.Bright == 50, d.Name + " mouse brightness");
-            if (d.Color) Check(back.Color == 0x3080FF, d.Name + " mouse color");
-            if (d.Speed) Check(back.Period == 4000, d.Name + " mouse period");
+            var light = new MouseLight { Effect = effect.Id, Color = 0x3080FF, Period = 4000, Bright = 50 };
+            var back = MouseProtocol.Decode(new[] { effect.Id }.Concat(MouseProtocol.Encode(light)).ToArray());
+            Check(back != null && back.Effect == effect.Id, effect.Name + " mouse effect");
+            if (effect.Id != 0) Check(back.Bright == 50, effect.Name + " mouse brightness");
+            if (effect.Color) Check(back.Color == 0x3080FF, effect.Name + " mouse color");
+            if (effect.Speed) Check(back.Period == 4000, effect.Name + " mouse period");
         }
         var mouse = new FakeMouse();
-        var ms = MouseProtocol.Read(mouse);
-        Check(ms.Dpi == 1600 && ms.Stage == 2 && ms.Stages.SequenceEqual(new[] { 400, 800, 1600, 3200, 6400 }) && ms.Onboard && ms.Rate == 1000
-            && ms.Light != null && ms.Light.Effect == 0x03 && ms.Light.Period == 8000 && ms.Zones.Count == 2, "mouse state read from its onboard profile");
+        var mouseState = MouseProtocol.Read(mouse);
+        Check(mouseState.Dpi == 1600 && mouseState.Stage == 2 && mouseState.Stages.SequenceEqual(new[] { 400, 800, 1600, 3200, 6400 }) && mouseState.Onboard && mouseState.Rate == 1000
+            && mouseState.Light != null && mouseState.Light.Effect == 0x03 && mouseState.Light.Period == 8000 && mouseState.Zones.Count == 2, "mouse state read from its onboard profile");
         MouseProtocol.SetStage(mouse, 3);
-        MouseProtocol.SetLight(mouse, ms, new MouseLight { Effect = 0x0A, Color = 0xFF0000, Period = 3000, Bright = 80 });
+        MouseProtocol.SetLight(mouse, mouseState, new MouseLight { Effect = 0x0A, Color = 0xFF0000, Period = 3000, Bright = 80 });
         Check(mouse.Dpi == 3200 && mouse.Zones[1][1] == 3 && mouse.Zones[1][2] == 0xFF && mouse.Zones[1][8] == 80, "mouse stage and lighting are set");
         var mset = MouseSet.FromText(new MouseSet { Dpi = 1200, Light = new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 3000, Bright = 70 } }.ToText());
         Check(mset.Dpi == 1200 && mset.Light.Same(new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 3000, Bright = 70 }), "a mouse profile round-trips through text");
@@ -118,32 +118,32 @@ static class SelfTest
         Check(picked[1] == 1 && MouseProtocol.StagesOf(picked).SequenceEqual(MouseProtocol.StagesOf(real)) && picked[0] == real[0], "saving a DPI stage only makes it the default");
         var moved = MouseProtocol.Build(real, new MouseSet { Dpi = 800, Stage = 2 }, 2);
         Check(moved[1] == 2 && MouseProtocol.StagesOf(moved).SequenceEqual(new[] { 400, 800, 800, 3200, 6400 }), "a stage dragged to another stage's value keeps its place");
-        var m2 = new FakeMouse();
-        var st = MouseProtocol.Read(m2);
-        Check(st.Savable && st.Sector == 1 && st.SectorSize == 255 && st.Format == 3, "the fake mouse can be saved to");
-        MouseProtocol.Store(m2, st, MouseProtocol.Build(st.Profile, new MouseSet { Dpi = 3200, Rate = 500, Stage = 3, Light = new MouseLight { Effect = 0x01, Color = 0xFF2020, Bright = 100 } }, 2));
-        var st2 = MouseProtocol.Read(m2);
-        Check(st2.Dpi == 3200 && st2.Rate == 500 && st2.Light != null && st2.Light.Effect == 0x01 && st2.Light.Color == 0xFF2020 && m2.Reloads == 1 && st2.ProfileOk, "saving to the mouse sticks and reloads the profile");
-        MouseProtocol.Store(m2, st2, MouseProtocol.Factory(MouseProtocol.ReadSector(m2, MouseProtocol.RomSector, 255), st2.Profile));
-        var st3 = MouseProtocol.Read(m2);
+        var secondMouse = new FakeMouse();
+        var secondState = MouseProtocol.Read(secondMouse);
+        Check(secondState.Savable && secondState.Sector == 1 && secondState.SectorSize == 255 && secondState.Format == 3, "the fake mouse can be saved to");
+        MouseProtocol.Store(secondMouse, secondState, MouseProtocol.Build(secondState.Profile, new MouseSet { Dpi = 3200, Rate = 500, Stage = 3, Light = new MouseLight { Effect = 0x01, Color = 0xFF2020, Bright = 100 } }, 2));
+        var st2 = MouseProtocol.Read(secondMouse);
+        Check(st2.Dpi == 3200 && st2.Rate == 500 && st2.Light != null && st2.Light.Effect == 0x01 && st2.Light.Color == 0xFF2020 && secondMouse.Reloads == 1 && st2.ProfileOk, "saving to the mouse sticks and reloads the profile");
+        MouseProtocol.Store(secondMouse, st2, MouseProtocol.Factory(MouseProtocol.ReadSector(secondMouse, MouseProtocol.RomSector, 255), st2.Profile));
+        var st3 = MouseProtocol.Read(secondMouse);
         Check(st3.Dpi == 1600 && st3.Light.Effect == 0x03 && st3.ProfileOk && System.Text.Encoding.Unicode.GetString(st3.Profile, 0xA0, 14) == "Default", "the factory profile comes back with the profile's name");
         int refusals = 0;
-        foreach (var sec in new[] { 0x0000, 0x0101 }) { try { MouseProtocol.WriteSector(m2, sec, st3.Profile); } catch (RefusedException) { refusals++; } }
+        foreach (var sec in new[] { 0x0000, 0x0101 }) { try { MouseProtocol.WriteSector(secondMouse, sec, st3.Profile); } catch (RefusedException) { refusals++; } }
         var broken = (byte[])st3.Profile.Clone();
         broken[5] ^= 1;
-        try { MouseProtocol.WriteSector(m2, 1, broken); } catch (RefusedException) { refusals++; }
-        Check(refusals == 3 && MouseProtocol.Valid(m2.Sectors[1]) && MouseProtocol.Valid(m2.Sectors[0x0101]) == false, "the directory, the factory profile and bad checksums are never written");
+        try { MouseProtocol.WriteSector(secondMouse, 1, broken); } catch (RefusedException) { refusals++; }
+        Check(refusals == 3 && MouseProtocol.Valid(secondMouse.Sectors[1]) && MouseProtocol.Valid(secondMouse.Sectors[0x0101]) == false, "the directory, the factory profile and bad checksums are never written");
         Check(!st3.Fresh, "a mouse with a profile isn't set up again");
         var fresh = new FakeMouse(true);
         var freshFactory = (byte[])fresh.Sectors[0x0101].Clone();
-        var fs = MouseProtocol.Read(fresh);
-        Check(fs.Fresh && fs.Writable && fs.Savable && fs.Sector == 0x0101, "a mouse with only its factory profile can be saved to");
+        var freshState = MouseProtocol.Read(fresh);
+        Check(freshState.Fresh && freshState.Writable && freshState.Savable && freshState.Sector == 0x0101, "a mouse with only its factory profile can be saved to");
         int freshRefusals = 0;
-        try { MouseProtocol.Store(fresh, fs, MouseProtocol.Build(fs.Profile, new MouseSet { Dpi = 800 }, 2)); } catch (RefusedException) { freshRefusals++; }
-        try { MouseProtocol.Setup(m2, st3, st3.Profile); } catch (RefusedException) { freshRefusals++; }
+        try { MouseProtocol.Store(fresh, freshState, MouseProtocol.Build(freshState.Profile, new MouseSet { Dpi = 800 }, 2)); } catch (RefusedException) { freshRefusals++; }
+        try { MouseProtocol.Setup(secondMouse, st3, st3.Profile); } catch (RefusedException) { freshRefusals++; }
         try { MouseProtocol.Directory(255, 0); } catch (RefusedException) { freshRefusals++; }
         Check(freshRefusals == 3 && !fresh.Sectors.ContainsKey(0x0001) && !fresh.Sectors.ContainsKey(0x0000), "setting up is refused on a mouse that has a profile, and a save never writes the factory profile");
-        MouseProtocol.Setup(fresh, fs, MouseProtocol.Build(fs.Profile, new MouseSet { Dpi = 3200, Rate = 500, Stage = 3 }, 2));
+        MouseProtocol.Setup(fresh, freshState, MouseProtocol.Build(freshState.Profile, new MouseSet { Dpi = 3200, Rate = 500, Stage = 3 }, 2));
         var fs2 = MouseProtocol.Read(fresh);
         var dir = fresh.Sectors[0x0000];
         Check(fs2.Sector == 1 && !fs2.Fresh && fs2.Savable && fs2.Dpi == 3200 && fs2.Rate == 500 && fresh.Reloads == 1 && MouseProtocol.Valid(dir) && dir.Take(8).SequenceEqual(FakeHidpp.Hex("00010100FFFF0000")) && dir.Skip(8).Take(245).All(x => x == 0xFF) && fresh.Sectors[0x0101].SequenceEqual(freshFactory), "the first save writes the profile and the directory, and leaves the factory profile as it was");
@@ -161,16 +161,16 @@ static class SelfTest
             "profile format 2 (G502 HERO) saves like format 3, a directory of zeros counts as none, formats 1 and 4 stay read-only");
 
         var headset = new FakeHeadset();
-        var hs = HeadsetProtocol.Read(headset, true);
-        Check(hs.HasSidetone && hs.HasOff && hs.Set.Sidetone == 30 && hs.Set.AutoOffMinutes == 30 && hs.Millivolts == 3926 && !hs.Charging, "headset sidetone, auto-off and battery are read");
+        var headsetState = HeadsetProtocol.Read(headset, true);
+        Check(headsetState.HasSidetone && headsetState.HasOff && headsetState.Set.Sidetone == 30 && headsetState.Set.AutoOffMinutes == 30 && headsetState.Millivolts == 3926 && !headsetState.Charging, "headset sidetone, auto-off and battery are read");
         HeadsetProtocol.SetSidetone(headset, 55);
         HeadsetProtocol.SetOff(headset, 10);
         Check(headset.Sidetone == 55 && headset.AutoOffMinutes == 10, "headset sidetone and auto-off are set");
         var hset = HeadsetSettings.FromText(new HeadsetSettings { Sidetone = 20, AutoOffMinutes = 15 }.ToText());
         Check(hset.Sidetone == 20 && hset.AutoOffMinutes == 15, "a headset profile round-trips through text");
         Check(new FoundDevice { Name = "G Pro Wireless Gaming Mouse" }.SettingsKey == "gprowireless", "profile names for a device");
-        var m = KeyLayout.Load("g515-tkl.json");
-        Check(m.Name == "G515 LIGHTSPEED TKL" && m.Rows.Length == 7 && m.Rows[6].EndsWith("→"), "keyboard model loads");
+        var layout = KeyLayout.Load("g515-tkl.json");
+        Check(layout.Name == "G515 LIGHTSPEED TKL" && layout.Rows.Length == 7 && layout.Rows[6].EndsWith("→"), "keyboard model loads");
         var game = new Blocks();
         for (int y = 0; y < Game.Rows; y++) game.Cells[y, Game.Columns - 1] = 1;
         game.Cells[0, Game.Columns - 2] = 2;
@@ -249,7 +249,7 @@ static class SelfTest
         Settings.Set("profile.g515.Day", "1,FFFFFF,5000,1,50,60,300,100");
         Settings.Set("set.Day", "1,000000,5000,1,50,60,300,0");
         Settings.Init();
-        Check(Settings.Get("profile.g515.Evening").StartsWith("1,FF8000") && Settings.Get("profile.g515.Day").StartsWith("1,FFFFFF") && !Settings.Keys().Any(k => k.StartsWith("set.")),
+        Check(Settings.Get("profile.g515.Evening").StartsWith("1,FF8000") && Settings.Get("profile.g515.Day").StartsWith("1,FFFFFF") && !Settings.Keys().Any(key => key.StartsWith("set.")),
             "old sets move to G515 profiles without overwriting");
         Check(FoundDevice.LooksG("G515 LIGHTSPEED TKL") && FoundDevice.LooksG("G Pro Wireless Gaming Mouse") && FoundDevice.LooksG("PRO X Wireless Gaming Headset") && FoundDevice.LooksG("G502 X PLUS")
             && !FoundDevice.LooksG("MX KEYS S") && !FoundDevice.LooksG("Logitech USB Receiver") && !FoundDevice.LooksG(""), "G devices are told from other Logitech devices");
@@ -268,7 +268,7 @@ static class SelfTest
         Check(ZoneLighting.Encode(wave).SequenceEqual(new byte[] { 0, 0, 0, 0, 0, 0, 0x88, 3, 80, 0x13 }) && ZoneLighting.FromText(ZoneLighting.ToText(new[] { wave }), 1)[0].Same(wave)
             && ZoneLighting.FromText("1,FF0000,5000,100", 1)[0].Direction == 6 && KeyLayout.Load("g213.json").KeyIds().All(zone => zone >= 1 && zone <= 5) && KeyLayout.Load("g213.json").Iso().KeyIds().All(zone => zone >= 1 && zone <= 5),
             "0x8070 Wave is encoded with its direction and kept in text, and every G213 key has a zone");
-        int dpiShift = Array.FindIndex(Bindings.Actions, a => a.Name == "DPI shift"), disabled = Array.FindIndex(Bindings.Actions, a => a.Name == "Disabled");
+        int dpiShift = Array.FindIndex(Bindings.Actions, action => action.Name == "DPI shift"), disabled = Array.FindIndex(Bindings.Actions, action => action.Name == "Disabled");
         Check(Bindings.Find(Hex("9007FFFF")) == dpiShift && Bindings.Find(Hex("9007FF00")) == dpiShift && Bindings.Find(Hex("8000FFFF")) == disabled && Bindings.Find(Hex("80010005")) < 0
             && Bindings.Describe(Hex("900AFFFF")) == "Cycle profile" && Bindings.Describe(Hex("900D0003")) == "Profile 3"
             && Bindings.Names(new FoundDevice { Models = "USB C08B" }, 11)[5] == "Sniper", "factory special bindings (90 xx FF FF) are named, and the G502 HERO gets the G502's button names");
@@ -296,9 +296,9 @@ static class SelfTest
             "a device that isn't a G device gets the other devices' screen only with a setting it can change, and one with media keys keeps the info page");
         Check(OtherSettings.FromText("dpi:1600,shift:255,invert:1,level:3,bogus:2").ToText() == "dpi:1600,shift:255,invert:1,level:3" && OtherSettings.FromText("").ToText() == "", "other devices' settings read back as written, skipping what isn't known");
         {
-            var mx = new FoundDevice { Name = "MX Master 3S", Kind = "mouse", Features = new[] { 0x2110, 0x2121, 0x2201 } };
+            var mxMaster = new FoundDevice { Name = "MX Master 3S", Kind = "mouse", Features = new[] { 0x2110, 0x2121, 0x2201 } };
             var device = new FakeOther { RefuseDpi = true };
-            var read = OtherDevice.Read(device, mx);
+            var read = OtherDevice.Read(device, mxMaster);
             var want = read.Set.Clone();
             want.Merge(OtherDevice.KeepSupported(OtherSettings.FromText("dpi:1625,invert:1,shift:120,thumb:1,bright:30,level:2"), read));
             var refusedSettings = OtherDevice.Apply(device, read, want, read.Set);
@@ -313,7 +313,7 @@ static class SelfTest
         var waveCopy = new LightState();
         Check(LitraProtocol.Frame(breatheState, 0)[0] == 0 && LitraProtocol.Frame(breatheState, 2000)[3] == 0xFF8000 && Math.Abs((LitraProtocol.Frame(breatheState, 1000)[6] >> 16) - 128) <= 1
             && LitraProtocol.Hue(0) == 0xFF0000 && LitraProtocol.Hue(1 / 3.0) == 0x00FF00 && LitraProtocol.Hue(-1 / 3.0) == 0x0000FF
-            && LitraProtocol.Frame(waveState, 1000)[1] == LitraProtocol.Frame(waveState, 0)[0] && LitraProtocol.Frame(new LightState { Effect = LightState.Cycle, Period = 3000 }, 1000).All(c => c == 0x00FF00)
+            && LitraProtocol.Frame(waveState, 1000)[1] == LitraProtocol.Frame(waveState, 0)[0] && LitraProtocol.Frame(new LightState { Effect = LightState.Cycle, Period = 3000 }, 1000).All(channel => channel == 0x00FF00)
             && waveCopy.ReadBack(waveState.BackText()) && waveCopy.Effect == LightState.Wave && waveCopy.Period == 7000 && !waveCopy.ReadBack("1,50,FFFFFF/FFFFFF/FFFFFF/FFFFFF/FFFFFF/FFFFFF/FFFFFF,9,5000"),
             "the light's breathe, cycle and wave frames, and its effect round-trips through text");
         var lightScreen = LitraProtocol.Screen("");
@@ -330,7 +330,7 @@ static class SelfTest
         var speakerLights = ZoneLighting.FromText(ZoneLighting.ToText(new[] { breathe, null, new MouseLight(), breathe }), 4);
         var oneForAll = ZoneLighting.FromText("1,FF0000,5000,100", 4);
         Check(speakerLights != null && speakerLights[0].Same(breathe) && speakerLights[1] == null && speakerLights[2].Same(new MouseLight()) && speakerLights[3].Same(breathe)
-            && oneForAll.All(l => l != null && l.Color == 0xFF0000) && ZoneLighting.FromText("7,FFFFFF,1000,100", 4) == null && ZoneLighting.FromText("", 4) == null, "speaker zone lighting round-trips through text, one light sets every zone, unknown effects are dropped");
+            && oneForAll.All(light => light != null && light.Color == 0xFF0000) && ZoneLighting.FromText("7,FFFFFF,1000,100", 4) == null && ZoneLighting.FromText("", 4) == null, "speaker zone lighting round-trips through text, one light sets every zone, unknown effects are dropped");
         Check(new FoundDevice { Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Features = new[] { 0x8071, 0x8040, 0x8100 } }.IsG915
             && !new FoundDevice { Name = "G915 X LIGHTSPEED", Features = new[] { 0x8071, 0x8040, 0x8100 } }.IsG915
             && new FoundDevice { Name = "G915 WIRELESS RGB MECHANICAL GAMING KEYBOARD" }.ShortName == "G915"
@@ -371,7 +371,7 @@ static class SelfTest
         var g9xKept = (byte[])g9xCut.Pages[2].Clone();
         g9xCut.FailSecondHalf = true;
         string g9xCutError = null;
-        try { G9xRegisters.Store(g9xCut, g9xCutState, G9xRegisters.Build(g9xKept, new MouseSet { Dpi = 1200, Stage = 2 }, 1000, G9xModel.G9x), g9xKept); } catch (System.IO.IOException e) { g9xCutError = e.Message; }
+        try { G9xRegisters.Store(g9xCut, g9xCutState, G9xRegisters.Build(g9xKept, new MouseSet { Dpi = 1200, Stage = 2 }, 1000, G9xModel.G9x), g9xKept); } catch (System.IO.IOException ex) { g9xCutError = ex.Message; }
         Check(g9xCutError != null && g9xCutError.Contains("as it was is back") && g9xCut.Pages[2].SequenceEqual(g9xKept) && g9xCut.Registers[0x0F][0] == 0x00
             && g9xCut.Writes.SequenceEqual(new[] { "erase 2:0", "copy 2:0", "erase 2:0", "copy 2:0", "copy 2:128" }),
             "a G9x save cut off after the erase puts the page back as it was and loads it, instead of leaving the mouse on its factory profile");
@@ -391,7 +391,7 @@ static class SelfTest
         G9xRegisters.Store(g500s, g500sState, g500sPage, g500sState.Profile);
         var g500sAfter = G9xRegisters.Read(g500s, G9xModel.G500s);
         Check(g500sState.Dpi == 800 && g500sState.Light == null && g500sState.Stages.SequenceEqual(new[] { 400, 800, 1600, 3200 }) && g500sState.Dpis.Last() == 8200
-            && g500s.Registers[0x63][0] == 164 && g500sAfter.Stages.SequenceEqual(new[] { 400, 800, 1600, 6400 }) && g500s.Pages[2][0x23] == 3 && g500s.Pages[2].Take(3).All(b => b == 0)
+            && g500s.Registers[0x63][0] == 164 && g500sAfter.Stages.SequenceEqual(new[] { 400, 800, 1600, 6400 }) && g500s.Pages[2][0x23] == 3 && g500s.Pages[2].Take(3).All(value => value == 0)
             && new FoundDevice { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c24e&mi_01&col04" }.G500Model == G9xModel.G500s && new FoundDevice { Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c068" }.IsG500,
             "the G500s reads and saves its DPI in units of 50 up to 8200, and has no colour light to read or save");
         var g5Mouse = FakeG9x.Short(0x82);
@@ -416,39 +416,39 @@ static class SelfTest
         var g9xReport = Report.Registers(new FakeG9x(), new FoundDevice { Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Hidpp10 = true }, "PageMouse");
         Check(g9xReport.Contains("long 63=22 00 22 00 80 01") && g9xReport.Contains("page 02, current") && g9xReport.Contains("page 04"), "the G9x report has its registers and profile pages");
         Check(new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json" }.All(x => KeyLayout.Load(x).Rows.Length > 5), "the key layouts load");
-        var g9 = new FakeG915();
-        var cl = G915Lighting.Clusters(g9);
-        Check(cl.Count == 2 && G915Lighting.Keys(cl) == 1, "the G915's keys are the cluster with the most effects");
-        G915Lighting.Claim(g9);
-        G915Lighting.Preview(g9, cl, new Lighting { Effect = 0x15, Period = 3000 });
-        Check(g9.Claimed == 3 && g9.Live[1][1] == 3 && g9.Live[1][7] == 0x0B && g9.Live[1][8] == 0xB8 && g9.Live[1][9] == 100 && g9.Live[1][12] == 1, "cycle on the G915 uses effect 0x03, with its period at byte 5");
-        Check(g9.Live[0][1] == 2 && g9.Live[0][7] == 0x0B, "the logo cycles too");
-        G915Lighting.Preview(g9, cl, new Lighting { Effect = 0x16, Period = 4000, Direction = 1 });
-        Check(g9.Live[1][1] == 4 && g9.Live[1][8] == 0xA0 && g9.Live[1][9] == 1 && g9.Live[1][10] == 100 && g9.Live[1][11] == 0x0F, "wave on the G915 uses effect 0x04");
-        Check(g9.Live[0][1] == 2, "the logo cycles when the keys wave");
-        G915Lighting.Preview(g9, cl, new Lighting { Effect = 0x17, Color = 0x3080FF, Period = 20 });
-        Check(g9.Live[1][1] == 5 && g9.Live[1][2] == 0x30 && g9.Live[1][7] == 20 && g9.Live[0][1] == 1 && g9.Live[0][4] == 0xFF, "ripple on the keys, the ripple's colour on the logo");
-        G915Lighting.Preview(g9, cl, new Lighting { Effect = 0x0A, Color = 0xFF0000, Period = 5000 });
-        Check(g9.Live[1][1] == 2 && g9.Live[0][1] == 3 && g9.Live[1][5] == 0x13 && g9.Live[1][6] == 0x88, "breathe on keys and logo");
+        var g915 = new FakeG915();
+        var clusters = G915Lighting.Clusters(g915);
+        Check(clusters.Count == 2 && G915Lighting.Keys(clusters) == 1, "the G915's keys are the cluster with the most effects");
+        G915Lighting.Claim(g915);
+        G915Lighting.Preview(g915, clusters, new Lighting { Effect = 0x15, Period = 3000 });
+        Check(g915.Claimed == 3 && g915.Live[1][1] == 3 && g915.Live[1][7] == 0x0B && g915.Live[1][8] == 0xB8 && g915.Live[1][9] == 100 && g915.Live[1][12] == 1, "cycle on the G915 uses effect 0x03, with its period at byte 5");
+        Check(g915.Live[0][1] == 2 && g915.Live[0][7] == 0x0B, "the logo cycles too");
+        G915Lighting.Preview(g915, clusters, new Lighting { Effect = 0x16, Period = 4000, Direction = 1 });
+        Check(g915.Live[1][1] == 4 && g915.Live[1][8] == 0xA0 && g915.Live[1][9] == 1 && g915.Live[1][10] == 100 && g915.Live[1][11] == 0x0F, "wave on the G915 uses effect 0x04");
+        Check(g915.Live[0][1] == 2, "the logo cycles when the keys wave");
+        G915Lighting.Preview(g915, clusters, new Lighting { Effect = 0x17, Color = 0x3080FF, Period = 20 });
+        Check(g915.Live[1][1] == 5 && g915.Live[1][2] == 0x30 && g915.Live[1][7] == 20 && g915.Live[0][1] == 1 && g915.Live[0][4] == 0xFF, "ripple on the keys, the ripple's colour on the logo");
+        G915Lighting.Preview(g915, clusters, new Lighting { Effect = 0x0A, Color = 0xFF0000, Period = 5000 });
+        Check(g915.Live[1][1] == 2 && g915.Live[0][1] == 3 && g915.Live[1][5] == 0x13 && g915.Live[1][6] == 0x88, "breathe on keys and logo");
         bool lacks = false;
-        try { G915Lighting.Preview(g9, cl, new Lighting { Effect = 0x02 }); } catch (RefusedException) { lacks = true; }
-        Check(lacks && g9.Live[1][1] == 2, "an effect the G915 lacks is refused without sending anything");
-        G915Lighting.Release(g9);
-        Check(g9.Claimed == 0, "release gives the lighting back to the G915");
+        try { G915Lighting.Preview(g915, clusters, new Lighting { Effect = 0x02 }); } catch (RefusedException) { lacks = true; }
+        Check(lacks && g915.Live[1][1] == 2, "an effect the G915 lacks is refused without sending anything");
+        G915Lighting.Release(g915);
+        Check(g915.Claimed == 0, "release gives the lighting back to the G915");
         int g9Sector;
-        var g9Profile = G915Lighting.ReadProfile(g9, out g9Sector);
+        var g9Profile = G915Lighting.ReadProfile(g915, out g9Sector);
         var g9Saved = G915Lighting.Decode(g9Profile, 1);
         Check(g9Sector == 1 && g9Saved.Effect == 0x15 && g9Saved.Period == 10000 && g9Saved.Idle == 60 && g9Saved.Sleep == 300 && g9Saved.Dim == 50,
             "the G915 TKL's profile reads as Cycle at 10 s, dimmed to half after 60 s, off after 300 s");
-        var g9Built = G915Lighting.Build(g9Profile, cl, new Lighting { Effect = 0x16, Period = 3000, Direction = 1, Dim = 50, Idle = 15, Sleep = 600 }, null);
+        var g9Built = G915Lighting.Build(g9Profile, clusters, new Lighting { Effect = 0x16, Period = 3000, Direction = 1, Dim = 50, Idle = 15, Sleep = 600 }, null);
         // Profile 3 of the same keyboard, Cycle on the logo and Wave on the keys, normal then dimmed (its Wave also has FF in its first and sixth parameter bytes).
         var g9Want = FakeHidpp.Hex("0300000000000BB864000004000000000000B801640B0300000000000BB832000004000000000000B801320B");
         Check(g9Built.Skip(0xD0).Take(44).SequenceEqual(g9Want) && MouseProtocol.Valid(g9Built) && g9Built[0x1C] == 15 && g9Built[0x1E] == 0x58 && g9Built[0x1F] == 2
             && g9Built.Take(0xD0).Where((x, i) => i < 0x1C || i > 0x1F).SequenceEqual(g9Profile.Take(0xD0).Where((x, i) => i < 0x1C || i > 0x1F)),
             "saving Wave on the G915 writes the records the keyboard's own Wave profile has, the idle times, and keeps every other byte");
-        G915Lighting.Claim(g9);
-        G915Lighting.Store(g9, g9Sector, g9Built);
-        Check(g9.Sectors[1].SequenceEqual(g9Built) && g9.Reloads == 1 && g9.Claimed == 0, "the G915's profile is written, loaded again, and the lighting given back");
+        G915Lighting.Claim(g915);
+        G915Lighting.Store(g915, g9Sector, g9Built);
+        Check(g915.Sectors[1].SequenceEqual(g9Built) && g915.Reloads == 1 && g915.Claimed == 0, "the G915's profile is written, loaded again, and the lighting given back");
         Check(Settings.Get("theme") == "system" && Theme.Mode == "system", "theme starts on system");
         Theme.Mode = "light";
         Check(Theme.Light && Settings.Get("theme") == "light", "light theme is saved and applied");
@@ -469,9 +469,9 @@ static class SelfTest
         if (args.Length > 0 && !args[0].StartsWith("--")) Logo.WriteIco(args[0]);
         Log.File = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "glite-selftest-log.txt");
         Log.Clear();
-        var lm = new FakeMouse { DeviceLabel = "M" };
-        lm.Call(lm.FeatureIndex(0x2201), 2, 0);
-        MouseProtocol.SetDpi(lm, 1600);
+        var labeledMouse = new FakeMouse { DeviceLabel = "M" };
+        labeledMouse.Call(labeledMouse.FeatureIndex(0x2201), 2, 0);
+        MouseProtocol.SetDpi(labeledMouse, 1600);
         var logged = Log.Read();
         Check(logged.Count == 1 && logged[0].Who == "M" && logged[0].Text == "2201 fn3  00 06 40" && logged[0].Result == "ok", "the log keeps commands and leaves out reads");
         Log.Sent("M", 0x8100, 7, new byte[] { 1 }, "ok");
@@ -483,10 +483,10 @@ static class SelfTest
         var mreport = Report.Build(spy, new FoundDevice { Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x4079, Path = @"\\?\hid#vid_046d&pid_c547&mi_02&col02#7&abc&0&0001#{x}", Features = new[] { 0x2201, 0x8060, 0x8070, 0x8100 } }, "PageMouse");
         Check(mreport.Contains("ID 4079, USB 046D:C547") && mreport.Contains("0000=0001") && mreport.Contains("0001=" + BitConverter.ToString(spy.Inner.Sectors[1]).Replace("-", ""))
             && mreport.Contains("0101=") && mreport.Contains("dpi list=") && mreport.Contains("zone 1 effect 3=") && !mreport.Contains("abc"), "the mouse report has its features, profiles and no device path");
-        Check(spy.Calls.Count > 20 && spy.Calls.All(c => Report.Reads.ContainsKey(c.Item1) && Report.Reads[c.Item1].Contains(c.Item2)), "the mouse report only reads");
+        Check(spy.Calls.Count > 20 && spy.Calls.All(call => Report.Reads.ContainsKey(call.Item1) && Report.Reads[call.Item1].Contains(call.Item2)), "the mouse report only reads");
         var kspy = new Recorder(new FakeHidpp());
         var kreport = Report.Build(kspy, new FoundDevice { Name = "G515 LS TKL", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40B4, Features = new[] { 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } }, "Page515");
-        Check(kreport.Contains("lit ids=01 02 03") && kreport.Contains(" 4F 61 62") && kreport.Contains("layout=0D") && kreport.Contains("0008=") && kreport.Contains("0101=") && kreport.Contains("cluster 0 effect 1=") && kspy.Calls.All(c => Report.Reads.ContainsKey(c.Item1) && Report.Reads[c.Item1].Contains(c.Item2)), "the keyboard report reads its files and effects only");
+        Check(kreport.Contains("lit ids=01 02 03") && kreport.Contains(" 4F 61 62") && kreport.Contains("layout=0D") && kreport.Contains("0008=") && kreport.Contains("0101=") && kreport.Contains("cluster 0 effect 1=") && kspy.Calls.All(call => Report.Reads.ContainsKey(call.Item1) && Report.Reads[call.Item1].Contains(call.Item2)), "the keyboard report reads its files and effects only");
         var hreport = Report.Build(new FakeHeadset(), new FoundDevice { Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "LIGHTSPEED", Index = 0xFF, Features = new[] { 0x8300, 0x1F20 } }, "PageHeadset");
         Check(hreport.Contains("sidetone=1E") && hreport.Contains("auto-off=1E") && hreport.Contains("%, 3926 mV"), "the headset report reads sidetone, auto-off and the battery");
         Check(!Report.Reads[0x8100].Intersect(new[] { 1, 3, 6, 7, 8, 0xC }).Any() && !Report.Reads[0x8101].Intersect(new[] { 2, 3, 6, 7 }).Any() && !Report.Reads[0x8071].Contains(1) && !Report.Reads[0x8070].Contains(3), "the report never calls a write function");
@@ -494,7 +494,7 @@ static class SelfTest
         foreach (var file in new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json", "g-full.json", "g-60.json" })
         {
             var board = KeyLayout.Load(file);
-            int keys = board.Rows.Sum(r => r.Split('|').Count(t => !t.StartsWith("_")));
+            int keys = board.Rows.Sum(row => row.Split('|').Count(cell => !cell.StartsWith("_")));
             var keyIds = board.KeyIds();
             Check(keyIds.Count == keys && board.Ids.Length == board.Rows.Length, file + " has one key id per key");
             Check(keyIds.Where(i => i >= 0).All(i => (i >= 0x01 && i <= 0x6F) || (i >= 0x99 && i <= 0xFE)), file + " key ids are lighting ids");
@@ -503,8 +503,8 @@ static class SelfTest
         foreach (var file in new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json" })
         {
             var isoBoard = KeyLayout.Load(file).Iso();
-            int isoKeys = isoBoard.Rows.Sum(r => r.Split('|').Count(t => !t.StartsWith("_")));
-            Check(isoBoard.KeyIds().Count == isoKeys && isoBoard.Ids.All(r => r.Split(' ').Length <= 40), file + " builds an ISO picture with one key id per key");
+            int isoKeys = isoBoard.Rows.Sum(row => row.Split('|').Count(cell => !cell.StartsWith("_")));
+            Check(isoBoard.KeyIds().Count == isoKeys && isoBoard.Ids.All(row => row.Split(' ').Length <= 40), file + " builds an ISO picture with one key id per key");
         }
         var g515Iso = KeyLayout.Load("g515-tkl.json").Iso();
         Check(g515Iso.Rows[3] == "Tab:1.5|Q|W|E|R|T|Y|U|I|O|P|[|]|_.25|Enter:1.25:2:.25|_.25|Del|End|PgDn" && g515Iso.Rows[4] == "Caps:1.75|A|S|D|F|G|H|J|K|L|;|'|#"
@@ -544,7 +544,7 @@ static class SelfTest
         Check(perKey.Keys.Count == 22 && perKey.Keys[0x14] == 0xFF0000 && perKey.Keys[0x6F] == 0x0000FF && perKey.Frames == 1, "per-key colours go out in groups of 13 and end with a frame");
         Check(perKey.Call(perKey.FeatureIndex(0x4540), 0)[0] == 0x0D, "the fake keyboard reports a Swiss layout");
 
-        // models/iso keeps each layout's ISO picture as a file to read; it isn't embedded, the app builds it with Model.Iso.
+        // models/iso keeps each layout's ISO picture as a file to read; it isn't embedded, the app builds it with KeyLayout.Iso.
         var isoFolder = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\models\iso");
         foreach (var file in new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json" })
         {
@@ -575,11 +575,11 @@ class Recorder : Hidpp
 
     public override void Dispose() { }
 
-    protected override byte[] Send(byte feat, int fn, byte[] p)
+    protected override byte[] Send(byte feature, int fn, byte[] parameters)
     {
-        var r = inner.Call(feat, fn, p);
-        if (feat == 0) { if (r[0] != 0) ids[r[0]] = p[0] << 8 | p[1]; }
-        else Calls.Add(Tuple.Create(ids.ContainsKey(feat) ? ids[feat] : -1, fn));
-        return r;
+        var reply = inner.Call(feature, fn, parameters);
+        if (feature == 0) { if (reply[0] != 0) ids[reply[0]] = parameters[0] << 8 | parameters[1]; }
+        else Calls.Add(Tuple.Create(ids.ContainsKey(feature) ? ids[feature] : -1, fn));
+        return reply;
     }
 }

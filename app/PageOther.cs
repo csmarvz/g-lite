@@ -271,11 +271,11 @@ class PageOtherDevice : DevicePage
 {
     class SettingBox { public string Title; public bool Half; public Func<RoundedBox, int, int> Fill; }
 
-    // cur is on the screen, sent is on the device, stored is what was read at load, and remembered holds only what the user changed: it's sent again at each load.
-    OtherSettings cur = new OtherSettings(), stored, sent, remembered, rememberedAtLoad;
+    // current is on the screen, sent is on the device, stored is what was read at load, and remembered holds only what the user changed: it's sent again at each load.
+    OtherSettings current = new OtherSettings(), stored, sent, remembered, rememberedAtLoad;
     OtherDevice.State state;
     bool loading, dirty;
-    int seq;
+    int sequence;
     readonly Timer debounce = new Timer { Interval = 120 };
 
     Slider bright, dpi, shift, level;
@@ -283,7 +283,7 @@ class PageOtherDevice : DevicePage
     Toggle shiftOn, invert, thumb, light, auto;
     Label delayHead;
     readonly Label[] delayLabels = new Label[3];
-    readonly Dropdown[] delayDrops = new Dropdown[3];
+    readonly Dropdown[] delayDropdowns = new Dropdown[3];
     SegmentedPicker hosts;
     RoundedBox hostsBox;
 
@@ -428,8 +428,8 @@ class PageOtherDevice : DevicePage
         {
             int setting = OtherSettings.Delays[index], x = 14 + index * (column + 12);
             delayLabels[index] = Ui.Text(box, names[index], x, 242, () => Theme.Dim, 9f);
-            delayDrops[index] = Ui.Add(box, new Dropdown { AccessibleName = "Fades after, " + names[index].ToLowerInvariant() }, x, 262, column, 30);
-            delayDrops[index].Picked += picked => Change(setting, DelayChoices(cur[setting])[picked]);
+            delayDropdowns[index] = Ui.Add(box, new Dropdown { AccessibleName = "Fades after, " + names[index].ToLowerInvariant() }, x, 262, column, 30);
+            delayDropdowns[index].Picked += picked => Change(setting, DelayChoices(current[setting])[picked]);
         }
         return 306;
     }
@@ -467,8 +467,8 @@ class PageOtherDevice : DevicePage
 
     void Change(int setting, int value)
     {
-        if (loading || state == null || cur[setting] < 0) return;
-        cur[setting] = value;
+        if (loading || state == null || current[setting] < 0) return;
+        current[setting] = value;
         remembered[setting] = value;
         Changed();
     }
@@ -476,7 +476,7 @@ class PageOtherDevice : DevicePage
     void Changed()
     {
         dirty = true;
-        seq++;
+        sequence++;
         Edited();
         RefreshControls();
         ClearStatus();
@@ -490,23 +490,23 @@ class PageOtherDevice : DevicePage
         bool ready = state != null;
         if (bright != null)
         {
-            bool on = ready && cur[OtherSettings.Bright] >= 0;
+            bool on = ready && current[OtherSettings.Bright] >= 0;
             bright.Enabled = on;
             bright.Max = ready ? state.BrightMax : 100;
-            bright.Value = Math.Max(0, cur[OtherSettings.Bright]);
-            brightValue.Text = !on ? "" : state.BrightMax == 100 ? cur[OtherSettings.Bright] + "%" : cur[OtherSettings.Bright] + " of " + state.BrightMax;
+            bright.Value = Math.Max(0, current[OtherSettings.Bright]);
+            brightValue.Text = !on ? "" : state.BrightMax == 100 ? current[OtherSettings.Bright] + "%" : current[OtherSettings.Bright] + " of " + state.BrightMax;
         }
         if (dpi != null)
         {
-            bool on = ready && cur[OtherSettings.Dpi] > 0;
+            bool on = ready && current[OtherSettings.Dpi] > 0;
             dpi.Enabled = on && state.Dpis.Length > 1;
             dpi.Max = on ? Math.Max(1, state.Dpis.Length - 1) : 100;
-            dpi.Value = on ? OtherDevice.Nearest(state.Dpis, cur[OtherSettings.Dpi]) : 0;
-            dpiValue.Text = on ? cur[OtherSettings.Dpi] + " DPI" : "";
+            dpi.Value = on ? OtherDevice.Nearest(state.Dpis, current[OtherSettings.Dpi]) : 0;
+            dpiValue.Text = on ? current[OtherSettings.Dpi] + " DPI" : "";
         }
         if (shiftOn != null)
         {
-            int threshold = cur[OtherSettings.Shift];
+            int threshold = current[OtherSettings.Shift];
             bool has = ready && threshold >= 0, on = has && threshold < 255;
             shiftOn.Enabled = has;
             shiftOn.Checked = on;
@@ -515,31 +515,31 @@ class PageOtherDevice : DevicePage
             SetDimmed(shiftHead, on);
             shiftValue.Text = on ? (threshold / 4.0).ToString("0.##", CultureInfo.InvariantCulture) + " turns a second" : "";
         }
-        if (invert != null) { invert.Enabled = ready && cur[OtherSettings.Invert] >= 0; invert.Checked = cur[OtherSettings.Invert] == 1; }
-        if (thumb != null) { thumb.Enabled = ready && cur[OtherSettings.Thumb] >= 0; thumb.Checked = cur[OtherSettings.Thumb] == 1; }
+        if (invert != null) { invert.Enabled = ready && current[OtherSettings.Invert] >= 0; invert.Checked = current[OtherSettings.Invert] == 1; }
+        if (thumb != null) { thumb.Enabled = ready && current[OtherSettings.Thumb] >= 0; thumb.Checked = current[OtherSettings.Thumb] == 1; }
         if (light != null)
         {
-            bool lit = cur[OtherSettings.Light] == 1;
-            light.Enabled = ready && cur[OtherSettings.Light] >= 0;
+            bool lit = current[OtherSettings.Light] == 1;
+            light.Enabled = ready && current[OtherSettings.Light] >= 0;
             light.Checked = lit;
-            auto.Enabled = ready && cur[OtherSettings.Auto] >= 0 && lit;
-            auto.Checked = lit && cur[OtherSettings.Auto] == 1;
-            bool manual = ready && cur[OtherSettings.Level] >= 0 && lit && cur[OtherSettings.Auto] != 1;
+            auto.Enabled = ready && current[OtherSettings.Auto] >= 0 && lit;
+            auto.Checked = lit && current[OtherSettings.Auto] == 1;
+            bool manual = ready && current[OtherSettings.Level] >= 0 && lit && current[OtherSettings.Auto] != 1;
             level.Enabled = manual;
             level.Max = ready && state.Levels > 1 ? state.Levels - 1 : 1;
-            level.Value = Math.Max(0, cur[OtherSettings.Level]);
+            level.Value = Math.Max(0, current[OtherSettings.Level]);
             SetDimmed(levelHead, manual);
-            levelValue.Text = ready && cur[OtherSettings.Level] >= 0 ? cur[OtherSettings.Level] + 1 + " of " + state.Levels : "";
-            bool delays = ready && cur[OtherSettings.Away] > 0 && lit;
+            levelValue.Text = ready && current[OtherSettings.Level] >= 0 ? current[OtherSettings.Level] + 1 + " of " + state.Levels : "";
+            bool delays = ready && current[OtherSettings.Away] > 0 && lit;
             SetDimmed(delayHead, delays);
-            for (int index = 0; index < delayDrops.Length; index++)
+            for (int index = 0; index < delayDropdowns.Length; index++)
             {
-                int seconds = cur[OtherSettings.Delays[index]];
+                int seconds = current[OtherSettings.Delays[index]];
                 var choices = DelayChoices(seconds);
-                delayDrops[index].Items.Clear();
-                delayDrops[index].Items.AddRange(choices.Select(DelayText));
-                delayDrops[index].Index = Array.IndexOf(choices, seconds);
-                delayDrops[index].Enabled = delays;
+                delayDropdowns[index].Items.Clear();
+                delayDropdowns[index].Items.AddRange(choices.Select(DelayText));
+                delayDropdowns[index].Index = Array.IndexOf(choices, seconds);
+                delayDropdowns[index].Enabled = delays;
                 SetDimmed(delayLabels[index], delays);
             }
         }
@@ -572,21 +572,21 @@ class PageOtherDevice : DevicePage
 
     protected override bool Unsaved { get { return dirty; } }
 
-    protected override string Current() { return cur.ToText(); }
+    protected override string Current() { return current.ToText(); }
 
     protected override void ApplyPreset(string text)
     {
         if (state == null) return;
         var preset = OtherDevice.KeepSupported(OtherSettings.FromText(text), state);
-        for (int setting = 0; setting < OtherSettings.Count; setting++) if (preset[setting] >= 0 && preset[setting] != cur[setting]) remembered[setting] = preset[setting];
-        cur.Merge(preset);
+        for (int setting = 0; setting < OtherSettings.Count; setting++) if (preset[setting] >= 0 && preset[setting] != current[setting]) remembered[setting] = preset[setting];
+        current.Merge(preset);
         Changed();
     }
 
     protected override void Revert()
     {
         if (stored == null) return;
-        cur = stored.Clone();
+        current = stored.Clone();
         remembered = rememberedAtLoad.Clone();
         Changed();
         dirty = false;
@@ -601,7 +601,7 @@ class PageOtherDevice : DevicePage
     // A refused setting goes back to what the device has, and isn't remembered or sent again.
     void Refused(List<int> refused, OtherSettings device)
     {
-        foreach (var setting in refused) { cur[setting] = device[setting]; remembered[setting] = -1; }
+        foreach (var setting in refused) { current[setting] = device[setting]; remembered[setting] = -1; }
         Settings.Set(Remembered, remembered.ToText());
         if (refused.Count == 0) { ClearStatus(); return; }
         RefreshControls();
@@ -610,18 +610,18 @@ class PageOtherDevice : DevicePage
 
     void Send()
     {
-        var want = cur.Clone();
+        var want = current.Clone();
         var before = sent.Clone();
         var at = state;
-        int sequence = ++seq;
+        int startedAt = ++sequence;
         List<int> refused = null;
         RunOnDevice(device =>
         {
-            if (sequence != seq) return;
+            if (startedAt != sequence) return;
             refused = OtherDevice.Apply(device, at, want, sent);
             foreach (var setting in refused) want[setting] = before[setting];
             sent = want;
-        }, () => { if (sequence == seq && refused != null) Refused(refused, before); });
+        }, () => { if (startedAt == sequence && refused != null) Refused(refused, before); });
     }
 
     public override void Load()
@@ -632,7 +632,7 @@ class PageOtherDevice : DevicePage
         var keep = remembered.Clone();
         List<int> refused = null;
         OtherSettings before = null;
-        int sequence = seq;
+        int startedAt = sequence;
         RunOnDevice(device =>
         {
             read = OtherDevice.Read(device, found);
@@ -649,9 +649,9 @@ class PageOtherDevice : DevicePage
         {
             state = read;
             stored = read.Set.Clone();
-            if (sequence == seq)
+            if (startedAt == sequence)
             {
-                cur = read.Set.Clone();
+                current = read.Set.Clone();
                 sent = read.Set.Clone();
                 dirty = false;
             }

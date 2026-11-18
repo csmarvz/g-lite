@@ -40,13 +40,13 @@ class MainWindow : Form
     bool rowShown, labelShown;
     string ready;
     readonly Control side, settingsPage;
-    readonly FlatButton settingsBtn, logsBtn, scanBtn, minimize, close;
+    readonly FlatButton settingsButton, logsButton, scanButton, minimize, close;
     readonly LogsPage logsPage;
     readonly System.Windows.Forms.Timer rescanSoon = new System.Windows.Forms.Timer { Interval = 1500 }, sleepers = new System.Windows.Forms.Timer { Interval = 15000 }, batteries = new System.Windows.Forms.Timer { Interval = 60000 };
-    readonly FlatButton updateBtn;
+    readonly FlatButton updateButton;
     readonly PageUpdate updatePage;
     readonly Label checkText, themeHint;
-    readonly SegmentedPicker themeSeg;
+    readonly SegmentedPicker themePicker;
     readonly Toggle runToggle, checkToggle, autoToggle;
     KeyboardView view;
     readonly bool demo;
@@ -57,7 +57,7 @@ class MainWindow : Form
     float scale = 1;
 
     [DllImport("user32.dll")] static extern bool ReleaseCapture();
-    [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, IntPtr l);
+    [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
 
     public MainWindow(FakeHidpp fake)
     {
@@ -76,7 +76,7 @@ class MainWindow : Form
 
         side = Ui.Add(this, new Control(), 0, 0, SidebarWidth, WindowHeight);
         Ui.Style(side, () => side.BackColor = Theme.Sidebar);
-        side.Paint += (s, e) => { using (var p = new Pen(Theme.Border)) e.Graphics.DrawLine(p, side.Width - 1, 0, side.Width - 1, side.Height); };
+        side.Paint += (s, e) => { using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, side.Width - 1, 0, side.Width - 1, side.Height); };
         side.MouseDown += Drag;
         Ui.Add(side, new TitleLogo(), 10, 12, SidebarInnerWidth, 34).MouseDown += (s, e) =>
         {
@@ -98,17 +98,17 @@ class MainWindow : Form
         quit.Click += (s, e) => { HidePanel(); WaitAll(); Application.Exit(); };
         quit.TabIndex = 103;
         bottom -= 40;
-        settingsBtn = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "gear", Text = "Settings" }, 10, bottom, SidebarInnerWidth, 36);
-        settingsBtn.Click += (s, e) => ShowSettings();
-        settingsBtn.TabIndex = 102;
+        settingsButton = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "gear", Text = "Settings" }, 10, bottom, SidebarInnerWidth, 36);
+        settingsButton.Click += (s, e) => ShowSettings();
+        settingsButton.TabIndex = 102;
         bottom -= 40;
-        logsBtn = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "lines", Text = "Logs" }, 10, bottom, SidebarInnerWidth, 36);
-        logsBtn.Click += (s, e) => ShowLogs();
-        logsBtn.TabIndex = 101;
+        logsButton = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "lines", Text = "Logs" }, 10, bottom, SidebarInnerWidth, 36);
+        logsButton.Click += (s, e) => ShowLogs();
+        logsButton.TabIndex = 101;
         bottom -= 40;
-        scanBtn = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "refresh", Text = "Scan for devices" }, 10, bottom, SidebarInnerWidth, 36);
-        scanBtn.Click += (s, e) => Rescan();
-        scanBtn.TabIndex = 100;
+        scanButton = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "refresh", Text = "Scan for devices" }, 10, bottom, SidebarInnerWidth, 36);
+        scanButton.Click += (s, e) => Rescan();
+        scanButton.TabIndex = 100;
         if (demo)
         {
             bottom -= 40;
@@ -117,9 +117,9 @@ class MainWindow : Form
             show.Click += (s, e) => { if (view.Visible) view.Hide(); else ShowView(); };
             view.VisibleChanged += (s, e) => { show.Text = view.Visible ? "Hide keyboard" : "Show keyboard"; wantView = view.Visible; };
         }
-        updateBtn = Ui.Add(side, new FlatButton { Style = ButtonStyle.Solid, Icon = "download", Text = "Update available", Visible = false }, 10, bottom - 40, SidebarInnerWidth, 36);
-        updateBtn.Click += (s, e) => { if (ready != null) Restart(); else ShowUpdatePage(false); };
-        updateBtn.TabIndex = 99;
+        updateButton = Ui.Add(side, new FlatButton { Style = ButtonStyle.Solid, Icon = "download", Text = "Update available", Visible = false }, 10, bottom - 40, SidebarInnerWidth, 36);
+        updateButton.Click += (s, e) => { if (ready != null) Restart(); else ShowUpdatePage(false); };
+        updateButton.TabIndex = 99;
         navTop = bottom;
         readyText = Ui.Text(side, "", 18, bottom - 40 - 20, () => Theme.Dim, 8.25f);
         readyText.AutoSize = false;
@@ -139,7 +139,7 @@ class MainWindow : Form
         settingsPage = Ui.Add(this, new Control { Visible = false }, SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         Ui.Style(settingsPage, () => settingsPage.BackColor = Theme.Background);
         settingsPage.MouseDown += Drag;
-        var sp = settingsPage;
+        var settings = settingsPage;
         logsPage = Ui.Add(this, new LogsPage(Drag), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         updatePage = Ui.Add(this, new PageUpdate(Drag), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         if (demo) updatePage.Fetch = DemoChangelog;
@@ -155,33 +155,33 @@ class MainWindow : Form
             ShowUpdate(null);
             if (updatePage.FromSettings) ShowSettings(); else Pick(selected);
         };
-        Ui.Text(sp, "Settings", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += Drag;
+        Ui.Text(settings, "Settings", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += Drag;
 
-        Ui.Text(sp, "Appearance", 20, 64, () => Theme.Dim, 9f, Ui.Semibold);
-        var look = Ui.Add(sp, new RoundedBox(), 20, 86, 616, 64);
+        Ui.Text(settings, "Appearance", 20, 64, () => Theme.Dim, 9f, Ui.Semibold);
+        var look = Ui.Add(settings, new RoundedBox(), 20, 86, 616, 64);
         themeHint = Row(look, 0, "Theme", "");
-        themeSeg = Ui.Add(look, new SegmentedPicker { Items = new[] { "System", "Dark", "Light" }, AccessibleName = "Theme" }, 616 - 14 - 240, 16, 240, 32);
-        themeSeg.Picked += i => { Theme.Mode = Theme.Modes[i]; ShowThemeHint(); };
+        themePicker = Ui.Add(look, new SegmentedPicker { Items = new[] { "System", "Dark", "Light" }, AccessibleName = "Theme" }, 616 - 14 - 240, 16, 240, 32);
+        themePicker.Picked += i => { Theme.Mode = Theme.Modes[i]; ShowThemeHint(); };
 
-        Ui.Text(sp, "Updates", 20, 170, () => Theme.Dim, 9f, Ui.Semibold);
-        var upd = Ui.Add(sp, new RoundedBox(), 20, 192, 616, 192);
-        Row(upd, 0, "Check for updates", "Looks for a new release on GitHub when G-Lite starts");
-        checkToggle = Ui.Add(upd, new Toggle { Checked = Updater.CheckForUpdates, AccessibleName = "Check for updates" }, 616 - 14 - 40, 21, 40, 22);
+        Ui.Text(settings, "Updates", 20, 170, () => Theme.Dim, 9f, Ui.Semibold);
+        var updatesBox = Ui.Add(settings, new RoundedBox(), 20, 192, 616, 192);
+        Row(updatesBox, 0, "Check for updates", "Looks for a new release on GitHub when G-Lite starts");
+        checkToggle = Ui.Add(updatesBox, new Toggle { Checked = Updater.CheckForUpdates, AccessibleName = "Check for updates" }, 616 - 14 - 40, 21, 40, 22);
         checkToggle.Changed += () => Updater.CheckForUpdates = checkToggle.Checked;
-        Rule(upd, 64);
-        Row(upd, 64, "Install updates automatically", "Otherwise G-Lite asks first");
-        autoToggle = Ui.Add(upd, new Toggle { Checked = Updater.Auto, AccessibleName = "Install updates automatically" }, 616 - 14 - 40, 64 + 21, 40, 22);
+        Rule(updatesBox, 64);
+        Row(updatesBox, 64, "Install updates automatically", "Otherwise G-Lite asks first");
+        autoToggle = Ui.Add(updatesBox, new Toggle { Checked = Updater.Auto, AccessibleName = "Install updates automatically" }, 616 - 14 - 40, 64 + 21, 40, 22);
         autoToggle.Changed += () => Updater.Auto = autoToggle.Checked;
-        Rule(upd, 128);
-        checkText = Row(upd, 128, "Version " + Application.ProductVersion, "");
+        Rule(updatesBox, 128);
+        checkText = Row(updatesBox, 128, "Version " + Application.ProductVersion, "");
         checkText.AutoSize = false;
         checkText.AutoEllipsis = true;
         checkText.Size = new Size(616 - 14 - 180 - 14 - 14, 18);
-        var now = Ui.Add(upd, new FlatButton { Text = "Check for updates" }, 616 - 14 - 180, 128 + 16, 180, 32);
-        now.Click += (s, e) => { ShowUpdatePage(true); CheckUpdates(true); };
+        var checkNow = Ui.Add(updatesBox, new FlatButton { Text = "Check for updates" }, 616 - 14 - 180, 128 + 16, 180, 32);
+        checkNow.Click += (s, e) => { ShowUpdatePage(true); CheckUpdates(true); };
 
-        Ui.Text(sp, "Startup", 20, 404, () => Theme.Dim, 9f, Ui.Semibold);
-        var start = Ui.Add(sp, new RoundedBox(), 20, 426, 616, 64);
+        Ui.Text(settings, "Startup", 20, 404, () => Theme.Dim, 9f, Ui.Semibold);
+        var start = Ui.Add(settings, new RoundedBox(), 20, 426, 616, 64);
         Row(start, 0, "Run on startup", "Starts in the tray when you sign in to Windows");
         runToggle = Ui.Add(start, new Toggle { AccessibleName = "Run on startup" }, 616 - 14 - 40, 21, 40, 22);
         runToggle.Changed += () => SetStartup(runToggle.Checked);
@@ -207,14 +207,14 @@ class MainWindow : Form
 
     static void Rule(Control box, int y)
     {
-        var l = Ui.Add(box, new Control(), 14, y, box.Width - 28, 1);
-        Ui.Style(l, () => l.BackColor = Theme.Border);
+        var line = Ui.Add(box, new Control(), 14, y, box.Width - 28, 1);
+        Ui.Style(line, () => line.BackColor = Theme.Border);
     }
 
     void Restyle()
     {
         Ui.Restyle();
-        foreach (var p in pages.Values.OfType<DevicePage>()) p.Restyle();
+        foreach (var page in pages.Values.OfType<DevicePage>()) page.Restyle();
         WindowHelpers.Border(this, Theme.Border);
         ShowThemeHint();
         Invalidate(true);
@@ -223,14 +223,14 @@ class MainWindow : Form
 
     void ShowThemeHint()
     {
-        var m = Theme.Mode;
-        themeSeg.Index = Array.IndexOf(Theme.Modes, m);
-        themeHint.Text = m == "system" ? "Follows Windows, which uses " + (Theme.SystemLight() ? "light" : "dark") + " mode right now" : "Always " + m;
+        var mode = Theme.Mode;
+        themePicker.Index = Array.IndexOf(Theme.Modes, mode);
+        themeHint.Text = mode == "system" ? "Follows Windows, which uses " + (Theme.SystemLight() ? "light" : "dark") + " mode right now" : "Always " + mode;
     }
 
     Control Current
     {
-        get { Control c; return selected != null && pages.TryGetValue(selected, out c) ? c : null; }
+        get { Control page; return selected != null && pages.TryGetValue(selected, out page) ? page : null; }
     }
 
     void Pick(string key)
@@ -239,13 +239,13 @@ class MainWindow : Form
         bool changed = key != selected;
         selected = key;
         settingsPage.Visible = false;
-        settingsBtn.On = false;
-        settingsBtn.Invalidate();
+        settingsButton.On = false;
+        settingsButton.Invalidate();
         logsPage.Close();
-        logsBtn.On = false;
-        logsBtn.Invalidate();
+        logsButton.On = false;
+        logsButton.Invalidate();
         HideUpdatePage();
-        foreach (var p in pages) p.Value.Visible = p.Key == key;
+        foreach (var pair in pages) pair.Value.Visible = pair.Key == key;
         empty.Visible = key == null;
         foreach (var i in items) { i.Value.On = i.Key == key; i.Value.Invalidate(); }
         DeviceListItem picked;
@@ -253,11 +253,11 @@ class MainWindow : Form
         if (Visible) ShowPage(Current);
     }
 
-    void ShowPage(Control now)
+    void ShowPage(Control page)
     {
-        if (shown == now) return;
+        if (shown == page) return;
         if (shown is IPage && !shown.IsDisposed) ((IPage)shown).Hidden();
-        shown = now;
+        shown = page;
         if (shown is IPage) ((IPage)shown).Shown();
     }
 
@@ -267,72 +267,72 @@ class MainWindow : Form
         checkToggle.Checked = Updater.CheckForUpdates;
         autoToggle.Checked = Updater.Auto;
         ShowThemeHint();
-        foreach (var p in pages.Values) p.Visible = false;
+        foreach (var page in pages.Values) page.Visible = false;
         empty.Visible = false;
         logsPage.Close();
-        logsBtn.On = false;
-        logsBtn.Invalidate();
+        logsButton.On = false;
+        logsButton.Invalidate();
         HideUpdatePage();
         settingsPage.Visible = true;
         foreach (var i in items.Values) { i.On = false; i.Invalidate(); }
-        settingsBtn.On = true;
-        settingsBtn.Invalidate();
+        settingsButton.On = true;
+        settingsButton.Invalidate();
     }
 
     void ShowLogs()
     {
-        foreach (var p in pages.Values) p.Visible = false;
+        foreach (var page in pages.Values) page.Visible = false;
         empty.Visible = false;
         settingsPage.Visible = false;
-        settingsBtn.On = false;
-        settingsBtn.Invalidate();
+        settingsButton.On = false;
+        settingsButton.Invalidate();
         HideUpdatePage();
         foreach (var i in items.Values) { i.On = false; i.Invalidate(); }
         logsPage.Open();
-        logsBtn.On = true;
-        logsBtn.Invalidate();
+        logsButton.On = true;
+        logsButton.Invalidate();
     }
 
     void ShowUpdatePage(bool fromSettings)
     {
-        foreach (var p in pages.Values) p.Visible = false;
+        foreach (var page in pages.Values) page.Visible = false;
         empty.Visible = false;
         settingsPage.Visible = false;
-        settingsBtn.On = false;
-        settingsBtn.Invalidate();
+        settingsButton.On = false;
+        settingsButton.Invalidate();
         logsPage.Close();
-        logsBtn.On = false;
-        logsBtn.Invalidate();
+        logsButton.On = false;
+        logsButton.Invalidate();
         foreach (var i in items.Values) { i.On = false; i.Invalidate(); }
         if (!fromSettings && available != null && ready == null && !updatePage.Busy && updatePage.State != "failed") updatePage.Available(available);
         updatePage.FromSettings = fromSettings;
         updatePage.Visible = true;
-        updateBtn.On = !fromSettings;
-        updateBtn.Invalidate();
+        updateButton.On = !fromSettings;
+        updateButton.Invalidate();
     }
 
     void HideUpdatePage()
     {
         updatePage.Visible = false;
-        updateBtn.On = false;
-        updateBtn.Invalidate();
+        updateButton.On = false;
+        updateButton.Invalidate();
     }
 
-    static string DeviceLabel(FoundDevice f) { return f.ShortName == "" ? f.Name : f.ShortName; }
+    static string DeviceLabel(FoundDevice found) { return found.ShortName == "" ? found.Name : found.ShortName; }
 
-    T Place<T>(Control parent, T c, int x, int y, int w, int h) where T : Control
+    T Place<T>(Control parent, T control, int x, int y, int width, int height) where T : Control
     {
-        Ui.Add(parent, c, x, y, w, h);
-        if (scale != 1) c.Scale(new SizeF(scale, scale));
-        return c;
+        Ui.Add(parent, control, x, y, width, height);
+        if (scale != 1) control.Scale(new SizeF(scale, scale));
+        return control;
     }
 
     public void Rescan()
     {
         if (scanning || !IsHandleCreated) return;
         scanning = true;
-        scanBtn.Text = "Scanning…";
-        scanBtn.Enabled = false;
+        scanButton.Text = "Scanning…";
+        scanButton.Enabled = false;
         Task.Run(() =>
         {
             List<FoundDevice> list;
@@ -345,18 +345,18 @@ class MainWindow : Form
     public void ReadBatteries()
     {
         if (demo || (DateTime.UtcNow - batteriesRead).TotalSeconds < 5) return;
-        var due = found.Where(f => !f.Asleep && f.Battery >= 0 && f.Path != null && !f.Hidpp10 && !f.PlainHid && f.BatteryFeature != 0).ToList();
+        var due = found.Where(device => !device.Asleep && device.Battery >= 0 && device.Path != null && !device.Hidpp10 && !device.PlainHid && device.BatteryFeature != 0).ToList();
         if (scanning || reading || due.Count == 0) return;
         reading = true;
         batteriesRead = DateTime.UtcNow;
         Task.Run(() =>
         {
-            var read = due.Select(f => new { f, now = Devices.ReadBattery(f) }).ToList();
+            var read = due.Select(device => new { device, now = Devices.ReadBattery(device) }).ToList();
             BeginInvoke((Action)(() =>
             {
                 reading = false;
-                foreach (var r in read) if (r.now != null) ShowBattery(r.f, r.now);
-                if (read.Any(r => r.now == null)) RescanSoon();
+                foreach (var entry in read) if (entry.now != null) ShowBattery(entry.device, entry.now);
+                if (read.Any(entry => entry.now == null)) RescanSoon();
             }));
         });
     }
@@ -367,19 +367,19 @@ class MainWindow : Form
         rescanSoon.Start();
     }
 
-    void ShowBattery(FoundDevice f, FoundDevice now)
+    void ShowBattery(FoundDevice device, FoundDevice reading)
     {
-        if (!found.Contains(f)) return;
-        f.Battery = now.Battery;
-        f.Charging = now.Charging;
-        f.Millivolts = now.Millivolts;
+        if (!found.Contains(device)) return;
+        device.Battery = reading.Battery;
+        device.Charging = reading.Charging;
+        device.Millivolts = reading.Millivolts;
         DeviceListItem item;
-        if (items.TryGetValue(f.Key, out item)) { item.Level = f.Level; item.Value = f.BatteryText; item.Invalidate(); }
+        if (items.TryGetValue(device.Key, out item)) { item.Level = device.Level; item.Value = device.BatteryText; item.Invalidate(); }
         Control page;
-        if (pages.TryGetValue(f.Key, out page))
+        if (pages.TryGetValue(device.Key, out page))
         {
-            if (page is DevicePage) ((DevicePage)page).SetFound(f);
-            else ((InfoPage)page).SetFound(f);
+            if (page is DevicePage) ((DevicePage)page).SetFound(device);
+            else ((InfoPage)page).SetFound(device);
         }
     }
 
@@ -389,19 +389,19 @@ class MainWindow : Form
         if (report[0] != 0x11 || report[3] != 0x00) return;
         BeginInvoke((Action)(() =>
         {
-            var f = found.FirstOrDefault(d => d.Path == path && d.Index == report[1] && !d.Asleep && d.BatteryFeature != 0 && d.BatteryFeature == report[2]);
-            if (f == null) return;
-            var now = new FoundDevice { Name = f.Name, BatteryId = f.BatteryId };
+            var device = found.FirstOrDefault(candidate => candidate.Path == path && candidate.Index == report[1] && !candidate.Asleep && candidate.BatteryFeature != 0 && candidate.BatteryFeature == report[2]);
+            if (device == null) return;
+            var now = new FoundDevice { Name = device.Name, BatteryId = device.BatteryId };
             Devices.Decode(now, report.Skip(4).ToArray());
             if (now.BatteryFromVoltage) Devices.Remember(now, DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute);
-            ShowBattery(f, now);
+            ShowBattery(device, now);
         }));
     }
 
     void Listen(List<FoundDevice> list)
     {
         // A HID++ 1.0 device on its cable (index 0) isn't watched; one behind a receiver (the G700) is, for the receiver's 0x41 connect events.
-        var paths = list.Where(f => f.Path != null && !f.PlainHid && !(f.Hidpp10 && f.Index == 0)).Select(f => f.Path).Distinct().OrderBy(p => p).ToList();
+        var paths = list.Where(device => device.Path != null && !device.PlainHid && !(device.Hidpp10 && device.Index == 0)).Select(device => device.Path).Distinct().OrderBy(path => path).ToList();
         var key = string.Join("|", paths);
         if (key == watched) return;
         watched = key;
@@ -412,50 +412,50 @@ class MainWindow : Form
     void Apply(List<FoundDevice> list)
     {
         scanning = false;
-        scanBtn.Text = "Scan for devices";
-        scanBtn.Enabled = true;
+        scanButton.Text = "Scan for devices";
+        scanButton.Enabled = true;
         empty.Searching(false);
-        var keys = new HashSet<string>(list.Select(f => f.Key));
-        var before = new HashSet<string>(found.Select(f => f.Key));
-        foreach (var f in list.Where(f => !before.Contains(f.Key)))
-            Log.Add(DeviceLabel(f), "found", f.Link + f.Slot + (f.WirelessId != 0 ? ", ID " + f.WirelessId.ToString("X4") : "") + (f.Asleep ? ", asleep" : ""));
-        foreach (var f in found.Where(f => !keys.Contains(f.Key))) Log.Add(DeviceLabel(f), "lost", f.Link);
+        var keys = new HashSet<string>(list.Select(device => device.Key));
+        var before = new HashSet<string>(found.Select(device => device.Key));
+        foreach (var device in list.Where(device => !before.Contains(device.Key)))
+            Log.Add(DeviceLabel(device), "found", device.Link + device.Slot + (device.WirelessId != 0 ? ", ID " + device.WirelessId.ToString("X4") : "") + (device.Asleep ? ", asleep" : ""));
+        foreach (var device in found.Where(device => !keys.Contains(device.Key))) Log.Add(DeviceLabel(device), "lost", device.Link);
         found = list;
-        foreach (var k in pages.Keys.Where(k => !keys.Contains(k)).ToList()) Remove(k);
+        foreach (var stale in pages.Keys.Where(stale => !keys.Contains(stale)).ToList()) Remove(stale);
         int y = 0;
         var made = new List<DevicePage>();
-        foreach (var f in list)
+        foreach (var device in list)
         {
-            var type = PageFor(f);
+            var type = PageFor(device);
             Control page;
-            if (pages.TryGetValue(f.Key, out page) && page.GetType() != type) { Remove(f.Key); page = null; }
+            if (pages.TryGetValue(device.Key, out page) && page.GetType() != type) { Remove(device.Key); page = null; }
             if (page == null)
             {
-                page = MakePage(f, type);
+                page = MakePage(device, type);
                 Place(this, page, SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
                 page.Visible = false;
-                pages[f.Key] = page;
+                pages[device.Key] = page;
                 if (page is Page515 && note != null) { ((Page515)page).Note = note; note = null; }
                 if (page is DevicePage) made.Add((DevicePage)page);
             }
-            else if (page is DevicePage) ((DevicePage)page).SetFound(f);
-            else ((InfoPage)page).SetFound(f);
+            else if (page is DevicePage) ((DevicePage)page).SetFound(device);
+            else ((InfoPage)page).SetFound(device);
             DeviceListItem item;
-            if (!items.TryGetValue(f.Key, out item))
+            if (!items.TryGetValue(device.Key, out item))
             {
-                var key = f.Key;
+                var key = device.Key;
                 item = Place(deviceList, new DeviceListItem(), 10, y, SidebarInnerWidth, 46);
                 deviceList.Watch(item);
                 item.Click += (s, e) => Pick(key);
                 items[key] = item;
             }
-            item.TabIndex = list.IndexOf(f);
-            item.Title = f.ShortName;
-            item.Subtitle = f.Subtitle;
-            item.Level = f.Level;
-            item.Value = f.BatteryText;
-            item.Icon = f.IsG560 ? "speaker" : f.Kind == "light" || f.Kind == "keyboard" || f.Kind == "mouse" || f.Kind == "headset" ? f.Kind : "device";
-            item.AccessibleName = f.ShortName;
+            item.TabIndex = list.IndexOf(device);
+            item.Title = device.ShortName;
+            item.Subtitle = device.Subtitle;
+            item.Level = device.Level;
+            item.Value = device.BatteryText;
+            item.Icon = device.IsG560 ? "speaker" : device.Kind == "light" || device.Kind == "keyboard" || device.Kind == "mouse" || device.Kind == "headset" ? device.Kind : "device";
+            item.AccessibleName = device.ShortName;
             item.Location = new Point(S(10), S(y) - deviceList.Offset);
             item.Invalidate();
             y += 50;
@@ -465,26 +465,26 @@ class MainWindow : Form
         noneText.Visible = list.Count == 0;
         minimize.BringToFront();
         close.BringToFront();
-        sleepers.Enabled = list.Any(f => f.Asleep && !Devices.Shorts.ContainsKey(f.Path ?? ""));
+        sleepers.Enabled = list.Any(device => device.Asleep && !Devices.Shorts.ContainsKey(device.Path ?? ""));
         if (!demo) Listen(list);
         if (!settingsPage.Visible && !logsPage.Visible && !updatePage.Visible) Pick(selected);
         foreach (var page in made) if (page != shown) page.LoadForPreset();
     }
 
-    static Type PageFor(FoundDevice f)
+    static Type PageFor(FoundDevice found)
     {
-        var support = DeviceTable.For(f);
+        var support = DeviceTable.For(found);
         return support == null ? typeof(InfoPage) : support.Screen;
     }
 
-    Control MakePage(FoundDevice f, Type type)
+    Control MakePage(FoundDevice found, Type type)
     {
-        var support = DeviceTable.For(f);
-        if (support == null || support.Screen != type) return new InfoPage(f, Drag, Rescan);
-        Hidpp dev = null;
-        if (demo && !demoDevs.TryGetValue(f.Key, out dev))
-            demoDevs[f.Key] = dev = support.Fake != null ? support.Fake(f) : fake;
-        return support.Make(f, dev, Drag);
+        var support = DeviceTable.For(found);
+        if (support == null || support.Screen != type) return new InfoPage(found, Drag, Rescan);
+        Hidpp demoDevice = null;
+        if (demo && !demoDevs.TryGetValue(found.Key, out demoDevice))
+            demoDevs[found.Key] = demoDevice = support.Fake != null ? support.Fake(found) : fake;
+        return support.Make(found, demoDevice, Drag);
     }
 
     void Remove(string key)
@@ -497,7 +497,7 @@ class MainWindow : Form
         if (items.TryGetValue(key, out item)) { items.Remove(key); item.Dispose(); }
     }
 
-    void WaitAll() { foreach (var p in pages.Values.OfType<IPage>()) p.Queue.Wait(5000); }
+    void WaitAll() { foreach (var page in pages.Values.OfType<IPage>()) page.Queue.Wait(5000); }
 
     static List<FoundDevice> DemoDevices()
     {
@@ -528,15 +528,15 @@ class MainWindow : Form
         };
     }
 
-    int S(float v) { return (int)Math.Round(v * scale); }
+    int S(float value) { return (int)Math.Round(value * scale); }
 
-    void Rescale(float ns)
+    void Rescale(float newScale)
     {
-        if (ns == scale) return;
+        if (newScale == scale) return;
         SuspendLayout();
-        Scale(new SizeF(ns / scale, ns / scale));
-        scale = ns;
-        Ui.DpiScale = ns;
+        Scale(new SizeF(newScale / scale, newScale / scale));
+        scale = newScale;
+        Ui.DpiScale = newScale;
         Ui.Refont();
         ResumeLayout();
         Invalidate(true);
@@ -545,18 +545,18 @@ class MainWindow : Form
 
     public void RefreshIcons()
     {
-        int t = (int)Math.Round(16 * WindowHelpers.At(Point.Empty)), b = S(32);
+        int trayPixels = (int)Math.Round(16 * WindowHelpers.At(Point.Empty)), bigPixels = S(32);
         bool light = Theme.TaskbarLight();
-        if (Tray != null && (t != traySize || light != trayLight)) { traySize = t; trayLight = light; Tray.Icon = Logo.MakeTray(t, light); }
-        if (b != bigSize) { bigSize = b; Icon = Logo.MakeIcon(b); }
+        if (Tray != null && (trayPixels != traySize || light != trayLight)) { traySize = trayPixels; trayLight = light; Tray.Icon = Logo.MakeTray(trayPixels, light); }
+        if (bigPixels != bigSize) { bigSize = bigPixels; Icon = Logo.MakeIcon(bigPixels); }
     }
 
-    protected override void WndProc(ref Message m)
+    protected override void WndProc(ref Message message)
     {
-        if (m.Msg == WindowHelpers.DpiChanged) Rescale(WindowHelpers.FromMessage(m));
-        Presence.Power(m);
-        if (m.Msg == 0x0219 && !demo) RescanSoon();
-        base.WndProc(ref m);
+        if (message.Msg == WindowHelpers.DpiChanged) Rescale(WindowHelpers.FromMessage(message));
+        Presence.Power(message);
+        if (message.Msg == 0x0219 && !demo) RescanSoon();
+        base.WndProc(ref message);
     }
 
     void Drag(object s, MouseEventArgs e)
@@ -574,22 +574,22 @@ class MainWindow : Form
 
     void SetStartup(bool on)
     {
-        using (var k = Registry.CurrentUser.CreateSubKey(RunKey))
-            if (on) k.SetValue("GLite", "\"" + Application.ExecutablePath + "\" --tray");
-            else k.DeleteValue("GLite", false);
-        using (var k = Registry.CurrentUser.CreateSubKey(ApprovedKey))
-            if (on) k.SetValue("GLite", new byte[] { 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, RegistryValueKind.Binary);
-            else k.DeleteValue("GLite", false);
+        using (var key = Registry.CurrentUser.CreateSubKey(RunKey))
+            if (on) key.SetValue("GLite", "\"" + Application.ExecutablePath + "\" --tray");
+            else key.DeleteValue("GLite", false);
+        using (var key = Registry.CurrentUser.CreateSubKey(ApprovedKey))
+            if (on) key.SetValue("GLite", new byte[] { 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, RegistryValueKind.Binary);
+            else key.DeleteValue("GLite", false);
     }
 
     static bool StartupOn()
     {
-        using (var k = Registry.CurrentUser.OpenSubKey(RunKey))
-            if (k == null || k.GetValue("GLite") == null) return false;
-        using (var k = Registry.CurrentUser.OpenSubKey(ApprovedKey))
+        using (var key = Registry.CurrentUser.OpenSubKey(RunKey))
+            if (key == null || key.GetValue("GLite") == null) return false;
+        using (var key = Registry.CurrentUser.OpenSubKey(ApprovedKey))
         {
-            var v = k == null ? null : k.GetValue("GLite") as byte[];
-            return v == null || v.Length == 0 || (v[0] & 1) == 0;
+            var value = key == null ? null : key.GetValue("GLite") as byte[];
+            return value == null || value.Length == 0 || (value[0] & 1) == 0;
         }
     }
 
@@ -605,19 +605,19 @@ class MainWindow : Form
 
     void ShowView()
     {
-        var wa = Screen.FromControl(this).WorkingArea;
+        var workArea = Screen.FromControl(this).WorkingArea;
         view.StartPosition = FormStartPosition.Manual;
         view.Rescale(scale);
-        view.Location = new Point(Math.Max(wa.Left, Left - view.Width - S(8)), Math.Max(wa.Top, Top));
+        view.Location = new Point(Math.Max(workArea.Left, Left - view.Width - S(8)), Math.Max(workArea.Top, Top));
         view.Show();
     }
 
-    void ShowUpdate(string v)
+    void ShowUpdate(string version)
     {
         if (updatePage.Busy || ready != null) return;
-        available = v;
-        ShowRow(v != null ? "Update available" : null, "download", null);
-        if (v != null) updatePage.Available(v);
+        available = version;
+        ShowRow(version != null ? "Update available" : null, "download", null);
+        if (version != null) updatePage.Available(version);
     }
 
     public string Available { get { return available ?? (ready != null ? ready + " installed" : null); } }
@@ -628,31 +628,31 @@ class MainWindow : Form
         if (manual) { checkText.Text = "Checking for updates…"; updatePage.Checking(); }
         Task.Run(() =>
         {
-            string v = null, err = null;
-            if (demo) { Thread.Sleep(800); v = DemoVersion(); }
-            else try { v = Updater.Latest(); } catch (Exception ex) { err = ex.Message; }
-            BeginInvoke((Action)(() => GotVersion(v, err, manual)));
+            string version = null, error = null;
+            if (demo) { Thread.Sleep(800); version = DemoVersion(); }
+            else try { version = Updater.Latest(); } catch (Exception ex) { error = ex.Message; }
+            BeginInvoke((Action)(() => GotVersion(version, error, manual)));
         });
     }
 
-    void GotVersion(string v, string err, bool manual)
+    void GotVersion(string version, string error, bool manual)
     {
-        if (err != null) Log.Add("", "update", "Couldn't check for updates: " + err);
-        else if (v != null) Log.Add("", "update", !Updater.IsNewerVersion(v, Application.ProductVersion) ? "Checked for updates: " + v + " is the latest" : "Version " + v + " is available" + (!manual && !demo && v == Updater.Skipped ? ", skipped" : ""));
+        if (error != null) Log.Add("", "update", "Couldn't check for updates: " + error);
+        else if (version != null) Log.Add("", "update", !Updater.IsNewerVersion(version, Application.ProductVersion) ? "Checked for updates: " + version + " is the latest" : "Version " + version + " is available" + (!manual && !demo && version == Updater.Skipped ? ", skipped" : ""));
         if (ready != null) { if (manual) { checkText.Text = "Version " + ready + " installed. Restart G-Lite to use it."; updatePage.Ready(ready); } return; }
-        if (err != null) { if (manual) { checkText.Text = "Couldn't check for updates: " + err; updatePage.CheckFailed(err); } return; }
-        if (v == null || !Updater.IsNewerVersion(v, Application.ProductVersion)) { if (manual) { checkText.Text = "G-Lite is up to date"; updatePage.Current(); } return; }
-        if (!manual && !demo && v == Updater.Skipped) return;
-        if (!manual && Updater.Auto) { Install(v); return; }
-        if (manual) checkText.Text = "Version " + v + " is available";
-        ShowUpdate(v);
+        if (error != null) { if (manual) { checkText.Text = "Couldn't check for updates: " + error; updatePage.CheckFailed(error); } return; }
+        if (version == null || !Updater.IsNewerVersion(version, Application.ProductVersion)) { if (manual) { checkText.Text = "G-Lite is up to date"; updatePage.Current(); } return; }
+        if (!manual && !demo && version == Updater.Skipped) return;
+        if (!manual && Updater.Auto) { Install(version); return; }
+        if (manual) checkText.Text = "Version " + version + " is available";
+        ShowUpdate(version);
     }
 
     void ShowRow(string text, string icon, string label)
     {
         rowShown = text != null;
-        updateBtn.Visible = rowShown;
-        if (rowShown) { updateBtn.Text = text; updateBtn.Icon = icon; updateBtn.Invalidate(); }
+        updateButton.Visible = rowShown;
+        if (rowShown) { updateButton.Text = text; updateButton.Icon = icon; updateButton.Invalidate(); }
         labelShown = label != null;
         readyText.Text = label ?? "";
         readyText.Visible = labelShown;
@@ -665,12 +665,12 @@ class MainWindow : Form
         deviceList.Height = S(bottom - 78);
     }
 
-    void Ready(string v)
+    void Ready(string version)
     {
-        ready = v;
+        ready = version;
         available = null;
-        ShowRow("Restart G-Lite", "refresh", "Version " + v + " installed");
-        updatePage.Ready(v);
+        ShowRow("Restart G-Lite", "refresh", "Version " + version + " installed");
+        updatePage.Ready(version);
     }
 
     void Restart()
@@ -685,21 +685,21 @@ class MainWindow : Form
         Application.Exit();
     }
 
-    void Install(string v)
+    void Install(string version)
     {
-        available = v;
-        Log.Add("", "update", "Downloading " + v + (demo ? " (demo, nothing is downloaded)" : ""));
+        available = version;
+        Log.Add("", "update", "Downloading " + version + (demo ? " (demo, nothing is downloaded)" : ""));
         ShowRow("Downloading…", "download", null);
-        updatePage.Progress(v, -1);
-        if (demo) { DemoInstall(v); return; }
+        updatePage.Progress(version, -1);
+        if (demo) { DemoInstall(version); return; }
         Task.Run(() =>
         {
             try
             {
-                Updater.Install(v, percent => BeginInvoke((Action)(() => { ShowRow(percent < 0 ? "Downloading…" : "Downloading " + percent + "%", "download", null); updatePage.Progress(v, percent); })));
-                BeginInvoke((Action)(() => Ready(v)));
+                Updater.Install(version, percent => BeginInvoke((Action)(() => { ShowRow(percent < 0 ? "Downloading…" : "Downloading " + percent + "%", "download", null); updatePage.Progress(version, percent); })));
+                BeginInvoke((Action)(() => Ready(version)));
             }
-            catch (Exception ex) { Log.Add("", "error", "Update to " + v + " failed: " + ex.Message); BeginInvoke((Action)(() => { ShowRow("Update failed", "download", null); updatePage.Failed(v, ex.Message); })); }
+            catch (Exception ex) { Log.Add("", "error", "Update to " + version + " failed: " + ex.Message); BeginInvoke((Action)(() => { ShowRow("Update failed", "download", null); updatePage.Failed(version, ex.Message); })); }
         });
     }
 
@@ -726,7 +726,7 @@ class MainWindow : Form
 
     int demoTries;
 
-    void DemoInstall(string v)
+    void DemoInstall(string version)
     {
         bool fail = demoTries++ == 0;
         int percent = 0;
@@ -737,25 +737,25 @@ class MainWindow : Form
             if (fail && percent >= 60)
             {
                 timer.Dispose();
-                Log.Add("", "error", "Update to " + v + " failed: the download doesn't match its checksum (demo)");
+                Log.Add("", "error", "Update to " + version + " failed: the download doesn't match its checksum (demo)");
                 ShowRow("Update failed", "download", null);
-                updatePage.Failed(v, "the download doesn't match its checksum, so nothing was changed (demo)");
+                updatePage.Failed(version, "the download doesn't match its checksum, so nothing was changed (demo)");
                 return;
             }
             if (percent >= 100)
             {
                 timer.Dispose();
-                Log.Add("", "update", "Installed " + v + " (demo, nothing changed)");
-                Ready(v);
+                Log.Add("", "update", "Installed " + version + " (demo, nothing changed)");
+                Ready(version);
                 return;
             }
             ShowRow("Downloading " + percent + "%", "download", null);
-            updatePage.Progress(v, percent);
+            updatePage.Progress(version, percent);
         };
         timer.Start();
     }
 
-    public void SetNote(string n) { note = n; }
+    public void SetNote(string text) { note = text; }
 
     public List<FoundDevice> Listed { get { return found; } }
 
@@ -774,9 +774,9 @@ class MainWindow : Form
     public void ShowPanel()
     {
         if (WindowState == FormWindowState.Minimized) { Show(); WindowState = FormWindowState.Normal; }
-        var wa = Screen.FromPoint(Cursor.Position).WorkingArea;
+        var workArea = Screen.FromPoint(Cursor.Position).WorkingArea;
         Rescale(WindowHelpers.At(moved ? Location : Cursor.Position));
-        if (!moved) Location = new Point(Math.Max(wa.Left, wa.Right - Width - S(12)), Math.Max(wa.Top, wa.Bottom - Height - S(12)));
+        if (!moved) Location = new Point(Math.Max(workArea.Left, workArea.Right - Width - S(12)), Math.Max(workArea.Top, workArea.Bottom - Height - S(12)));
         Show();
         if (view != null && wantView) ShowView();
         Activate();
@@ -838,7 +838,7 @@ class MainWindow : Form
                 lastAt = now;
                 return percent;
             };
-            Func<FoundDevice, string> state = f => f.Asleep ? "" : f.Battery >= 0 ? f.BatteryText : "";
+            Func<FoundDevice, string> state = device => device.Asleep ? "" : device.Battery >= 0 ? device.BatteryText : "";
             var tip = new TrayTip { Tray = tray };
             tip.Rows = () =>
             {
@@ -846,7 +846,7 @@ class MainWindow : Form
                 if (demo) rows.Add(new[] { "G-Lite", "demo" });
                 rows.Add(new[] { "CPU", measure().ToString("0.0") + "%" });
                 rows.Add(new[] { "RAM", (WindowHelpers.PrivateMemory() >> 20) + " MB" });
-                rows.AddRange(panel.Listed.Select(f => new[] { f.ShortName, state(f), f.Level != -1 ? f.Level.ToString() : "" }));
+                rows.AddRange(panel.Listed.Select(device => new[] { device.ShortName, state(device), device.Level != -1 ? device.Level.ToString() : "" }));
                 if (panel.Available != null) rows.Add(new[] { "Update", panel.Available });
                 return rows;
             };
@@ -855,10 +855,10 @@ class MainWindow : Form
             Action fill = () =>
             {
                 menu.Items.Clear();
-                foreach (var f in panel.Listed)
+                foreach (var device in panel.Listed)
                 {
-                    var key = f.Key;
-                    var row = new MenuRow(f.ShortName) { Level = f.Level, Value = state(f) };
+                    var key = device.Key;
+                    var row = new MenuRow(device.ShortName) { Level = device.Level, Value = state(device) };
                     row.Click += (s, e) => panel.Open(key);
                     menu.Items.Add(row);
                 }
@@ -866,10 +866,10 @@ class MainWindow : Form
                 menu.Items.Add("Scan for devices", null, (s, e) => panel.Rescan());
                 menu.Items.Add("Settings", null, (s, e) => panel.OpenSettings());
                 menu.Items.Add("Quit G-Lite", null, (s, e) => { tray.Visible = false; Application.Exit(); });
-                float k = WindowHelpers.At(Cursor.Position);
-                menu.Padding = new Padding((int)(4 * k), (int)(6 * k), (int)(4 * k), (int)(6 * k));
-                menu.Items.Insert(0, new ToolStripLabel { AutoSize = false, Height = (int)(5 * k), Enabled = false });
-                foreach (ToolStripItem item in menu.Items) if (item is ToolStripMenuItem) item.Padding = new Padding((int)(6 * k), (int)(3 * k), (int)(6 * k), (int)(3 * k));
+                float scale = WindowHelpers.At(Cursor.Position);
+                menu.Padding = new Padding((int)(4 * scale), (int)(6 * scale), (int)(4 * scale), (int)(6 * scale));
+                menu.Items.Insert(0, new ToolStripLabel { AutoSize = false, Height = (int)(5 * scale), Enabled = false });
+                foreach (ToolStripItem item in menu.Items) if (item is ToolStripMenuItem) item.Padding = new Padding((int)(6 * scale), (int)(3 * scale), (int)(6 * scale), (int)(3 * scale));
             };
             fill();
             menu.Opening += (s, e) => { tip.Dismiss(); fill(); e.Cancel = false; };
@@ -879,13 +879,13 @@ class MainWindow : Form
             panel.Tray = tray;
             panel.RefreshIcons();
             panel.Rescan();
-            SystemEvents.DisplaySettingsChanged += (o, e) => panel.RefreshIcons();
-            SystemEvents.UserPreferenceChanged += (o, e) => { panel.RefreshIcons(); Theme.Apply(); };
+            SystemEvents.DisplaySettingsChanged += (s, e) => panel.RefreshIcons();
+            SystemEvents.UserPreferenceChanged += (s, e) => { panel.RefreshIcons(); Theme.Apply(); };
             if (args.Contains("--restart")) panel.SetNote("Successfully updated to v" + Application.ProductVersion);
-            using (var k = Registry.CurrentUser.OpenSubKey(RunKey, true))
+            using (var key = Registry.CurrentUser.OpenSubKey(RunKey, true))
             {
-                var run = k == null ? null : k.GetValue("GLite") as string;
-                if (run != null && !run.Contains("--tray")) k.SetValue("GLite", run + " --tray");
+                var run = key == null ? null : key.GetValue("GLite") as string;
+                if (run != null && !run.Contains("--tray")) key.SetValue("GLite", run + " --tray");
             }
             if (!args.Contains("--tray")) panel.ShowPanel();
             else
@@ -910,29 +910,29 @@ class DeviceTable
 
     public static readonly DeviceTable[] All =
     {
-        new DeviceTable { Matches = f => f.IsG515, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, KeyboardKinds.G515) },
-        new DeviceTable { Matches = f => f.IsG915, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, f.Name.ToUpper().Contains("TKL") ? KeyboardKinds.G915Tkl : f.Name.ToUpper().Contains("G815") ? KeyboardKinds.G815 : KeyboardKinds.G915), Fake = f => new FakeG915() },
-        new DeviceTable { Matches = f => f.IsG512X, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, KeyboardKinds.G512X), Fake = f => FakeG915.G512X() },
-        new DeviceTable { Matches = f => f.IsRgbKeyboard, Screen = typeof(Page515), Make = (f, d, drag) => new Page515(f, d, drag, KeyboardKinds.For(f)), Fake = f => FakeG915.G512X() },
-        new DeviceTable { Matches = f => f.IsLedKeyboard, Screen = typeof(PageSpeaker), Make = (f, d, drag) => new PageSpeaker(f, d, drag), Fake = f => new FakeSpeaker { Count = 2 } },
-        new DeviceTable { Matches = f => f.IsG510, Screen = typeof(PageG510), Make = (f, d, drag) => new PageG510(f, d, drag), Fake = f => new FakeG510() },
-        new DeviceTable { Matches = f => f.IsG9x, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new G9xMouse(G9xModel.G9x)), Fake = f => new FakeG9x() },
-        new DeviceTable { Matches = f => f.IsG5, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, G5Mouse.G5()), Fake = f => FakeG9x.Short(0x82) },
-        new DeviceTable { Matches = f => f.IsG9, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, G5Mouse.G9()), Fake = f => FakeG9x.Short(0x84) },
-        new DeviceTable { Matches = f => f.IsG500, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new G9xMouse(f.G500Model)), Fake = f => FakeG9x.G500s() },
-        new DeviceTable { Matches = f => f.IsMouse && f.Has(0x2202), Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new HidppMouse()), Fake = f => FakeMouse.ProX2() },
-        new DeviceTable { Matches = f => f.IsMouse, Screen = typeof(PageMouse), Make = (f, d, drag) => new PageMouse(f, d, drag, new HidppMouse()), Fake = f => FakeMouse.For(f) },
-        new DeviceTable { Matches = f => f.IsG560, Screen = typeof(PageSpeaker), Make = (f, d, drag) => new PageSpeaker(f, d, drag), Fake = f => new FakeSpeaker() },
-        new DeviceTable { Matches = f => f.IsLight, Screen = typeof(PageLight), Make = (f, d, drag) => new PageLight(f, d, drag), Fake = f => new FakeLight() },
-        new DeviceTable { Matches = f => f.IsHeadset, Screen = typeof(PageHeadset), Make = (f, d, drag) => new PageHeadset(f, d, drag), Fake = f => new FakeHeadset() },
+        new DeviceTable { Matches = found => found.IsG515, Screen = typeof(Page515), Make = (found, fake, drag) => new Page515(found, fake, drag, KeyboardKinds.G515) },
+        new DeviceTable { Matches = found => found.IsG915, Screen = typeof(Page515), Make = (found, fake, drag) => new Page515(found, fake, drag, found.Name.ToUpper().Contains("TKL") ? KeyboardKinds.G915Tkl : found.Name.ToUpper().Contains("G815") ? KeyboardKinds.G815 : KeyboardKinds.G915), Fake = found => new FakeG915() },
+        new DeviceTable { Matches = found => found.IsG512X, Screen = typeof(Page515), Make = (found, fake, drag) => new Page515(found, fake, drag, KeyboardKinds.G512X), Fake = found => FakeG915.G512X() },
+        new DeviceTable { Matches = found => found.IsRgbKeyboard, Screen = typeof(Page515), Make = (found, fake, drag) => new Page515(found, fake, drag, KeyboardKinds.For(found)), Fake = found => FakeG915.G512X() },
+        new DeviceTable { Matches = found => found.IsLedKeyboard, Screen = typeof(PageSpeaker), Make = (found, fake, drag) => new PageSpeaker(found, fake, drag), Fake = found => new FakeSpeaker { Count = 2 } },
+        new DeviceTable { Matches = found => found.IsG510, Screen = typeof(PageG510), Make = (found, fake, drag) => new PageG510(found, fake, drag), Fake = found => new FakeG510() },
+        new DeviceTable { Matches = found => found.IsG9x, Screen = typeof(PageMouse), Make = (found, fake, drag) => new PageMouse(found, fake, drag, new G9xMouse(G9xModel.G9x)), Fake = found => new FakeG9x() },
+        new DeviceTable { Matches = found => found.IsG5, Screen = typeof(PageMouse), Make = (found, fake, drag) => new PageMouse(found, fake, drag, G5Mouse.G5()), Fake = found => FakeG9x.Short(0x82) },
+        new DeviceTable { Matches = found => found.IsG9, Screen = typeof(PageMouse), Make = (found, fake, drag) => new PageMouse(found, fake, drag, G5Mouse.G9()), Fake = found => FakeG9x.Short(0x84) },
+        new DeviceTable { Matches = found => found.IsG500, Screen = typeof(PageMouse), Make = (found, fake, drag) => new PageMouse(found, fake, drag, new G9xMouse(found.G500Model)), Fake = found => FakeG9x.G500s() },
+        new DeviceTable { Matches = found => found.IsMouse && found.Has(0x2202), Screen = typeof(PageMouse), Make = (found, fake, drag) => new PageMouse(found, fake, drag, new HidppMouse()), Fake = found => FakeMouse.ProX2() },
+        new DeviceTable { Matches = found => found.IsMouse, Screen = typeof(PageMouse), Make = (found, fake, drag) => new PageMouse(found, fake, drag, new HidppMouse()), Fake = found => FakeMouse.For(found) },
+        new DeviceTable { Matches = found => found.IsG560, Screen = typeof(PageSpeaker), Make = (found, fake, drag) => new PageSpeaker(found, fake, drag), Fake = found => new FakeSpeaker() },
+        new DeviceTable { Matches = found => found.IsLight, Screen = typeof(PageLight), Make = (found, fake, drag) => new PageLight(found, fake, drag), Fake = found => new FakeLight() },
+        new DeviceTable { Matches = found => found.IsHeadset, Screen = typeof(PageHeadset), Make = (found, fake, drag) => new PageHeadset(found, fake, drag), Fake = found => new FakeHeadset() },
     };
 
-    public static readonly DeviceTable Other = new DeviceTable { Matches = OtherDevice.Supports, Screen = typeof(PageOtherDevice), Make = (f, d, drag) => new PageOtherDevice(f, d, drag), Fake = f => new FakeOther() };
+    public static readonly DeviceTable Other = new DeviceTable { Matches = OtherDevice.Supports, Screen = typeof(PageOtherDevice), Make = (found, fake, drag) => new PageOtherDevice(found, fake, drag), Fake = found => new FakeOther() };
 
-    public static DeviceTable For(FoundDevice f)
+    public static DeviceTable For(FoundDevice found)
     {
-        if (f.Asleep) return null;
-        if (!f.IsG) return Other.Matches(f) ? Other : null;
-        return All.FirstOrDefault(s => s.Matches(f));
+        if (found.Asleep) return null;
+        if (!found.IsG) return Other.Matches(found) ? Other : null;
+        return All.FirstOrDefault(entry => entry.Matches(found));
     }
 }

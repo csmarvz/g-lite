@@ -11,7 +11,7 @@ abstract class Game
     public abstract int Interval { get; }
     public abstract string Help { get; }
     public abstract void Step();
-    public abstract void Key(Keys k);
+    public abstract void Key(Keys key);
     public abstract int At(int y, int x);
 }
 
@@ -29,7 +29,7 @@ class Blocks : Game
     };
     static readonly int[] Colors = { 0xFF3B3B, 0xFF9A1F, 0xFFE03B, 0x3BE06A, 0x3BD5FF, 0x4A6BFF, 0xC04AFF };
     public readonly int[,] Cells = new int[Rows, Columns];
-    readonly Random rng = new Random();
+    readonly Random random = new Random();
     int[] piece;
     int pieceX, pieceY, color;
 
@@ -38,22 +38,22 @@ class Blocks : Game
     public override int Interval { get { return Math.Max(120, 650 - Score * 30); } }
     public override string Help { get { return "↑↓ move   ← rotate   → down   Space drop   Esc stop      lines " + Score; } }
 
-    public override void Key(Keys k)
+    public override void Key(Keys key)
     {
-        if (k == Keys.Up) Move(-1);
-        if (k == Keys.Down) Move(1);
-        if (k == Keys.Left) Rotate();
-        if (k == Keys.Right) Fall();
-        if (k == Keys.Space) while (Fall()) { }
+        if (key == Keys.Up) Move(-1);
+        if (key == Keys.Down) Move(1);
+        if (key == Keys.Left) Rotate();
+        if (key == Keys.Right) Fall();
+        if (key == Keys.Space) while (Fall()) { }
     }
 
     public override void Step() { Fall(); }
 
-    bool Fits(int[] p, int dx, int dy)
+    bool Fits(int[] shape, int dx, int dy)
     {
         for (int i = 0; i < 4; i++)
         {
-            int x = p[2 * i] + dx, y = p[2 * i + 1] + dy;
+            int x = shape[2 * i] + dx, y = shape[2 * i + 1] + dy;
             if (x < 0 || x >= Columns || y < 0 || y >= Rows || Cells[y, x] != 0) return false;
         }
         return true;
@@ -61,8 +61,8 @@ class Blocks : Game
 
     void Spawn()
     {
-        int k = rng.Next(Shapes.Length);
-        piece = Shapes[k]; color = Colors[k]; pieceX = 0; pieceY = rng.Next(Rows - 1);
+        int shape = random.Next(Shapes.Length);
+        piece = Shapes[shape]; color = Colors[shape]; pieceX = 0; pieceY = random.Next(Rows - 1);
         if (!Fits(piece, pieceX, pieceY)) Over = true;
     }
 
@@ -71,13 +71,13 @@ class Blocks : Game
     public void Rotate()
     {
         if (Over) return;
-        var r = new int[8];
-        for (int i = 0; i < 4; i++) { r[2 * i] = piece[2 * i + 1]; r[2 * i + 1] = 3 - piece[2 * i]; }
-        int mx = 9, my = 9;
-        for (int i = 0; i < 4; i++) { mx = Math.Min(mx, r[2 * i]); my = Math.Min(my, r[2 * i + 1]); }
-        for (int i = 0; i < 4; i++) { r[2 * i] -= mx; r[2 * i + 1] -= my; }
+        var rotated = new int[8];
+        for (int i = 0; i < 4; i++) { rotated[2 * i] = piece[2 * i + 1]; rotated[2 * i + 1] = 3 - piece[2 * i]; }
+        int minX = 9, minY = 9;
+        for (int i = 0; i < 4; i++) { minX = Math.Min(minX, rotated[2 * i]); minY = Math.Min(minY, rotated[2 * i + 1]); }
+        for (int i = 0; i < 4; i++) { rotated[2 * i] -= minX; rotated[2 * i + 1] -= minY; }
         foreach (var kick in new[] { 0, -1, 1, -2, 2 })
-            if (Fits(r, pieceX, pieceY + kick)) { piece = r; pieceY += kick; return; }
+            if (Fits(rotated, pieceX, pieceY + kick)) { piece = rotated; pieceY += kick; return; }
     }
 
     bool Fall()
@@ -97,7 +97,7 @@ class Blocks : Game
             bool full = true;
             for (int y = 0; y < Rows; y++) full &= Cells[y, x] != 0;
             if (!full) continue;
-            for (int c = x; c > 0; c--) for (int y = 0; y < Rows; y++) Cells[y, c] = Cells[y, c - 1];
+            for (int column = x; column > 0; column--) for (int y = 0; y < Rows; y++) Cells[y, column] = Cells[y, column - 1];
             for (int y = 0; y < Rows; y++) Cells[y, 0] = 0;
             Score++;
             x++;
@@ -124,30 +124,30 @@ abstract class KeyGame : Game
         {
             if (cells[i] == null) continue;
             board.Add(i);
-            foreach (var p in cells[i]) keyAt[p.Y, p.X] = i;
+            foreach (var cell in cells[i]) keyAt[cell.Y, cell.X] = i;
         }
     }
 
-    protected Point Move(Point p, int dx, int dy, bool wrap)
+    protected Point Move(Point start, int dx, int dy, bool wrap)
     {
-        int from = keyAt[p.Y, p.X], x = p.X, y = p.Y;
+        int from = keyAt[start.Y, start.X], x = start.X, y = start.Y;
         for (int i = 0; i < Columns * Rows; i++)
         {
             x += dx;
             y += dy;
             if (wrap) { x = (x + Columns) % Columns; y = (y + Rows) % Rows; }
-            else if (x < 0 || x >= Columns || y < 0 || y >= Rows) return p;
+            else if (x < 0 || x >= Columns || y < 0 || y >= Rows) return start;
             if (keyAt[y, x] >= 0 && keyAt[y, x] != from) return new Point(x, y);
         }
-        return p;
+        return start;
     }
 }
 
 class Snake : KeyGame
 {
     readonly List<int> body = new List<int>();
-    readonly Random rng = new Random();
-    Point head = new Point(4, 2), dir = new Point(1, 0), next = new Point(1, 0);
+    readonly Random random = new Random();
+    Point head = new Point(4, 2), direction = new Point(1, 0), next = new Point(1, 0);
     int food;
 
     public Snake(List<Point>[] cells) : base(cells)
@@ -162,36 +162,36 @@ class Snake : KeyGame
     void Feed()
     {
         var free = new List<int>();
-        foreach (int k in board) if (!body.Contains(k)) free.Add(k);
-        if (free.Count == 0) Over = true; else food = free[rng.Next(free.Count)];
+        foreach (int key in board) if (!body.Contains(key)) free.Add(key);
+        if (free.Count == 0) Over = true; else food = free[random.Next(free.Count)];
     }
 
-    public override void Key(Keys k)
+    public override void Key(Keys key)
     {
-        var d = k == Keys.Up ? new Point(0, -1) : k == Keys.Down ? new Point(0, 1) : k == Keys.Left ? new Point(-1, 0) : k == Keys.Right ? new Point(1, 0) : dir;
-        if (d.X != -dir.X || d.Y != -dir.Y) next = d;
+        var wanted = key == Keys.Up ? new Point(0, -1) : key == Keys.Down ? new Point(0, 1) : key == Keys.Left ? new Point(-1, 0) : key == Keys.Right ? new Point(1, 0) : direction;
+        if (wanted.X != -direction.X || wanted.Y != -direction.Y) next = wanted;
     }
 
     public override void Step()
     {
         if (Over) return;
-        dir = next;
-        head = Move(head, dir.X, dir.Y, true);
-        int k = keyAt[head.Y, head.X];
-        bool eat = k == food;
+        direction = next;
+        head = Move(head, direction.X, direction.Y, true);
+        int key = keyAt[head.Y, head.X];
+        bool eat = key == food;
         if (!eat) body.RemoveAt(body.Count - 1);
-        if (body.Contains(k)) { Over = true; return; }
-        body.Insert(0, k);
+        if (body.Contains(key)) { Over = true; return; }
+        body.Insert(0, key);
         if (eat) { Score++; Feed(); }
     }
 
     public override int At(int y, int x)
     {
-        int k = keyAt[y, x];
-        if (k < 0) return 0;
-        if (body[0] == k) return 0xB8FF6A;
-        if (body.Contains(k)) return 0x2FBF4A;
-        return food == k && !Over ? 0xFF3030 : 0;
+        int key = keyAt[y, x];
+        if (key < 0) return 0;
+        if (body[0] == key) return 0xB8FF6A;
+        if (body.Contains(key)) return 0x2FBF4A;
+        return food == key && !Over ? 0xFF3030 : 0;
     }
 }
 
@@ -203,9 +203,9 @@ class Mines : KeyGame
     public readonly bool[] Mine;
     readonly int[] state;
     readonly List<int>[] near;
-    readonly Random rng = new Random();
+    readonly Random random = new Random();
     public bool Placed;
-    Point cur = new Point(Columns / 2, Rows / 2);
+    Point cursor = new Point(Columns / 2, Rows / 2);
     int flags;
     bool blink;
 
@@ -217,9 +217,9 @@ class Mines : KeyGame
         for (int i = 0; i < keys.Length; i++) near[i] = new List<int>();
         foreach (int i in board)
         {
-            var a = keys[i];
-            a.Inflate(5, 5);
-            foreach (int j in board) if (j != i && a.IntersectsWith(keys[j])) near[i].Add(j);
+            var area = keys[i];
+            area.Inflate(5, 5);
+            foreach (int j in board) if (j != i && area.IntersectsWith(keys[j])) near[i].Add(j);
         }
     }
 
@@ -228,45 +228,45 @@ class Mines : KeyGame
 
     public override void Step() { blink = !blink; }
 
-    public override void Key(Keys k)
+    public override void Key(Keys key)
     {
         if (Over) return;
-        if (k == Keys.Left) cur = Move(cur, -1, 0, false);
-        if (k == Keys.Right) cur = Move(cur, 1, 0, false);
-        if (k == Keys.Up) cur = Move(cur, 0, -1, false);
-        if (k == Keys.Down) cur = Move(cur, 0, 1, false);
-        int c = keyAt[cur.Y, cur.X];
-        if (k == Keys.Space) Open(c);
-        if (k == Keys.F && state[c] != 1) { state[c] = 2 - state[c]; flags += state[c] == 2 ? 1 : -1; }
+        if (key == Keys.Left) cursor = Move(cursor, -1, 0, false);
+        if (key == Keys.Right) cursor = Move(cursor, 1, 0, false);
+        if (key == Keys.Up) cursor = Move(cursor, 0, -1, false);
+        if (key == Keys.Down) cursor = Move(cursor, 0, 1, false);
+        int selected = keyAt[cursor.Y, cursor.X];
+        if (key == Keys.Space) Open(selected);
+        if (key == Keys.F && state[selected] != 1) { state[selected] = 2 - state[selected]; flags += state[selected] == 2 ? 1 : -1; }
         blink = true;
     }
 
     void Place(int first)
     {
         Placed = true;
-        for (int n = 0; n < Count; )
+        for (int minesPlaced = 0; minesPlaced < Count; )
         {
-            int k = board[rng.Next(board.Count)];
-            if (Mine[k] || k == first || near[first].Contains(k)) continue;
-            Mine[k] = true;
-            n++;
+            int key = board[random.Next(board.Count)];
+            if (Mine[key] || key == first || near[first].Contains(key)) continue;
+            Mine[key] = true;
+            minesPlaced++;
         }
     }
 
-    public int MinesAround(int k)
+    public int MinesAround(int key)
     {
-        int n = 0;
-        foreach (int j in near[k]) if (Mine[j]) n++;
-        return n;
+        int mines = 0;
+        foreach (int j in near[key]) if (Mine[j]) mines++;
+        return mines;
     }
 
-    public void Open(int k)
+    public void Open(int key)
     {
-        if (state[k] != 0) return;
-        if (!Placed) Place(k);
-        if (Mine[k]) { Over = true; return; }
+        if (state[key] != 0) return;
+        if (!Placed) Place(key);
+        if (Mine[key]) { Over = true; return; }
         var todo = new Stack<int>();
-        todo.Push(k);
+        todo.Push(key);
         while (todo.Count > 0)
         {
             int i = todo.Pop();
@@ -280,16 +280,16 @@ class Mines : KeyGame
         if (!left) Over = true;
     }
 
-    public bool Opened(int k) { return state[k] == 1; }
+    public bool Opened(int key) { return state[key] == 1; }
 
     public override int At(int y, int x)
     {
-        int k = keyAt[y, x];
-        if (k < 0) return 0;
-        if (blink && !Over && k == keyAt[cur.Y, cur.X]) return 0xFFFFFF;
-        if (Over && Mine[k] && state[k] != 2) return 0xFF3030;
-        if (state[k] == 2) return LegendColors[5];
-        if (state[k] != 1) return 0;
-        return LegendColors[Math.Min(MinesAround(k), 4)];
+        int key = keyAt[y, x];
+        if (key < 0) return 0;
+        if (blink && !Over && key == keyAt[cursor.Y, cursor.X]) return 0xFFFFFF;
+        if (Over && Mine[key] && state[key] != 2) return 0xFF3030;
+        if (state[key] == 2) return LegendColors[5];
+        if (state[key] != 1) return 0;
+        return LegendColors[Math.Min(MinesAround(key), 4)];
     }
 }

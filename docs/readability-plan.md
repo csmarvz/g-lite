@@ -173,11 +173,26 @@ Renamed afterwards: `K` (the UI scale, in `Ui` and `DrawnControl`) to `DpiScale`
 
 Kept: `Latency.Ms`, the P/Invoke struct fields (`Caps.Mid`, `Pid`…, named after the Win32 ones). Short private fields not listed here are left for 1d with the locals.
 
-### 1d. Parameters and locals
+### 1d. Parameters and locals (done)
 
-One file per sub-step, smallest first: `r, s, p, b, l, g, d, o, h, pr, pp, feat`… become full names (`reply`, `profile`, `device`, `graphics`, `featureIndex`…). `i`, `j` stay as plain loop counters, and `x`, `y` stay as coordinates. `e`, `s` in WinForms event handlers (`(s, e) =>`) stay.
+Every file, method by method: `r, s, p, b, l, g, d, o, h, pr, pp, feat`… became full names. The common ones:
 
-Order: `Settings.cs`, `Backup.cs`, `Win.cs`, `Logo.cs`, `Log.cs`, `Headset.cs`, `Update.cs`, `PageHeadset.cs`, `PageG510.cs`, `PageUpdate.cs`, `Game.cs`, `Report.cs`, `Screen.cs`, `SelfTest.cs`, `Devices.cs`, `PageOther.cs`, `PageMouse.cs`, `PageSpeaker.cs`, `Traces.cs`, `Keyboard.cs`, `PageLight.cs`, `Mouse.cs`, `Program.cs`, `Pages.cs`, `Fake.cs`, `Ui.cs`, `Page515.cs`.
+| Was | Now |
+|---|---|
+| `h` (a `Hidpp`) | `hidpp` (`G9xRegisters` and `Report` already used `device`, kept) |
+| `feat` (the byte the device uses for a feature) | `featureIndex`; a local holding one feature's index is named after it (`dpiFeature`, `rateFeature`…) or `feature` |
+| `p`, `r` (call bytes) | `parameters`, `reply` |
+| `f` (a `FoundDevice`) | `found` or `device`; a `G515Profile.Files` is `files` |
+| `g` | `graphics` |
+| `l` (a lighting) | `lighting`, `light` or `edited` (the one an edit changes) |
+| `b` (a brightness snapshot on the G515 screen) | `level` |
+| `n = ++seq` (a page's sequence at a send or load) | `startedAt` |
+| `cur`, `seq` (page fields) | `current`, `sequence` |
+| `xxxBtn`, `xxxSeg`, `xxxDrop`, `dirs`, `animTimer` | `xxxButton`, `xxxPicker`, `xxxDropdown`, `directions`, `animationTimer` |
+
+Kept: `i`, `j` as loop counters; `x`, `y`, `dx`, `dy` as coordinates; `(s, e)` in event handlers and `e` in `OnPaint(PaintEventArgs e)` and the like; `ex` in `catch`; `fn` for the HID++ function number (the docs' term); `id`, `ok`, `hz`, `on`, `to`, `at`, which are words.
+
+A local or parameter can hide a field of the same name without a compiler error (unlike a local in an enclosing scope, which C# 5 refuses). Three renames did that and were caught and fixed: `ReportView.Read` (a lambda parameter hid the `text` field; it's `report`), `ColorRow.RefreshControls` (`color = color;`; the parameter is `newColor`) and `MainWindow.MakePage` (the demo's fallback `fake` field; the local is `demoDevice`). The check that found them compares each member's names before and after: a name a member gained that it already used is listed for review.
 
 ## Step 2: break up long lines
 
@@ -217,7 +232,7 @@ One subject per file. Keep the current file names where they still fit.
 - [x] 1a. Classes
 - [x] 1b. Methods
 - [x] 1c. Fields and properties
-- [ ] 1d. Parameters and locals (file by file)
+- [x] 1d. Parameters and locals (file by file)
 - [ ] 2. Long lines
 - [ ] 3. Profile offsets
 - [ ] 4. Split files

@@ -17,7 +17,7 @@ static class Backups
         public bool First;
         public Dictionary<string, byte[]> Data;
 
-        public byte[] Get(string key) { byte[] b; return Data.TryGetValue(key, out b) ? b : null; }
+        public byte[] Get(string key) { byte[] bytes; return Data.TryGetValue(key, out bytes) ? bytes : null; }
 
         public G515Profile.Files Files
         {
@@ -27,23 +27,23 @@ static class Backups
 
     public static string Folder(string device) { return Path.Combine(Root, device); }
 
-    static string Hex(byte[] b) { return b == null ? "" : string.Concat(b.Select(x => x.ToString("x2"))); }
+    static string Hex(byte[] bytes) { return bytes == null ? "" : string.Concat(bytes.Select(value => value.ToString("x2"))); }
 
-    static byte[] Bytes(string s) { return s == "" ? null : Enumerable.Range(0, s.Length / 2).Select(i => Convert.ToByte(s.Substring(i * 2, 2), 16)).ToArray(); }
+    static byte[] Bytes(string hex) { return hex == "" ? null : Enumerable.Range(0, hex.Length / 2).Select(i => Convert.ToByte(hex.Substring(i * 2, 2), 16)).ToArray(); }
 
-    static bool Same(byte[] a, byte[] b) { return a == null ? b == null : b != null && a.SequenceEqual(b); }
+    static bool Same(byte[] first, byte[] second) { return first == null ? second == null : second != null && first.SequenceEqual(second); }
 
-    static bool Same(Dictionary<string, byte[]> a, Dictionary<string, byte[]> b)
+    static bool Same(Dictionary<string, byte[]> first, Dictionary<string, byte[]> second)
     {
-        return a.Count == b.Count && a.All(p => b.ContainsKey(p.Key) && Same(p.Value, b[p.Key]));
+        return first.Count == second.Count && first.All(pair => second.ContainsKey(pair.Key) && Same(pair.Value, second[pair.Key]));
     }
 
-    public static Dictionary<string, byte[]> FromFiles(G515Profile.Files f)
+    public static Dictionary<string, byte[]> FromFiles(G515Profile.Files files)
     {
-        return new Dictionary<string, byte[]> { { "0101", f.FactoryProfile }, { "0100", f.FactoryDir }, { "0008", f.UserProfile }, { "0000", f.UserDir } };
+        return new Dictionary<string, byte[]> { { "0101", files.FactoryProfile }, { "0100", files.FactoryDir }, { "0008", files.UserProfile }, { "0000", files.UserDir } };
     }
 
-    public static void Save(string device, G515Profile.Files f, string who = null) { Save(device, FromFiles(f), who); }
+    public static void Save(string device, G515Profile.Files files, string who = null) { Save(device, FromFiles(files), who); }
 
     public static void Save(string device, Dictionary<string, byte[]> data, string who = null)
     {
@@ -56,11 +56,11 @@ static class Backups
             var now = DateTime.UtcNow;
             var when = new DateTime(now.Ticks - now.Ticks % TimeSpan.TicksPerMillisecond, DateTimeKind.Utc);
             // Two backups in the same millisecond would share a name (the second replacing the first) or a time (sorting them at random).
-            while (list.Any(e => e.When == when)) when = when.AddMilliseconds(1);
+            while (list.Any(entry => entry.When == when)) when = when.AddMilliseconds(1);
             var name = (list.Count == 0 ? "first-" : "") + when.ToString(Utc, CultureInfo.InvariantCulture) + ".txt";
-            File.WriteAllLines(Path.Combine(dir, name), data.Select(p => p.Key + "=" + Hex(p.Value)));
+            File.WriteAllLines(Path.Combine(dir, name), data.Select(pair => pair.Key + "=" + Hex(pair.Value)));
             if (who != null) Log.Add(who, "backup", data.Count == 1 ? "sector " + data.Keys.First() : data.Count + " files");
-            foreach (var old in List(device).Where(e => !e.First).Skip(Keep)) File.Delete(old.File);
+            foreach (var old in List(device).Where(entry => !entry.First).Skip(Keep)) File.Delete(old.File);
         }
         catch (Exception ex)
         {
@@ -71,10 +71,10 @@ static class Backups
 
     public static List<Entry> List(string device)
     {
-        var r = new List<Entry>();
+        var entries = new List<Entry>();
         string[] files;
         try { files = Directory.GetFiles(Folder(device), "*.txt"); }
-        catch (Exception) { return r; }
+        catch (Exception) { return entries; }
         foreach (var file in files)
         {
             var name = Path.GetFileNameWithoutExtension(file);
@@ -85,12 +85,12 @@ static class Backups
                 && !DateTime.TryParseExact(name, Stamp, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal | DateTimeStyles.AdjustToUniversal, out when)) continue;
             try
             {
-                var data = File.ReadAllLines(file).Where(l => l.Length > 4 && l[4] == '=').ToDictionary(l => l.Substring(0, 4), l => Bytes(l.Substring(5).Trim()));
-                r.Add(new Entry { File = file, When = when, First = first, Data = data });
+                var data = File.ReadAllLines(file).Where(line => line.Length > 4 && line[4] == '=').ToDictionary(line => line.Substring(0, 4), line => Bytes(line.Substring(5).Trim()));
+                entries.Add(new Entry { File = file, When = when, First = first, Data = data });
             }
             catch (Exception) { }
         }
-        return r.OrderByDescending(e => e.When).ToList();
+        return entries.OrderByDescending(entry => entry.When).ToList();
     }
 
     public static void Move(string from, string to)
@@ -99,11 +99,11 @@ static class Backups
         catch (Exception) { }
     }
 
-    public static string Describe(G515Profile.Files f)
+    public static string Describe(G515Profile.Files files)
     {
-        if (!G515Profile.FilesAreValid(f)) return "damaged, can't be restored";
-        if (f.UserProfile == null) return "factory lighting";
-        var l = G515Profile.Decode(f.UserProfile);
-        return l == null ? "factory animation" : G515Profile.EffectById(l.Effect).Name;
+        if (!G515Profile.FilesAreValid(files)) return "damaged, can't be restored";
+        if (files.UserProfile == null) return "factory lighting";
+        var lighting = G515Profile.Decode(files.UserProfile);
+        return lighting == null ? "factory animation" : G515Profile.EffectById(lighting.Effect).Name;
     }
 }

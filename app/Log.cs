@@ -24,14 +24,14 @@ static class Log
 
     public static void Add(string who, string kind, string text, string result) { Write(who, kind, text, result); }
 
-    public static void Sent(string who, int id, int fn, byte[] p, string result)
+    public static void Sent(string who, int id, int fn, byte[] parameters, string result)
     {
-        Write(who, "sent", id.ToString("X4") + " fn" + fn.ToString("X") + (p.Length > 0 ? "  " + BitConverter.ToString(p).Replace("-", " ") : ""), result);
+        Write(who, "sent", id.ToString("X4") + " fn" + fn.ToString("X") + (parameters.Length > 0 ? "  " + BitConverter.ToString(parameters).Replace("-", " ") : ""), result);
     }
 
-    public static void Register(string who, int reg, byte[] p, string result)
+    public static void Register(string who, int register, byte[] parameters, string result)
     {
-        Write(who, "sent", "register " + reg.ToString("X2") + (p.Length > 0 ? "  " + BitConverter.ToString(p).Replace("-", " ") : ""), result);
+        Write(who, "sent", "register " + register.ToString("X2") + (parameters.Length > 0 ? "  " + BitConverter.ToString(parameters).Replace("-", " ") : ""), result);
     }
 
     public static void Upload(string who, int subId, int sequence, string result)
@@ -41,8 +41,8 @@ static class Log
 
     public static bool Reads(int id, int fn)
     {
-        int[] ok;
-        return Report.Reads.TryGetValue(id, out ok) && ok.Contains(fn);
+        int[] functions;
+        return Report.Reads.TryGetValue(id, out functions) && functions.Contains(fn);
     }
 
     static void Write(string who, string kind, string text, string result)
@@ -51,11 +51,11 @@ static class Log
         lock (gate)
             try
             {
-                var f = new FileInfo(File);
-                if (f.Exists && f.Length > Max)
+                var file = new FileInfo(File);
+                if (file.Exists && file.Length > Max)
                 {
                     System.IO.File.Delete(Old);
-                    f.MoveTo(Old);
+                    file.MoveTo(Old);
                 }
                 System.IO.File.AppendAllText(File, line + "\r\n");
                 Version++;
@@ -64,7 +64,7 @@ static class Log
             catch (UnauthorizedAccessException) { }
     }
 
-    static string OneLine(string s) { return (s ?? "").Replace('\t', ' ').Replace('\r', ' ').Replace('\n', ' '); }
+    static string OneLine(string text) { return (text ?? "").Replace('\t', ' ').Replace('\r', ' ').Replace('\n', ' '); }
 
     public static List<Line> Read()
     {
@@ -74,17 +74,17 @@ static class Log
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }
         var list = new List<Line>();
-        foreach (var r in raw)
+        foreach (var row in raw)
         {
-            var c = r.Split('\t');
-            if (c.Length == 5) list.Add(new Line { Time = c[0], Who = c[1], Kind = c[2], Text = c[3], Result = c[4] });
+            var columns = row.Split('\t');
+            if (columns.Length == 5) list.Add(new Line { Time = columns[0], Who = columns[1], Kind = columns[2], Text = columns[3], Result = columns[4] });
         }
         return list;
     }
 
     public static long Size()
     {
-        try { var f = new FileInfo(File); return f.Exists ? f.Length : 0; }
+        try { var file = new FileInfo(File); return file.Exists ? file.Length : 0; }
         catch (Exception) { return 0; }
     }
 
@@ -103,31 +103,31 @@ static class Log
 
     public static List<Line> MergeRepeatedSends(IEnumerable<Line> lines)
     {
-        var o = new List<Line>();
-        foreach (var l in lines)
+        var merged = new List<Line>();
+        foreach (var line in lines)
         {
-            var last = o.Count > 0 ? o[o.Count - 1] : null;
-            if (last != null && l.Kind == "sent" && last.Kind == "sent" && last.Who == l.Who && last.Result == l.Result && FirstWord(last.Text) == FirstWord(l.Text))
+            var last = merged.Count > 0 ? merged[merged.Count - 1] : null;
+            if (last != null && line.Kind == "sent" && last.Kind == "sent" && last.Who == line.Who && last.Result == line.Result && FirstWord(last.Text) == FirstWord(line.Text))
             {
                 last.Times++;
                 continue;
             }
-            o.Add(new Line { Time = l.Time, Who = l.Who, Kind = l.Kind, Text = l.Text, Result = l.Result });
+            merged.Add(new Line { Time = line.Time, Who = line.Who, Kind = line.Kind, Text = line.Text, Result = line.Result });
         }
-        return o;
+        return merged;
     }
 
-    static string FirstWord(string t) { int i = t.IndexOf("  "); return i < 0 ? t : t.Substring(0, i); }
+    static string FirstWord(string text) { int gapAt = text.IndexOf("  "); return gapAt < 0 ? text : text.Substring(0, gapAt); }
 
-    public static string Format(Line l)
+    public static string Format(Line line)
     {
-        var who = l.Who.Length > 14 ? l.Who.Substring(0, 13) + "…" : l.Who;
-        var text = l.Text;
-        if (l.Kind == "sent")
+        var who = line.Who.Length > 14 ? line.Who.Substring(0, 13) + "…" : line.Who;
+        var text = line.Text;
+        if (line.Kind == "sent")
         {
-            var fn = FirstWord(l.Text);
-            text = fn.PadRight(10) + (l.Result + (l.Times > 1 ? " ×" + l.Times : "")).PadRight(12) + l.Text.Substring(fn.Length).TrimStart();
+            var call = FirstWord(line.Text);
+            text = call.PadRight(10) + (line.Result + (line.Times > 1 ? " ×" + line.Times : "")).PadRight(12) + line.Text.Substring(call.Length).TrimStart();
         }
-        return (l.Time + "  " + who.PadRight(15) + l.Kind.PadRight(8) + text).TrimEnd();
+        return (line.Time + "  " + who.PadRight(15) + line.Kind.PadRight(8) + text).TrimEnd();
     }
 }

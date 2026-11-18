@@ -11,9 +11,9 @@ class MouseLight
     public int Color = 0xFFFFFF, Period = 5000, Bright = 100, Direction = 6;
     public MouseLight Clone() { return (MouseLight)MemberwiseClone(); }
 
-    public bool Same(MouseLight o)
+    public bool Same(MouseLight other)
     {
-        return o != null && Effect == o.Effect && Color == o.Color && Period == o.Period && Bright == o.Bright && (Effect != 0x04 || Direction == o.Direction);
+        return other != null && Effect == other.Effect && Color == other.Color && Period == other.Period && Bright == other.Bright && (Effect != 0x04 || Direction == other.Direction);
     }
 }
 
@@ -40,16 +40,16 @@ static class Bindings
 
     static readonly string[] Modifiers = { "Ctrl", "Shift", "Alt", "Win" };
 
-    public static bool HasLeft(byte[][] buttons, int count) { return buttons != null && buttons.Take(count).Any(b => b != null && b.SequenceEqual(Actions[0].Bytes)); }
+    public static bool HasLeft(byte[][] buttons, int count) { return buttons != null && buttons.Take(count).Any(binding => binding != null && binding.SequenceEqual(Actions[0].Bytes)); }
 
     // Factory profiles store a special's last two bytes as FF FF (G502 HERO) or FF 00 (G502 X LIGHTSPEED), G HUB as 00 00,
     // and "no action" as 80 00 FF FF (Solaar): only the first two bytes say what the button does (g502-hub's docs/protocol.md, facts only).
-    public static int Find(byte[] b)
+    public static int Find(byte[] binding)
     {
-        if (b == null) return -1;
-        int exact = Array.FindIndex(Actions, a => a.Bytes.SequenceEqual(b));
-        if (exact >= 0 || b.Length < 2 || !(b[0] == 0x90 || b[0] == 0x80 && b[1] == 0x00)) return exact;
-        return Array.FindIndex(Actions, a => a.Bytes[0] == b[0] && a.Bytes[1] == b[1]);
+        if (binding == null) return -1;
+        int exact = Array.FindIndex(Actions, action => action.Bytes.SequenceEqual(binding));
+        if (exact >= 0 || binding.Length < 2 || !(binding[0] == 0x90 || binding[0] == 0x80 && binding[1] == 0x00)) return exact;
+        return Array.FindIndex(Actions, action => action.Bytes[0] == binding[0] && action.Bytes[1] == binding[1]);
     }
 
     static readonly Dictionary<int, string> Specials = new Dictionary<int, string>
@@ -75,40 +75,40 @@ static class Bindings
         return names.TryGetValue(usage, out name) ? name : "key " + usage.ToString("X2");
     }
 
-    public static string Describe(byte[] b)
+    public static string Describe(byte[] binding)
     {
-        if (b == null) return "";
-        int i = Find(b);
+        if (binding == null) return "";
+        int i = Find(binding);
         if (i >= 0) return Actions[i].Name;
-        if (b[0] == 0x80 && b[1] == 0x02)
+        if (binding[0] == 0x80 && binding[1] == 0x02)
         {
-            var parts = Enumerable.Range(0, 8).Where(bit => (b[2] >> bit & 1) != 0).Select(bit => Modifiers[bit % 4]).Distinct().ToList();
-            if (b[3] != 0) parts.Add(KeyName(b[3]));
+            var parts = Enumerable.Range(0, 8).Where(bit => (binding[2] >> bit & 1) != 0).Select(bit => Modifiers[bit % 4]).Distinct().ToList();
+            if (binding[3] != 0) parts.Add(KeyName(binding[3]));
             return string.Join(" + ", parts);
         }
-        if (b[0] == 0x80 && b[1] == 0x01) return "Mouse button " + (b[2] << 8 | b[3]).ToString("X4");
-        if (b[0] == 0x80 && b[1] == 0x03) return "Media key " + (b[2] << 8 | b[3]).ToString("X4");
+        if (binding[0] == 0x80 && binding[1] == 0x01) return "Mouse button " + (binding[2] << 8 | binding[3]).ToString("X4");
+        if (binding[0] == 0x80 && binding[1] == 0x03) return "Media key " + (binding[2] << 8 | binding[3]).ToString("X4");
         string special;
-        if (b[0] == 0x90 && Specials.TryGetValue(b[1], out special)) return special;
-        if (b[0] == 0x90 && b[1] == 0x0D) return "Profile " + b[3];
-        if (b[0] == 0x90) return "Special " + b[1].ToString("X2");
-        if (b[0] == 0x00) return "Macro";
-        if (b[0] == 0xFF) return "Not set";
-        return BitConverter.ToString(b).Replace("-", " ");
+        if (binding[0] == 0x90 && Specials.TryGetValue(binding[1], out special)) return special;
+        if (binding[0] == 0x90 && binding[1] == 0x0D) return "Profile " + binding[3];
+        if (binding[0] == 0x90) return "Special " + binding[1].ToString("X2");
+        if (binding[0] == 0x00) return "Macro";
+        if (binding[0] == 0xFF) return "Not set";
+        return BitConverter.ToString(binding).Replace("-", " ");
     }
 
-    public static bool Same(byte[][] a, byte[][] b)
+    public static bool Same(byte[][] first, byte[][] second)
     {
-        if (a == null || b == null) return a == b;
-        return a.Length == b.Length && a.Zip(b, (x, y) => x.SequenceEqual(y)).All(x => x);
+        if (first == null || second == null) return first == second;
+        return first.Length == second.Length && first.Zip(second, (x, y) => x.SequenceEqual(y)).All(x => x);
     }
 
-    public static byte[][] Copy(byte[][] a) { return a == null ? null : a.Select(x => (byte[])x.Clone()).ToArray(); }
+    public static byte[][] Copy(byte[][] buttons) { return buttons == null ? null : buttons.Select(binding => (byte[])binding.Clone()).ToArray(); }
 
     // The G502 HERO (USB C08B) has the G502 LIGHTSPEED's slots (g502-hub's docs/hardware-notes.md, from its button spy).
-    public static string[] Names(FoundDevice f, int count)
+    public static string[] Names(FoundDevice found, int count)
     {
-        int wpid = f.Models.Contains("C08B") ? 0x407F : f.WirelessId;
+        int wpid = found.Models.Contains("C08B") ? 0x407F : found.WirelessId;
         var known = wpid == 0x407F ? new[] { "Left button", "Right button", "Wheel click", "Thumb, back", "Thumb, front", "Sniper", "G7", "G8", "G9", "Wheel tilt right", "Wheel tilt left" }
             : wpid == 0x4079 ? new[] { "Left button", "Right button", "Wheel click", "Left side, back", "Left side, front", "DPI, underneath", "Right side, back", "Right side, front" }
             : new[] { "Left button", "Right button", "Wheel click" };
@@ -131,10 +131,10 @@ class ButtonSpy : IDisposable
             var buffer = new byte[20];
             while (!done)
             {
-                int n;
-                try { n = stream.Read(buffer, 0, 20); }
+                int read;
+                try { read = stream.Read(buffer, 0, 20); }
                 catch (Exception) { return; }
-                if (n >= 6 && buffer[1] == device && buffer[2] == feature && buffer[3] == 0x00) pressed(buffer[4] << 8 | buffer[5]);
+                if (read >= 6 && buffer[1] == device && buffer[2] == feature && buffer[3] == 0x00) pressed(buffer[4] << 8 | buffer[5]);
             }
         });
     }
@@ -152,21 +152,21 @@ class MouseSet
 
     public string ToText()
     {
-        var l = Light ?? new MouseLight();
-        var text = string.Join(",", Dpi, l.Effect, l.Color.ToString("X6"), l.Period, l.Bright, Rate);
-        if (Buttons != null) text += "," + string.Concat(Buttons.Select(b => BitConverter.ToString(b).Replace("-", "")));
+        var light = Light ?? new MouseLight();
+        var text = string.Join(",", Dpi, light.Effect, light.Color.ToString("X6"), light.Period, light.Bright, Rate);
+        if (Buttons != null) text += "," + string.Concat(Buttons.Select(binding => BitConverter.ToString(binding).Replace("-", "")));
         return text;
     }
 
     public static MouseSet FromText(string text)
     {
-        var v = text.Split(',');
+        var parts = text.Split(',');
         return new MouseSet
         {
-            Dpi = int.Parse(v[0]),
-            Light = new MouseLight { Effect = byte.Parse(v[1]), Color = int.Parse(v[2], NumberStyles.HexNumber), Period = int.Parse(v[3]), Bright = int.Parse(v[4]) },
-            Rate = v.Length > 5 ? int.Parse(v[5]) : 0,
-            Buttons = v.Length > 6 && v[6].Length % 8 == 0 && v[6].Length > 0 ? Enumerable.Range(0, v[6].Length / 8).Select(i => Enumerable.Range(0, 4).Select(k => Convert.ToByte(v[6].Substring(i * 8 + k * 2, 2), 16)).ToArray()).ToArray() : null,
+            Dpi = int.Parse(parts[0]),
+            Light = new MouseLight { Effect = byte.Parse(parts[1]), Color = int.Parse(parts[2], NumberStyles.HexNumber), Period = int.Parse(parts[3]), Bright = int.Parse(parts[4]) },
+            Rate = parts.Length > 5 ? int.Parse(parts[5]) : 0,
+            Buttons = parts.Length > 6 && parts[6].Length % 8 == 0 && parts[6].Length > 0 ? Enumerable.Range(0, parts[6].Length / 8).Select(i => Enumerable.Range(0, 4).Select(byteIndex => Convert.ToByte(parts[6].Substring(i * 8 + byteIndex * 2, 2), 16)).ToArray()).ToArray() : null,
         };
     }
 }
@@ -181,7 +181,7 @@ static class MouseProtocol
         new EffectInfo { Id = 0x03, Name = "Cycle", Speed = true, MinPeriod = 1000, MaxPeriod = 20000, DefaultPeriod = 8000 },
     };
 
-    public static EffectInfo EffectById(byte id) { return Effects.FirstOrDefault(e => e.Id == id); }
+    public static EffectInfo EffectById(byte id) { return Effects.FirstOrDefault(effect => effect.Id == id); }
 
     public class State
     {
@@ -214,37 +214,37 @@ static class MouseProtocol
 
     public const int RomSector = 0x0101;
 
-    public static ushort Crc(byte[] d, int n)
+    public static ushort Crc(byte[] data, int length)
     {
-        int c = 0xFFFF;
-        for (int i = 0; i < n; i++)
+        int crc = 0xFFFF;
+        for (int i = 0; i < length; i++)
         {
-            c ^= d[i] << 8;
-            for (int k = 0; k < 8; k++) c = (c & 0x8000) != 0 ? (c << 1 ^ 0x1021) & 0xFFFF : c << 1 & 0xFFFF;
+            crc ^= data[i] << 8;
+            for (int bit = 0; bit < 8; bit++) crc = (crc & 0x8000) != 0 ? (crc << 1 ^ 0x1021) & 0xFFFF : crc << 1 & 0xFFFF;
         }
-        return (ushort)c;
+        return (ushort)crc;
     }
 
-    public static bool Valid(byte[] p)
+    public static bool Valid(byte[] profile)
     {
-        return p != null && p.Length >= 0xF0 && Crc(p, p.Length - 2) == ReadUInt16BigEndian(p, p.Length - 2);
+        return profile != null && profile.Length >= 0xF0 && Crc(profile, profile.Length - 2) == ReadUInt16BigEndian(profile, profile.Length - 2);
     }
 
-    public static void WriteChecksum(byte[] p)
+    public static void WriteChecksum(byte[] profile)
     {
-        int c = Crc(p, p.Length - 2);
-        p[p.Length - 2] = (byte)(c >> 8);
-        p[p.Length - 1] = (byte)c;
+        int crc = Crc(profile, profile.Length - 2);
+        profile[profile.Length - 2] = (byte)(crc >> 8);
+        profile[profile.Length - 1] = (byte)crc;
     }
 
-    public static int[] StagesOf(byte[] p)
+    public static int[] StagesOf(byte[] profile)
     {
-        return Enumerable.Range(0, 5).Select(i => p[3 + 2 * i] | p[4 + 2 * i] << 8).TakeWhile(x => x != 0 && x != 0xFFFF).ToArray();
+        return Enumerable.Range(0, 5).Select(i => profile[3 + 2 * i] | profile[4 + 2 * i] << 8).TakeWhile(x => x != 0 && x != 0xFFFF).ToArray();
     }
 
-    public static int[] WideStages(byte[] p, int[] dpis)
+    public static int[] WideStages(byte[] profile, int[] dpis)
     {
-        var stages = Enumerable.Range(0, 5).Select(i => p[4 + 5 * i] | p[5 + 5 * i] << 8).TakeWhile(x => x != 0 && x != 0xFFFF).ToArray();
+        var stages = Enumerable.Range(0, 5).Select(i => profile[4 + 5 * i] | profile[5 + 5 * i] << 8).TakeWhile(x => x != 0 && x != 0xFFFF).ToArray();
         return dpis.Length > 0 && stages.All(x => x >= dpis[0] && x <= dpis[dpis.Length - 1]) ? stages : new int[0];
     }
 
@@ -253,157 +253,157 @@ static class MouseProtocol
         return Enumerable.Range(0, 7).Where(i => (bits >> i & 1) != 0).Select(i => 125 << i).ToArray();
     }
 
-    static void ReadWideDpi(Hidpp h, State s)
+    static void ReadWideDpi(Hidpp hidpp, State state)
     {
-        byte d = h.FeatureIndex(0x2202);
+        byte feature = hidpp.FeatureIndex(0x2202);
         var list = new List<byte> { 0 };
         bool ended = false;
         for (int page = 0; page < 16 && !ended; page++)
         {
-            list.AddRange(h.Call(d, 2, 0, 0, (byte)page).Skip(3).Take(13));
-            for (int o = 1; o + 1 < list.Count; o += 2) ended |= list[o] == 0 && list[o + 1] == 0;
+            list.AddRange(hidpp.Call(feature, 2, 0, 0, (byte)page).Skip(3).Take(13));
+            for (int at = 1; at + 1 < list.Count; at += 2) ended |= list[at] == 0 && list[at + 1] == 0;
         }
-        s.Dpis = DpiList(list.ToArray());
-        if (s.Dpis.Length > 1000) s.Dpis = s.Dpis.Where(x => x % 50 == 0).ToArray();
-        s.Dpi = ReadUInt16BigEndian(h.Call(d, 5, 0), 1);
+        state.Dpis = DpiList(list.ToArray());
+        if (state.Dpis.Length > 1000) state.Dpis = state.Dpis.Where(x => x % 50 == 0).ToArray();
+        state.Dpi = ReadUInt16BigEndian(hidpp.Call(feature, 5, 0), 1);
     }
 
-    public static string Describe(byte[] p)
+    public static string Describe(byte[] profile)
     {
-        if (!Valid(p)) return "damaged, can't be restored";
-        var stages = StagesOf(p);
-        var l = Decode(p.Skip(0xDB).Take(11).ToArray());
-        return (p[1] < stages.Length ? stages[p[1]] + " DPI" : "DPI stages") + ", " + (l == null ? "lighting" : EffectById(l.Effect).Name) + ", " + (p[0] > 0 ? 1000 / p[0] + " Hz" : "");
+        if (!Valid(profile)) return "damaged, can't be restored";
+        var stages = StagesOf(profile);
+        var light = Decode(profile.Skip(0xDB).Take(11).ToArray());
+        return (profile[1] < stages.Length ? stages[profile[1]] + " DPI" : "DPI stages") + ", " + (light == null ? "lighting" : EffectById(light.Effect).Name) + ", " + (profile[0] > 0 ? 1000 / profile[0] + " Hz" : "");
     }
 
     public static byte[] Build(byte[] old, MouseSet want, int zones)
     {
-        var p = (byte[])old.Clone();
-        var stages = StagesOf(p);
+        var built = (byte[])old.Clone();
+        var stages = StagesOf(built);
         if (stages.Length == 0) throw new RefusedException("The profile on the mouse has no DPI stages, not touching it");
         int i = want.Stage >= 0 && want.Stage < stages.Length ? want.Stage : Array.IndexOf(stages, want.Dpi);
-        if (i < 0) i = Math.Min((int)p[1], stages.Length - 1);
-        p[3 + 2 * i] = (byte)want.Dpi;
-        p[4 + 2 * i] = (byte)(want.Dpi >> 8);
-        p[1] = (byte)i;
-        if (want.Rate > 0) p[0] = (byte)(1000 / want.Rate);
+        if (i < 0) i = Math.Min((int)built[1], stages.Length - 1);
+        built[3 + 2 * i] = (byte)want.Dpi;
+        built[4 + 2 * i] = (byte)(want.Dpi >> 8);
+        built[1] = (byte)i;
+        if (want.Rate > 0) built[0] = (byte)(1000 / want.Rate);
         if (want.Buttons != null)
         {
             int count = Math.Min(want.Buttons.Length, 16);
-            var before = Enumerable.Range(0, count).Select(k => p.Skip(0x20 + 4 * k).Take(4).ToArray()).ToArray();
+            var before = Enumerable.Range(0, count).Select(button => built.Skip(0x20 + 4 * button).Take(4).ToArray()).ToArray();
             if (Bindings.HasLeft(before, count) && !Bindings.HasLeft(want.Buttons, count)) throw new RefusedException("No button is set to Left click, not saving");
-            for (int b = 0; b < count; b++) want.Buttons[b].CopyTo(p, 0x20 + 4 * b);
+            for (int button = 0; button < count; button++) want.Buttons[button].CopyTo(built, 0x20 + 4 * button);
         }
         if (want.Light != null)
-            for (int z = 0; z < Math.Min(zones, 2); z++)
+            for (int zone = 0; zone < Math.Min(zones, 2); zone++)
             {
-                p[0xD0 + 11 * z] = want.Light.Effect;
-                Encode(want.Light).CopyTo(p, 0xD1 + 11 * z);
+                built[0xD0 + 11 * zone] = want.Light.Effect;
+                Encode(want.Light).CopyTo(built, 0xD1 + 11 * zone);
             }
-        WriteChecksum(p);
-        return p;
+        WriteChecksum(built);
+        return built;
     }
 
     public static byte[] Factory(byte[] rom, byte[] current)
     {
         if (rom[0] == 0 || rom[0] > 8 || StagesOf(rom).Length == 0) throw new RefusedException("Couldn't read the mouse's factory profile, not restoring it (it starts " + BitConverter.ToString(rom, 0, Math.Min(13, rom.Length)).Replace("-", " ") + ")");
-        var p = (byte[])rom.Clone();
-        if (Valid(current)) Array.Copy(current, 0xA0, p, 0xA0, 0x30);
-        WriteChecksum(p);
-        return p;
+        var built = (byte[])rom.Clone();
+        if (Valid(current)) Array.Copy(current, 0xA0, built, 0xA0, 0x30);
+        WriteChecksum(built);
+        return built;
     }
 
-    public static byte[] ReadSector(Hidpp h, int sector, int size)
+    public static byte[] ReadSector(Hidpp hidpp, int sector, int size)
     {
-        byte o = h.FeatureIndex(0x8100);
-        var p = new byte[size];
-        for (int off = 0; off < size; off += 16)
+        byte feature = hidpp.FeatureIndex(0x8100);
+        var data = new byte[size];
+        for (int offset = 0; offset < size; offset += 16)
         {
-            int at = Math.Min(off, size - 16);
-            var r = Memory(h, o, sector, at);
-            Array.Copy(r, off - at, p, off, Math.Min(16, size - off));
+            int at = Math.Min(offset, size - 16);
+            var chunk = Memory(hidpp, feature, sector, at);
+            Array.Copy(chunk, offset - at, data, offset, Math.Min(16, size - offset));
         }
-        return p;
+        return data;
     }
 
-    public static void WriteSector(Hidpp h, int sector, byte[] p)
+    public static void WriteSector(Hidpp hidpp, int sector, byte[] profile)
     {
         if (sector <= 0 || sector >= 0x100) throw new RefusedException("Refusing to write that part of the mouse's memory");
-        if (!Valid(p)) throw new RefusedException("Refusing to write a profile with a bad checksum");
-        Write(h, sector, p);
+        if (!Valid(profile)) throw new RefusedException("Refusing to write a profile with a bad checksum");
+        Write(hidpp, sector, profile);
     }
 
-    static void Write(Hidpp h, int sector, byte[] p)
+    static void Write(Hidpp hidpp, int sector, byte[] profile)
     {
-        byte o = h.FeatureIndex(0x8100);
-        h.Call(o, 6, (byte)(sector >> 8), (byte)sector, 0, 0, (byte)(p.Length >> 8), (byte)p.Length);
-        for (int i = 0; i < p.Length; i += 16)
+        byte feature = hidpp.FeatureIndex(0x8100);
+        hidpp.Call(feature, 6, (byte)(sector >> 8), (byte)sector, 0, 0, (byte)(profile.Length >> 8), (byte)profile.Length);
+        for (int i = 0; i < profile.Length; i += 16)
         {
             var chunk = new byte[16];
-            Array.Copy(p, i, chunk, 0, Math.Min(16, p.Length - i));
-            h.Call(o, 7, chunk);
+            Array.Copy(profile, i, chunk, 0, Math.Min(16, profile.Length - i));
+            hidpp.Call(feature, 7, chunk);
         }
-        h.Call(o, 8);
-        if (!ReadSector(h, sector, p.Length).SequenceEqual(p)) throw new IOException("The profile on the mouse didn't read back the same after saving");
+        hidpp.Call(feature, 8);
+        if (!ReadSector(hidpp, sector, profile.Length).SequenceEqual(profile)) throw new IOException("The profile on the mouse didn't read back the same after saving");
     }
 
     // An empty directory, or a sector never written: all 00 on a G502 HERO (Solaar #2313), all FF on a G502 X LIGHTSPEED (omalogi).
     // Solaar treats both as no directory, and the mouse runs its factory profiles.
     public static bool Unwritten(byte[] directory)
     {
-        return Valid(directory) && ReadUInt16BigEndian(directory, 0) == 0xFFFF || directory.All(b => b == 0x00) || directory.All(b => b == 0xFF);
+        return Valid(directory) && ReadUInt16BigEndian(directory, 0) == 0xFFFF || directory.All(value => value == 0x00) || directory.All(value => value == 0xFF);
     }
 
     public static byte[] Directory(int size, int profiles)
     {
         if (profiles < 1 || profiles > 8 || size < 0xF0) throw new RefusedException("Refusing to build that profile directory");
-        var d = Enumerable.Repeat((byte)0xFF, size).ToArray();
-        for (int i = 0; i < profiles; i++) { d[4 * i] = 0; d[4 * i + 1] = (byte)(i + 1); d[4 * i + 2] = (byte)(i == 0 ? 1 : 0); d[4 * i + 3] = 0; }
-        d[4 * profiles + 2] = 0;
-        d[4 * profiles + 3] = 0;
-        WriteChecksum(d);
-        return d;
+        var directory = Enumerable.Repeat((byte)0xFF, size).ToArray();
+        for (int i = 0; i < profiles; i++) { directory[4 * i] = 0; directory[4 * i + 1] = (byte)(i + 1); directory[4 * i + 2] = (byte)(i == 0 ? 1 : 0); directory[4 * i + 3] = 0; }
+        directory[4 * profiles + 2] = 0;
+        directory[4 * profiles + 3] = 0;
+        WriteChecksum(directory);
+        return directory;
     }
 
-    public static void Setup(Hidpp h, State s, byte[] p)
+    public static void Setup(Hidpp hidpp, State state, byte[] profile)
     {
-        if (!s.Fresh || !State.KnownFormat(s.Format) || p.Length != s.SectorSize) throw new RefusedException("Saving isn't supported on this mouse");
-        WriteSector(h, 1, p);
-        var directory = Directory(s.SectorSize, 1);
-        Write(h, 0x0000, directory);
-        try { h.Call(h.FeatureIndex(0x8100), 3, 0x00, 0x01); }
+        if (!state.Fresh || !State.KnownFormat(state.Format) || profile.Length != state.SectorSize) throw new RefusedException("Saving isn't supported on this mouse");
+        WriteSector(hidpp, 1, profile);
+        var directory = Directory(state.SectorSize, 1);
+        Write(hidpp, 0x0000, directory);
+        try { hidpp.Call(hidpp.FeatureIndex(0x8100), 3, 0x00, 0x01); }
         catch (HidppError) { }
-        if (h.DeviceLabel != null) Log.Add(h.DeviceLabel, "sent", "Onboard memory set up: the profile at 0001, built from the factory profile at " + s.Sector.ToString("X4") + ", and the directory at 0000", "ok");
+        if (hidpp.DeviceLabel != null) Log.Add(hidpp.DeviceLabel, "sent", "Onboard memory set up: the profile at 0001, built from the factory profile at " + state.Sector.ToString("X4") + ", and the directory at 0000", "ok");
     }
 
-    public static void Store(Hidpp h, State s, byte[] p)
+    public static void Store(Hidpp hidpp, State state, byte[] profile)
     {
-        if (!s.Writable || s.Fresh || p.Length != s.SectorSize) throw new RefusedException("Saving isn't supported on this mouse");
-        WriteSector(h, s.Sector, p);
-        try { h.Call(h.FeatureIndex(0x8100), 3, s.Current); }
+        if (!state.Writable || state.Fresh || profile.Length != state.SectorSize) throw new RefusedException("Saving isn't supported on this mouse");
+        WriteSector(hidpp, state.Sector, profile);
+        try { hidpp.Call(hidpp.FeatureIndex(0x8100), 3, state.Current); }
         catch (HidppError) { }
     }
 
-    static int ReadUInt16BigEndian(byte[] b, int o) { return b[o] << 8 | b[o + 1]; }
+    static int ReadUInt16BigEndian(byte[] bytes, int offset) { return bytes[offset] << 8 | bytes[offset + 1]; }
 
-    public static int[] DpiList(byte[] r)
+    public static int[] DpiList(byte[] reply)
     {
-        var v = new List<int>();
-        for (int o = 1; o + 1 < r.Length; o += 2)
+        var dpis = new List<int>();
+        for (int at = 1; at + 1 < reply.Length; at += 2)
         {
-            int x = ReadUInt16BigEndian(r, o);
+            int x = ReadUInt16BigEndian(reply, at);
             if (x == 0) break;
             if ((x & 0xE000) == 0xE000)
             {
                 int step = x & 0x1FFF;
-                if (v.Count == 0 || step == 0 || o + 3 >= r.Length) break;
-                int end = ReadUInt16BigEndian(r, o + 2);
-                for (int d = v[v.Count - 1] + step; d < end; d += step) v.Add(d);
+                if (dpis.Count == 0 || step == 0 || at + 3 >= reply.Length) break;
+                int end = ReadUInt16BigEndian(reply, at + 2);
+                for (int dpi = dpis[dpis.Count - 1] + step; dpi < end; dpi += step) dpis.Add(dpi);
                 continue;
             }
-            v.Add(x);
+            dpis.Add(x);
         }
-        return v.ToArray();
+        return dpis.ToArray();
     }
 
     public static int[] RateList(byte bits)
@@ -411,73 +411,73 @@ static class MouseProtocol
         return Enumerable.Range(0, 8).Where(i => (bits >> i & 1) != 0).Select(i => 1000 / (i + 1)).OrderBy(x => x).ToArray();
     }
 
-    public static byte[] Encode(MouseLight l)
+    public static byte[] Encode(MouseLight light)
     {
-        var b = new byte[10];
-        int c = l.Color, k = Math.Max(1, Math.Min(100, l.Bright));
-        if (l.Effect == 0x01)
-            c = ((c >> 16 & 0xFF) * k / 100) << 16 | ((c >> 8 & 0xFF) * k / 100) << 8 | (c & 0xFF) * k / 100;
-        switch (l.Effect)
+        var parameters = new byte[10];
+        int color = light.Color, brightness = Math.Max(1, Math.Min(100, light.Bright));
+        if (light.Effect == 0x01)
+            color = ((color >> 16 & 0xFF) * brightness / 100) << 16 | ((color >> 8 & 0xFF) * brightness / 100) << 8 | (color & 0xFF) * brightness / 100;
+        switch (light.Effect)
         {
-            case 0x01: b[0] = (byte)(c >> 16); b[1] = (byte)(c >> 8); b[2] = (byte)c; break;
-            case 0x0A: b[0] = (byte)(c >> 16); b[1] = (byte)(c >> 8); b[2] = (byte)c; b[3] = (byte)(l.Period >> 8); b[4] = (byte)l.Period; b[6] = (byte)k; break;
-            case 0x03: b[5] = (byte)(l.Period >> 8); b[6] = (byte)l.Period; b[7] = (byte)k; break;
+            case 0x01: parameters[0] = (byte)(color >> 16); parameters[1] = (byte)(color >> 8); parameters[2] = (byte)color; break;
+            case 0x0A: parameters[0] = (byte)(color >> 16); parameters[1] = (byte)(color >> 8); parameters[2] = (byte)color; parameters[3] = (byte)(light.Period >> 8); parameters[4] = (byte)light.Period; parameters[6] = (byte)brightness; break;
+            case 0x03: parameters[5] = (byte)(light.Period >> 8); parameters[6] = (byte)light.Period; parameters[7] = (byte)brightness; break;
         }
-        return b;
+        return parameters;
     }
 
-    public static MouseLight Decode(byte[] rec)
+    public static MouseLight Decode(byte[] record)
     {
-        var def = EffectById(rec[0]);
-        if (def == null) return null;
-        var l = new MouseLight { Effect = rec[0] };
-        int c = rec[1] << 16 | rec[2] << 8 | rec[3];
-        switch (rec[0])
+        var effect = EffectById(record[0]);
+        if (effect == null) return null;
+        var light = new MouseLight { Effect = record[0] };
+        int color = record[1] << 16 | record[2] << 8 | record[3];
+        switch (record[0])
         {
             case 0x01:
-                int max = Math.Max(rec[1], Math.Max(rec[2], rec[3]));
-                if (max == 0) { l.Bright = 100; break; }
-                l.Color = (rec[1] * 255 / max) << 16 | (rec[2] * 255 / max) << 8 | rec[3] * 255 / max;
-                l.Bright = Math.Max(1, (max * 100 + 127) / 255);
+                int max = Math.Max(record[1], Math.Max(record[2], record[3]));
+                if (max == 0) { light.Bright = 100; break; }
+                light.Color = (record[1] * 255 / max) << 16 | (record[2] * 255 / max) << 8 | record[3] * 255 / max;
+                light.Bright = Math.Max(1, (max * 100 + 127) / 255);
                 break;
-            case 0x0A: l.Color = c; l.Period = ReadUInt16BigEndian(rec, 4); l.Bright = rec[7] == 0 ? 100 : rec[7]; break;
-            case 0x03: l.Period = ReadUInt16BigEndian(rec, 6); l.Bright = rec[8] == 0 ? 100 : rec[8]; break;
+            case 0x0A: light.Color = color; light.Period = ReadUInt16BigEndian(record, 4); light.Bright = record[7] == 0 ? 100 : record[7]; break;
+            case 0x03: light.Period = ReadUInt16BigEndian(record, 6); light.Bright = record[8] == 0 ? 100 : record[8]; break;
         }
-        if (def.Speed) l.Period = Math.Max(def.MinPeriod, Math.Min(def.MaxPeriod, l.Period));
-        l.Bright = Math.Min(100, l.Bright);
-        return l;
+        if (effect.Speed) light.Period = Math.Max(effect.MinPeriod, Math.Min(effect.MaxPeriod, light.Period));
+        light.Bright = Math.Min(100, light.Bright);
+        return light;
     }
 
-    static byte[] Memory(Hidpp h, byte f, int sector, int offset)
+    static byte[] Memory(Hidpp hidpp, byte feature, int sector, int offset)
     {
-        return h.Call(f, 5, (byte)(sector >> 8), (byte)sector, (byte)(offset >> 8), (byte)offset);
+        return hidpp.Call(feature, 5, (byte)(sector >> 8), (byte)sector, (byte)(offset >> 8), (byte)offset);
     }
 
-    public static State Read(Hidpp h)
+    public static State Read(Hidpp hidpp)
     {
-        var s = new State();
+        var state = new State();
         try
         {
-            byte d = h.FeatureIndex(0x2201);
-            s.Dpis = DpiList(h.Call(d, 1, 0));
-            s.Dpi = ReadUInt16BigEndian(h.Call(d, 2, 0), 1);
+            byte dpiFeature = hidpp.FeatureIndex(0x2201);
+            state.Dpis = DpiList(hidpp.Call(dpiFeature, 1, 0));
+            state.Dpi = ReadUInt16BigEndian(hidpp.Call(dpiFeature, 2, 0), 1);
         }
-        catch (NotSupportedException) { ReadWideDpi(h, s); }
+        catch (NotSupportedException) { ReadWideDpi(hidpp, state); }
         try
         {
-            byte r = h.FeatureIndex(0x8060);
-            s.Rates = RateList(h.Call(r, 0)[0]);
-            int ms = h.Call(r, 1)[0];
-            s.Rate = ms > 0 ? 1000 / ms : 0;
+            byte rateFeature = hidpp.FeatureIndex(0x8060);
+            state.Rates = RateList(hidpp.Call(rateFeature, 0)[0]);
+            int interval = hidpp.Call(rateFeature, 1)[0];
+            state.Rate = interval > 0 ? 1000 / interval : 0;
         }
         catch (NotSupportedException)
         {
             try
             {
-                byte r = h.FeatureIndex(0x8061);
-                s.Rates = WideRates(h.Call(r, 1)[1]);
-                int index = h.Call(r, 2, (byte)(h.Direct ? 0 : 1))[0];
-                s.Rate = index < 7 ? 125 << index : 0;
+                byte rateFeature = hidpp.FeatureIndex(0x8061);
+                state.Rates = WideRates(hidpp.Call(rateFeature, 1)[1]);
+                int index = hidpp.Call(rateFeature, 2, (byte)(hidpp.Direct ? 0 : 1))[0];
+                state.Rate = index < 7 ? 125 << index : 0;
             }
             catch (NotSupportedException) { }
             catch (HidppError) { }
@@ -486,113 +486,113 @@ static class MouseProtocol
         int logo = -1;
         try
         {
-            byte f = h.FeatureIndex(0x8070);
-            int zones = h.Call(f, 0)[0];
-            for (int z = 0; z < zones; z++)
+            byte lightFeature = hidpp.FeatureIndex(0x8070);
+            int zones = hidpp.Call(lightFeature, 0)[0];
+            for (int zone = 0; zone < zones; zone++)
             {
-                var info = h.Call(f, 1, (byte)z, 0xFF, 0);
-                if (ReadUInt16BigEndian(info, 1) == 2) logo = z;
+                var info = hidpp.Call(lightFeature, 1, (byte)zone, 0xFF, 0);
+                if (ReadUInt16BigEndian(info, 1) == 2) logo = zone;
                 var map = new Dictionary<int, int>();
-                for (int e = 0; e < info[3]; e++) map[ReadUInt16BigEndian(h.Call(f, 2, (byte)z, (byte)e, 0xFF, 0), 2)] = e;
-                s.Zones[z] = map;
+                for (int effect = 0; effect < info[3]; effect++) map[ReadUInt16BigEndian(hidpp.Call(lightFeature, 2, (byte)zone, (byte)effect, 0xFF, 0), 2)] = effect;
+                state.Zones[zone] = map;
             }
         }
         catch (NotSupportedException) { }
-        catch (HidppError) { s.Zones.Clear(); }
-        if (logo < 0) logo = s.Zones.Count - 1;
+        catch (HidppError) { state.Zones.Clear(); }
+        if (logo < 0) logo = state.Zones.Count - 1;
         try
         {
-            byte w = h.FeatureIndex(0x2121);
-            s.CanInvert = (h.Call(w, 0)[1] & 0x08) != 0;
-            s.Inverted = (h.Call(w, 1)[0] & 0x04) != 0;
+            byte wheelFeature = hidpp.FeatureIndex(0x2121);
+            state.CanInvert = (hidpp.Call(wheelFeature, 0)[1] & 0x08) != 0;
+            state.Inverted = (hidpp.Call(wheelFeature, 1)[0] & 0x04) != 0;
         }
         catch (NotSupportedException) { }
-        catch (HidppError) { s.CanInvert = false; }
+        catch (HidppError) { state.CanInvert = false; }
         try
         {
-            byte o = h.FeatureIndex(0x8100);
-            s.Onboard = h.Call(o, 2)[0] == 1;
-            if (s.Onboard)
+            byte profilesFeature = hidpp.FeatureIndex(0x8100);
+            state.Onboard = hidpp.Call(profilesFeature, 2)[0] == 1;
+            if (state.Onboard)
             {
-                var desc = h.Call(o, 0);
-                s.ProfileOk = false;
-                s.ButtonCount = Math.Min(16, (int)desc[5]);
-                s.Format = desc[1];
-                s.SectorSize = ReadUInt16BigEndian(desc, 7);
-                var cp = h.Call(o, 4);
-                s.Current = new[] { cp[0], cp[1] };
-                s.Sector = ReadUInt16BigEndian(cp, 0);
-                if (s.SectorSize >= 0xF0 && s.SectorSize <= 0x1000)
+                var info = hidpp.Call(profilesFeature, 0);
+                state.ProfileOk = false;
+                state.ButtonCount = Math.Min(16, (int)info[5]);
+                state.Format = info[1];
+                state.SectorSize = ReadUInt16BigEndian(info, 7);
+                var current = hidpp.Call(profilesFeature, 4);
+                state.Current = new[] { current[0], current[1] };
+                state.Sector = ReadUInt16BigEndian(current, 0);
+                if (state.SectorSize >= 0xF0 && state.SectorSize <= 0x1000)
                 {
-                    s.Profile = ReadSector(h, s.Sector, s.SectorSize);
-                    s.ProfileOk = Valid(s.Profile) || s.Sector >= 0x100;
-                    if (s.Format >= 6)
+                    state.Profile = ReadSector(hidpp, state.Sector, state.SectorSize);
+                    state.ProfileOk = Valid(state.Profile) || state.Sector >= 0x100;
+                    if (state.Format >= 6)
                     {
-                        if (s.ProfileOk) s.Stages = WideStages(s.Profile, s.Dpis);
-                        s.Profile = null;
-                        s.ProfileOk = true;
+                        if (state.ProfileOk) state.Stages = WideStages(state.Profile, state.Dpis);
+                        state.Profile = null;
+                        state.ProfileOk = true;
                     }
                     else
                     {
-                        s.Stages = StagesOf(s.Profile);
-                        s.Buttons = Enumerable.Range(0, s.ButtonCount).Select(i => s.Profile.Skip(0x20 + 4 * i).Take(4).ToArray()).ToArray();
-                        if (logo >= 0 && logo < 2) s.Light = Decode(s.Profile.Skip(0xD0 + 11 * logo).Take(11).ToArray());
+                        state.Stages = StagesOf(state.Profile);
+                        state.Buttons = Enumerable.Range(0, state.ButtonCount).Select(i => state.Profile.Skip(0x20 + 4 * i).Take(4).ToArray()).ToArray();
+                        if (logo >= 0 && logo < 2) state.Light = Decode(state.Profile.Skip(0xD0 + 11 * logo).Take(11).ToArray());
                     }
                 }
-                if (s.Sector >= 0x100 && State.KnownFormat(s.Format) && desc[3] >= 1 && s.SectorSize >= 0xF0 && s.SectorSize <= 0x1000)
+                if (state.Sector >= 0x100 && State.KnownFormat(state.Format) && info[3] >= 1 && state.SectorSize >= 0xF0 && state.SectorSize <= 0x1000)
                 {
-                    try { s.Fresh = Unwritten(ReadSector(h, 0x0000, s.SectorSize)); }
-                    catch (HidppError e) { s.Fresh = e.Code == 2; }
+                    try { state.Fresh = Unwritten(ReadSector(hidpp, 0x0000, state.SectorSize)); }
+                    catch (HidppError ex) { state.Fresh = ex.Code == 2; }
                 }
-                s.Stage = h.Call(o, 0xB)[0];
-                if (s.Stage >= s.Stages.Length) s.Stage = -1;
+                state.Stage = hidpp.Call(profilesFeature, 0xB)[0];
+                if (state.Stage >= state.Stages.Length) state.Stage = -1;
             }
         }
         catch (NotSupportedException) { }
         catch (HidppError) { }
-        return s;
+        return state;
     }
 
-    public static void SetDpi(Hidpp h, int dpi)
+    public static void SetDpi(Hidpp hidpp, int dpi)
     {
         byte high = (byte)(dpi >> 8), low = (byte)dpi;
-        try { h.Call(h.FeatureIndex(0x2201), 3, 0, high, low); return; }
+        try { hidpp.Call(hidpp.FeatureIndex(0x2201), 3, 0, high, low); return; }
         catch (NotSupportedException) { }
-        byte d = h.FeatureIndex(0x2202);
-        bool both = (h.Call(d, 1, 0)[2] & 1) != 0;
-        byte lift = h.Call(d, 5, 0)[9];
-        try { h.Call(d, 6, 0, high, low, both ? high : (byte)0, both ? low : (byte)0, lift); }
+        byte feature = hidpp.FeatureIndex(0x2202);
+        bool both = (hidpp.Call(feature, 1, 0)[2] & 1) != 0;
+        byte lift = hidpp.Call(feature, 5, 0)[9];
+        try { hidpp.Call(feature, 6, 0, high, low, both ? high : (byte)0, both ? low : (byte)0, lift); }
         catch (HidppError) { throw new RefusedException("The mouse refused this DPI. It may only take its saved DPI stages."); }
     }
 
-    public static void SetInvert(Hidpp h, bool on)
+    public static void SetInvert(Hidpp hidpp, bool on)
     {
-        byte w = h.FeatureIndex(0x2121);
-        var mode = h.CallUnlogged(w, 1);
+        byte feature = hidpp.FeatureIndex(0x2121);
+        var mode = hidpp.CallUnlogged(feature, 1);
         bool now = (mode[0] & 0x04) != 0;
         if (now == on) return;
-        h.Call(w, 2, (byte)(on ? mode[0] | 0x04 : mode[0] & ~0x04), mode[1], mode[2]);
+        hidpp.Call(feature, 2, (byte)(on ? mode[0] | 0x04 : mode[0] & ~0x04), mode[1], mode[2]);
     }
 
-    public static void SetStage(Hidpp h, int i) { h.Call(h.FeatureIndex(0x8100), 0xC, (byte)i); }
+    public static void SetStage(Hidpp hidpp, int stage) { hidpp.Call(hidpp.FeatureIndex(0x8100), 0xC, (byte)stage); }
 
-    public static void SetRate(Hidpp h, int hz)
+    public static void SetRate(Hidpp hidpp, int hz)
     {
-        try { h.Call(h.FeatureIndex(0x8060), 2, (byte)(1000 / hz)); return; }
+        try { hidpp.Call(hidpp.FeatureIndex(0x8060), 2, (byte)(1000 / hz)); return; }
         catch (NotSupportedException) { }
         int index = Array.IndexOf(new[] { 125, 250, 500, 1000, 2000, 4000, 8000 }, hz);
         if (index < 0) throw new RefusedException("This mouse has no " + hz + " Hz rate");
-        h.Call(h.FeatureIndex(0x8061), 3, (byte)index);
+        hidpp.Call(hidpp.FeatureIndex(0x8061), 3, (byte)index);
     }
 
-    public static void SetLight(Hidpp h, State s, MouseLight l)
+    public static void SetLight(Hidpp hidpp, State state, MouseLight light)
     {
-        byte f = h.FeatureIndex(0x8070);
-        foreach (var z in s.Zones)
+        byte feature = hidpp.FeatureIndex(0x8070);
+        foreach (var zone in state.Zones)
         {
-            int e;
-            if (!z.Value.TryGetValue(l.Effect, out e)) continue;
-            h.Call(f, 3, new byte[] { (byte)z.Key, (byte)e }.Concat(Encode(l)).ToArray());
+            int effectIndex;
+            if (!zone.Value.TryGetValue(light.Effect, out effectIndex)) continue;
+            hidpp.Call(feature, 3, new byte[] { (byte)zone.Key, (byte)effectIndex }.Concat(Encode(light)).ToArray());
         }
     }
 }
@@ -601,15 +601,15 @@ interface IMouse
 {
     EffectInfo[] Effects { get; }
     bool HasFactory { get; }
-    MouseProtocol.State Read(Hidpp h);
-    void SendDpi(Hidpp h, MouseProtocol.State s, MouseSet want, MouseSet sent);
-    void SetLight(Hidpp h, MouseProtocol.State s, MouseLight light);
-    void SetRate(Hidpp h, int hz);
-    void SetInvert(Hidpp h, bool on);
-    byte[] ReadProfile(Hidpp h, MouseProtocol.State s);
-    void Setup(Hidpp h, MouseProtocol.State s, MouseSet want);
-    void Save(Hidpp h, MouseProtocol.State s, byte[] now, MouseSet want);
-    void Restore(Hidpp h, MouseProtocol.State s, byte[] now, byte[] data);
+    MouseProtocol.State Read(Hidpp hidpp);
+    void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSet want, MouseSet sent);
+    void SetLight(Hidpp hidpp, MouseProtocol.State state, MouseLight light);
+    void SetRate(Hidpp hidpp, int hz);
+    void SetInvert(Hidpp hidpp, bool on);
+    byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state);
+    void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSet want);
+    void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSet want);
+    void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data);
     string Describe(byte[] profile);
     int DefaultStage(byte[] profile);
 }
@@ -618,22 +618,22 @@ class HidppMouse : IMouse
 {
     public EffectInfo[] Effects { get { return MouseProtocol.Effects; } }
     public bool HasFactory { get { return true; } }
-    public MouseProtocol.State Read(Hidpp h) { return MouseProtocol.Read(h); }
+    public MouseProtocol.State Read(Hidpp hidpp) { return MouseProtocol.Read(hidpp); }
 
-    public void SendDpi(Hidpp h, MouseProtocol.State s, MouseSet want, MouseSet sent)
+    public void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSet want, MouseSet sent)
     {
         if (sent != null && want.Dpi == sent.Dpi && want.Stage == sent.Stage) return;
-        bool saved = s.Onboard && want.Stage >= 0 && want.Stage < s.Stages.Length && s.Stages[want.Stage] == want.Dpi;
-        if (saved) MouseProtocol.SetStage(h, want.Stage); else MouseProtocol.SetDpi(h, want.Dpi);
+        bool saved = state.Onboard && want.Stage >= 0 && want.Stage < state.Stages.Length && state.Stages[want.Stage] == want.Dpi;
+        if (saved) MouseProtocol.SetStage(hidpp, want.Stage); else MouseProtocol.SetDpi(hidpp, want.Dpi);
     }
 
-    public void SetLight(Hidpp h, MouseProtocol.State s, MouseLight light) { MouseProtocol.SetLight(h, s, light); }
-    public void SetRate(Hidpp h, int hz) { MouseProtocol.SetRate(h, hz); }
-    public void SetInvert(Hidpp h, bool on) { MouseProtocol.SetInvert(h, on); }
-    public byte[] ReadProfile(Hidpp h, MouseProtocol.State s) { return MouseProtocol.ReadSector(h, s.Sector, s.SectorSize); }
-    public void Setup(Hidpp h, MouseProtocol.State s, MouseSet want) { MouseProtocol.Setup(h, s, MouseProtocol.Build(MouseProtocol.ReadSector(h, s.Sector, s.SectorSize), want, s.Zones.Count)); }
-    public void Save(Hidpp h, MouseProtocol.State s, byte[] now, MouseSet want) { MouseProtocol.Store(h, s, MouseProtocol.Build(now, want, s.Zones.Count)); }
-    public void Restore(Hidpp h, MouseProtocol.State s, byte[] now, byte[] data) { MouseProtocol.Store(h, s, data ?? MouseProtocol.Factory(MouseProtocol.ReadSector(h, MouseProtocol.RomSector, s.SectorSize), now)); }
+    public void SetLight(Hidpp hidpp, MouseProtocol.State state, MouseLight light) { MouseProtocol.SetLight(hidpp, state, light); }
+    public void SetRate(Hidpp hidpp, int hz) { MouseProtocol.SetRate(hidpp, hz); }
+    public void SetInvert(Hidpp hidpp, bool on) { MouseProtocol.SetInvert(hidpp, on); }
+    public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state) { return MouseProtocol.ReadSector(hidpp, state.Sector, state.SectorSize); }
+    public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSet want) { MouseProtocol.Setup(hidpp, state, MouseProtocol.Build(MouseProtocol.ReadSector(hidpp, state.Sector, state.SectorSize), want, state.Zones.Count)); }
+    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSet want) { MouseProtocol.Store(hidpp, state, MouseProtocol.Build(now, want, state.Zones.Count)); }
+    public void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data) { MouseProtocol.Store(hidpp, state, data ?? MouseProtocol.Factory(MouseProtocol.ReadSector(hidpp, MouseProtocol.RomSector, state.SectorSize), now)); }
     public string Describe(byte[] profile) { return MouseProtocol.Describe(profile); }
     public int DefaultStage(byte[] profile) { return profile[1]; }
 }
@@ -669,29 +669,29 @@ class G9xMouse : IMouse
 
     public EffectInfo[] Effects { get { return G9xRegisters.Effects; } }
     public bool HasFactory { get { return false; } }
-    public MouseProtocol.State Read(Hidpp h) { return G9xRegisters.Read(h, model); }
+    public MouseProtocol.State Read(Hidpp hidpp) { return G9xRegisters.Read(hidpp, model); }
 
-    public void SendDpi(Hidpp h, MouseProtocol.State s, MouseSet want, MouseSet sent)
+    public void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSet want, MouseSet sent)
     {
-        if (sent == null || want.Dpi != sent.Dpi) G9xRegisters.SetDpi(h, want.Dpi, model);
+        if (sent == null || want.Dpi != sent.Dpi) G9xRegisters.SetDpi(hidpp, want.Dpi, model);
     }
 
-    public void SetLight(Hidpp h, MouseProtocol.State s, MouseLight light)
+    public void SetLight(Hidpp hidpp, MouseProtocol.State state, MouseLight light)
     {
         if (!model.Light) throw new RefusedException("This mouse has no colour light");
-        G9xRegisters.SetLight(h, light);
+        G9xRegisters.SetLight(hidpp, light);
     }
 
-    public void SetRate(Hidpp h, int hz) { G9xRegisters.SetRate(h, hz); }
-    public void SetInvert(Hidpp h, bool on) { throw new RefusedException("This mouse can't invert its wheel"); }
-    public byte[] ReadProfile(Hidpp h, MouseProtocol.State s) { return G9xRegisters.ReadPage(h, s.Sector); }
-    public void Setup(Hidpp h, MouseProtocol.State s, MouseSet want) { throw new RefusedException("Saving isn't supported on this mouse"); }
-    public void Save(Hidpp h, MouseProtocol.State s, byte[] now, MouseSet want) { G9xRegisters.Store(h, s, G9xRegisters.Build(now, want, s.Rate, model), now); }
+    public void SetRate(Hidpp hidpp, int hz) { G9xRegisters.SetRate(hidpp, hz); }
+    public void SetInvert(Hidpp hidpp, bool on) { throw new RefusedException("This mouse can't invert its wheel"); }
+    public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state) { return G9xRegisters.ReadPage(hidpp, state.Sector); }
+    public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSet want) { throw new RefusedException("Saving isn't supported on this mouse"); }
+    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSet want) { G9xRegisters.Store(hidpp, state, G9xRegisters.Build(now, want, state.Rate, model), now); }
 
-    public void Restore(Hidpp h, MouseProtocol.State s, byte[] now, byte[] data)
+    public void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data)
     {
         if (data == null) throw new RefusedException("G-Lite can't restore the factory profile on this mouse");
-        G9xRegisters.Store(h, s, data, now);
+        G9xRegisters.Store(hidpp, state, data, now);
     }
 
     public string Describe(byte[] profile) { return G9xRegisters.Describe(profile, model); }
@@ -728,27 +728,27 @@ class G5Mouse : IMouse
     public EffectInfo[] Effects { get { return G9xRegisters.Effects; } }
     public bool HasFactory { get { return false; } }
 
-    public MouseProtocol.State Read(Hidpp h)
+    public MouseProtocol.State Read(Hidpp hidpp)
     {
         var state = new MouseProtocol.State { ProfileOk = true, Effects = G9xRegisters.Effects, Rates = G9xRegisters.Rates, Dpis = dpis };
-        state.Dpi = Dpi(h.Register(0x81, 0x63)[0]);
-        int interval = h.Register(0x81, 0x64)[0];
+        state.Dpi = Dpi(hidpp.Register(0x81, 0x63)[0]);
+        int interval = hidpp.Register(0x81, 0x64)[0];
         state.Rate = interval > 0 ? 1000 / interval : 0;
         return state;
     }
 
-    public void SendDpi(Hidpp h, MouseProtocol.State s, MouseSet want, MouseSet sent)
+    public void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSet want, MouseSet sent)
     {
-        if (sent == null || want.Dpi != sent.Dpi) h.Register(0x80, 0x63, (byte)DpiToRaw(want.Dpi));
+        if (sent == null || want.Dpi != sent.Dpi) hidpp.Register(0x80, 0x63, (byte)DpiToRaw(want.Dpi));
     }
 
-    public void SetLight(Hidpp h, MouseProtocol.State s, MouseLight light) { throw new RefusedException("G-Lite can't set this mouse's light yet"); }
-    public void SetRate(Hidpp h, int hz) { G9xRegisters.SetRate(h, hz); }
-    public void SetInvert(Hidpp h, bool on) { throw new RefusedException("This mouse can't invert its wheel"); }
-    public byte[] ReadProfile(Hidpp h, MouseProtocol.State s) { return null; }
-    public void Setup(Hidpp h, MouseProtocol.State s, MouseSet want) { throw new RefusedException("Saving isn't supported on this mouse"); }
-    public void Save(Hidpp h, MouseProtocol.State s, byte[] now, MouseSet want) { throw new RefusedException("Saving isn't supported on this mouse"); }
-    public void Restore(Hidpp h, MouseProtocol.State s, byte[] now, byte[] data) { throw new RefusedException("Saving isn't supported on this mouse"); }
+    public void SetLight(Hidpp hidpp, MouseProtocol.State state, MouseLight light) { throw new RefusedException("G-Lite can't set this mouse's light yet"); }
+    public void SetRate(Hidpp hidpp, int hz) { G9xRegisters.SetRate(hidpp, hz); }
+    public void SetInvert(Hidpp hidpp, bool on) { throw new RefusedException("This mouse can't invert its wheel"); }
+    public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state) { return null; }
+    public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSet want) { throw new RefusedException("Saving isn't supported on this mouse"); }
+    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSet want) { throw new RefusedException("Saving isn't supported on this mouse"); }
+    public void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data) { throw new RefusedException("Saving isn't supported on this mouse"); }
     public string Describe(byte[] profile) { return ""; }
     public int DefaultStage(byte[] profile) { return 0; }
 }
@@ -876,7 +876,7 @@ static class G9xRegisters
         device.Register(0x80, 0x0F, 0xFF);
         bool erased = false;
         try { WritePage(device, pageNumber, page, () => erased = true); }
-        catch (Exception e)
+        catch (Exception ex)
         {
             if (!erased)
             {
@@ -893,9 +893,9 @@ static class G9xRegisters
             }
             catch (Exception)
             {
-                throw new IOException("Saving failed halfway (" + e.Message + "). The mouse is on its factory profile: restore the backup from Backups, or replug it and save again.", e);
+                throw new IOException("Saving failed halfway (" + ex.Message + "). The mouse is on its factory profile: restore the backup from Backups, or replug it and save again.", ex);
             }
-            throw new IOException("Saving failed (" + e.Message + "), so the profile as it was is back on the mouse.", e);
+            throw new IOException("Saving failed (" + ex.Message + "), so the profile as it was is back on the mouse.", ex);
         }
         device.Register(0x80, 0x0F, 0x00, state.Current[0]);
         if (!ReadPage(device, pageNumber).SequenceEqual(page)) throw new IOException("The profile on the mouse didn't read back the same after saving");

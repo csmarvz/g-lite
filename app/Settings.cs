@@ -25,19 +25,19 @@ static class Settings
 
     static Dictionary<string, string> Read()
     {
-        var d = new Dictionary<string, string>();
+        var settings = new Dictionary<string, string>();
         var lines = File.Exists(Location) ? File.ReadAllLines(Location) : new string[0];
-        foreach (var l in Defaults.Concat(lines))
+        foreach (var line in Defaults.Concat(lines))
         {
-            int i = l.IndexOf('=');
-            if (i > 0) d[l.Substring(0, i).Trim()] = l.Substring(i + 1).Trim();
+            int equalsAt = line.IndexOf('=');
+            if (equalsAt > 0) settings[line.Substring(0, equalsAt).Trim()] = line.Substring(equalsAt + 1).Trim();
         }
-        return d;
+        return settings;
     }
 
-    static void Write(Dictionary<string, string> d)
+    static void Write(Dictionary<string, string> settings)
     {
-        try { File.WriteAllLines(Location, d.Select(p => p.Key + "=" + p.Value)); } catch { }
+        try { File.WriteAllLines(Location, settings.Select(pair => pair.Key + "=" + pair.Value)); } catch { }
     }
 
     public static void Init()
@@ -49,36 +49,36 @@ static class Settings
 
     public static void Rename(string from, string to)
     {
-        var d = Read();
-        var old = d.Keys.Where(k => k.StartsWith(from)).ToList();
+        var settings = Read();
+        var old = settings.Keys.Where(key => key.StartsWith(from)).ToList();
         if (old.Count == 0) return;
-        foreach (var k in old)
+        foreach (var key in old)
         {
-            var n = to + k.Substring(from.Length);
-            if (!d.ContainsKey(n)) d[n] = d[k];
-            d.Remove(k);
+            var newKey = to + key.Substring(from.Length);
+            if (!settings.ContainsKey(newKey)) settings[newKey] = settings[key];
+            settings.Remove(key);
         }
-        Write(d);
+        Write(settings);
     }
 
     public static string Get(string key)
     {
-        string v;
-        return Read().TryGetValue(key, out v) ? v : "";
+        string value;
+        return Read().TryGetValue(key, out value) ? value : "";
     }
 
     public static IEnumerable<string> Keys() { return Read().Keys; }
 
     public static void Remove(string key)
     {
-        var d = Read();
-        if (d.Remove(key)) Write(d);
+        var settings = Read();
+        if (settings.Remove(key)) Write(settings);
     }
 
     public static void Set(string key, string value)
     {
-        var d = Read();
-        d[key] = value;
-        Write(d);
+        var settings = Read();
+        settings[key] = value;
+        Write(settings);
     }
 }
