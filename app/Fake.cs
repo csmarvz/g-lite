@@ -356,7 +356,14 @@ class FakeG915 : Hidpp
     public int Brightness = 80, Claimed;
     public byte Layout = 1;
 
-    public FakeG915() : base(false) { }
+    // The owner's directory lists profiles 1 to 3 (docs/G915.md); this fake has only profile 1.
+    public FakeG915() : base(false)
+    {
+        var directory = Enumerable.Repeat((byte)0xFF, 255).ToArray();
+        FakeHidpp.Hex("000101FF000201FF000301FF").CopyTo(directory, 0);
+        MouseProtocol.WriteChecksum(directory);
+        Sectors[0] = directory;
+    }
 
     public static FakeG915 G512X()
     {
@@ -381,6 +388,7 @@ class FakeG915 : Hidpp
             if (fn == 2) reply[0] = 1;
             if (fn == 3) Reloads++;
             if (fn == 4) reply[1] = 1;
+            if (fn == 5 && !Sectors.ContainsKey(parameters[0] << 8 | parameters[1])) throw new HidppError(2, "invalid argument");
             if (fn == 5) Sectors[parameters[0] << 8 | parameters[1]].Skip(parameters[2] << 8 | parameters[3]).Take(16).ToArray().CopyTo(reply, 0);
             if (fn == 6) { writeTo = parameters[0] << 8 | parameters[1]; writeLength = parameters[4] << 8 | parameters[5]; pending.Clear(); }
             if (fn == 7) pending.AddRange(parameters.Take(16));
