@@ -68,7 +68,7 @@ class FoundDevice
     }
     public bool IsLitra
     {
-        get { return Name.ToUpper().Contains("LITRA") || Path != null && Regex.IsMatch(Path, @"PID_C90[0-3]", RegexOptions.IgnoreCase); }
+        get { return Name.ToUpper().Contains("LITRA") || (Path != null && Regex.IsMatch(Path, @"PID_C90[0-3]", RegexOptions.IgnoreCase)); }
     }
     public bool IsLight { get { return IsLitra && Has(0x1990); } }
     public bool IsG { get { return LooksG(Name) || IsLitra; } }
@@ -277,12 +277,13 @@ static class Devices
     {
         var foundPaths = found.Select(device => device.Path).ToList();
         var plain = new List<FoundDevice>();
-        foreach (var pid in ids
+        var listedPids = ids
             .Select(id => PlainModels.Match(id))
             .Where(match => match.Success)
             .Select(match => match.Groups[1].Value.ToUpperInvariant())
             .Concat(ids.Select(id => Unfound(id, foundPaths)).Where(pid => pid != null))
-            .Distinct())
+            .Distinct();
+        foreach (var pid in listedPids)
         {
             var paths = ids.Where(id => id.Contains("PID_" + pid)).OrderBy(id => id).Select(PathOf).ToList();
             string[] known;

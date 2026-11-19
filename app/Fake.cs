@@ -214,7 +214,7 @@ class FakeHidpp : Hidpp
             {
                 reply[0] = 0; reply[1] = parameters[1];
                 for (int id = parameters[1] * 112; id < parameters[1] * 112 + 112; id++)
-                    if (id >= 0x01 && id <= 0x4F || id >= 0x61 && id <= 0x6F)
+                    if ((id >= 0x01 && id <= 0x4F) || (id >= 0x61 && id <= 0x6F))
                         reply[2 + (id - parameters[1] * 112) / 8] |= (byte)(1 << (id % 8));
             }
             if (fn == 6)
@@ -222,7 +222,7 @@ class FakeHidpp : Hidpp
                 for (int i = 3; i < 16 && parameters.Length > i; i++)
                 {
                     if (parameters[i] == 0 && i > 3) break;
-                    if (parameters[i] < 0x01 || parameters[i] > 0x4F && parameters[i] < 0x61 || parameters[i] > 0x6F)
+                    if (parameters[i] < 0x01 || (parameters[i] > 0x4F && parameters[i] < 0x61) || parameters[i] > 0x6F)
                         throw new HidppError(2, "invalid argument");
                     Keys[parameters[i]] = parameters[0] << 16 | parameters[1] << 8 | parameters[2];
                 }
@@ -382,7 +382,7 @@ class FakeLight : Hidpp
         {
             if (fn == 0)
             {
-                if (parameters[0] >= Groups.Length || parameters[1] != 0xFF && parameters[1] >= Groups[parameters[0]].Length)
+                if (parameters[0] >= Groups.Length || (parameters[1] != 0xFF && parameters[1] >= Groups[parameters[0]].Length))
                     throw new HidppError(2, "invalid argument");
                 reply[0] = parameters[0];
                 reply[1] = parameters[1];
@@ -490,7 +490,7 @@ class FakeG915 : Hidpp
         {
             reply[1] = parameters[1];
             for (int id = parameters[1] * 112; id < parameters[1] * 112 + 112; id++)
-                if (id <= 0x6F || id >= 0xA0 && id <= 0xC0 || id >= 0xF2 && id <= 0xFE)
+                if (id <= 0x6F || (id >= 0xA0 && id <= 0xC0) || (id >= 0xF2 && id <= 0xFE))
                     reply[2 + (id - parameters[1] * 112) / 8] |= (byte)(1 << ((id - parameters[1] * 112) % 8));
         }
         else if (!Index.ContainsValue(featureIndex)) throw new HidppError(2, "invalid argument");

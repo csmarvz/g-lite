@@ -375,7 +375,7 @@ class DrawnControl : Control
         Cursor = Cursors.Hand;
     }
 
-    protected bool Pressed { get { return (down && hover || key) && Enabled; } }
+    protected bool Pressed { get { return ((down && hover) || key) && Enabled; } }
 
     public void Press()
     {

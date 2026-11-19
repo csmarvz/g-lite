@@ -4,6 +4,9 @@ using System.Collections.Generic;
 
 static class SelfTest
 {
+    static readonly string[] LayoutFiles =
+        { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json" };
+
     static byte[] Hex(string hex)
     {
         return Enumerable.Range(0, hex.Length / 2).Select(i => Convert.ToByte(hex.Substring(i * 2, 2), 16)).ToArray();
@@ -779,8 +782,7 @@ static class SelfTest
                 file + " key ids are lighting ids");
         }
         // The built ISO pictures were checked equal to the hand-made g515-tkl-iso.json and g213-iso.json they replaced.
-        foreach (var file in
-            new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json" })
+        foreach (var file in LayoutFiles)
         {
             var isoBoard = KeyLayout.Load(file).Iso();
             int isoKeys = isoBoard.Rows.Sum(row => row.Split('|').Count(cell => !cell.StartsWith("_")));
@@ -846,8 +848,7 @@ static class SelfTest
 
         // models/iso keeps each layout's ISO picture as a file to read; it isn't embedded, the app builds it with KeyLayout.Iso.
         var isoFolder = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\models\iso");
-        foreach (var file in
-            new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json" })
+        foreach (var file in LayoutFiles)
         {
             var builtIso = KeyLayout.Load(file).Iso();
             var path = System.IO.Path.Combine(isoFolder, file.Replace(".json", "-iso.json"));

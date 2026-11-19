@@ -60,7 +60,7 @@ static class Bindings
     {
         if (binding == null) return -1;
         int exact = Array.FindIndex(Actions, action => action.Bytes.SequenceEqual(binding));
-        if (exact >= 0 || binding.Length < 2 || !(binding[0] == 0x90 || binding[0] == 0x80 && binding[1] == 0x00)) return exact;
+        if (exact >= 0 || binding.Length < 2 || !(binding[0] == 0x90 || (binding[0] == 0x80 && binding[1] == 0x00))) return exact;
         return Array.FindIndex(Actions, action => action.Bytes[0] == binding[0] && action.Bytes[1] == binding[1]);
     }
 
@@ -263,7 +263,7 @@ static class MouseProtocol
             {
                 // Pages 1–16 are the flash; 17 and up hold the G500's and G700s's factory profiles (cvuchener's g500 doc/memory.md).
                 if (Flash) return Sector >= 2 && Sector <= 16 && SectorSize == 512 && Current != null;
-                return Onboard && KnownFormat(Format) && SectorSize >= 0xF0 && (Sector > 0 && Sector < 0x100 || Fresh);
+                return Onboard && KnownFormat(Format) && SectorSize >= 0xF0 && ((Sector > 0 && Sector < 0x100) || Fresh);
             }
         }
 
@@ -427,7 +427,7 @@ static class MouseProtocol
     // Solaar treats both as no directory, and the mouse runs its factory profiles.
     public static bool Unwritten(byte[] directory)
     {
-        return Valid(directory) && ReadUInt16BigEndian(directory, 0) == 0xFFFF
+        return (Valid(directory) && ReadUInt16BigEndian(directory, 0) == 0xFFFF)
             || directory.All(value => value == 0x00)
             || directory.All(value => value == 0xFF);
     }

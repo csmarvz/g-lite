@@ -367,7 +367,7 @@ class PageMouse : DevicePage
         SyncButtons();
         saveButton.Enabled = ready && state.Savable && dirty && Keepable;
         saveButton.Visible = ready ? state.Writable : mouse.HasFactory;
-        backupsButton.Visible = mouse.HasFactory || ready && state.Writable;
+        backupsButton.Visible = mouse.HasFactory || (ready && state.Writable);
 
         picture.Display(lit ? light : new MouseLight { Effect = 0 }, ready ? current.Dpi : 0,
             !ready ? ""

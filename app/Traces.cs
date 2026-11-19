@@ -160,7 +160,7 @@ class Script : IDisposable
             queue = ((IPage)Page).Queue;
             int lineCount;
             lock (gate) lineCount = lines.Count;
-            if (lineCount != count || !queue.IsCompleted || page != null && page.Busy) { count = lineCount; still = DateTime.UtcNow; }
+            if (lineCount != count || !queue.IsCompleted || (page != null && page.Busy)) { count = lineCount; still = DateTime.UtcNow; }
             else if ((DateTime.UtcNow - still).TotalMilliseconds > 150) return;
             if (DateTime.UtcNow > end) throw new TimeoutException("the screen didn't settle");
         }
@@ -179,10 +179,11 @@ class Script : IDisposable
         var parts = new List<string>();
         var status = All<StatusLine>().FirstOrDefault(line => line.Visible);
         parts.Add("status " + (status == null ? "-" : "\"" + status.Shown + "\""));
-        foreach (var control in All<Control>()
+        var visibleControls = All<Control>()
             .Where(control => control.Visible)
             .OrderBy(control => Where(control).Y)
-            .ThenBy(control => Where(control).X))
+            .ThenBy(control => Where(control).X);
+        foreach (var control in visibleControls)
         {
             string disabled = control.Enabled ? "" : " (off)";
             if (control is FlatButton && control.Text != "") parts.Add("[" + control.Text + disabled + "]");

@@ -243,11 +243,13 @@ static class OtherDevice
                 // (fn 2 byte 1) rather than turning the backlight off.
                 var config = device.Call(device.FeatureIndex(0x1982), 0);
                 int now = config[1] >> 3 & 3;
-                int mode = want[OtherSettings.Auto] == 1 ? 1
-                    : want[OtherSettings.Auto] == 0
-                        || want[OtherSettings.Level] >= 0 && want[OtherSettings.Level] != sent[OtherSettings.Level] ? 3
-                    : now == 2 ? 1
-                    : now;
+                int mode;
+                if (want[OtherSettings.Auto] == 1) mode = 1;
+                else if (want[OtherSettings.Auto] == 0
+                    || (want[OtherSettings.Level] >= 0 && want[OtherSettings.Level] != sent[OtherSettings.Level]))
+                    mode = 3;
+                else if (now == 2) mode = 1;
+                else mode = now;
                 byte options = (byte)(config[1] & ~0x18 | mode << 3);
                 bool picked = want[OtherSettings.Level] >= 0 && want[OtherSettings.Level] != sent[OtherSettings.Level];
                 int level = mode != 3 ? 0

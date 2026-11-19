@@ -54,7 +54,7 @@ abstract class DevicePage : Control, IPage
         Ui.Text(this, "Preset", 20, 79, () => Theme.Dim, 9.75f);
         profiles = Ui.Add(this, new Dropdown { AccessibleName = "Preset" }, 74, 72, 180, 32);
         profiles.Picked += PickSet;
-        profiles.Label = name => name + (drafts.ContainsKey(name) || name == loaded && Changed() ? " •" : "");
+        profiles.Label = name => name + (drafts.ContainsKey(name) || (name == loaded && Changed()) ? " •" : "");
         nameField = Ui.Add(this, new TextField { Visible = false }, 74, 72, 180, 32);
         nameField.Box.KeyDown += (s, e) =>
         {
@@ -347,11 +347,11 @@ abstract class DevicePage : Control, IPage
     {
         profiles.Items.Clear();
         profiles.Items.Add(NoPreset);
-        foreach (var key in Settings.Keys()
+        var presetNames = Settings.Keys()
             .Where(key => key.StartsWith(prefix))
             .Select(key => key.Substring(prefix.Length))
-            .OrderBy(key => key))
-            profiles.Items.Add(key);
+            .OrderBy(key => key);
+        foreach (var presetName in presetNames) profiles.Items.Add(presetName);
         profiles.Index = select == null ? 0 : Math.Max(0, profiles.Items.IndexOf(select));
         ShowSets();
     }

@@ -120,7 +120,11 @@ class KeyPicture : DrawnControl
         return Cap(new RectangleF(box.X - lip, box.Y, box.Width + lip, 1));
     }
 
-    bool Hit(int key, Func<RectangleF, bool> test) { var top = TopRow(key); return test(Cap(keys[key])) || top != null && test(top.Value); }
+    bool Hit(int key, Func<RectangleF, bool> test)
+    {
+        var top = TopRow(key);
+        return test(Cap(keys[key])) || (top != null && test(top.Value));
+    }
 
     void FillKey(Graphics graphics, int key, Color fill)
     {
@@ -266,7 +270,7 @@ class KeyPicture : DrawnControl
         {
             var fill = liveColors != null && key < liveColors.Length ? Ui.Mix(Theme.KeyOff, liveColors[key], bright / 100.0) : Theme.KeyOff;
             FillKey(graphics, key, fill);
-            if (touched.Contains(key) || marked != null && key < marked.Length && marked[key])
+            if (touched.Contains(key) || (marked != null && key < marked.Length && marked[key]))
                 using (var pen = new Pen(Theme.Accent, 2 * DpiScale)) Outline(graphics, key, pen);
         }
         if (!dragging || !Dragged) return;
@@ -994,8 +998,10 @@ class Page515 : DevicePage
     {
         get
         {
-            return current != null
-                && (live && kind.Profile ? dirty || Screening : live ? Known() : stored != null && (dirty || Screening));
+            if (current == null) return false;
+            if (live && kind.Profile) return dirty || Screening;
+            if (live) return Known();
+            return stored != null && (dirty || Screening);
         }
     }
 
