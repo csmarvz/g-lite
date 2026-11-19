@@ -1,6 +1,6 @@
 # Newer G mice (0x2202 and 0x8061)
 
-The PRO X SUPERLIGHT 2 family, PRO X 2, G502 X and other recent G mice report DPI through 0x2202 and often the report rate through 0x8061, where the older ones use 0x2201 and 0x8060. G-Lite opens them on the mouse screen. Nothing here has been tried on a real mouse.
+The PRO X SUPERLIGHT 2 family, PRO X 2 and other recent G mice report DPI through 0x2202 and often the report rate through 0x8061, where the older ones use 0x2201 and 0x8060. G-Lite opens them on the mouse screen. Nothing here has been tried on a real mouse. Not every G502 X: a G502 X LIGHTSPEED (409F) has 0x2201 and 0x8060 and profile format 3, like the older mice (see [G502X.md](G502X.md)).
 
 Sources: [OpenLogi](https://github.com/AprilNEA/OpenLogi) (from Logi Options+), [logi-cli](https://github.com/meech-io/logi-cli) (MIT, tested on a PRO X 2 DEX), Lghub's `docs/protocol.md`, and the notes in [report-rate-8061.md](report-rate-8061.md) and [research/mice.md](research/mice.md).
 

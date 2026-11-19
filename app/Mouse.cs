@@ -42,7 +42,8 @@ static class Bindings
 
     public static bool HasLeft(byte[][] buttons, int count) { return buttons != null && buttons.Take(count).Any(binding => binding != null && binding.SequenceEqual(Actions[0].Bytes)); }
 
-    // Factory profiles store a special's last two bytes as FF FF (G502 HERO) or FF 00 (G502 X LIGHTSPEED), G HUB as 00 00,
+    // Factory profiles store a special's last two bytes as FF FF (G502 HERO) or FF 00 (a G502 X LIGHTSPEED; a 409F on
+    // MPM 30.00 has 00 00), G HUB as 00 00,
     // and "no action" as 80 00 FF FF (Solaar): only the first two bytes say what the button does (g502-hub's docs/protocol.md, facts only).
     public static int Find(byte[] binding)
     {
@@ -110,6 +111,9 @@ static class Bindings
     {
         int wpid = found.Models.Contains("C08B") ? 0x407F : found.WirelessId;
         var known = wpid == 0x407F ? new[] { "Left button", "Right button", "Wheel click", "Thumb, back", "Thumb, front", "Sniper", "G7", "G8", "G9", "Wheel tilt right", "Wheel tilt left" }
+            // The G502 X LIGHTSPEED's slots, from its factory bindings (docs/reports/g502x-409f.txt): Back, DPI shift, Forward, Scroll left
+            // and right, Cycle profile, DPI up and down.
+            : wpid == 0x409F ? new[] { "Left button", "Right button", "Wheel click", "Thumb, back (G4)", "Sniper (G6)", "Thumb, front (G5)", "Wheel tilt left", "Wheel tilt right", "G9", "G8", "G7" }
             : wpid == 0x4079 ? new[] { "Left button", "Right button", "Wheel click", "Left side, back", "Left side, front", "DPI, underneath", "Right side, back", "Right side, front" }
             : new[] { "Left button", "Right button", "Wheel click" };
         return Enumerable.Range(0, count).Select(i => i < known.Length ? known[i] : "Button " + (i + 1)).ToArray();

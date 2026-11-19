@@ -18,3 +18,4 @@ Reports from G-Lite's Report button, kept as they were sent, so the facts in the
 | [k295-4023.txt](k295-4023.txt) | K270/K295 "Wireless Keyboard" (4023), through its receiver | RQK 49.00, build 0029 | 2026-11-12 | The maintainer's keyboard | [K295.md](../K295.md) |
 | [mxkeyss-b378.txt](mxkeyss-b378.txt) | MX Keys S (Bluetooth B378), Swiss layout | RBK 81.02, build 0017 | 2026-11-17 | The maintainer's keyboard | [other-devices.md](../other-devices.md) |
 | [mxcreativekeypad-c354.txt](mxcreativekeypad-c354.txt) | MX Creative Keypad (USB C354) | U1 66.00, build 0017 | 2026-11-12 | An owner | [other-devices.md](../other-devices.md) |
+| [g502x-409f.txt](g502x-409f.txt) | G502 X LIGHTSPEED (409F, USB C098), through its receiver | MPM 30.00, build 0014 | 2026-11-19 | Sent by the maintainer | [G502X.md](../G502X.md) |
