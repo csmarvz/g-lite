@@ -305,10 +305,10 @@ class Hidpp : IDisposable
         if (featureLength > 0 || handle.IsInvalid) return Math.Max(1, featureLength);
         IntPtr data;
         if (!HidD_GetPreparsedData(handle, out data)) return 1;
-        var caps = new short[32];
+        var caps = new short[HidCaps.Length];
         HidP_GetCaps(data, caps);
         HidD_FreePreparsedData(data);
-        featureLength = caps[4];
+        featureLength = caps[HidCaps.FeatureLength];
         return Math.Max(1, featureLength);
     }
 
@@ -756,7 +756,7 @@ static class G915Lighting
     public static void Release(Hidpp hidpp) { hidpp.Call(hidpp.FeatureIndex(0x8071), 5, 0x01, 0x00, 0x00); }
 
     // The onboard profile, format 4, from a G915 TKL's report (docs/G915.md): power save and off after (seconds, little-endian), then four
-    // 11-byte lighting records, one per cluster, then the same dimmed for power save. The CRC is in the last two bytes, as on the mice.
+    // 11-byte lighting records: one per cluster, then the same dimmed for power save. The CRC is in the last two bytes, as on the mice.
     const int PowerSaveAt = 0x1C, OffAt = 0x1E, IdleTimesLength = 4, RecordsAt = 0xD0, RecordLength = 11, RecordsLength = 4 * RecordLength;
 
     public static byte[] ReadProfile(Hidpp hidpp, out int sector)

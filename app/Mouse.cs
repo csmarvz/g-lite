@@ -932,7 +932,8 @@ static class G9xRegisters
 
     // A profile page (docs/G9x.md): the LED colour, five 6-byte stages (X and Y, big-endian, then the LED nibbles), the default stage,
     // the report interval in ms. The CRC is in the last two bytes.
-    public const int PageSize = 512, ColorAt = 0x00, StagesAt = 0x04, StageLength = 6, DefaultStageAt = 0x23, ReportIntervalAt = 0x26;
+    public const int PageSize = 512, ColorAt = 0x00, StagesAt = 0x04, StageCount = 5, StageLength = 6, DefaultStageAt = 0x23,
+        ReportIntervalAt = 0x26;
 
     public static bool Valid(byte[] page) { return page.Length == PageSize && MouseProtocol.Valid(page); }
 
@@ -954,7 +955,7 @@ static class G9xRegisters
 
     public static int[] StagesOf(byte[] page, G9xModel model)
     {
-        return Enumerable.Range(0, 5)
+        return Enumerable.Range(0, StageCount)
             .Select(stage => page[StagesAt + StageLength * stage] << 8 | page[StagesAt + 1 + StageLength * stage])
             .TakeWhile(raw => raw != 0 && raw != 0xFFFF)
             .Select(model.Dpi)
