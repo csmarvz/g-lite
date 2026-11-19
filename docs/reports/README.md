@@ -12,10 +12,10 @@ Reports from G-Lite's Report button, kept as they were sent, so the facts in the
 | [g510s-c22d.txt](g510s-c22d.txt) | G510s (USB C22D), no HID++ | | 2026-11-14 | An owner | [G510.md](../G510.md) |
 | [gprowireless-4079.txt](gprowireless-4079.txt) | G Pro Wireless (4079, USB C088), through its receiver | MPM 15.02, build 0026 | 2026-11-18 | The maintainer's mouse | `MouseProtocol` in `app/Mouse.cs` |
 | [g502lightspeed-407f.txt](g502lightspeed-407f.txt) | G502 LIGHTSPEED (407F, USB C08D), through its receiver | MPM 17.00, build 0008 | 2026-11-10 | The maintainer's mouse | `Bindings` and `ButtonSpy` in `app/Mouse.cs` |
-| [g305-4074.txt](g305-4074.txt) | G305 (4074), through its receiver | RQM 68.02, build 0021 | 2026-11-10 | The maintainer's mouse | `FakeMouse.G305` in `app/Fake.cs`, [adding-a-device.md](../adding-a-device.md) |
+| [g305-4074.txt](g305-4074.txt) | G305 (4074), through its receiver | RQM 68.02, build 0021 | 2026-11-19 | The maintainer's mouse | `FakeMouse.G305` in `app/Fake.cs`, [adding-a-device.md](../adding-a-device.md), [G305.md](../G305.md) |
 | [proxwireless-0aba.txt](proxwireless-0aba.txt) | PRO X Wireless headset, through its dongle (USB 0ABA) | U1 12.01, build 0203 | 2026-11-18 | The maintainer's headset | `HeadsetProtocol` in `app/Headset.cs` |
 | [g560-0a78.txt](g560-0a78.txt) | G560 speakers (USB 0A78) | U1 22.03, build 0023 | 2026-11-11 | An owner | [G560.md](../G560.md) |
-| [k295-4023.txt](k295-4023.txt) | K270/K295 "Wireless Keyboard" (4023), through its receiver | RQK 49.00, build 0029 | 2026-11-12 | The maintainer's keyboard | [K295.md](../K295.md) |
+| [k295-4023.txt](k295-4023.txt) | K270/K295 "Wireless Keyboard" (4023), through its receiver | RQK 49.00, build 0029 | 2026-11-19 | The maintainer's keyboard | [K295.md](../K295.md) |
 | [mxkeyss-b378.txt](mxkeyss-b378.txt) | MX Keys S (Bluetooth B378), Swiss layout | RBK 81.02, build 0017 | 2026-11-17 | The maintainer's keyboard | [other-devices.md](../other-devices.md) |
 | [mxcreativekeypad-c354.txt](mxcreativekeypad-c354.txt) | MX Creative Keypad (USB C354) | U1 66.00, build 0017 | 2026-11-12 | An owner | [other-devices.md](../other-devices.md) |
 | [g502x-409f.txt](g502x-409f.txt) | G502 X LIGHTSPEED (409F, USB C098), through its receiver | MPM 30.00, build 0014 | 2026-11-19 | Sent by the maintainer | [G502X.md](../G502X.md) |
