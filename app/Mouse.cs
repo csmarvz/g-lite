@@ -262,7 +262,7 @@ static class MouseProtocol
             get
             {
                 // Pages 1–16 are the flash; 17 and up hold the G500's and G700s's factory profiles (cvuchener's g500 doc/memory.md).
-                if (Flash) return Sector >= 2 && Sector <= 16 && SectorSize == 512 && Current != null;
+                if (Flash) return Sector >= 2 && Sector <= 16 && SectorSize == G9xRegisters.PageSize && Current != null;
                 return Onboard && KnownFormat(Format) && SectorSize >= 0xF0 && ((Sector > 0 && Sector < 0x100) || Fresh);
             }
         }
@@ -276,6 +276,15 @@ static class MouseProtocol
     }
 
     public const int RomSector = 0x0101;
+
+    // Where things are in an onboard profile, formats 2 and 3 (libratbag, Solaar and cvuchener's hidpp agree): the report interval in ms,
+    // the default DPI stage, five 2-byte stages (little-endian), 4 bytes per button, the name in UTF-16, then an 11-byte LED record per
+    // zone (the effect id, then the 0x8070 parameters). The CRC is in the last two bytes.
+    public const int ReportIntervalAt = 0x00, DefaultStageAt = 0x01, StagesAt = 0x03, StageCount = 5, ButtonsAt = 0x20, ButtonLength = 4,
+        NameAt = 0xA0, NameLength = 0x30, LightRecordsAt = 0xD0, LightRecordLength = 11;
+
+    // Formats 6 and up keep five 5-byte stage records from offset 4, the DPI in the first two bytes (docs/newer-mice.md).
+    const int WideStagesAt = 4, WideStageLength = 5;
 
     public static ushort Crc(byte[] data, int length)
     {
@@ -303,16 +312,16 @@ static class MouseProtocol
 
     public static int[] StagesOf(byte[] profile)
     {
-        return Enumerable.Range(0, 5)
-            .Select(i => profile[3 + 2 * i] | profile[4 + 2 * i] << 8)
+        return Enumerable.Range(0, StageCount)
+            .Select(i => profile[StagesAt + 2 * i] | profile[StagesAt + 1 + 2 * i] << 8)
             .TakeWhile(x => x != 0 && x != 0xFFFF)
             .ToArray();
     }
 
     public static int[] WideStages(byte[] profile, int[] dpis)
     {
-        var stages = Enumerable.Range(0, 5)
-            .Select(i => profile[4 + 5 * i] | profile[5 + 5 * i] << 8)
+        var stages = Enumerable.Range(0, StageCount)
+            .Select(i => profile[WideStagesAt + WideStageLength * i] | profile[WideStagesAt + 1 + WideStageLength * i] << 8)
             .TakeWhile(x => x != 0 && x != 0xFFFF)
             .ToArray();
         return dpis.Length > 0 && stages.All(x => x >= dpis[0] && x <= dpis[dpis.Length - 1]) ? stages : new int[0];
@@ -342,10 +351,11 @@ static class MouseProtocol
     {
         if (!Valid(profile)) return "damaged, can't be restored";
         var stages = StagesOf(profile);
-        var light = Decode(profile.Skip(0xDB).Take(11).ToArray());
-        return (profile[1] < stages.Length ? stages[profile[1]] + " DPI" : "DPI stages")
+        var light = Decode(profile.Skip(LightRecordsAt + LightRecordLength).Take(LightRecordLength).ToArray());
+        int defaultStage = profile[DefaultStageAt], interval = profile[ReportIntervalAt];
+        return (defaultStage < stages.Length ? stages[defaultStage] + " DPI" : "DPI stages")
             + ", " + (light == null ? "lighting" : EffectById(light.Effect).Name)
-            + ", " + (profile[0] > 0 ? 1000 / profile[0] + " Hz" : "");
+            + ", " + (interval > 0 ? 1000 / interval + " Hz" : "");
     }
 
     public static byte[] Build(byte[] old, MouseSet want, int zones)
@@ -354,24 +364,26 @@ static class MouseProtocol
         var stages = StagesOf(built);
         if (stages.Length == 0) throw new RefusedException("The profile on the mouse has no DPI stages, not touching it");
         int i = want.Stage >= 0 && want.Stage < stages.Length ? want.Stage : Array.IndexOf(stages, want.Dpi);
-        if (i < 0) i = Math.Min((int)built[1], stages.Length - 1);
-        built[3 + 2 * i] = (byte)want.Dpi;
-        built[4 + 2 * i] = (byte)(want.Dpi >> 8);
-        built[1] = (byte)i;
-        if (want.Rate > 0) built[0] = (byte)(1000 / want.Rate);
+        if (i < 0) i = Math.Min((int)built[DefaultStageAt], stages.Length - 1);
+        built[StagesAt + 2 * i] = (byte)want.Dpi;
+        built[StagesAt + 1 + 2 * i] = (byte)(want.Dpi >> 8);
+        built[DefaultStageAt] = (byte)i;
+        if (want.Rate > 0) built[ReportIntervalAt] = (byte)(1000 / want.Rate);
         if (want.Buttons != null)
         {
             int count = Math.Min(want.Buttons.Length, 16);
-            var before = Enumerable.Range(0, count).Select(button => built.Skip(0x20 + 4 * button).Take(4).ToArray()).ToArray();
+            var before = Enumerable.Range(0, count)
+                .Select(button => built.Skip(ButtonsAt + ButtonLength * button).Take(ButtonLength).ToArray())
+                .ToArray();
             if (Bindings.HasLeft(before, count) && !Bindings.HasLeft(want.Buttons, count))
                 throw new RefusedException("No button is set to Left click, not saving");
-            for (int button = 0; button < count; button++) want.Buttons[button].CopyTo(built, 0x20 + 4 * button);
+            for (int button = 0; button < count; button++) want.Buttons[button].CopyTo(built, ButtonsAt + ButtonLength * button);
         }
         if (want.Light != null)
             for (int zone = 0; zone < Math.Min(zones, 2); zone++)
             {
-                built[0xD0 + 11 * zone] = want.Light.Effect;
-                Encode(want.Light).CopyTo(built, 0xD1 + 11 * zone);
+                built[LightRecordsAt + LightRecordLength * zone] = want.Light.Effect;
+                Encode(want.Light).CopyTo(built, LightRecordsAt + 1 + LightRecordLength * zone);
             }
         WriteChecksum(built);
         return built;
@@ -379,11 +391,11 @@ static class MouseProtocol
 
     public static byte[] Factory(byte[] rom, byte[] current)
     {
-        if (rom[0] == 0 || rom[0] > 8 || StagesOf(rom).Length == 0)
+        if (rom[ReportIntervalAt] == 0 || rom[ReportIntervalAt] > 8 || StagesOf(rom).Length == 0)
             throw new RefusedException("Couldn't read the mouse's factory profile, not restoring it (it starts "
                 + BitConverter.ToString(rom, 0, Math.Min(13, rom.Length)).Replace("-", " ") + ")");
         var built = (byte[])rom.Clone();
-        if (Valid(current)) Array.Copy(current, 0xA0, built, 0xA0, 0x30);
+        if (Valid(current)) Array.Copy(current, NameAt, built, NameAt, NameLength);
         WriteChecksum(built);
         return built;
     }
@@ -637,9 +649,11 @@ static class MouseProtocol
                     {
                         state.Stages = StagesOf(state.Profile);
                         state.Buttons = Enumerable.Range(0, state.ButtonCount)
-                            .Select(i => state.Profile.Skip(0x20 + 4 * i).Take(4).ToArray())
+                            .Select(i => state.Profile.Skip(ButtonsAt + ButtonLength * i).Take(ButtonLength).ToArray())
                             .ToArray();
-                        if (logo >= 0 && logo < 2) state.Light = Decode(state.Profile.Skip(0xD0 + 11 * logo).Take(11).ToArray());
+                        if (logo >= 0 && logo < 2)
+                            state.Light = Decode(
+                                state.Profile.Skip(LightRecordsAt + LightRecordLength * logo).Take(LightRecordLength).ToArray());
                     }
                 }
                 if (state.Sector >= 0x100 && State.KnownFormat(state.Format) && info[3] >= 1
@@ -769,7 +783,7 @@ class HidppMouse : IMouse
             catch (HidppError) { }
     }
     public string Describe(byte[] profile) { return MouseProtocol.Describe(profile); }
-    public int DefaultStage(byte[] profile) { return profile[1]; }
+    public int DefaultStage(byte[] profile) { return profile[MouseProtocol.DefaultStageAt]; }
 }
 
 // The mice that share the G9x's profile page and registers. From cvuchener's hidpp (GPL-3.0, facts only): the G500 has the G9x's sensor
@@ -841,7 +855,7 @@ class G9xMouse : IMouse
     }
 
     public string Describe(byte[] profile) { return G9xRegisters.Describe(profile, model); }
-    public int DefaultStage(byte[] profile) { return profile[0x23]; }
+    public int DefaultStage(byte[] profile) { return profile[G9xRegisters.DefaultStageAt]; }
 }
 
 // The G5 and G9: short register 0x63 holds 0x80 + an index into the mouse's DPI list, 0x64 the report interval in ms.
@@ -916,12 +930,16 @@ static class G9xRegisters
     public static readonly EffectInfo[] Effects = MouseProtocol.Effects.Where(effect => effect.Id <= 0x01).ToArray();
     public static readonly int[] Rates = { 125, 200, 250, 333, 500, 1000 };
 
-    public static bool Valid(byte[] page) { return page.Length == 512 && MouseProtocol.Valid(page); }
+    // A profile page (docs/G9x.md): the LED colour, five 6-byte stages (X and Y, big-endian, then the LED nibbles), the default stage,
+    // the report interval in ms. The CRC is in the last two bytes.
+    public const int PageSize = 512, ColorAt = 0x00, StagesAt = 0x04, StageLength = 6, DefaultStageAt = 0x23, ReportIntervalAt = 0x26;
+
+    public static bool Valid(byte[] page) { return page.Length == PageSize && MouseProtocol.Valid(page); }
 
     public static byte[] ReadPage(Hidpp device, int pageNumber)
     {
-        var page = new byte[512];
-        for (int offset = 0; offset < 512; offset += 16)
+        var page = new byte[PageSize];
+        for (int offset = 0; offset < PageSize; offset += 16)
             Array.Copy(device.Register(0x83, 0xA2, (byte)pageNumber, (byte)(offset / 2)), 0, page, offset, 16);
         return page;
     }
@@ -937,7 +955,7 @@ static class G9xRegisters
     public static int[] StagesOf(byte[] page, G9xModel model)
     {
         return Enumerable.Range(0, 5)
-            .Select(stage => page[4 + 6 * stage] << 8 | page[5 + 6 * stage])
+            .Select(stage => page[StagesAt + StageLength * stage] << 8 | page[StagesAt + 1 + StageLength * stage])
             .TakeWhile(raw => raw != 0 && raw != 0xFFFF)
             .Select(model.Dpi)
             .ToArray();
@@ -979,7 +997,7 @@ static class G9xRegisters
             if (profile != null)
             {
                 state.Sector = pageNumber;
-                state.SectorSize = 512;
+                state.SectorSize = PageSize;
                 state.Current = new[] { current[1] };
                 state.Profile = profile;
                 state.ProfileOk = Valid(profile);
@@ -1007,8 +1025,9 @@ static class G9xRegisters
     {
         if (!Valid(page)) return "damaged, can't be restored";
         var stages = StagesOf(page, model);
-        var dpi = page[0x23] < stages.Length ? stages[page[0x23]] + " DPI" : "DPI stages";
-        return page[0x26] > 0 ? dpi + ", " + 1000 / page[0x26] + " Hz" : dpi;
+        int defaultStage = page[DefaultStageAt], interval = page[ReportIntervalAt];
+        var dpi = defaultStage < stages.Length ? stages[defaultStage] + " DPI" : "DPI stages";
+        return interval > 0 ? dpi + ", " + 1000 / interval + " Hz" : dpi;
     }
 
     public static byte[] Build(byte[] old, MouseSet want, int hz, G9xModel model)
@@ -1017,16 +1036,16 @@ static class G9xRegisters
         var stages = StagesOf(page, model);
         if (stages.Length == 0) throw new RefusedException("The profile on the mouse has no DPI stages, not touching it");
         int stage = want.Stage >= 0 && want.Stage < stages.Length ? want.Stage : Array.IndexOf(stages, want.Dpi);
-        if (stage < 0) stage = Math.Min((int)page[0x23], stages.Length - 1);
-        int raw = model.DpiToRaw(want.Dpi);
-        page[4 + 6 * stage] = page[6 + 6 * stage] = (byte)(raw >> 8);
-        page[5 + 6 * stage] = page[7 + 6 * stage] = (byte)raw;
-        page[0x23] = (byte)stage;
-        if (hz > 0) page[0x26] = (byte)(1000 / hz);
+        if (stage < 0) stage = Math.Min((int)page[DefaultStageAt], stages.Length - 1);
+        int raw = model.DpiToRaw(want.Dpi), stageAt = StagesAt + StageLength * stage;
+        page[stageAt] = page[stageAt + 2] = (byte)(raw >> 8);
+        page[stageAt + 1] = page[stageAt + 3] = (byte)raw;
+        page[DefaultStageAt] = (byte)stage;
+        if (hz > 0) page[ReportIntervalAt] = (byte)(1000 / hz);
         if (want.Light != null && model.Light)
         {
             var color = want.Light.Effect == 0x01 ? MouseProtocol.Encode(want.Light) : new byte[3];
-            Array.Copy(color, page, 3);
+            Array.Copy(color, 0, page, ColorAt, 3);
         }
         MouseProtocol.WriteChecksum(page);
         return page;
@@ -1036,7 +1055,7 @@ static class G9xRegisters
     public static void Store(Hidpp device, MouseProtocol.State state, byte[] page, byte[] previous)
     {
         if (!state.Flash || !state.Writable) throw new RefusedException("Saving isn't supported on this mouse");
-        if (page.Length != 512 || !Valid(page)) throw new RefusedException("Refusing to write a profile with a bad checksum");
+        if (page.Length != PageSize || !Valid(page)) throw new RefusedException("Refusing to write a profile with a bad checksum");
         byte pageNumber = (byte)state.Sector;
         device.Register(0x80, 0x0F, 0xFF);
         bool erased = false;
@@ -1052,7 +1071,8 @@ static class G9xRegisters
             // The page may be half written, and the mouse is on its factory profile (0x0F FF): put the page back as it was, then load it.
             try
             {
-                if (previous == null || previous.Length != 512 || !Valid(previous)) throw new RefusedException("no good copy to put back");
+                if (previous == null || previous.Length != PageSize || !Valid(previous))
+                    throw new RefusedException("no good copy to put back");
                 WritePage(device, pageNumber, previous, () => { });
                 device.Register(0x80, 0x0F, 0x00, state.Current[0]);
             }
@@ -1072,8 +1092,8 @@ static class G9xRegisters
     {
         for (int half = 0; half < 2; half++)
         {
-            var data = new byte[256];
-            Array.Copy(page, 256 * half, data, 0, 256);
+            var data = new byte[PageSize / 2];
+            Array.Copy(page, PageSize / 2 * half, data, 0, PageSize / 2);
             Upload(device, data);
             if (half == 0) { erasing(); device.Register(0x82, 0xA0, 0x02, 0, 0, 0, 0, 0, pageNumber, 0, 0, 0, 0x01, 0x00); }
             device.Register(0x82, 0xA0, 0x03, 0, 0, 0, 0, 0, pageNumber, (byte)(0x80 * half), 0, 0, 0x01, 0x00);

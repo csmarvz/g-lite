@@ -183,33 +183,35 @@ static class Report
             if (handle.IsInvalid || !HidD_GetPreparsedData(handle, out data)) { text.AppendLine("can't open"); return; }
             try
             {
-                var caps = new short[32];
+                var caps = new short[HidCaps.Length];
                 HidP_GetCaps(data, caps);
                 text.AppendLine(string.Format("usage={0:X4}:{1:X4} input={2} output={3} feature={4}{5}",
-                    (ushort)caps[1], (ushort)caps[0], caps[2], caps[3], caps[4], shared ? ", held by Windows" : ""));
+                    (ushort)caps[HidCaps.UsagePage], (ushort)caps[HidCaps.Usage],
+                    caps[HidCaps.InputLength], caps[HidCaps.OutputLength], caps[HidCaps.FeatureLength], shared ? ", held by Windows" : ""));
                 var kinds = new[] { "input", "output", "feature" };
                 int inputId = -1;
                 for (int type = 0; type < 3; type++)
                 {
-                    int first = Fields(text, data, type, kinds[type], caps[23 + type * 3], true);
-                    int value = Fields(text, data, type, kinds[type], caps[24 + type * 3], false);
+                    int first = Fields(text, data, type, kinds[type], caps[HidCaps.ButtonCaps + type * HidCaps.PerType], true);
+                    int value = Fields(text, data, type, kinds[type], caps[HidCaps.ValueCaps + type * HidCaps.PerType], false);
                     if (type == 0) inputId = first >= 0 ? first : value;
                 }
-                if (!shared && caps[2] > 0 && inputId >= 0 && (ushort)caps[1] < 0xFF00)
+                if (!shared && caps[HidCaps.InputLength] > 0 && inputId >= 0 && (ushort)caps[HidCaps.UsagePage] < 0xFF00)
                 {
-                    var input = new byte[caps[2]];
+                    var input = new byte[caps[HidCaps.InputLength]];
                     input[0] = (byte)inputId;
                     text.AppendLine("input now="
                         + (HidD_GetInputReport(handle, input, input.Length) ? Hex(input, " ") : "error " + Marshal.GetLastWin32Error()));
                 }
                 var ids = new SortedSet<int>();
-                FeatureIds(ids, data, caps[29], true);
-                FeatureIds(ids, data, caps[30], false);
-                if (caps[4] <= 0 || ids.Count == 0) return;
+                int featureAt = HidCaps.FeatureType * HidCaps.PerType;
+                FeatureIds(ids, data, caps[HidCaps.ButtonCaps + featureAt], true);
+                FeatureIds(ids, data, caps[HidCaps.ValueCaps + featureAt], false);
+                if (caps[HidCaps.FeatureLength] <= 0 || ids.Count == 0) return;
                 text.AppendLine("feature ids=" + string.Join(" ", ids.Select(id => id.ToString("X2"))));
                 foreach (var reportId in ids)
                 {
-                    var buffer = new byte[caps[4]];
+                    var buffer = new byte[caps[HidCaps.FeatureLength]];
                     buffer[0] = (byte)reportId;
                     bool read = HidD_GetFeature(handle, buffer, buffer.Length);
                     text.AppendLine("feature " + reportId.ToString("X2")
@@ -223,35 +225,38 @@ static class Report
     static int Fields(StringBuilder text, IntPtr data, int type, string kind, short count, bool buttons)
     {
         if (count <= 0) return -1;
-        var caps = new byte[72 * count];
+        var caps = new byte[HidCaps.RecordLength * count];
         short length = count;
         int status = buttons ? HidP_GetButtonCaps(type, caps, ref length, data) : HidP_GetValueCaps(type, caps, ref length, data);
         if (status != 0x00110000) return -1;
         for (int i = 0; i < length; i++)
         {
-            int at = 72 * i;
+            int at = HidCaps.RecordLength * i;
             Func<int, int> readUInt16 = offset => caps[at + offset] | caps[at + offset + 1] << 8;
             Func<int, int> readInt32 = offset => BitConverter.ToInt32(caps, at + offset);
-            bool range = caps[at + 12] != 0;
-            string usage = readUInt16(56).ToString("X4") + (range ? "-" + readUInt16(58).ToString("X4") : "");
-            string line = kind + (buttons ? " buttons" : " value") + " id=" + caps[at + 2].ToString("X2")
-                + " page=" + readUInt16(0).ToString("X4") + " usage=" + usage;
+            bool range = caps[at + HidCaps.IsRangeAt] != 0;
+            string usage = readUInt16(HidCaps.UsageAt).ToString("X4") + (range ? "-" + readUInt16(HidCaps.UsageMaxAt).ToString("X4") : "");
+            string line = kind + (buttons ? " buttons" : " value") + " id=" + caps[at + HidCaps.ReportIdAt].ToString("X2")
+                + " page=" + readUInt16(HidCaps.UsagePageAt).ToString("X4") + " usage=" + usage;
             if (!buttons)
-                line += " bits=" + readUInt16(18) + " count=" + readUInt16(20)
-                    + " logical=" + readInt32(40) + ".." + readInt32(44) + (caps[at + 16] != 0 ? " null" : "");
+                line += " bits=" + readUInt16(HidCaps.BitSizeAt) + " count=" + readUInt16(HidCaps.ReportCountAt)
+                    + " logical=" + readInt32(HidCaps.LogicalMinAt) + ".." + readInt32(HidCaps.LogicalMaxAt)
+                    + (caps[at + HidCaps.HasNullAt] != 0 ? " null" : "");
             text.AppendLine(line);
         }
-        return length > 0 ? caps[2] : -1;
+        return length > 0 ? caps[HidCaps.ReportIdAt] : -1;
     }
 
     static void FeatureIds(SortedSet<int> ids, IntPtr data, short count, bool buttons)
     {
         if (count <= 0) return;
-        var caps = new byte[72 * count];
+        var caps = new byte[HidCaps.RecordLength * count];
         short length = count;
-        int status = buttons ? HidP_GetButtonCaps(2, caps, ref length, data) : HidP_GetValueCaps(2, caps, ref length, data);
+        int status = buttons
+            ? HidP_GetButtonCaps(HidCaps.FeatureType, caps, ref length, data)
+            : HidP_GetValueCaps(HidCaps.FeatureType, caps, ref length, data);
         if (status != 0x00110000) return;
-        for (int i = 0; i < length; i++) ids.Add(caps[72 * i + 2]);
+        for (int i = 0; i < length; i++) ids.Add(caps[HidCaps.RecordLength * i + HidCaps.ReportIdAt]);
     }
 
     static byte[] ReadRegister(Hidpp device, byte subId, byte register, ref int misses)

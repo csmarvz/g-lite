@@ -215,6 +215,16 @@ Replace raw offsets with constants next to the code that reads them, with the so
 - G515 onboard files: whatever offsets `G515` encodes.
 - HID caps (`Devices.Caps`): `UsagePage = caps[1]`, `OutputReportLength = caps[3]`, or a `HIDP_CAPS` struct.
 
+Done: constants named `…At` for a position, `…Length` for a size, so they don't read like the fields and methods with the same subject (`State.Stages`, `IMouse.DefaultStage`):
+
+- `MouseProtocol`: `ReportIntervalAt`, `DefaultStageAt`, `StagesAt`, `ButtonsAt`, `NameAt`, `LightRecordsAt` and their lengths, and `WideStagesAt` for formats 6 and up. The G-shift layer isn't used by the code, so it has no constant.
+- `G9xRegisters`: `PageSize`, `ColorAt`, `StagesAt`, `DefaultStageAt`, `ReportIntervalAt` (docs/G9x.md).
+- `G915Lighting`: `PowerSaveAt`, `OffAt`, `RecordsAt` (was `Records`) and the record lengths.
+- `G515Profile`: the four file ids, the profile's `IdleAt`, `SleepAt`, `RecordsAt` and `RecordChoiceAt` (byte 74, named from what the code does with it), and the directory's offsets, with `Get32` beside `Put32`.
+- `HidCaps` in `Devices.cs`: Windows' `HIDP_CAPS` indexes and the `HIDP_BUTTON_CAPS`/`HIDP_VALUE_CAPS` byte offsets that `Report` reads.
+
+Checked by comparing the IL of every method before and after (tokens resolved to names): the methods where only a number became a constant compile to the same IL; the ten that differ are the ones that gained a named local or `Get32`, each read against the old code. The traces pass unchanged. Tests (`SelfTest.cs`, `Fake.cs`) keep their raw offsets, which they check against golden bytes.
+
 ## Step 4: split big files
 
 One subject per file. Keep the current file names where they still fit.
@@ -237,5 +247,5 @@ One subject per file. Keep the current file names where they still fit.
 - [x] 1d. Parameters and locals (file by file)
 - [x] 2a. Long lines: line breaks
 - [x] 2b. Long lines: rewrites (ternaries, brackets, named locals)
-- [ ] 3. Profile offsets
+- [x] 3. Profile offsets
 - [ ] 4. Split files

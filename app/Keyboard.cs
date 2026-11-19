@@ -363,6 +363,17 @@ class Lighting
 
 static class G515Profile
 {
+    // The onboard files (0x8101), read off the G515: never write the factory ones (CLAUDE.md).
+    const int UserDirFile = 0x0000, UserProfileFile = 0x0008, FactoryDirFile = 0x0100, FactoryProfileFile = 0x0101;
+
+    // A profile file: `01 01`, the idle and sleep times in seconds (big-endian, FFFF for never), then four 11-byte lighting records: two
+    // for the lighting, two for it dimmed. Each bit of the record choice picks the first of its pair (bit 0 the lighting, bit 1 the
+    // dimmed); G-Lite writes the second of each and a choice of 0.
+    const int ProfileLength = 99, IdleAt = 2, SleepAt = 4, RecordsAt = 30, RecordLength = 11, RecordChoiceAt = 74;
+
+    // A directory file: its CRC32 over the rest (big-endian), a header, the profile's CRC32, the profile's file id, then FF.
+    const int DirLength = 16, DirChecksumAt = 0, DirHeaderAt = 4, DirProfileChecksumAt = 10, DirProfileFileAt = 14;
+
     public static readonly EffectInfo[] Effects =
     {
         new EffectInfo { Id = 0x00, Name = "Off" },
@@ -422,15 +433,23 @@ static class G515Profile
         bytes[offset + 2] = (byte)(value >> 8); bytes[offset + 3] = (byte)value;
     }
 
+    static uint Get32(byte[] bytes, int offset)
+    {
+        return (uint)(bytes[offset] << 24 | bytes[offset + 1] << 16 | bytes[offset + 2] << 8 | bytes[offset + 3]);
+    }
+
     // Returns null when the profile holds an effect this app doesn't know (the factory animation).
     public static Lighting Decode(byte[] profile)
     {
-        var record = profile.Skip(30 + ((profile[74] & 1) != 0 ? 0 : 11)).Take(11).ToArray();
-        var dim = profile.Skip(30 + ((profile[74] & 2) != 0 ? 22 : 33)).Take(11).ToArray();
+        int choice = profile[RecordChoiceAt];
+        int recordAt = RecordsAt + ((choice & 1) != 0 ? 0 : RecordLength);
+        int dimAt = RecordsAt + ((choice & 2) != 0 ? 2 * RecordLength : 3 * RecordLength);
+        var record = profile.Skip(recordAt).Take(RecordLength).ToArray();
+        var dim = profile.Skip(dimAt).Take(RecordLength).ToArray();
         var effect = EffectById(record[0]);
         if (effect == null) return null;
         var lighting = new Lighting { Effect = record[0] };
-        int idle = ReadUInt16BigEndian(profile, 2), sleep = ReadUInt16BigEndian(profile, 4);
+        int idle = ReadUInt16BigEndian(profile, IdleAt), sleep = ReadUInt16BigEndian(profile, SleepAt);
         lighting.Idle = idle == 0xFFFF ? 0 : idle;
         lighting.Sleep = sleep == 0xFFFF ? 0 : sleep;
         if (effect.Color) lighting.Color = Rgb(record, 1);
@@ -450,21 +469,22 @@ static class G515Profile
     public static byte[] BuildProfile(byte[] baseProfile, Lighting lighting)
     {
         var profile = (byte[])baseProfile.Clone();
-        Put16(profile, 2, lighting.Idle <= 0 ? 0xFFFF : lighting.Idle);
-        Put16(profile, 4, lighting.Sleep <= 0 ? 0xFFFF : lighting.Sleep);
-        Array.Clear(profile, 30, 44);
-        profile[41] = lighting.Effect; Array.Copy(Encode(lighting, 100), 0, profile, 42, 10);
-        profile[63] = lighting.Effect; Array.Copy(Encode(lighting, lighting.Dim), 0, profile, 64, 10);
-        profile[74] = 0;
+        Put16(profile, IdleAt, lighting.Idle <= 0 ? 0xFFFF : lighting.Idle);
+        Put16(profile, SleepAt, lighting.Sleep <= 0 ? 0xFFFF : lighting.Sleep);
+        Array.Clear(profile, RecordsAt, 4 * RecordLength);
+        int recordAt = RecordsAt + RecordLength, dimAt = RecordsAt + 3 * RecordLength;
+        profile[recordAt] = lighting.Effect; Array.Copy(Encode(lighting, 100), 0, profile, recordAt + 1, 10);
+        profile[dimAt] = lighting.Effect; Array.Copy(Encode(lighting, lighting.Dim), 0, profile, dimAt + 1, 10);
+        profile[RecordChoiceAt] = 0;
         return profile;
     }
 
     public static byte[] BuildDirectory(byte[] factoryDir, byte[] profile)
     {
         var directory = (byte[])factoryDir.Clone();
-        Put32(directory, 10, Crc32(profile));
-        directory[14] = 8;
-        Put32(directory, 0, Crc32(directory.Skip(4).ToArray()));
+        Put32(directory, DirProfileChecksumAt, Crc32(profile));
+        directory[DirProfileFileAt] = UserProfileFile;
+        Put32(directory, DirChecksumAt, Crc32(directory.Skip(DirHeaderAt).ToArray()));
         return directory;
     }
 
@@ -483,13 +503,14 @@ static class G515Profile
 
     public static bool ValidProfile(byte[] profile)
     {
-        return profile != null && profile.Length == 99 && profile[0] == 1 && profile[1] == 1;
+        return profile != null && profile.Length == ProfileLength && profile[0] == 1 && profile[1] == 1;
     }
 
     static bool ValidDir(byte[] directory)
     {
-        return directory != null && directory.Length == 16 && directory.Skip(4).Take(6).SequenceEqual(DirHeader) && directory[15] == 0xFF
-            && Crc32(directory.Skip(4).ToArray()) == (uint)(directory[0] << 24 | directory[1] << 16 | directory[2] << 8 | directory[3]);
+        return directory != null && directory.Length == DirLength
+            && directory.Skip(DirHeaderAt).Take(DirHeader.Length).SequenceEqual(DirHeader) && directory[DirLength - 1] == 0xFF
+            && Crc32(directory.Skip(DirHeaderAt).ToArray()) == Get32(directory, DirChecksumAt);
     }
 
     // ---- device operations ----
@@ -505,13 +526,13 @@ static class G515Profile
     static byte[] ReadFile(Hidpp hidpp, int address, int size)
     {
         try { hidpp.Call(hidpp.FeatureIndex(0x8101), 8, (byte)(address >> 8), (byte)address, (byte)(size >> 8), (byte)size); }
-        catch (HidppError ex) { if (ex.Code == 4 && address < 0x0100) return null; throw; }
+        catch (HidppError ex) { if (ex.Code == 4 && address < FactoryDirFile) return null; throw; }
         return ReadBuffer(hidpp, size);
     }
 
     static void SaveFile(Hidpp hidpp, int address, byte[] data, uint checksum)
     {
-        if (address != 0x0000 && address != 0x0008) throw new InvalidOperationException("refusing to write factory storage");
+        if (address != UserDirFile && address != UserProfileFile) throw new InvalidOperationException("refusing to write factory storage");
         byte feature = hidpp.FeatureIndex(0x8101);
         hidpp.Call(feature, 2, 0, (byte)data.Length);
         for (int offset = 0; offset < data.Length; offset += 16) hidpp.Call(feature, 3, data.Skip(offset).Take(16).ToArray());
@@ -527,10 +548,10 @@ static class G515Profile
     {
         return new Files
         {
-            FactoryProfile = ReadFile(hidpp, 0x0101, 99),
-            FactoryDir = ReadFile(hidpp, 0x0100, 16),
-            UserProfile = ReadFile(hidpp, 0x0008, 99),
-            UserDir = ReadFile(hidpp, 0x0000, 16),
+            FactoryProfile = ReadFile(hidpp, FactoryProfileFile, ProfileLength),
+            FactoryDir = ReadFile(hidpp, FactoryDirFile, DirLength),
+            UserProfile = ReadFile(hidpp, UserProfileFile, ProfileLength),
+            UserDir = ReadFile(hidpp, UserDirFile, DirLength),
         };
     }
 
@@ -539,13 +560,13 @@ static class G515Profile
         if (!ValidProfile(files.FactoryProfile) || !ValidDir(files.FactoryDir))
             throw new RefusedException("Unknown onboard profile layout, not touching it");
         if (files.UserProfile == null && files.UserDir == null) return;
-        bool ours = files.UserDir == null || (ValidDir(files.UserDir) && files.UserDir[14] == 8);
+        bool ours = files.UserDir == null || (ValidDir(files.UserDir) && files.UserDir[DirProfileFileAt] == UserProfileFile);
         if (ours && (files.UserProfile == null || files.UserDir == null))
             throw new HalfWrittenException("User profile is half written, not touching it");
         if (!ours || !ValidProfile(files.UserProfile))
             throw new RefusedException("The profiles saved on the keyboard aren't laid out the way G-Lite writes them, not touching them");
         if (Crc32(files.UserProfile)
-            != (uint)(files.UserDir[10] << 24 | files.UserDir[11] << 16 | files.UserDir[12] << 8 | files.UserDir[13]))
+            != Get32(files.UserDir, DirProfileChecksumAt))
             throw new HalfWrittenException("User profile doesn't match its directory entry, not touching it");
     }
 
@@ -624,9 +645,9 @@ static class G515Profile
 
     static void WriteFiles(Hidpp hidpp, Files now, byte[] profile, byte[] directory)
     {
-        if (now.UserProfile == null || !profile.SequenceEqual(now.UserProfile)) SaveFile(hidpp, 0x0008, profile, Crc32(profile));
+        if (now.UserProfile == null || !profile.SequenceEqual(now.UserProfile)) SaveFile(hidpp, UserProfileFile, profile, Crc32(profile));
         if (now.UserDir == null || !directory.SequenceEqual(now.UserDir))
-            SaveFile(hidpp, 0x0000, directory, Crc32(directory.Skip(4).ToArray()));
+            SaveFile(hidpp, UserDirFile, directory, Crc32(directory.Skip(DirHeaderAt).ToArray()));
         Activate(hidpp, profile);
     }
 
@@ -734,9 +755,9 @@ static class G915Lighting
 
     public static void Release(Hidpp hidpp) { hidpp.Call(hidpp.FeatureIndex(0x8071), 5, 0x01, 0x00, 0x00); }
 
-    // The onboard profile, format 4, from a G915 TKL's report (docs/G915.md): power save and off after (seconds, little-endian) at
-    // 0x1C and 0x1E, then four 11-byte lighting records from 0xD0, one per cluster, then the same dimmed for power save.
-    const int Records = 0xD0;
+    // The onboard profile, format 4, from a G915 TKL's report (docs/G915.md): power save and off after (seconds, little-endian), then four
+    // 11-byte lighting records, one per cluster, then the same dimmed for power save. The CRC is in the last two bytes, as on the mice.
+    const int PowerSaveAt = 0x1C, OffAt = 0x1E, IdleTimesLength = 4, RecordsAt = 0xD0, RecordLength = 11, RecordsLength = 4 * RecordLength;
 
     public static byte[] ReadProfile(Hidpp hidpp, out int sector)
     {
@@ -744,7 +765,7 @@ static class G915Lighting
         if (hidpp.Call(feature, 2)[0] != 1) throw new RefusedException("The keyboard isn't on its onboard profiles");
         var info = hidpp.Call(feature, 0);
         int size = info[7] << 8 | info[8];
-        if (info[1] != 4 || size < Records + 44 + 2 || size > 0x1000)
+        if (info[1] != 4 || size < RecordsAt + RecordsLength + 2 || size > 0x1000)
             throw new RefusedException("Saving isn't supported on this keyboard (profile format " + info[1] + ")");
         var current = hidpp.Call(feature, 4);
         sector = current[0] << 8 | current[1];
@@ -757,10 +778,10 @@ static class G915Lighting
     // Returns null when the keys hold an effect this app doesn't know.
     public static Lighting Decode(byte[] profile, int keys)
     {
-        var record = profile.Skip(Records + 11 * keys).Take(11).ToArray();
+        var record = profile.Skip(RecordsAt + RecordLength * keys).Take(RecordLength).ToArray();
         var lighting = new Lighting
         {
-            Idle = profile[0x1C] | profile[0x1D] << 8, Sleep = profile[0x1E] | profile[0x1F] << 8,
+            Idle = profile[PowerSaveAt] | profile[PowerSaveAt + 1] << 8, Sleep = profile[OffAt] | profile[OffAt + 1] << 8,
             Color = record[1] << 16 | record[2] << 8 | record[3]
         };
         switch (record[0])
@@ -774,7 +795,7 @@ static class G915Lighting
             default: return null;
         }
         if (lighting.Effect != 0x01 && lighting.Effect != 0x0A && lighting.Effect != 0x17) lighting.Color = 0xFFFFFF;
-        var dim = profile.Skip(Records + 11 * (2 + keys)).Take(11).ToArray();
+        var dim = profile.Skip(RecordsAt + RecordLength * (2 + keys)).Take(RecordLength).ToArray();
         lighting.Dim = dim[0] == record[0] && Level(record) > 0 ? Math.Min(100, Level(dim) * 100 / Level(record)) : 50;
         return lighting;
     }
@@ -820,15 +841,16 @@ static class G915Lighting
             if (effectIndex < 0) throw new RefusedException("This keyboard doesn't have that effect");
             byte id = clusters[cluster][effectIndex];
             var parameters = Encode(id, light);
-            built[Records + 11 * cluster] = id;
-            parameters.CopyTo(built, Records + 11 * cluster + 1);
-            built[Records + 11 * (2 + cluster)] = id;
-            Dimmed(id, parameters, idleTimes ? lighting.Dim : 100).CopyTo(built, Records + 11 * (2 + cluster) + 1);
+            int recordAt = RecordsAt + RecordLength * cluster, dimAt = RecordsAt + RecordLength * (2 + cluster);
+            built[recordAt] = id;
+            parameters.CopyTo(built, recordAt + 1);
+            built[dimAt] = id;
+            Dimmed(id, parameters, idleTimes ? lighting.Dim : 100).CopyTo(built, dimAt + 1);
         }
         if (idleTimes)
         {
-            built[0x1C] = (byte)lighting.Idle; built[0x1D] = (byte)(lighting.Idle >> 8);
-            built[0x1E] = (byte)lighting.Sleep; built[0x1F] = (byte)(lighting.Sleep >> 8);
+            built[PowerSaveAt] = (byte)lighting.Idle; built[PowerSaveAt + 1] = (byte)(lighting.Idle >> 8);
+            built[OffAt] = (byte)lighting.Sleep; built[OffAt + 1] = (byte)(lighting.Sleep >> 8);
         }
         MouseProtocol.WriteChecksum(built);
         return built;
@@ -839,11 +861,11 @@ static class G915Lighting
     public static byte[] FactoryLighting(Hidpp hidpp, int sector, byte[] profile)
     {
         var rom = MouseProtocol.ReadSector(hidpp, 0x100 + sector, profile.Length);
-        if (rom.Skip(Records).Take(44).All(value => value == 0xFF) || rom[0x1C] == 0xFF)
+        if (rom.Skip(RecordsAt).Take(RecordsLength).All(value => value == 0xFF) || rom[PowerSaveAt] == 0xFF)
             throw new RefusedException("Couldn't read the keyboard's factory lighting");
         var built = (byte[])profile.Clone();
-        Array.Copy(rom, 0x1C, built, 0x1C, 4);
-        Array.Copy(rom, Records, built, Records, 44);
+        Array.Copy(rom, PowerSaveAt, built, PowerSaveAt, IdleTimesLength);
+        Array.Copy(rom, RecordsAt, built, RecordsAt, RecordsLength);
         MouseProtocol.WriteChecksum(built);
         return built;
     }

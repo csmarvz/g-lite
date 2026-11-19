@@ -325,11 +325,11 @@ static class Devices
             if (handle.IsInvalid) return;
             IntPtr data;
             if (!HidD_GetPreparsedData(handle, out data)) return;
-            var caps = new short[32];
+            var caps = new short[HidCaps.Length];
             HidP_GetCaps(data, caps);
             HidD_FreePreparsedData(data);
-            page = (ushort)caps[1];
-            outputLength = caps[3];
+            page = (ushort)caps[HidCaps.UsagePage];
+            outputLength = caps[HidCaps.OutputLength];
         }
     }
 
@@ -634,6 +634,18 @@ static class Devices
             : device.BatteryId == 0x1001 && (reply[2] & 0x07) == 1 ? 100
             : FoundDevice.FromChargingVolts(device.Millivolts);
     }
+}
+
+// Windows' HIDP_CAPS read as 16-bit values, and its HIDP_BUTTON_CAPS and HIDP_VALUE_CAPS records as bytes (hidpi.h).
+static class HidCaps
+{
+    public const int Length = 32, Usage = 0, UsagePage = 1, InputLength = 2, OutputLength = 3, FeatureLength = 4;
+
+    // For each report type (input, output, feature: 0, 1, 2), its count of button caps, then of value caps, 3 values apart.
+    public const int ButtonCaps = 23, ValueCaps = 24, PerType = 3, FeatureType = 2;
+
+    public const int RecordLength = 72, UsagePageAt = 0, ReportIdAt = 2, IsRangeAt = 12, HasNullAt = 16, BitSizeAt = 18,
+        ReportCountAt = 20, LogicalMinAt = 40, LogicalMaxAt = 44, UsageAt = 56, UsageMaxAt = 58;
 }
 
 class DeviceWatcher : IDisposable
