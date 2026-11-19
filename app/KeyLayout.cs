@@ -1,0 +1,125 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+
+class KeyLayout
+{
+    public string Name { get; set; }
+    public string[] Rows { get; set; }
+    public string[] Ids { get; set; }
+    // The ids are 0x8070 zones (the G213), not lighting ids.
+    public bool Zones { get; set; }
+
+    // The ISO picture, built from the ANSI one, for a keyboard whose 0x4540 layout is above 2: \ goes and Enter becomes an L from
+    // the Tab row (it keeps its id), the Caps row's Enter becomes #, the left Shift shortens for <>, the right Alt is AltGr.
+    // # and <> are lighting ids 2F and 61 (USB codes minus 3), or on a layout of zones the zone of the key they replace or sit by.
+    // Null for a layout without these keys.
+    public KeyLayout Iso()
+    {
+        var rows = Rows.Select(row => row.Split('|').ToList()).ToArray();
+        var ids = Rows.Select((row, rowIndex) => Ids != null && rowIndex < Ids.Length
+                ? Ids[rowIndex].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList()
+                : new List<string>())
+            .ToArray();
+        int tab = Array.FindIndex(rows, row => row.Contains("\\:1.5")),
+            caps = Array.FindIndex(rows, row => row.Contains("Enter:2.25")),
+            shift = Array.FindIndex(rows, row => row.Contains("Shift:2.25"));
+        if (tab < 0 || caps < 0 || shift < 0) return null;
+        int backslash = rows[tab].IndexOf("\\:1.5"), enter = rows[caps].IndexOf("Enter:2.25"),
+            leftShift = rows[shift].IndexOf("Shift:2.25");
+        int backslashKey = KeyIndex(rows[tab], backslash), enterKey = KeyIndex(rows[caps], enter),
+            shiftKey = KeyIndex(rows[shift], leftShift);
+        string enterId = enterKey < ids[caps].Count ? ids[caps][enterKey] : "--";
+
+        rows[tab][backslash] = "Enter:1.25:2:.25";
+        rows[tab].Insert(backslash, "_.25");
+        if (backslashKey < ids[tab].Count) ids[tab][backslashKey] = enterId;
+
+        rows[caps][enter] = "#";
+        if (enter + 1 < rows[caps].Count && rows[caps][enter + 1].StartsWith("_"))
+            rows[caps][enter + 1] = "_"
+                + (float.Parse(rows[caps][enter + 1].Substring(1), CultureInfo.InvariantCulture) + 1.25f)
+                    .ToString("0.##", CultureInfo.InvariantCulture);
+        else if (enter + 1 < rows[caps].Count) rows[caps].Insert(enter + 1, "_1.25");
+        if (!Zones && enterKey < ids[caps].Count) ids[caps][enterKey] = "2F";
+
+        rows[shift][leftShift] = "Shift:1.25";
+        rows[shift].Insert(leftShift + 1, "<>");
+        if (shiftKey < ids[shift].Count) ids[shift].Insert(shiftKey + 1, Zones ? ids[shift][shiftKey] : "61");
+
+        foreach (var row in rows)
+        {
+            var alts = Enumerable.Range(0, row.Count).Where(tokenIndex => row[tokenIndex].Split(':')[0] == "Alt").ToList();
+            if (alts.Count == 2) row[alts[1]] = "AltGr" + row[alts[1]].Substring(3);
+        }
+        return new KeyLayout
+        {
+            Name = Name, Zones = Zones,
+            Rows = rows.Select(row => string.Join("|", row)).ToArray(),
+            Ids = Ids == null ? null : ids.Select(row => string.Join(" ", row)).ToArray()
+        };
+    }
+
+    static int KeyIndex(List<string> row, int tokenIndex) { return row.Take(tokenIndex).Count(cell => !cell.StartsWith("_")); }
+
+    public List<int> KeyIds()
+    {
+        var all = new List<int>();
+        for (int rowIndex = 0; rowIndex < Rows.Length; rowIndex++)
+        {
+            var ids = Ids != null && rowIndex < Ids.Length
+                ? Ids[rowIndex].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                : new string[0];
+            int keyIndex = 0;
+            foreach (var cell in Rows[rowIndex].Split('|'))
+            {
+                if (cell.StartsWith("_")) continue;
+                all.Add(keyIndex < ids.Length && ids[keyIndex] != "--" ? Convert.ToInt32(ids[keyIndex], 16) : -1);
+                keyIndex++;
+            }
+        }
+        return all;
+    }
+
+    public static KeyLayout Load(string file)
+    {
+        string text;
+        using (var stream = typeof(KeyLayout).Assembly.GetManifestResourceStream(file))
+        using (var reader = new System.IO.StreamReader(stream)) text = reader.ReadToEnd();
+        return Parse(text);
+    }
+
+    // The layout as its .json file holds it: models/iso/*-iso.json are written with this by selftest --record.
+    public string ToJson()
+    {
+        Func<string, string> quote = s => "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+        Func<string[], string> list = items => "[\n" + string.Join(",\n", items.Select(item => "    " + quote(item))) + "\n  ]";
+        return "{\n  \"name\": " + quote(Name) + ",\n"
+            + (Zones ? "  \"kind\": \"zones\",\n" : "")
+            + "  \"rows\": " + list(Rows)
+            + ",\n  \"ids\": " + list(Ids ?? new string[0]) + "\n}\n";
+    }
+
+    public static KeyLayout Parse(string text)
+    {
+        var kind = Strings(text, "kind");
+        return new KeyLayout
+        {
+            Name = Strings(text, "name")[0], Rows = Strings(text, "rows"), Ids = Strings(text, "ids"),
+            Zones = kind != null && kind[0] == "zones"
+        };
+    }
+
+    static string[] Strings(string text, string key)
+    {
+        const string quoted = @"""(?:[^""\\]|\\.)*""";
+        var match = Regex.Match(text, @"""" + key + @"""\s*:\s*(" + quoted + @"|\[(?:\s*" + quoted + @"\s*,?)*\s*\])");
+        if (!match.Success) return null;
+        return Regex.Matches(match.Groups[1].Value, quoted)
+            .Cast<Match>()
+            .Select(found => Regex.Unescape(found.Value.Substring(1, found.Value.Length - 2)))
+            .ToArray();
+    }
+}

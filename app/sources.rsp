@@ -24,7 +24,9 @@ Mouse.cs
 Headset.cs
 Report.cs
 Log.cs
+KeyLayout.cs
 Fake.cs
+KeyboardView.cs
 Game.cs
 Update.cs
 Settings.cs
