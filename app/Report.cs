@@ -46,11 +46,15 @@ static class Report
     {
         { 0x0001, "feature set" }, { 0x0003, "firmware" }, { 0x0005, "name" }, { 0x0007, "friendly name" },
         { 0x0020, "config change" }, { 0x1000, "battery" }, { 0x1001, "battery voltage" }, { 0x1004, "battery" },
-        { 0x1300, "LED control" }, { 0x1814, "change host" }, { 0x1815, "hosts info" }, { 0x1982, "backlight" }, { 0x1990, "illumination" }, { 0x1B04, "controls" },
-        { 0x1D4B, "wireless status" }, { 0x1F20, "battery and auto-off" }, { 0x2110, "SmartShift" }, { 0x2111, "SmartShift" }, { 0x2121, "scroll wheel" }, { 0x2150, "thumb wheel" }, { 0x2201, "DPI" }, { 0x2202, "DPI, X and Y" }, { 0x8061, "report rate, to 8 kHz" }, { 0x4540, "keyboard layout" },
+        { 0x1300, "LED control" }, { 0x1814, "change host" }, { 0x1815, "hosts info" }, { 0x1982, "backlight" },
+        { 0x1990, "illumination" }, { 0x1B04, "controls" },
+        { 0x1D4B, "wireless status" }, { 0x1F20, "battery and auto-off" }, { 0x2110, "SmartShift" }, { 0x2111, "SmartShift" },
+        { 0x2121, "scroll wheel" }, { 0x2150, "thumb wheel" }, { 0x2201, "DPI" }, { 0x2202, "DPI, X and Y" },
+        { 0x8061, "report rate, to 8 kHz" }, { 0x4540, "keyboard layout" },
         { 0x8010, "G keys" }, { 0x8020, "M keys" }, { 0x8030, "MR key" }, { 0x8040, "brightness" }, { 0x8060, "report rate" },
         { 0x8070, "LED effects" }, { 0x8071, "RGB effects" }, { 0x8080, "per-key lighting" }, { 0x8081, "per-key lighting" },
-        { 0x8100, "onboard profiles" }, { 0x8101, "onboard files" }, { 0x8110, "button spy" }, { 0x8300, "sidetone" }, { 0x8310, "equalizer" },
+        { 0x8100, "onboard profiles" }, { 0x8101, "onboard files" }, { 0x8110, "button spy" }, { 0x8300, "sidetone" },
+        { 0x8310, "equalizer" },
     };
 
     class Reader
@@ -63,7 +67,8 @@ static class Report
         public byte[] ReadOnlyCall(int feature, int fn, params byte[] parameters)
         {
             int[] functions;
-            if (!Reads.TryGetValue(feature, out functions) || !functions.Contains(fn)) throw new RefusedException(string.Format("Not a known read: feature {0:X4} fn {1}", feature, fn));
+            if (!Reads.TryGetValue(feature, out functions) || !functions.Contains(fn))
+                throw new RefusedException(string.Format("Not a known read: feature {0:X4} fn {1}", feature, fn));
             Error = null;
             if (misses >= 2) { Error = "no answer"; return null; }
             try
@@ -90,7 +95,11 @@ static class Report
     {
         var reader = new Reader { Device = hidpp };
         var output = reader.Output;
-        WriteHeader(output, found, screen, () => found.Battery >= 0 || !found.Has(0x1F20) ? (found.Battery < 0 ? "–" : found.Battery + "%") + (found.Millivolts > 0 ? ", " + found.Millivolts + " mV" : "") + (found.Charging ? ", charging" : "") : HeadsetBattery(reader));
+        WriteHeader(output, found, screen, () => found.Battery >= 0 || !found.Has(0x1F20)
+            ? (found.Battery < 0 ? "–" : found.Battery + "%")
+                + (found.Millivolts > 0 ? ", " + found.Millivolts + " mV" : "")
+                + (found.Charging ? ", charging" : "")
+            : HeadsetBattery(reader));
 
         var ids = Features(reader, found);
         foreach (var id in ids.Where(Reads.ContainsKey).Where(feature => feature != 0x0001))
@@ -113,7 +122,9 @@ static class Report
             foreach (byte subId in new byte[] { 0x81, 0x83 })
             {
                 var value = ReadRegister(device, subId, (byte)register, ref misses);
-                if (value != null) text.AppendLine((subId == 0x81 ? "short " : "long ") + register.ToString("X2") + "=" + Hex(value.Take(subId == 0x81 ? 3 : 16).ToArray(), " "));
+                if (value != null)
+                    text.AppendLine((subId == 0x81 ? "short " : "long ") + register.ToString("X2")
+                        + "=" + Hex(value.Take(subId == 0x81 ? 3 : 16).ToArray(), " "));
             }
         var current = ReadRegister(device, 0x81, 0x0F, ref misses);
         var directory = misses < 2 ? ReadPage(device, 1) : null;
@@ -127,7 +138,8 @@ static class Report
             var page = pageNumber == 1 ? directory : ReadPage(device, pageNumber);
             if (page == null) break;
             text.AppendLine();
-            text.AppendLine("page " + pageNumber.ToString("X2") + (G9xRegisters.Valid(page) ? "" : ", bad checksum") + (pageNumber == currentPage ? ", current" : ""));
+            text.AppendLine("page " + pageNumber.ToString("X2") + (G9xRegisters.Valid(page) ? "" : ", bad checksum")
+                + (pageNumber == currentPage ? ", current" : ""));
             for (int offset = 0; offset < 512; offset += 16)
             {
                 var row = page.Skip(offset).Take(16).ToArray();
@@ -174,7 +186,8 @@ static class Report
             {
                 var caps = new short[32];
                 HidP_GetCaps(data, caps);
-                text.AppendLine(string.Format("usage={0:X4}:{1:X4} input={2} output={3} feature={4}{5}", (ushort)caps[1], (ushort)caps[0], caps[2], caps[3], caps[4], shared ? ", held by Windows" : ""));
+                text.AppendLine(string.Format("usage={0:X4}:{1:X4} input={2} output={3} feature={4}{5}",
+                    (ushort)caps[1], (ushort)caps[0], caps[2], caps[3], caps[4], shared ? ", held by Windows" : ""));
                 var kinds = new[] { "input", "output", "feature" };
                 int inputId = -1;
                 for (int type = 0; type < 3; type++)
@@ -187,7 +200,8 @@ static class Report
                 {
                     var input = new byte[caps[2]];
                     input[0] = (byte)inputId;
-                    text.AppendLine("input now=" + (HidD_GetInputReport(handle, input, input.Length) ? Hex(input, " ") : "error " + Marshal.GetLastWin32Error()));
+                    text.AppendLine("input now="
+                        + (HidD_GetInputReport(handle, input, input.Length) ? Hex(input, " ") : "error " + Marshal.GetLastWin32Error()));
                 }
                 var ids = new SortedSet<int>();
                 FeatureIds(ids, data, caps[29], true);
@@ -199,7 +213,8 @@ static class Report
                     var buffer = new byte[caps[4]];
                     buffer[0] = (byte)reportId;
                     bool read = HidD_GetFeature(handle, buffer, buffer.Length);
-                    text.AppendLine("feature " + reportId.ToString("X2") + "=" + (read ? Hex(buffer, " ") : "error " + Marshal.GetLastWin32Error()));
+                    text.AppendLine("feature " + reportId.ToString("X2")
+                        + "=" + (read ? Hex(buffer, " ") : "error " + Marshal.GetLastWin32Error()));
                 }
             }
             finally { HidD_FreePreparsedData(data); }
@@ -220,8 +235,11 @@ static class Report
             Func<int, int> readInt32 = offset => BitConverter.ToInt32(caps, at + offset);
             bool range = caps[at + 12] != 0;
             string usage = readUInt16(56).ToString("X4") + (range ? "-" + readUInt16(58).ToString("X4") : "");
-            string line = kind + (buttons ? " buttons" : " value") + " id=" + caps[at + 2].ToString("X2") + " page=" + readUInt16(0).ToString("X4") + " usage=" + usage;
-            if (!buttons) line += " bits=" + readUInt16(18) + " count=" + readUInt16(20) + " logical=" + readInt32(40) + ".." + readInt32(44) + (caps[at + 16] != 0 ? " null" : "");
+            string line = kind + (buttons ? " buttons" : " value") + " id=" + caps[at + 2].ToString("X2")
+                + " page=" + readUInt16(0).ToString("X4") + " usage=" + usage;
+            if (!buttons)
+                line += " bits=" + readUInt16(18) + " count=" + readUInt16(20)
+                    + " logical=" + readInt32(40) + ".." + readInt32(44) + (caps[at + 16] != 0 ? " null" : "");
             text.AppendLine(line);
         }
         return length > 0 ? caps[2] : -1;
@@ -260,7 +278,8 @@ static class Report
         text.AppendLine();
         Row(text, "Device", found.Name == "" ? "–" : found.Name);
         Row(text, "Kind", found.Kind);
-        Row(text, "Link", found.Link + found.Slot + (found.Hidpp10 ? ", HID++ 1.0" : "") + (found.WirelessId != 0 ? ", ID " + found.WirelessId.ToString("X4") : "") + Usb(found.Path));
+        Row(text, "Link", found.Link + found.Slot + (found.Hidpp10 ? ", HID++ 1.0" : "")
+            + (found.WirelessId != 0 ? ", ID " + found.WirelessId.ToString("X4") : "") + Usb(found.Path));
         Row(text, "Model", found.Models == "" ? "–" : found.Models);
         Row(text, "Firmware", found.Firmware == "" ? "–" : found.Firmware);
         Row(text, "Battery", battery());
@@ -287,7 +306,9 @@ static class Report
             if (entry == null) { output.AppendLine(i.ToString("X2") + " " + reader.Error); continue; }
             int id = entry[0] << 8 | entry[1];
             ids.Add(id);
-            var flags = ((entry[2] & 0x80) != 0 ? " obsolete" : "") + ((entry[2] & 0x40) != 0 ? " hidden" : "") + ((entry[2] & 0x20) != 0 ? " internal" : "");
+            var flags = ((entry[2] & 0x80) != 0 ? " obsolete" : "")
+                + ((entry[2] & 0x40) != 0 ? " hidden" : "")
+                + ((entry[2] & 0x20) != 0 ? " internal" : "");
             output.AppendLine(string.Format("{0:X2} {1:X4} v{2,-2} {3}", i, id, entry[3], (Name(id) + flags).Trim()).TrimEnd());
         }
         return ids;
@@ -314,7 +335,13 @@ static class Report
                     for (int i = 0; count != null && i < Math.Min((int)count[0], 48); i++) reader.Show("control " + i, 0x1B04, 1, (byte)i);
                     break;
                 }
-            case 0x1990: reader.Show("on", id, 0); reader.Show("brightness info", id, 2); reader.Show("brightness", id, 3); reader.Show("temperature info", id, 7); reader.Show("temperature", id, 8); break;
+            case 0x1990:
+                reader.Show("on", id, 0);
+                reader.Show("brightness info", id, 2);
+                reader.Show("brightness", id, 3);
+                reader.Show("temperature info", id, 7);
+                reader.Show("temperature", id, 8);
+                break;
             case 0x1F20: reader.Show("battery", id, 0); reader.Show("auto-off", id, 1); break;
             case 0x2121: reader.Show("wheel", id, 0); reader.Show("mode", id, 1); reader.Show("ratchet", id, 3); break;
             case 0x2110: reader.Show("smartshift", id, 0); break;
@@ -326,12 +353,27 @@ static class Report
                 {
                     // fn 1 gives each computer's status, bus and name length. Its name (fn 3) stays out: it's often the owner's name.
                     var info = reader.Show("info", id, 0);
-                    for (int host = 0; info != null && host < Math.Min((int)info[2], 6); host++) reader.Show("host " + host, id, 1, (byte)host);
+                    for (int host = 0; info != null && host < Math.Min((int)info[2], 6); host++)
+                        reader.Show("host " + host, id, 1, (byte)host);
                     break;
                 }
             case 0x2201: reader.Show("sensors", id, 0); reader.Show("dpi list", id, 1, 0); reader.Show("dpi", id, 2, 0); break;
-            case 0x2202: reader.Show("sensors", id, 0); reader.Show("sensor", id, 1, 0); reader.Show("dpi ranges", id, 2, 0, 0, 0); reader.Show("dpi ranges, page 1", id, 2, 0, 0, 1); reader.Show("dpi list", id, 3, 0, 0); reader.Show("lift-off list", id, 4, 0); reader.Show("dpi", id, 5, 0); break;
-            case 0x8061: reader.Show("rates, wired", id, 0, 0); reader.Show("rates, wireless", id, 0, 1); reader.Show("rates now", id, 1); reader.Show("now, wired", id, 2, 0); reader.Show("now, wireless", id, 2, 1); break;
+            case 0x2202:
+                reader.Show("sensors", id, 0);
+                reader.Show("sensor", id, 1, 0);
+                reader.Show("dpi ranges", id, 2, 0, 0, 0);
+                reader.Show("dpi ranges, page 1", id, 2, 0, 0, 1);
+                reader.Show("dpi list", id, 3, 0, 0);
+                reader.Show("lift-off list", id, 4, 0);
+                reader.Show("dpi", id, 5, 0);
+                break;
+            case 0x8061:
+                reader.Show("rates, wired", id, 0, 0);
+                reader.Show("rates, wireless", id, 0, 1);
+                reader.Show("rates now", id, 1);
+                reader.Show("now, wired", id, 2, 0);
+                reader.Show("now, wireless", id, 2, 1);
+                break;
             case 0x4540: reader.Show("layout", id, 0); break;
             case 0x8010:
             case 0x8020: reader.Show("count", id, 0); break;
@@ -343,7 +385,8 @@ static class Report
                     for (int zoneIndex = 0; info != null && zoneIndex < Math.Min((int)info[0], 8); zoneIndex++)
                     {
                         var zone = reader.Show("zone " + zoneIndex, id, 1, (byte)zoneIndex, 0xFF, 0);
-                        for (int effect = 0; zone != null && effect < Math.Min((int)zone[3], 32); effect++) reader.Show("zone " + zoneIndex + " effect " + effect, id, 2, (byte)zoneIndex, (byte)effect, 0xFF, 0);
+                        for (int effect = 0; zone != null && effect < Math.Min((int)zone[3], 32); effect++)
+                            reader.Show("zone " + zoneIndex + " effect " + effect, id, 2, (byte)zoneIndex, (byte)effect, 0xFF, 0);
                     }
                     break;
                 }
@@ -403,7 +446,8 @@ static class Report
         var reply = reader.ReadOnlyCall(0x1F20, 0);
         if (reply == null) return "–";
         int millivolts = reply[0] << 8 | reply[1];
-        return "~" + (reply[2] == 3 ? FoundDevice.FromChargingVolts(millivolts) : FoundDevice.FromVolts(millivolts)) + "%, " + millivolts + " mV" + (reply[2] == 3 ? ", charging" : "");
+        return "~" + (reply[2] == 3 ? FoundDevice.FromChargingVolts(millivolts) : FoundDevice.FromVolts(millivolts))
+            + "%, " + millivolts + " mV" + (reply[2] == 3 ? ", charging" : "");
     }
 
     static void Profiles(Reader reader)
@@ -444,7 +488,11 @@ static class Report
 
     static byte[] File(Reader reader, int address, int size)
     {
-        if (reader.ReadOnlyCall(0x8101, 8, (byte)(address >> 8), (byte)address, (byte)(size >> 8), (byte)size) == null) { reader.Output.AppendLine(address.ToString("X4") + "=" + reader.Error); return null; }
+        if (reader.ReadOnlyCall(0x8101, 8, (byte)(address >> 8), (byte)address, (byte)(size >> 8), (byte)size) == null)
+        {
+            reader.Output.AppendLine(address.ToString("X4") + "=" + reader.Error);
+            return null;
+        }
         var collected = new List<byte>();
         for (int offset = 0; offset < size; offset += 16)
         {
@@ -459,7 +507,8 @@ static class Report
 
     static int ProfileSize(byte[] directory)
     {
-        bool entry = directory != null && directory.Length == 16 && directory[5] == 0x01 && directory[6] == 0x81 && directory[7] == 0x01 && directory[8] == 0x40;
+        bool entry = directory != null && directory.Length == 16
+            && directory[5] == 0x01 && directory[6] == 0x81 && directory[7] == 0x01 && directory[8] == 0x40;
         return entry && directory[9] >= 16 ? directory[9] : 99;
     }
 
@@ -477,7 +526,8 @@ static class Report
 
     static string Version()
     {
-        var attribute = (AssemblyInformationalVersionAttribute)Attribute.GetCustomAttribute(Assembly.GetExecutingAssembly(), typeof(AssemblyInformationalVersionAttribute));
+        var attribute = (AssemblyInformationalVersionAttribute)Attribute.GetCustomAttribute(
+            Assembly.GetExecutingAssembly(), typeof(AssemblyInformationalVersionAttribute));
         return attribute == null ? "?" : attribute.InformationalVersion;
     }
 
@@ -490,7 +540,8 @@ static class Report
                 var build = key == null ? null : key.GetValue("CurrentBuild") as string;
                 int buildNumber;
                 int.TryParse(build, out buildNumber);
-                return (buildNumber >= 22000 ? "Windows 11" : buildNumber >= 10240 ? "Windows 10" : "Windows") + (build != null ? " build " + build : "");
+                return (buildNumber >= 22000 ? "Windows 11" : buildNumber >= 10240 ? "Windows 10" : "Windows")
+                    + (build != null ? " build " + build : "");
             }
         }
         catch (Exception) { return "Windows"; }

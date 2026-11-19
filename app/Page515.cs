@@ -103,7 +103,11 @@ class KeyPicture : DrawnControl
 
     bool OnBar(int key) { return Bar.Contains(ids[key]); }
 
-    RectangleF Cap(RectangleF box) { return new RectangleF(offsetX + box.X * keySize + 1.5f * DpiScale, offsetY + box.Y * keySize + 1.5f * DpiScale, box.Width * keySize - 3 * DpiScale, box.Height * keySize - 3 * DpiScale); }
+    RectangleF Cap(RectangleF box)
+    {
+        return new RectangleF(offsetX + box.X * keySize + 1.5f * DpiScale, offsetY + box.Y * keySize + 1.5f * DpiScale,
+            box.Width * keySize - 3 * DpiScale, box.Height * keySize - 3 * DpiScale);
+    }
 
     // A key with a lip ("Enter:1.25:2:.25", the ISO Enter) is an L: its own rectangle plus its first row widened to the left by the lip.
     readonly Dictionary<int, float> lips = new Dictionary<int, float>();
@@ -131,15 +135,29 @@ class KeyPicture : DrawnControl
         var top = TopRow(key);
         if (top == null)
         {
-            using (var path = Ui.Round(new RectangleF(box.X + DpiScale, box.Y + DpiScale, box.Width - 2 * DpiScale, box.Height - 2 * DpiScale), 3 * DpiScale)) graphics.DrawPath(pen, path);
+            using (var path = Ui.Round(
+                new RectangleF(box.X + DpiScale, box.Y + DpiScale, box.Width - 2 * DpiScale, box.Height - 2 * DpiScale), 3 * DpiScale))
+                graphics.DrawPath(pen, path);
             return;
         }
         var topBox = top.Value;
         pen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
-        graphics.DrawPolygon(pen, new[] { new PointF(topBox.Left + DpiScale, topBox.Top + DpiScale), new PointF(box.Right - DpiScale, topBox.Top + DpiScale), new PointF(box.Right - DpiScale, box.Bottom - DpiScale), new PointF(box.Left + DpiScale, box.Bottom - DpiScale), new PointF(box.Left + DpiScale, topBox.Bottom - DpiScale), new PointF(topBox.Left + DpiScale, topBox.Bottom - DpiScale) });
+        graphics.DrawPolygon(pen, new[]
+        {
+            new PointF(topBox.Left + DpiScale, topBox.Top + DpiScale), new PointF(box.Right - DpiScale, topBox.Top + DpiScale),
+            new PointF(box.Right - DpiScale, box.Bottom - DpiScale), new PointF(box.Left + DpiScale, box.Bottom - DpiScale),
+            new PointF(box.Left + DpiScale, topBox.Bottom - DpiScale), new PointF(topBox.Left + DpiScale, topBox.Bottom - DpiScale)
+        });
     }
 
-    Rectangle Marquee { get { return Rectangle.FromLTRB(Math.Min(dragFrom.X, dragTo.X), Math.Min(dragFrom.Y, dragTo.Y), Math.Max(dragFrom.X, dragTo.X), Math.Max(dragFrom.Y, dragTo.Y)); } }
+    Rectangle Marquee
+    {
+        get
+        {
+            return Rectangle.FromLTRB(Math.Min(dragFrom.X, dragTo.X), Math.Min(dragFrom.Y, dragTo.Y),
+                Math.Max(dragFrom.X, dragTo.X), Math.Max(dragFrom.Y, dragTo.Y));
+        }
+    }
 
     bool Dragged { get { return Math.Abs(dragTo.X - dragFrom.X) > 4 * DpiScale || Math.Abs(dragTo.Y - dragFrom.Y) > 4 * DpiScale; } }
 
@@ -162,7 +180,8 @@ class KeyPicture : DrawnControl
             Invalidate();
             return;
         }
-        if (keySize > 0) ripples.Add(Tuple.Create(new PointF((e.X - offsetX) / keySize, (e.Y - offsetY) / keySize), clock.Elapsed.TotalSeconds));
+        if (keySize > 0)
+            ripples.Add(Tuple.Create(new PointF((e.X - offsetX) / keySize, (e.Y - offsetY) / keySize), clock.Elapsed.TotalSeconds));
         if (Bar.Count == 0 || PartPicked == null || e.Button != MouseButtons.Left) return;
         for (int key = 0; key < keys.Count; key++)
             if (Hit(key, cap => { cap.Inflate(0, 2 * DpiScale); return cap.Contains(e.Location); })) { PartPicked(OnBar(key)); return; }
@@ -200,7 +219,8 @@ class KeyPicture : DrawnControl
         keySize = Math.Min((Width - 2 * pad) / widthInKeys, (Height - 2 * pad) / heightInKeys);
         offsetX = (Width - widthInKeys * keySize) / 2;
         offsetY = (Height - heightInKeys * keySize) / 2;
-        Ui.Fill(graphics, new RectangleF(offsetX - pad, offsetY - pad, widthInKeys * keySize + 2 * pad, heightInKeys * keySize + 2 * pad), 8 * DpiScale, Theme.PictureBackground, Theme.PictureBackground);
+        Ui.Fill(graphics, new RectangleF(offsetX - pad, offsetY - pad, widthInKeys * keySize + 2 * pad, heightInKeys * keySize + 2 * pad),
+            8 * DpiScale, Theme.PictureBackground, Theme.PictureBackground);
         if (live) { PaintLive(graphics); return; }
         double seconds = clock.Elapsed.TotalSeconds, period = KeyboardView.PeriodOf(id, parameters);
         if (id == 0x17 && seconds - lastRipple > 1.8)
@@ -220,11 +240,13 @@ class KeyPicture : DrawnControl
             if (keyEffect == 0x17)
                 foreach (var ripple in ripples)
                 {
-                    double distance = Math.Sqrt(Math.Pow(box.X + box.Width / 2 - ripple.Item1.X, 2) + Math.Pow(box.Y + 0.5 - ripple.Item1.Y, 2));
+                    double distance = Math.Sqrt(Math.Pow(box.X + box.Width / 2 - ripple.Item1.X, 2)
+                        + Math.Pow(box.Y + 0.5 - ripple.Item1.Y, 2));
                     double front = (seconds - ripple.Item2) * 8 / period;
                     glow = Math.Max(glow, Math.Max(0, 1 - Math.Abs(distance - front)) * Math.Max(0, 1 - (seconds - ripple.Item2) / 3));
                 }
-            var color = KeyboardView.EffectColorAt(keyEffect, keyParameters, (box.X + box.Width / 2) / widthInKeys, box.Y / heightInKeys, seconds, glow);
+            var color = KeyboardView.EffectColorAt(keyEffect, keyParameters,
+                (box.X + box.Width / 2) / widthInKeys, box.Y / heightInKeys, seconds, glow);
             int max = Math.Max(color.R, Math.Max(color.G, color.B));
             var fill = Theme.KeyOff;
             if (max > 0)
@@ -269,7 +291,11 @@ class KeyboardKinds
     {
         name = name.ToUpper();
         bool small = name.Contains("TKL");
-        return name.Contains("G915 X") ? (small ? "g915-tkl.json" : "g915.json") : name.Contains(" 60") ? "g-60.json" : name.Contains(" 75") ? "g512-x-75.json" : name.Contains(" 98") ? "g-full.json" : "g515-tkl.json";
+        return name.Contains("G915 X") ? (small ? "g915-tkl.json" : "g915.json")
+            : name.Contains(" 60") ? "g-60.json"
+            : name.Contains(" 75") ? "g512-x-75.json"
+            : name.Contains(" 98") ? "g-full.json"
+            : "g515-tkl.json";
     }
 
     public static KeyboardKinds For(FoundDevice found)
@@ -296,7 +322,10 @@ class KeyboardKinds
         G915Tkl = new KeyboardKinds { Keys = KeyLayout.Load("g915-tkl.json"), Prefix = "profile.g915.", Profile = true },
         G915 = new KeyboardKinds { Keys = KeyLayout.Load("g915.json"), Prefix = "profile.g915.", Profile = true },
         G815 = new KeyboardKinds { Keys = LoadLayout("g915.json", "G815"), Prefix = "profile.g815.", Profile = true, NoIdleTimes = true },
-        G512X = new KeyboardKinds { Keys = KeyLayout.Load("g512-x-75.json"), Prefix = "profile.g512x.", Bar = Enumerable.Range(0xA0, 33).ToArray() };
+        G512X = new KeyboardKinds
+        {
+            Keys = KeyLayout.Load("g512-x-75.json"), Prefix = "profile.g512x.", Bar = Enumerable.Range(0xA0, 33).ToArray()
+        };
 }
 
 class Page515 : DevicePage
@@ -320,7 +349,8 @@ class Page515 : DevicePage
     readonly bool live, canScreen;
     List<byte[]> clusters;
     ScreenSetup setup;
-    readonly Timer screenTimer = new Timer { Interval = 100 }, snapTimer = new Timer { Interval = 1000 }, watchTimer = new Timer { Interval = 500 };
+    readonly Timer screenTimer = new Timer { Interval = 100 }, snapTimer = new Timer { Interval = 1000 },
+        watchTimer = new Timer { Interval = 500 };
     volatile bool sending, failing, statusDirty, layoutDirty, capturing, snapping, watching, claimed;
     volatile string problem;
     bool released, force, iso, away;
@@ -367,7 +397,8 @@ class Page515 : DevicePage
     readonly KeyPicture picture;
     Backups.Entry fix;
 
-    public Page515(FoundDevice found, Hidpp fake, MouseEventHandler drag, KeyboardKinds kind) : base(found, fake, drag, kind.Keys.Name, "keyboard", kind.Prefix)
+    public Page515(FoundDevice found, Hidpp fake, MouseEventHandler drag, KeyboardKinds kind)
+        : base(found, fake, drag, kind.Keys.Name, "keyboard", kind.Prefix)
     {
         this.kind = kind;
         live = !kind.Saves;
@@ -416,7 +447,8 @@ class Page515 : DevicePage
             var effect = G515Profile.Effects[i];
             var target = Target();
             target.Effect = effect.Id;
-            if (effect.Speed && (target.Period < effect.MinPeriod || target.Period > effect.MaxPeriod)) target.Period = effect.DefaultPeriod;
+            if (effect.Speed && (target.Period < effect.MinPeriod || target.Period > effect.MaxPeriod))
+                target.Period = effect.DefaultPeriod;
             Changed(true);
         };
         colorHead = Ui.Text(light, "Color", 14, 98, () => Theme.Dim, 9f);
@@ -442,7 +474,8 @@ class Page515 : DevicePage
             Changed(false);
         };
 
-        foreach (Control control in light.Controls) if (control != lightHead && control != effectHead && control != effects) plainLight.Add(control);
+        foreach (Control control in light.Controls)
+            if (control != lightHead && control != effectHead && control != effects) plainLight.Add(control);
 
         screenLight.Add(Ui.Text(light, "Monitor", 14, 98, () => Theme.Dim, 9f));
         monitorDropdown = Ui.Add(light, new Dropdown { AccessibleName = "Monitor" }, 14, 116, 200, 30);
@@ -493,7 +526,8 @@ class Page515 : DevicePage
             perZone.Changed += () => PerZone(perZone.Checked);
             var perZoneLabel = Ui.Text(light, "Lighting per zone", 56, 44, () => Theme.Text, 9f);
             perZone.Follow(perZoneLabel);
-            partPicker = Ui.Add(light, new SegmentedPicker { Items = new[] { "Keys", "Light bar" }, AccessibleName = "Part" }, 190, 38, 176, 30);
+            partPicker = Ui.Add(light, new SegmentedPicker { Items = new[] { "Keys", "Light bar" }, AccessibleName = "Part" },
+                190, 38, 176, 30);
             partPicker.Picked += i => { part = i + 1; RefreshControls(); };
         }
         foreach (var control in screenLight) control.Visible = false;
@@ -508,7 +542,11 @@ class Page515 : DevicePage
         Ui.Text(screenBox, "Color boost", 14, 36, () => Theme.Dim, 9f);
         boostValue = Value(screenBox, 14, 36, 196);
         boostSlider = Ui.Add(screenBox, new Slider { AccessibleName = "Color boost" }, 14, 54, 196, 20);
-        boostSlider.Changed += (s, e) => { setup.Boost = boostSlider.Value; boostValue.Text = setup.Boost + "%"; force = true; Edited(); debounce.Stop(); debounce.Start(); };
+        boostSlider.Changed += (s, e) =>
+        {
+            setup.Boost = boostSlider.Value; boostValue.Text = setup.Boost + "%"; force = true;
+            Edited(); debounce.Stop(); debounce.Start();
+        };
         Ui.Text(screenBox, "Brightness", 14, 78, () => Theme.Dim, 9f);
         screenBrightValue = Value(screenBox, 14, 78, 196);
         screenBright = Ui.Add(screenBox, new Slider { AccessibleName = "Brightness" }, 14, 96, 196, 20);
@@ -542,7 +580,10 @@ class Page515 : DevicePage
         idleArea = idle;
         bool note = live && !kind.Profile;
         Ui.Text(idle, note ? "Saving" : "When idle", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
-        var noteText = Ui.Text(idle, "G-Lite can't save to this keyboard yet. It keeps your lighting and sets it again when G-Lite starts and when you open this screen. Picking None gives the keyboard its own lighting back." + (kind.Guessed ? " The key picture is a guess for this model." : ""), 14, 40, () => Theme.Dim, 9f);
+        var noteText = Ui.Text(idle,
+            "G-Lite can't save to this keyboard yet. It keeps your lighting and sets it again when G-Lite starts and when you open this screen. Picking None gives the keyboard its own lighting back."
+                + (kind.Guessed ? " The key picture is a guess for this model." : ""),
+            14, 40, () => Theme.Dim, 9f);
         noteText.AutoSize = false;
         noteText.Size = new Size(196, 200);
         noteText.Visible = note;
@@ -553,7 +594,8 @@ class Page515 : DevicePage
         sleepBox = Choice(idle, "Turn off after", SleepText.Skip(never).ToArray(), 156, i => current.Sleep = SleepSecs[i + never]);
         if (note) foreach (Control control in idle.Controls) if (control != noteText && control.Top > 30) control.Visible = false;
 
-        saveButton = Ui.Add(this, new FlatButton { Style = ButtonStyle.Primary, Text = "Save to keyboard", Visible = !note }, 496, 685, 140, 32);
+        saveButton = Ui.Add(this, new FlatButton { Style = ButtonStyle.Primary, Text = "Save to keyboard", Visible = !note },
+            496, 685, 140, 32);
         saveButton.Click += (s, e) => Save();
 
         if (canScreen && Settings.Get(Active) == "1")
@@ -591,7 +633,8 @@ class Page515 : DevicePage
         if (!Parts || pieces.Length < 2) return null;
         int ignored;
         var lighting = Lighting.FromText(pieces[1], out ignored);
-        if (lighting.Effect == Ripple || lighting.Effect == ScreenEffect || G515Profile.EffectById(lighting.Effect) == null) lighting.Effect = 0x01;
+        if (lighting.Effect == Ripple || lighting.Effect == ScreenEffect || G515Profile.EffectById(lighting.Effect) == null)
+            lighting.Effect = 0x01;
         return lighting;
     }
 
@@ -673,7 +716,8 @@ class Page515 : DevicePage
     string Paused()
     {
         if (setup.PauseWhenLocked && (Presence.Locked || Presence.DisplayOff)) return "Paused while the screen is off or locked.";
-        if (setup.PauseOnBattery && battery >= 0 && !charging && battery < ScreenSetup.BatteryLimit) return "Paused: battery below " + ScreenSetup.BatteryLimit + "%.";
+        if (setup.PauseOnBattery && battery >= 0 && !charging && battery < ScreenSetup.BatteryLimit)
+            return "Paused: battery below " + ScreenSetup.BatteryLimit + "%.";
         return null;
     }
 
@@ -767,7 +811,8 @@ class Page515 : DevicePage
                 context.Post(posted =>
                 {
                     capturing = false;
-                    if (sampled != null && !IsDisposed && Screening && !sending && sampled.Length == setup.Zones.Count) Sampled(sampled, readBattery);
+                    if (sampled != null && !IsDisposed && Screening && !sending && sampled.Length == setup.Zones.Count)
+                        Sampled(sampled, readBattery);
                     else if (readBattery) nextBattery = DateTime.UtcNow;
                 }, null);
             }
@@ -860,7 +905,12 @@ class Page515 : DevicePage
                 {
                     snapping = false;
                     if (image == null) return;
-                    if (IsDisposed || ScreenCapture.Find(setup.Monitor).Bounds != monitor) { image.Dispose(); if (!IsDisposed) Snap(); return; }
+                    if (IsDisposed || ScreenCapture.Find(setup.Monitor).Bounds != monitor)
+                    {
+                        image.Dispose();
+                        if (!IsDisposed) Snap();
+                        return;
+                    }
                     var old = preview.Image;
                     preview.Monitor = monitor.Size;
                     preview.Image = image;
@@ -940,9 +990,19 @@ class Page515 : DevicePage
 
     protected override bool Damaged { get { return broken; } }
 
-    protected override bool Unsaved { get { return current != null && (live && kind.Profile ? dirty || Screening : live ? Known() : stored != null && (dirty || Screening)); } }
+    protected override bool Unsaved
+    {
+        get
+        {
+            return current != null
+                && (live && kind.Profile ? dirty || Screening : live ? Known() : stored != null && (dirty || Screening));
+        }
+    }
 
-    protected override string Current() { return current.ToText(brightness) + BarText(brightness) + (Screening ? "|" + setup.ToText() : ""); }
+    protected override string Current()
+    {
+        return current.ToText(brightness) + BarText(brightness) + (Screening ? "|" + setup.ToText() : "");
+    }
 
     protected override void ApplyPreset(string text)
     {
@@ -993,8 +1053,12 @@ class Page515 : DevicePage
         var view = Viewed;
         var effect = G515Profile.EffectById(view.Effect);
         bool known = Known();
-        bool color = known && effect != null && effect.Color, hasDirection = known && effect != null && effect.Direction, hasSpeed = known && effect != null && effect.Speed;
-        lightHead.Text = known ? "Lighting" : broken ? "Lighting (half written on the keyboard)" : live ? "Lighting (as on the keyboard)" : "Lighting (factory animation)";
+        bool color = known && effect != null && effect.Color, hasDirection = known && effect != null && effect.Direction,
+            hasSpeed = known && effect != null && effect.Speed;
+        lightHead.Text = known ? "Lighting"
+            : broken ? "Lighting (half written on the keyboard)"
+            : live ? "Lighting (as on the keyboard)"
+            : "Lighting (factory animation)";
         effects.Index = known ? Array.FindIndex(G515Profile.Effects, info => info.Id == view.Effect) : -1;
         effects.Off = part == 2 ? new[] { Array.FindIndex(G515Profile.Effects, info => info.Id == Ripple) } : new int[0];
         effects.Invalidate();
@@ -1054,7 +1118,8 @@ class Page515 : DevicePage
     {
         if (broken) { ShowBroken(); return; }
         if (DynamicLightingOn())
-            ShowStatus("Windows Dynamic Lighting is on and may override this.", true, () => Process.Start("ms-settings:personalization-lighting"), "Open Windows settings");
+            ShowStatus("Windows Dynamic Lighting is on and may override this.", true,
+                () => Process.Start("ms-settings:personalization-lighting"), "Open Windows settings");
         else if (Screening)
         {
             var why = Paused();
@@ -1062,7 +1127,8 @@ class Page515 : DevicePage
             else if (ScreenCapture.Missing(setup.Monitor)) ShowStatus("The chosen monitor isn't connected. Using the main monitor.", true);
             else ShowStatus("Live only.");
         }
-        else if (live && kind.Profile) ShowStatus(dirty ? "Set by G-Lite, not saved to the keyboard" : Known() ? "Matches the keyboard" : "");
+        else if (live && kind.Profile)
+            ShowStatus(dirty ? "Set by G-Lite, not saved to the keyboard" : Known() ? "Matches the keyboard" : "");
         else if (live) ShowStatus(Known() ? "Set by G-Lite, not saved to the keyboard" : "");
         else ShowStatus(dirty ? "Not saved to the keyboard" : stored == null ? "" : "Matches the keyboard");
     }
@@ -1080,14 +1146,17 @@ class Page515 : DevicePage
     {
         const string half = "The lighting saved on the keyboard is half written.";
         var last = fix;
-        if (last != null) ShowStatus(half + " Last backup: " + When(last) + ".", true, () => Restore(last.Files, "the backup from " + When(last)), "Restore backup");
+        if (last != null)
+            ShowStatus(half + " Last backup: " + When(last) + ".", true,
+                () => Restore(last.Files, "the backup from " + When(last)), "Restore backup");
         else ShowStatus(half, true, () => Restore(new G515Profile.Files(), "the factory lighting"), "Restore factory lighting");
     }
 
     void ShowBackups()
     {
         BackupMenu(backupsButton, BackupId, "Restore the factory lighting", () => Restore(new G515Profile.Files(), "the factory lighting"),
-            entry => Backups.Describe(entry.Files), entry => G515Profile.FilesAreValid(entry.Files), entry => Restore(entry.Files, "the backup from " + When(entry)));
+            entry => Backups.Describe(entry.Files), entry => G515Profile.FilesAreValid(entry.Files),
+            entry => Restore(entry.Files, "the backup from " + When(entry)));
     }
 
     void Restore(G515Profile.Files backup, string what)
@@ -1135,7 +1204,10 @@ class Page515 : DevicePage
         {
             Settings.Set(Saved, setup.ToText());
             int screenLevel = brightness;
-            RunOnDevice(hidpp => { if (screenLevel != G515Profile.Brightness(hidpp)) G515Profile.SetBrightness(hidpp, screenLevel); }, ClearStatus);
+            RunOnDevice(hidpp =>
+            {
+                if (screenLevel != G515Profile.Brightness(hidpp)) G515Profile.SetBrightness(hidpp, screenLevel);
+            }, ClearStatus);
             return;
         }
         idleLevel = 0;
@@ -1217,7 +1289,9 @@ class Page515 : DevicePage
     static int BackupSector(Backups.Entry entry)
     {
         int sector;
-        return entry.Data.Count == 1 && int.TryParse(entry.Data.Keys.First(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out sector) && sector > 0 && sector < 0x100
+        return entry.Data.Count == 1
+            && int.TryParse(entry.Data.Keys.First(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out sector)
+            && sector > 0 && sector < 0x100
             && MouseProtocol.Valid(entry.Data.Values.First()) ? sector : -1;
     }
 
@@ -1248,7 +1322,8 @@ class Page515 : DevicePage
         {
             int now;
             var current = G915Lighting.ReadProfile(hidpp, out now);
-            if (backup != null && now != sector) throw new RefusedException("The keyboard runs another profile than the one in this backup");
+            if (backup != null && now != sector)
+                throw new RefusedException("The keyboard runs another profile than the one in this backup");
             var profile = backup ?? G915Lighting.FactoryLighting(hidpp, now, current);
             Backups.Save(ProfileBackups, new Dictionary<string, byte[]> { { now.ToString("X4"), current } }, DeviceLabel);
             G915Lighting.Store(hidpp, now, profile);
@@ -1276,7 +1351,8 @@ class Page515 : DevicePage
             sent = true;
         }, () =>
         {
-            if (sent && startedAt == previewSequence) Settings.Set(Remembered, lighting.ToText(level) + (others == null ? "" : "#" + others.ToText(level)));
+            if (sent && startedAt == previewSequence)
+                Settings.Set(Remembered, lighting.ToText(level) + (others == null ? "" : "#" + others.ToText(level)));
             if (startedAt == previewSequence) ClearStatus();
         });
     }
@@ -1294,7 +1370,8 @@ class Page515 : DevicePage
         RefreshControls();
         ClearStatus();
         int level = -1;
-        RunOnDevice(hidpp => { G915Lighting.Release(hidpp); level = G515Profile.Brightness(hidpp); }, () => { if (startedAt == previewSequence && level >= 0) { brightness = level; RefreshControls(); } });
+        RunOnDevice(hidpp => { G915Lighting.Release(hidpp); level = G515Profile.Brightness(hidpp); },
+            () => { if (startedAt == previewSequence && level >= 0) { brightness = level; RefreshControls(); } });
     }
 
     void LoadLive()
@@ -1307,7 +1384,14 @@ class Page515 : DevicePage
         string kept = Settings.Get(Remembered);
         Lighting lighting = null, barLighting = null;
         int savedLevel = -1;
-        if (kept != null) try { var pieces = kept.Split('#'); lighting = Lighting.FromText(pieces[0], out savedLevel); barLighting = BarFrom(pieces); } catch (Exception) { lighting = null; barLighting = null; }
+        if (kept != null)
+            try
+            {
+                var pieces = kept.Split('#');
+                lighting = Lighting.FromText(pieces[0], out savedLevel);
+                barLighting = BarFrom(pieces);
+            }
+            catch (Exception) { lighting = null; barLighting = null; }
         bool dropped = false;
         bool screening = Screening, readLayout = layoutCode < 0 && found.Has(0x4540);
         Lighting saved = null;
@@ -1322,7 +1406,8 @@ class Page515 : DevicePage
                 catch (Exception) { }
             if (lighting != null && startedAt == previewSequence && !screening)
             {
-                if (savedLevel >= 0 && savedLevel <= 100 && savedLevel != G515Profile.Brightness(hidpp)) G515Profile.SetBrightness(hidpp, savedLevel);
+                if (savedLevel >= 0 && savedLevel <= 100 && savedLevel != G515Profile.Brightness(hidpp))
+                    G515Profile.SetBrightness(hidpp, savedLevel);
                 ClaimLights(hidpp);
                 try { G915Lighting.Preview(hidpp, clusters, lighting, barLighting); }
                 catch (RefusedException) { G915Lighting.Release(hidpp); dropped = true; }

@@ -15,22 +15,41 @@ class G510Set
 
     public G510Set Clone() { return (G510Set)MemberwiseClone(); }
 
-    public bool Same(G510Set other) { return other != null && On == other.On && Color == other.Color && Bright == other.Bright && Effect == other.Effect && (Effect == Static || Period == other.Period); }
+    public bool Same(G510Set other)
+    {
+        return other != null && On == other.On && Color == other.Color && Bright == other.Bright && Effect == other.Effect
+            && (Effect == Static || Period == other.Period);
+    }
 
-    public string ToText() { return (On ? 1 : 0) + "," + Color.ToString("X6") + "," + Bright + (Effect == Static ? "" : "," + Effect + "," + Period); }
+    public string ToText()
+    {
+        return (On ? 1 : 0) + "," + Color.ToString("X6") + "," + Bright + (Effect == Static ? "" : "," + Effect + "," + Period);
+    }
 
     public static G510Set FromText(string text)
     {
         var parts = (text ?? "").Split(',');
         int color, bright, effect = Static, period = 5000;
-        if (parts.Length < 3 || !int.TryParse(parts[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out color) || !int.TryParse(parts[2], out bright)) return null;
-        if (parts.Length >= 5 && (!int.TryParse(parts[3], out effect) || effect < Static || effect > Cycle || !int.TryParse(parts[4], out period))) { effect = Static; period = 5000; }
-        return new G510Set { On = parts[0] != "0", Color = color & 0xFFFFFF, Bright = Math.Max(1, Math.Min(100, bright)), Effect = effect, Period = Math.Max(MinPeriod, Math.Min(MaxPeriod, period)) };
+        if (parts.Length < 3 || !int.TryParse(parts[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out color)
+            || !int.TryParse(parts[2], out bright))
+            return null;
+        if (parts.Length >= 5
+            && (!int.TryParse(parts[3], out effect) || effect < Static || effect > Cycle || !int.TryParse(parts[4], out period)))
+        {
+            effect = Static;
+            period = 5000;
+        }
+        return new G510Set
+        {
+            On = parts[0] != "0", Color = color & 0xFFFFFF, Bright = Math.Max(1, Math.Min(100, bright)),
+            Effect = effect, Period = Math.Max(MinPeriod, Math.Min(MaxPeriod, period))
+        };
     }
 }
 
-// The G510 and G510s backlight: one colour for the whole keyboard in feature report 0x05 (`05 R G B`), with no brightness or effects of its own,
-// so brightness scales the colour and G-Lite runs Breathe and Cycle by sending frames. From the Linux driver hid-lg-g15 (facts only) and an owner's report (docs/G510.md).
+// The G510 and G510s backlight: one colour for the whole keyboard in feature report 0x05 (`05 R G B`),
+// with no brightness or effects of its own, so brightness scales the colour and G-Lite runs Breathe and Cycle
+// by sending frames. From the Linux driver hid-lg-g15 (facts only) and an owner's report (docs/G510.md).
 static class G510Lighting
 {
     public const byte Backlight = 0x05;
@@ -81,7 +100,8 @@ class PageG510 : DevicePage
 
     string Remembered { get { return "lighting." + found.SettingsKey; } }
 
-    public PageG510(FoundDevice found, Hidpp fake, MouseEventHandler drag) : base(found, fake, drag, found.ShortName, "keyboard", "profile." + found.SettingsKey + ".")
+    public PageG510(FoundDevice found, Hidpp fake, MouseEventHandler drag)
+        : base(found, fake, drag, found.ShortName, "keyboard", "profile." + found.SettingsKey + ".")
     {
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };
         animationTimer.Tick += (s, e) => Animate();
@@ -101,8 +121,14 @@ class PageG510 : DevicePage
         speedHead = Ui.Text(light, "Speed", 290, 160, () => Theme.Dim, 9f);
         speedValue = Value(light, 290, 160, 260);
         speed = Ui.Add(light, new Slider { AccessibleName = "Speed" }, 290, 180, 260, 24);
-        speed.Changed += (s, e) => { int period = G510Set.MaxPeriod - (G510Set.MaxPeriod - G510Set.MinPeriod) * speed.Value / 100; Edit(settings => settings.Period = period, false); };
-        var note = Ui.Text(light, "One color for the whole keyboard. G-Lite sets it again when it starts and when you open the keyboard, and runs Breathe and Cycle itself: they stop when you quit G-Lite.", 14, 214, () => Theme.Dim, 9f);
+        speed.Changed += (s, e) =>
+        {
+            int period = G510Set.MaxPeriod - (G510Set.MaxPeriod - G510Set.MinPeriod) * speed.Value / 100;
+            Edit(settings => settings.Period = period, false);
+        };
+        var note = Ui.Text(light,
+            "One color for the whole keyboard. G-Lite sets it again when it starts and when you open the keyboard, and runs Breathe and Cycle itself: they stop when you quit G-Lite.",
+            14, 214, () => Theme.Dim, 9f);
         note.AutoSize = false;
         note.Size = new Size(588, 36);
 
@@ -164,7 +190,8 @@ class PageG510 : DevicePage
     {
         loading = true;
         var settings = current ?? read;
-        bool known = ready && settings != null, lit = known && settings.On, color = lit && settings.Effect != G510Set.Cycle, moving = lit && settings.Effect != G510Set.Static;
+        bool known = ready && settings != null, lit = known && settings.On,
+            color = lit && settings.Effect != G510Set.Cycle, moving = lit && settings.Effect != G510Set.Static;
         lightHead.Text = ready && read == null ? "Backlight (couldn't be read)" : "Backlight";
         SetDimmed(effectHead, ready);
         effects.Enabled = ready;
@@ -234,7 +261,11 @@ class PageG510 : DevicePage
         int startedAt = ++sequence;
         framed = -1;
         pausedUntil = DateTime.MinValue;
-        if (want.On && want.Effect != G510Set.Static) { RunOnDevice(hidpp => sent = null, () => { if (startedAt == sequence) ClearStatus(); }); return; }
+        if (want.On && want.Effect != G510Set.Static)
+        {
+            RunOnDevice(hidpp => sent = null, () => { if (startedAt == sequence) ClearStatus(); });
+            return;
+        }
         RunOnDevice(hidpp =>
         {
             if (startedAt != sequence || want.Same(sent)) return;
@@ -255,7 +286,11 @@ class PageG510 : DevicePage
             framed = -1;
             try { color = G510Lighting.Read(hidpp); }
             catch (System.IO.IOException) { color = -1; }
-            if (want != null && color >= 0 && (!want.On || want.Effect == G510Set.Static)) { G510Lighting.Set(hidpp, G510Lighting.Frame(want, 0)); sent = want; }
+            if (want != null && color >= 0 && (!want.On || want.Effect == G510Set.Static))
+            {
+                G510Lighting.Set(hidpp, G510Lighting.Frame(want, 0));
+                sent = want;
+            }
         }, () =>
         {
             ready = true;

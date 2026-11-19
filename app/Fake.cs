@@ -32,11 +32,18 @@ class KeyLayout
     public KeyLayout Iso()
     {
         var rows = Rows.Select(row => row.Split('|').ToList()).ToArray();
-        var ids = Rows.Select((row, rowIndex) => Ids != null && rowIndex < Ids.Length ? Ids[rowIndex].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList() : new List<string>()).ToArray();
-        int tab = Array.FindIndex(rows, row => row.Contains("\\:1.5")), caps = Array.FindIndex(rows, row => row.Contains("Enter:2.25")), shift = Array.FindIndex(rows, row => row.Contains("Shift:2.25"));
+        var ids = Rows.Select((row, rowIndex) => Ids != null && rowIndex < Ids.Length
+                ? Ids[rowIndex].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList()
+                : new List<string>())
+            .ToArray();
+        int tab = Array.FindIndex(rows, row => row.Contains("\\:1.5")),
+            caps = Array.FindIndex(rows, row => row.Contains("Enter:2.25")),
+            shift = Array.FindIndex(rows, row => row.Contains("Shift:2.25"));
         if (tab < 0 || caps < 0 || shift < 0) return null;
-        int backslash = rows[tab].IndexOf("\\:1.5"), enter = rows[caps].IndexOf("Enter:2.25"), leftShift = rows[shift].IndexOf("Shift:2.25");
-        int backslashKey = KeyIndex(rows[tab], backslash), enterKey = KeyIndex(rows[caps], enter), shiftKey = KeyIndex(rows[shift], leftShift);
+        int backslash = rows[tab].IndexOf("\\:1.5"), enter = rows[caps].IndexOf("Enter:2.25"),
+            leftShift = rows[shift].IndexOf("Shift:2.25");
+        int backslashKey = KeyIndex(rows[tab], backslash), enterKey = KeyIndex(rows[caps], enter),
+            shiftKey = KeyIndex(rows[shift], leftShift);
         string enterId = enterKey < ids[caps].Count ? ids[caps][enterKey] : "--";
 
         rows[tab][backslash] = "Enter:1.25:2:.25";
@@ -45,7 +52,9 @@ class KeyLayout
 
         rows[caps][enter] = "#";
         if (enter + 1 < rows[caps].Count && rows[caps][enter + 1].StartsWith("_"))
-            rows[caps][enter + 1] = "_" + (float.Parse(rows[caps][enter + 1].Substring(1), CultureInfo.InvariantCulture) + 1.25f).ToString("0.##", CultureInfo.InvariantCulture);
+            rows[caps][enter + 1] = "_"
+                + (float.Parse(rows[caps][enter + 1].Substring(1), CultureInfo.InvariantCulture) + 1.25f)
+                    .ToString("0.##", CultureInfo.InvariantCulture);
         else if (enter + 1 < rows[caps].Count) rows[caps].Insert(enter + 1, "_1.25");
         if (!Zones && enterKey < ids[caps].Count) ids[caps][enterKey] = "2F";
 
@@ -58,7 +67,12 @@ class KeyLayout
             var alts = Enumerable.Range(0, row.Count).Where(tokenIndex => row[tokenIndex].Split(':')[0] == "Alt").ToList();
             if (alts.Count == 2) row[alts[1]] = "AltGr" + row[alts[1]].Substring(3);
         }
-        return new KeyLayout { Name = Name, Zones = Zones, Rows = rows.Select(row => string.Join("|", row)).ToArray(), Ids = Ids == null ? null : ids.Select(row => string.Join(" ", row)).ToArray() };
+        return new KeyLayout
+        {
+            Name = Name, Zones = Zones,
+            Rows = rows.Select(row => string.Join("|", row)).ToArray(),
+            Ids = Ids == null ? null : ids.Select(row => string.Join(" ", row)).ToArray()
+        };
     }
 
     static int KeyIndex(List<string> row, int tokenIndex) { return row.Take(tokenIndex).Count(cell => !cell.StartsWith("_")); }
@@ -68,7 +82,9 @@ class KeyLayout
         var all = new List<int>();
         for (int rowIndex = 0; rowIndex < Rows.Length; rowIndex++)
         {
-            var ids = Ids != null && rowIndex < Ids.Length ? Ids[rowIndex].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries) : new string[0];
+            var ids = Ids != null && rowIndex < Ids.Length
+                ? Ids[rowIndex].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                : new string[0];
             int keyIndex = 0;
             foreach (var cell in Rows[rowIndex].Split('|'))
             {
@@ -93,13 +109,20 @@ class KeyLayout
     {
         Func<string, string> quote = s => "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
         Func<string[], string> list = items => "[\n" + string.Join(",\n", items.Select(item => "    " + quote(item))) + "\n  ]";
-        return "{\n  \"name\": " + quote(Name) + ",\n" + (Zones ? "  \"kind\": \"zones\",\n" : "") + "  \"rows\": " + list(Rows) + ",\n  \"ids\": " + list(Ids ?? new string[0]) + "\n}\n";
+        return "{\n  \"name\": " + quote(Name) + ",\n"
+            + (Zones ? "  \"kind\": \"zones\",\n" : "")
+            + "  \"rows\": " + list(Rows)
+            + ",\n  \"ids\": " + list(Ids ?? new string[0]) + "\n}\n";
     }
 
     public static KeyLayout Parse(string text)
     {
         var kind = Strings(text, "kind");
-        return new KeyLayout { Name = Strings(text, "name")[0], Rows = Strings(text, "rows"), Ids = Strings(text, "ids"), Zones = kind != null && kind[0] == "zones" };
+        return new KeyLayout
+        {
+            Name = Strings(text, "name")[0], Rows = Strings(text, "rows"), Ids = Strings(text, "ids"),
+            Zones = kind != null && kind[0] == "zones"
+        };
     }
 
     static string[] Strings(string text, string key)
@@ -107,14 +130,20 @@ class KeyLayout
         const string quoted = @"""(?:[^""\\]|\\.)*""";
         var match = Regex.Match(text, @"""" + key + @"""\s*:\s*(" + quoted + @"|\[(?:\s*" + quoted + @"\s*,?)*\s*\])");
         if (!match.Success) return null;
-        return Regex.Matches(match.Groups[1].Value, quoted).Cast<Match>().Select(found => Regex.Unescape(found.Value.Substring(1, found.Value.Length - 2))).ToArray();
+        return Regex.Matches(match.Groups[1].Value, quoted)
+            .Cast<Match>()
+            .Select(found => Regex.Unescape(found.Value.Substring(1, found.Value.Length - 2)))
+            .ToArray();
     }
 }
 
 // In-memory G515 that answers the HID++ calls the app makes, for running without the keyboard.
 class FakeHidpp : Hidpp
 {
-    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8071, 9 }, { 0x8040, 14 }, { 0x8101, 15 }, { 0x8081, 16 }, { 0x4540, 17 }, { 0x1004, 18 } };
+    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte>
+    {
+        { 0x8071, 9 }, { 0x8040, 14 }, { 0x8101, 15 }, { 0x8081, 16 }, { 0x4540, 17 }, { 0x1004, 18 }
+    };
     static readonly byte[] EffectIds = { 0x00, 0x01, 0x0A, 0x15, 0x16, 0x17 };
     public readonly Dictionary<int, int> Keys = new Dictionary<int, int>();
     readonly byte[] control = new byte[2];
@@ -123,7 +152,10 @@ class FakeHidpp : Hidpp
     public int Frames, Battery = 82;
     public bool Charging;
 
-    public static byte[] Hex(string hex) { return Enumerable.Range(0, hex.Length / 2).Select(i => Convert.ToByte(hex.Substring(i * 2, 2), 16)).ToArray(); }
+    public static byte[] Hex(string hex)
+    {
+        return Enumerable.Range(0, hex.Length / 2).Select(i => Convert.ToByte(hex.Substring(i * 2, 2), 16)).ToArray();
+    }
 
     public Dictionary<int, byte[]> Flash = new Dictionary<int, byte[]>
     {
@@ -141,7 +173,10 @@ class FakeHidpp : Hidpp
     {
         bright = brightness;
         var live = Live;
-        if (mode == 0 && live[1] < EffectIds.Length && live.Length == 12) { id = EffectIds[live[1]]; parameters = live.Skip(2).ToArray(); return; }
+        if (mode == 0 && live[1] < EffectIds.Length && live.Length == 12)
+        {
+            id = EffectIds[live[1]]; parameters = live.Skip(2).ToArray(); return;
+        }
         byte[] profile;
         if (!Flash.TryGetValue(0x0008, out profile)) profile = Flash[0x0101];
         int record = 30 + ((profile[74] & 1) != 0 ? 0 : 11);
@@ -179,14 +214,16 @@ class FakeHidpp : Hidpp
             {
                 reply[0] = 0; reply[1] = parameters[1];
                 for (int id = parameters[1] * 112; id < parameters[1] * 112 + 112; id++)
-                    if (id >= 0x01 && id <= 0x4F || id >= 0x61 && id <= 0x6F) reply[2 + (id - parameters[1] * 112) / 8] |= (byte)(1 << (id % 8));
+                    if (id >= 0x01 && id <= 0x4F || id >= 0x61 && id <= 0x6F)
+                        reply[2 + (id - parameters[1] * 112) / 8] |= (byte)(1 << (id % 8));
             }
             if (fn == 6)
             {
                 for (int i = 3; i < 16 && parameters.Length > i; i++)
                 {
                     if (parameters[i] == 0 && i > 3) break;
-                    if (parameters[i] < 0x01 || parameters[i] > 0x4F && parameters[i] < 0x61 || parameters[i] > 0x6F) throw new HidppError(2, "invalid argument");
+                    if (parameters[i] < 0x01 || parameters[i] > 0x4F && parameters[i] < 0x61 || parameters[i] > 0x6F)
+                        throw new HidppError(2, "invalid argument");
                     Keys[parameters[i]] = parameters[0] << 16 | parameters[1] << 8 | parameters[2];
                 }
             }
@@ -224,7 +261,10 @@ class FakeSpeaker : Hidpp
     public FakeSpeaker() : base(false) { }
 
     // From a G213's report: zone 0 is the whole keyboard, zones 1–5 (locations 6–10) take Off and Static only.
-    byte[] ZoneEffects(int zone) { return !G213 ? Effects : zone == 0 ? new byte[] { 0x00, 0x01, 0x0A, 0x03, 0x04 } : new byte[] { 0x00, 0x01 }; }
+    byte[] ZoneEffects(int zone)
+    {
+        return !G213 ? Effects : zone == 0 ? new byte[] { 0x00, 0x01, 0x0A, 0x03, 0x04 } : new byte[] { 0x00, 0x01 };
+    }
 
     public override void Dispose() { }
 
@@ -236,9 +276,24 @@ class FakeSpeaker : Hidpp
         else if (featureIndex == Index[0x8070])
         {
             if (fn == 0) reply[0] = (byte)Count;
-            else if (fn == 1) { reply[0] = parameters[0]; reply[2] = (byte)(G213 ? (parameters[0] == 0 ? 1 : parameters[0] + 5) : parameters[0] + 1); reply[3] = (byte)ZoneEffects(parameters[0]).Length; }
-            else if (fn == 2) { var listed = ZoneEffects(parameters[0]); if (parameters[1] >= listed.Length) throw new HidppError(2, "invalid argument"); reply[0] = parameters[0]; reply[1] = parameters[1]; reply[3] = listed[parameters[1]]; }
-            else if (fn == 3) { if (parameters[0] >= Count || parameters[1] >= ZoneEffects(parameters[0]).Length) throw new HidppError(2, "invalid argument"); Live[parameters[0]] = parameters.Take(12).ToArray(); }
+            else if (fn == 1)
+            {
+                reply[0] = parameters[0];
+                reply[2] = (byte)(G213 ? (parameters[0] == 0 ? 1 : parameters[0] + 5) : parameters[0] + 1);
+                reply[3] = (byte)ZoneEffects(parameters[0]).Length;
+            }
+            else if (fn == 2)
+            {
+                var listed = ZoneEffects(parameters[0]);
+                if (parameters[1] >= listed.Length) throw new HidppError(2, "invalid argument");
+                reply[0] = parameters[0]; reply[1] = parameters[1]; reply[3] = listed[parameters[1]];
+            }
+            else if (fn == 3)
+            {
+                if (parameters[0] >= Count || parameters[1] >= ZoneEffects(parameters[0]).Length)
+                    throw new HidppError(2, "invalid argument");
+                Live[parameters[0]] = parameters.Take(12).ToArray();
+            }
         }
         else if (featureIndex == Index[0x4540] && G213) reply[0] = 0x0D;
         else if (featureIndex != Index[0x8040]) throw new HidppError(2, "invalid argument");
@@ -265,7 +320,8 @@ class FakeG510 : Hidpp
     {
         Latency.Pause();
         byte[] report;
-        if (!Features.TryGetValue(id, out report)) throw new System.IO.IOException("Couldn't read feature report " + id.ToString("X2") + " (error 31)");
+        if (!Features.TryGetValue(id, out report))
+            throw new System.IO.IOException("Couldn't read feature report " + id.ToString("X2") + " (error 31)");
         var reply = new byte[258];
         Array.Copy(report, reply, report.Length);
         return reply;
@@ -275,14 +331,18 @@ class FakeG510 : Hidpp
     {
         Latency.Pause();
         byte[] old;
-        if (!Features.TryGetValue(report[0], out old)) throw new System.IO.IOException("Couldn't set feature report " + report[0].ToString("X2") + " (error 31)");
+        if (!Features.TryGetValue(report[0], out old))
+            throw new System.IO.IOException("Couldn't set feature report " + report[0].ToString("X2") + " (error 31)");
         Features[report[0]] = report.Take(old.Length).ToArray();
     }
 }
 
 class FakeLight : Hidpp
 {
-    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x1990, 6 }, { 0x8040, 0x0A }, { 0x8071, 0x0B }, { 0x8081, 0x0C } };
+    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte>
+    {
+        { 0x1990, 6 }, { 0x8040, 0x0A }, { 0x8071, 0x0B }, { 0x8081, 0x0C }
+    };
     static readonly byte[][] Groups = { new byte[] { 0x01, 0x0A, 0x15 }, new byte[] { 0x13, 0x16, 0x18 } };
     public bool FrontOn = true, BackOn = true;
     public byte[] Effect;
@@ -322,10 +382,12 @@ class FakeLight : Hidpp
         {
             if (fn == 0)
             {
-                if (parameters[0] >= Groups.Length || parameters[1] != 0xFF && parameters[1] >= Groups[parameters[0]].Length) throw new HidppError(2, "invalid argument");
+                if (parameters[0] >= Groups.Length || parameters[1] != 0xFF && parameters[1] >= Groups[parameters[0]].Length)
+                    throw new HidppError(2, "invalid argument");
                 reply[0] = parameters[0];
                 reply[1] = parameters[1];
-                if (parameters[1] == 0xFF) reply[4] = (byte)Groups[parameters[0]].Length; else reply[3] = Groups[parameters[0]][parameters[1]];
+                if (parameters[1] == 0xFF) reply[4] = (byte)Groups[parameters[0]].Length;
+                else reply[3] = Groups[parameters[0]][parameters[1]];
             }
             // A real Beam LX answers 0x05 to fn 1 unless software holds the clusters (fn 5 bit 0).
             else if (fn == 1) { if (!Controlled) throw new HidppError(5, "Logitech internal"); Effect = parameters.Take(13).ToArray(); }
@@ -335,7 +397,12 @@ class FakeLight : Hidpp
         else if (featureIndex == Index[0x8081])
         {
             if (fn == 0) { reply[1] = parameters[1]; if (parameters[1] == 0) reply[2] = 0xFE; }
-            else if (fn == 1) { for (int i = 0; i + 3 < parameters.Length && i < 16; i += 4) if (parameters[i] >= 1 && parameters[i] <= 7) Colors[parameters[i] - 1] = parameters[i + 1] << 16 | parameters[i + 2] << 8 | parameters[i + 3]; }
+            else if (fn == 1)
+            {
+                for (int i = 0; i + 3 < parameters.Length && i < 16; i += 4)
+                    if (parameters[i] >= 1 && parameters[i] <= 7)
+                        Colors[parameters[i] - 1] = parameters[i + 1] << 16 | parameters[i + 2] << 8 | parameters[i + 3];
+            }
             else if (fn == 7) Frames++;
         }
         else throw new HidppError(2, "invalid argument");
@@ -347,8 +414,13 @@ class FakeG915 : Hidpp
 {
     Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8071, 10 }, { 0x8040, 20 }, { 0x8100, 21 }, { 0x4540, 16 } };
     public byte[][] Ids = { new byte[] { 0x00, 0x01, 0x03, 0x0A }, new byte[] { 0x00, 0x01, 0x0A, 0x03, 0x04, 0x0B, 0x0C } };
-    // Profile 1 of an owner's G915 TKL (Cycle at 10 s on both clusters, power save after 60 s, off after 300 s), and its factory copy (Cycle at 5 s).
-    public readonly Dictionary<int, byte[]> Sectors = new Dictionary<int, byte[]> { { 1, FakeHidpp.Hex("010000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFF3C002C018002003A8002003B8002003C8002003D8002003E8002003F800200408002004180020042800200438002004480020045900DFF01900DFF02900DFF03FFFFFFFF00040000000400020004000400040006000400080004000A0004000C0004000E00040010000400120004001400040016900DFF01900DFF02900DFF03FFFFFFFF500052004F00460049004C0045005F004E0041004D0045005F00440045004600410055004C00540000000000000000000300000000002710320000030000000000271032000003000000000027101900000300000000002710190000004349") }, { 0x101, FakeHidpp.Hex("010000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFF3C002C018002003A8002003B8002003C8002003D8002003E8002003F800200408002004180020042800200438002004480020045900DFF01900DFF02900D0001900D0002900D0003FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0300000000001388640000030000000000138864000003000000000013883200000300000000001388320000FFFFFF") } };
+    // Profile 1 of an owner's G915 TKL (Cycle at 10 s on both clusters, power save after 60 s, off after 300 s),
+    // and its factory copy (Cycle at 5 s).
+    public readonly Dictionary<int, byte[]> Sectors = new Dictionary<int, byte[]>
+    {
+        { 1, FakeHidpp.Hex("010000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFF3C002C018002003A8002003B8002003C8002003D8002003E8002003F800200408002004180020042800200438002004480020045900DFF01900DFF02900DFF03FFFFFFFF00040000000400020004000400040006000400080004000A0004000C0004000E00040010000400120004001400040016900DFF01900DFF02900DFF03FFFFFFFF500052004F00460049004C0045005F004E0041004D0045005F00440045004600410055004C00540000000000000000000300000000002710320000030000000000271032000003000000000027101900000300000000002710190000004349") },
+        { 0x101, FakeHidpp.Hex("010000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFF3C002C018002003A8002003B8002003C8002003D8002003E8002003F800200408002004180020042800200438002004480020045900DFF01900DFF02900D0001900D0002900D0003FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0300000000001388640000030000000000138864000003000000000013883200000300000000001388320000FFFFFF") }
+    };
     public int Reloads, Power = 1;
     List<byte> pending = new List<byte>();
     int writeTo, writeLength;
@@ -389,8 +461,12 @@ class FakeG915 : Hidpp
             if (fn == 3) Reloads++;
             if (fn == 4) reply[1] = 1;
             if (fn == 5 && !Sectors.ContainsKey(parameters[0] << 8 | parameters[1])) throw new HidppError(2, "invalid argument");
-            if (fn == 5) Sectors[parameters[0] << 8 | parameters[1]].Skip(parameters[2] << 8 | parameters[3]).Take(16).ToArray().CopyTo(reply, 0);
-            if (fn == 6) { writeTo = parameters[0] << 8 | parameters[1]; writeLength = parameters[4] << 8 | parameters[5]; pending.Clear(); }
+            if (fn == 5)
+                Sectors[parameters[0] << 8 | parameters[1]].Skip(parameters[2] << 8 | parameters[3]).Take(16).ToArray().CopyTo(reply, 0);
+            if (fn == 6)
+            {
+                writeTo = parameters[0] << 8 | parameters[1]; writeLength = parameters[4] << 8 | parameters[5]; pending.Clear();
+            }
             if (fn == 7) pending.AddRange(parameters.Take(16));
             if (fn == 8) Sectors[writeTo] = pending.Take(writeLength).ToArray();
         }
@@ -414,7 +490,8 @@ class FakeG915 : Hidpp
         {
             reply[1] = parameters[1];
             for (int id = parameters[1] * 112; id < parameters[1] * 112 + 112; id++)
-                if (id <= 0x6F || id >= 0xA0 && id <= 0xC0 || id >= 0xF2 && id <= 0xFE) reply[2 + (id - parameters[1] * 112) / 8] |= (byte)(1 << ((id - parameters[1] * 112) % 8));
+                if (id <= 0x6F || id >= 0xA0 && id <= 0xC0 || id >= 0xF2 && id <= 0xFE)
+                    reply[2 + (id - parameters[1] * 112) / 8] |= (byte)(1 << ((id - parameters[1] * 112) % 8));
         }
         else if (!Index.ContainsValue(featureIndex)) throw new HidppError(2, "invalid argument");
         return reply;
@@ -461,7 +538,11 @@ class FakeMouse : Hidpp
     public static FakeMouse G502()
     {
         var mouse = new FakeMouse { Info = "01030105010B1000ff0a04", Wheel = true };
-        var bindings = new[] { "80010001", "80010002", "80010004", "80010008", "80010010", "90070000", "90040000", "90030000", "90080000", "90020000", "90010000" };
+        var bindings = new[]
+        {
+            "80010001", "80010002", "80010004", "80010008", "80010010",
+            "90070000", "90040000", "90030000", "90080000", "90020000", "90010000"
+        };
         foreach (var sector in new[] { 0x0001, 0x0101 })
         {
             var profile = mouse.Sectors[sector];
@@ -476,13 +557,20 @@ class FakeMouse : Hidpp
     public static FakeMouse Hero()
     {
         var mouse = new FakeMouse(true) { Info = "01020105050B1000FF0A01" };
-        var bindings = new[] { "80010001", "80010002", "80010004", "80010008", "80010010", "9007FFFF", "9004FFFF", "9003FFFF", "900AFFFF", "9002FFFF", "9001FFFF" };
+        var bindings = new[]
+        {
+            "80010001", "80010002", "80010004", "80010008", "80010010",
+            "9007FFFF", "9004FFFF", "9003FFFF", "900AFFFF", "9002FFFF", "9001FFFF"
+        };
         for (int i = 0; i < bindings.Length; i++) FakeHidpp.Hex(bindings[i]).CopyTo(mouse.Sectors[0x0101], 0x20 + 4 * i);
         mouse.Sectors[0x0000] = new byte[255];
         return mouse;
     }
 
-    public static FakeMouse For(FoundDevice found) { return found.Models.Contains("C08B") ? Hero() : found.WirelessId == 0x407F ? G502() : new FakeMouse(); }
+    public static FakeMouse For(FoundDevice found)
+    {
+        return found.Models.Contains("C08B") ? Hero() : found.WirelessId == 0x407F ? G502() : new FakeMouse();
+    }
 
     public static FakeMouse G305()
     {
@@ -502,7 +590,10 @@ class FakeMouse : Hidpp
         return mouse;
     }
 
-    int[] Stages { get { return Wide ? MouseProtocol.WideStages(Sectors[current], new[] { 100, 32000 }) : MouseProtocol.StagesOf(Sectors[current]); } }
+    int[] Stages
+    {
+        get { return Wide ? MouseProtocol.WideStages(Sectors[current], new[] { 100, 32000 }) : MouseProtocol.StagesOf(Sectors[current]); }
+    }
 
     // The DPI button under the wheel: the next stage, as the mouse does on its own before it sends 0x8100 event fn 1.
     public void PressDpiButton() { Stage = (Math.Max(0, Stage) + 1) % Stages.Length; Dpi = Stages[Stage]; }
@@ -518,13 +609,18 @@ class FakeMouse : Hidpp
         {
             case 0:
                 int id = readUInt16(0);
-                reply[0] = (byte)(id == 0x2201 ? 1 : id == 0x8060 ? 2 : id == 0x8070 ? 3 : id == 0x8100 ? 4 : id == 0x2121 && Wheel ? 5 : 0);
+                reply[0] = (byte)(id == 0x2201 ? 1 : id == 0x8060 ? 2 : id == 0x8070 ? 3 : id == 0x8100 ? 4
+                    : id == 0x2121 && Wheel ? 5 : 0);
                 if (Wide) reply[0] = (byte)(id == 0x2202 ? 6 : id == 0x8061 ? 7 : id == 0x8100 ? 4 : 0);
                 break;
             case 6:
                 if (fn == 1) { reply[1] = 5; reply[2] = 3; }
                 if (fn == 2) { reply[2] = parameters[2]; if (parameters[2] == 0) FakeHidpp.Hex("0064e0327d000000").CopyTo(reply, 3); }
-                if (fn == 5) { reply[1] = reply[5] = (byte)(Dpi >> 8); reply[2] = reply[6] = (byte)Dpi; reply[3] = 0x03; reply[4] = 0x20; reply[9] = 2; }
+                if (fn == 5)
+                {
+                    reply[1] = reply[5] = (byte)(Dpi >> 8); reply[2] = reply[6] = (byte)Dpi;
+                    reply[3] = 0x03; reply[4] = 0x20; reply[9] = 2;
+                }
                 if (fn == 6)
                 {
                     if (Array.IndexOf(Stages, readUInt16(1)) < 0) throw new HidppError(5, "HID++ error 0x05");
@@ -550,7 +646,11 @@ class FakeMouse : Hidpp
             case 3:
                 if (fn == 0) reply[0] = (byte)ZoneCount;
                 if (fn == 1) { reply[0] = parameters[0]; reply[2] = (byte)(parameters[0] + 1); reply[3] = 4; }
-                if (fn == 2) { if (parameters[1] >= Ids.Length) throw new HidppError(2, "invalid argument"); reply[0] = parameters[0]; reply[1] = parameters[1]; reply[3] = Ids[parameters[1]]; }
+                if (fn == 2)
+                {
+                    if (parameters[1] >= Ids.Length) throw new HidppError(2, "invalid argument");
+                    reply[0] = parameters[0]; reply[1] = parameters[1]; reply[3] = Ids[parameters[1]];
+                }
                 if (fn == 3) Zones[parameters[0]] = parameters.Take(12).ToArray();
                 break;
             case 4:
@@ -671,7 +771,10 @@ class FakeG9x : Hidpp
         {
             int target = parameters[6], wordOffset = parameters[7], length = parameters[10] << 8 | parameters[11];
             if (target < 2) throw new HidppError(0x07, "protected page");
-            if (FailSecondHalf && parameters[0] == 0x03 && wordOffset == 0x80) { FailSecondHalf = false; throw new HidppError(0x04, "copy failed"); }
+            if (FailSecondHalf && parameters[0] == 0x03 && wordOffset == 0x80)
+            {
+                FailSecondHalf = false; throw new HidppError(0x04, "copy failed");
+            }
             Writes.Add((parameters[0] == 0x02 ? "erase " : "copy ") + target + ":" + wordOffset);
             if (parameters[0] == 0x02) Pages[target] = Enumerable.Repeat((byte)0xFF, 512).ToArray();
             else for (int i = 0; i < length; i++) Pages[target][wordOffset * 2 + i] &= Pages[parameters[2]][parameters[3] * 2 + i];
@@ -723,10 +826,14 @@ class FakeHeadset : Hidpp
     }
 }
 
-// Answers like the MX Master 3S, MX Keys S and MX Creative Keypad in OpenLogi's captures and the keypad's report: a device only calls the features its FoundDevice lists.
+// Answers like the MX Master 3S, MX Keys S and MX Creative Keypad in OpenLogi's captures and the keypad's report:
+// a device only calls the features its FoundDevice lists.
 class FakeOther : Hidpp
 {
-    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8040, 2 }, { 0x2201, 3 }, { 0x2110, 4 }, { 0x2121, 5 }, { 0x2150, 6 }, { 0x1982, 7 }, { 0x1814, 8 }, { 0x1815, 9 } };
+    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte>
+    {
+        { 0x8040, 2 }, { 0x2201, 3 }, { 0x2110, 4 }, { 0x2121, 5 }, { 0x2150, 6 }, { 0x1982, 7 }, { 0x1814, 8 }, { 0x1815, 9 }
+    };
     static readonly string[] Names = { "Desk PC", "MacBook" };
     public int Bright = 100, Dpi = 1000, Shift = 10, Wheel, ThumbInvert, Level = 3, Host;
     public bool RefuseDpi;
@@ -737,13 +844,19 @@ class FakeOther : Hidpp
 
     public override void Dispose() { }
 
-    protected override void Write(byte featureIndex, int fn, byte[] parameters) { if (featureIndex == Index[0x1814] && fn == 1) Host = parameters[0]; }
+    protected override void Write(byte featureIndex, int fn, byte[] parameters)
+    {
+        if (featureIndex == Index[0x1814] && fn == 1) Host = parameters[0];
+    }
 
     protected override byte[] Send(byte featureIndex, int fn, byte[] parameters)
     {
         Latency.Pause();
         var reply = new byte[16];
-        if (featureIndex == 0) { byte index; reply[0] = Index.TryGetValue(parameters[0] << 8 | parameters[1], out index) ? index : (byte)0; return reply; }
+        if (featureIndex == 0)
+        {
+            byte index; reply[0] = Index.TryGetValue(parameters[0] << 8 | parameters[1], out index) ? index : (byte)0; return reply;
+        }
         int id = Index.First(pair => pair.Value == featureIndex).Key;
         switch (id)
         {
@@ -779,19 +892,28 @@ class FakeOther : Hidpp
                     Array.Copy(parameters, 4, Backlight, 6, 6);
                     if ((parameters[1] >> 3 & 3) == 3) Level = parameters[3];
                 }
-                if (fn == 2) { reply[0] = 8; reply[1] = (byte)Level; reply[2] = (byte)((Backlight[0] & 1) == 0 ? 0 : (Backlight[1] >> 3 & 3) == 1 ? 2 : 5); }
+                if (fn == 2)
+                {
+                    reply[0] = 8; reply[1] = (byte)Level;
+                    reply[2] = (byte)((Backlight[0] & 1) == 0 ? 0 : (Backlight[1] >> 3 & 3) == 1 ? 2 : 5);
+                }
                 break;
             case 0x1814:
                 if (fn == 0) { reply[0] = 3; reply[1] = (byte)Host; reply[2] = 1; }
                 break;
             case 0x1815:
                 if (fn == 0) { reply[0] = 0x1F; reply[1] = 0x0E; reply[2] = 3; reply[3] = 0xFF; }
-                if (fn == 1) { reply[0] = parameters[0]; reply[1] = (byte)(parameters[0] < Names.Length ? 1 : 0); reply[2] = 5; reply[4] = (byte)(parameters[0] < Names.Length ? Names[parameters[0]].Length : 0); reply[5] = 32; }
+                if (fn == 1)
+                {
+                    reply[0] = parameters[0]; reply[1] = (byte)(parameters[0] < Names.Length ? 1 : 0); reply[2] = 5;
+                    reply[4] = (byte)(parameters[0] < Names.Length ? Names[parameters[0]].Length : 0); reply[5] = 32;
+                }
                 if (fn == 3 && parameters[0] < Names.Length)
                 {
                     reply[0] = parameters[0]; reply[1] = parameters[1];
                     var name = System.Text.Encoding.UTF8.GetBytes(Names[parameters[0]]);
-                    for (int offset = 0; offset < 14 && parameters[1] + offset < name.Length; offset++) reply[2 + offset] = name[parameters[1] + offset];
+                    for (int offset = 0; offset < 14 && parameters[1] + offset < name.Length; offset++)
+                        reply[2 + offset] = name[parameters[1] + offset];
                 }
                 break;
         }
@@ -825,10 +947,15 @@ class KeyboardView : Form
             float x = 0, y = height, tall = 0;
             foreach (var token in row.Split('|'))
             {
-                if (token.StartsWith("_")) { x += float.Parse(token.Substring(1), System.Globalization.CultureInfo.InvariantCulture) * KeyUnit; continue; }
+                if (token.StartsWith("_"))
+                {
+                    x += float.Parse(token.Substring(1), System.Globalization.CultureInfo.InvariantCulture) * KeyUnit; continue;
+                }
                 var parts = token.Split(':');
-                float keyWidth = parts.Length > 1 ? float.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture) * KeyUnit : KeyUnit;
-                float keyHeight = parts.Length > 2 ? float.Parse(parts[2], System.Globalization.CultureInfo.InvariantCulture) * KeyUnit : KeyUnit;
+                float keyWidth = parts.Length > 1
+                    ? float.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture) * KeyUnit : KeyUnit;
+                float keyHeight = parts.Length > 2
+                    ? float.Parse(parts[2], System.Globalization.CultureInfo.InvariantCulture) * KeyUnit : KeyUnit;
                 keys.Add(Tuple.Create(new RectangleF(Pad + x, HeaderHeight + Pad + y, keyWidth - 4, keyHeight - 4), parts[0]));
                 x += keyWidth;
                 tall = Math.Max(tall, Math.Min(keyHeight, KeyUnit));
@@ -841,7 +968,10 @@ class KeyboardView : Form
         {
             int row = rows.IndexOf(key.Item1.Y) - (rows.Count - Game.Rows);
             if (row < 0) return null;
-            var columns = Enumerable.Range(0, Game.Columns).Where(column => Pad + (column + 0.5f) * KeyUnit >= key.Item1.X && Pad + (column + 0.5f) * KeyUnit < key.Item1.Right + 4).Select(column => new Point(column, row)).ToList();
+            var columns = Enumerable.Range(0, Game.Columns)
+                .Where(column => Pad + (column + 0.5f) * KeyUnit >= key.Item1.X && Pad + (column + 0.5f) * KeyUnit < key.Item1.Right + 4)
+                .Select(column => new Point(column, row))
+                .ToList();
             return columns.Count > 0 ? columns : null;
         }).ToArray();
         Text = model.Name;
@@ -867,7 +997,10 @@ class KeyboardView : Form
         {
             if (e.Button != MouseButtons.Left) return;
             float clickX = e.X / scale, clickY = e.Y / scale;
-            if (clickY >= HeaderHeight + Pad / 2) { ripples.Add(Tuple.Create(new PointF(clickX, clickY), clock.Elapsed.TotalSeconds)); return; }
+            if (clickY >= HeaderHeight + Pad / 2)
+            {
+                ripples.Add(Tuple.Create(new PointF(clickX, clickY), clock.Elapsed.TotalSeconds)); return;
+            }
             ReleaseCapture();
             SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero);
         };
@@ -902,7 +1035,8 @@ class KeyboardView : Form
     void Place(FlatButton button, ref float right, float width)
     {
         right -= width;
-        button.Bounds = new Rectangle((int)Math.Round(right * scale), (int)Math.Round(10 * scale), (int)Math.Round(width * scale), (int)Math.Round(28 * scale));
+        button.Bounds = new Rectangle((int)Math.Round(right * scale), (int)Math.Round(10 * scale),
+            (int)Math.Round(width * scale), (int)Math.Round(28 * scale));
     }
 
     void RefreshControls()
@@ -963,7 +1097,12 @@ class KeyboardView : Form
             case 0x0A: return Scale(color, 0.5 - 0.5 * Math.Cos(2 * Math.PI * seconds / period));
             case 0x15: return Hsv(seconds / period, parameters[1] / 255.0, 1);
             case 0x16:
-                double offset = direction == 6 ? x : direction == 3 ? -Math.Abs(x - 0.5) * 2 : direction == 8 ? Math.Abs(x - 0.5) * 2 : direction == 2 ? -y : direction == 7 ? y : -x;
+                double offset = direction == 6 ? x
+                    : direction == 3 ? -Math.Abs(x - 0.5) * 2
+                    : direction == 8 ? Math.Abs(x - 0.5) * 2
+                    : direction == 2 ? -y
+                    : direction == 7 ? y
+                    : -x;
                 return Hsv(seconds / period + offset, parameters[1] / 255.0, 1);
             case 0x17: return Scale(color, ripple);
             default: return Color.Black;
@@ -974,8 +1113,14 @@ class KeyboardView : Form
     {
         hue = (hue % 1 + 1) % 1 * 6;
         int i = (int)hue;
-        double fraction = hue - i, low = value * (1 - saturation), falling = value * (1 - saturation * fraction), rising = value * (1 - saturation * (1 - fraction));
-        double[] rgb = i == 0 ? new[] { value, rising, low } : i == 1 ? new[] { falling, value, low } : i == 2 ? new[] { low, value, rising } : i == 3 ? new[] { low, falling, value } : i == 4 ? new[] { rising, low, value } : new[] { value, low, falling };
+        double fraction = hue - i, low = value * (1 - saturation), falling = value * (1 - saturation * fraction),
+            rising = value * (1 - saturation * (1 - fraction));
+        double[] rgb = i == 0 ? new[] { value, rising, low }
+            : i == 1 ? new[] { falling, value, low }
+            : i == 2 ? new[] { low, value, rising }
+            : i == 3 ? new[] { low, falling, value }
+            : i == 4 ? new[] { rising, low, value }
+            : new[] { value, low, falling };
         return Color.FromArgb((int)(rgb[0] * 255), (int)(rgb[1] * 255), (int)(rgb[2] * 255));
     }
 
@@ -1007,7 +1152,8 @@ class KeyboardView : Form
             if (id == 0x17)
                 foreach (var ripple in ripples)
                 {
-                    double distance = Math.Sqrt(Math.Pow(box.X + box.Width / 2 - ripple.Item1.X, 2) + Math.Pow(box.Y + box.Height / 2 - ripple.Item1.Y, 2)) / KeyUnit;
+                    double distance = Math.Sqrt(Math.Pow(box.X + box.Width / 2 - ripple.Item1.X, 2)
+                        + Math.Pow(box.Y + box.Height / 2 - ripple.Item1.Y, 2)) / KeyUnit;
                     double front = (seconds - ripple.Item2) * 8 / period;
                     glow = Math.Max(glow, Math.Max(0, 1 - Math.Abs(distance - front)) * Math.Max(0, 1 - (seconds - ripple.Item2) / 3));
                 }
@@ -1017,11 +1163,15 @@ class KeyboardView : Form
                 int hit = 0;
                 if (cells[keyIndex] != null) foreach (var cell in cells[keyIndex]) if (hit == 0) hit = game.At(cell.Y, cell.X);
                 bool arrow = "↑↓←→".Contains(key.Item2) && key.Item2.Length == 1;
-                color = hit != 0 ? (game.Over && !(game is Mines) ? Color.FromArgb(255, 40, 40) : Color.FromArgb(hit | unchecked((int)0xFF000000))) : arrow ? Color.FromArgb(120, 120, 120) : Color.FromArgb(45, 45, 45);
+                color = hit != 0
+                    ? (game.Over && !(game is Mines) ? Color.FromArgb(255, 40, 40) : Color.FromArgb(hit | unchecked((int)0xFF000000)))
+                    : arrow ? Color.FromArgb(120, 120, 120)
+                    : Color.FromArgb(45, 45, 45);
                 if (hit != 0) fill = Scale(color, 0.45);
             }
             color = Scale(color, bright / 100.0);
-            fill = Color.FromArgb(Math.Max(30, (int)(fill.R * bright / 100.0)), Math.Max(30, (int)(fill.G * bright / 100.0)), Math.Max(32, (int)(fill.B * bright / 100.0)));
+            fill = Color.FromArgb(Math.Max(30, (int)(fill.R * bright / 100.0)), Math.Max(30, (int)(fill.G * bright / 100.0)),
+                Math.Max(32, (int)(fill.B * bright / 100.0)));
             using (var path = new GraphicsPath())
             {
                 float radius = 5;
@@ -1033,11 +1183,14 @@ class KeyboardView : Form
                 using (var keyBrush = new SolidBrush(fill)) graphics.FillPath(keyBrush, path);
                 using (var pen = new Pen(Color.FromArgb(55, 55, 58))) graphics.DrawPath(pen, path);
                 using (var lit = new SolidBrush(color))
-                    graphics.DrawString(key.Item2, font, lit, box, new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
-                using (var under = new SolidBrush(Color.FromArgb(90, color))) graphics.FillRectangle(under, box.X + 6, box.Bottom - 4, box.Width - 12, 2);
+                    graphics.DrawString(key.Item2, font, lit, box,
+                        new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
+                using (var under = new SolidBrush(Color.FromArgb(90, color)))
+                    graphics.FillRectangle(under, box.X + 6, box.Bottom - 4, box.Width - 12, 2);
             }
         }
-        if (!WindowHelpers.Rounded) using (var pen = new Pen(Color.FromArgb(58, 58, 58))) graphics.DrawRectangle(pen, 0, 0, boardWidth - 1, boardHeight - 1);
+        if (!WindowHelpers.Rounded)
+            using (var pen = new Pen(Color.FromArgb(58, 58, 58))) graphics.DrawRectangle(pen, 0, 0, boardWidth - 1, boardHeight - 1);
         using (var font = WindowHelpers.PixelFont(9, 1))
         using (var brush = new SolidBrush(Color.FromArgb(150, 150, 150)))
         {
@@ -1058,7 +1211,8 @@ class KeyboardView : Form
                     legendX -= graphics.MeasureString(Mines.LegendNames[i], font).Width;
                     graphics.DrawString(Mines.LegendNames[i], font, brush, legendX, boardHeight - 26);
                     legendX -= 12;
-                    using (var swatch = new SolidBrush(Color.FromArgb(Mines.LegendColors[i] | unchecked((int)0xFF000000)))) graphics.FillRectangle(swatch, legendX, boardHeight - 23, 10, 10);
+                    using (var swatch = new SolidBrush(Color.FromArgb(Mines.LegendColors[i] | unchecked((int)0xFF000000))))
+                        graphics.FillRectangle(swatch, legendX, boardHeight - 23, 10, 10);
                     legendX -= 12;
                 }
             }

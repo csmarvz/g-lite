@@ -18,7 +18,10 @@ static class Log
         public bool Bad { get { return Kind == "error" || (Kind == "sent" && Result != "ok"); } }
     }
 
-    public static string Old { get { return Path.Combine(Path.GetDirectoryName(File), Path.GetFileNameWithoutExtension(File) + ".old.txt"); } }
+    public static string Old
+    {
+        get { return Path.Combine(Path.GetDirectoryName(File), Path.GetFileNameWithoutExtension(File) + ".old.txt"); }
+    }
 
     public static void Add(string who, string kind, string text) { Write(who, kind, text, ""); }
 
@@ -26,12 +29,18 @@ static class Log
 
     public static void Sent(string who, int id, int fn, byte[] parameters, string result)
     {
-        Write(who, "sent", id.ToString("X4") + " fn" + fn.ToString("X") + (parameters.Length > 0 ? "  " + BitConverter.ToString(parameters).Replace("-", " ") : ""), result);
+        Write(who, "sent",
+            id.ToString("X4") + " fn" + fn.ToString("X")
+                + (parameters.Length > 0 ? "  " + BitConverter.ToString(parameters).Replace("-", " ") : ""),
+            result);
     }
 
     public static void Register(string who, int register, byte[] parameters, string result)
     {
-        Write(who, "sent", "register " + register.ToString("X2") + (parameters.Length > 0 ? "  " + BitConverter.ToString(parameters).Replace("-", " ") : ""), result);
+        Write(who, "sent",
+            "register " + register.ToString("X2")
+                + (parameters.Length > 0 ? "  " + BitConverter.ToString(parameters).Replace("-", " ") : ""),
+            result);
     }
 
     public static void Upload(string who, int subId, int sequence, string result)
@@ -47,7 +56,8 @@ static class Log
 
     static void Write(string who, string kind, string text, string result)
     {
-        var line = string.Join("\t", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture), OneLine(who), kind, OneLine(text), result);
+        var line = string.Join("\t",
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture), OneLine(who), kind, OneLine(text), result);
         lock (gate)
             try
             {
@@ -77,7 +87,8 @@ static class Log
         foreach (var row in raw)
         {
             var columns = row.Split('\t');
-            if (columns.Length == 5) list.Add(new Line { Time = columns[0], Who = columns[1], Kind = columns[2], Text = columns[3], Result = columns[4] });
+            if (columns.Length == 5)
+                list.Add(new Line { Time = columns[0], Who = columns[1], Kind = columns[2], Text = columns[3], Result = columns[4] });
         }
         return list;
     }
@@ -107,7 +118,8 @@ static class Log
         foreach (var line in lines)
         {
             var last = merged.Count > 0 ? merged[merged.Count - 1] : null;
-            if (last != null && line.Kind == "sent" && last.Kind == "sent" && last.Who == line.Who && last.Result == line.Result && FirstWord(last.Text) == FirstWord(line.Text))
+            if (last != null && line.Kind == "sent" && last.Kind == "sent" && last.Who == line.Who && last.Result == line.Result
+                && FirstWord(last.Text) == FirstWord(line.Text))
             {
                 last.Times++;
                 continue;
@@ -126,7 +138,9 @@ static class Log
         if (line.Kind == "sent")
         {
             var call = FirstWord(line.Text);
-            text = call.PadRight(10) + (line.Result + (line.Times > 1 ? " ×" + line.Times : "")).PadRight(12) + line.Text.Substring(call.Length).TrimStart();
+            text = call.PadRight(10)
+                + (line.Result + (line.Times > 1 ? " ×" + line.Times : "")).PadRight(12)
+                + line.Text.Substring(call.Length).TrimStart();
         }
         return (line.Time + "  " + who.PadRight(15) + line.Kind.PadRight(8) + text).TrimEnd();
     }

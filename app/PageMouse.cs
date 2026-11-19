@@ -65,7 +65,8 @@ class MousePicture : DrawnControl
             graphics.ResetClip();
             using (var pen = new Pen(Theme.Border)) graphics.DrawPath(pen, path);
         }
-        Ui.Fill(graphics, new RectangleF(x + width / 2 - 4 * DpiScale, y + height * 0.12f, 8 * DpiScale, height * 0.17f), 4 * DpiScale, Theme.PictureBackground, Theme.PictureBackground);
+        Ui.Fill(graphics, new RectangleF(x + width / 2 - 4 * DpiScale, y + height * 0.12f, 8 * DpiScale, height * 0.17f),
+            4 * DpiScale, Theme.PictureBackground, Theme.PictureBackground);
 
         var color = Glow(clock.Elapsed.TotalSeconds);
         int max = Math.Max(color.R, Math.Max(color.G, color.B));
@@ -78,7 +79,11 @@ class MousePicture : DrawnControl
             using (var glowPath = new GraphicsPath())
             {
                 glowPath.AddEllipse(centerX - radius * 2.4f, centerY - radius * 2.4f, radius * 4.8f, radius * 4.8f);
-                using (var glowBrush = new PathGradientBrush(glowPath) { CenterColor = Color.FromArgb((int)(110 * max / 255.0), full), SurroundColors = new[] { Color.FromArgb(0, full) } })
+                using (var glowBrush = new PathGradientBrush(glowPath)
+                {
+                    CenterColor = Color.FromArgb((int)(110 * max / 255.0), full),
+                    SurroundColors = new[] { Color.FromArgb(0, full) }
+                })
                 {
                     using (var clip = Ui.Round(body, width / 2)) graphics.SetClip(clip);
                     graphics.FillPath(glowBrush, glowPath);
@@ -92,12 +97,17 @@ class MousePicture : DrawnControl
         float textX = x + width + 70 * DpiScale, top = Height / 2f - 46 * DpiScale;
         var bigFont = Ui.Get(27f, Ui.Semibold);
         var text = dpi > 0 ? dpi.ToString() : "–";
-        Ui.Draw(graphics, text, bigFont, new RectangleF(textX, top, Width - textX, 48 * DpiScale), Theme.Text, TextFormatFlags.Left | TextFormatFlags.Bottom);
+        Ui.Draw(graphics, text, bigFont, new RectangleF(textX, top, Width - textX, 48 * DpiScale),
+            Theme.Text, TextFormatFlags.Left | TextFormatFlags.Bottom);
         float dpiWidth = TextRenderer.MeasureText(graphics, text, bigFont, Size.Empty, TextFormatFlags.NoPadding).Width;
-        Ui.Draw(graphics, "DPI", Ui.Get(11f, Ui.Semibold), new RectangleF(textX + dpiWidth + 8 * DpiScale, top, 80 * DpiScale, 44 * DpiScale), Theme.Dim, TextFormatFlags.Left | TextFormatFlags.Bottom);
+        Ui.Draw(graphics, "DPI", Ui.Get(11f, Ui.Semibold),
+            new RectangleF(textX + dpiWidth + 8 * DpiScale, top, 80 * DpiScale, 44 * DpiScale),
+            Theme.Dim, TextFormatFlags.Left | TextFormatFlags.Bottom);
         var small = Ui.Get(9.75f, Ui.Regular);
-        Ui.Draw(graphics, stage, small, new RectangleF(textX, top + 58 * DpiScale, Width - textX, 20 * DpiScale), Theme.Dim, TextFormatFlags.Left);
-        Ui.Draw(graphics, rate, small, new RectangleF(textX, top + 80 * DpiScale, Width - textX, 20 * DpiScale), Theme.Dim, TextFormatFlags.Left);
+        Ui.Draw(graphics, stage, small, new RectangleF(textX, top + 58 * DpiScale, Width - textX, 20 * DpiScale),
+            Theme.Dim, TextFormatFlags.Left);
+        Ui.Draw(graphics, rate, small, new RectangleF(textX, top + 80 * DpiScale, Width - textX, 20 * DpiScale),
+            Theme.Dim, TextFormatFlags.Left);
     }
 }
 
@@ -133,7 +143,8 @@ class PageMouse : DevicePage
     Backups.Entry fix;
     readonly IMouse mouse;
 
-    public PageMouse(FoundDevice found, Hidpp fake, MouseEventHandler drag, IMouse mouse) : base(found, fake, drag, found.ShortName, "mouse", "profile." + found.SettingsKey + ".")
+    public PageMouse(FoundDevice found, Hidpp fake, MouseEventHandler drag, IMouse mouse)
+        : base(found, fake, drag, found.ShortName, "mouse", "profile." + found.SettingsKey + ".")
     {
         this.mouse = mouse;
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };
@@ -147,13 +158,16 @@ class PageMouse : DevicePage
         var light = Ui.Add(this, new RoundedBox(), 20, 339, 380, 272);
         lightHead = Ui.Text(light, "Lighting", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         Ui.Text(light, "Effect", 14, 40, () => Theme.Dim, 9f);
-        effects = Ui.Add(light, new SegmentedPicker { Items = MouseProtocol.Effects.Select(effect => effect.Name).ToArray(), AccessibleName = "Effect" }, 14, 58, 352, 32);
+        effects = Ui.Add(light,
+            new SegmentedPicker { Items = MouseProtocol.Effects.Select(effect => effect.Name).ToArray(), AccessibleName = "Effect" },
+            14, 58, 352, 32);
         effects.Picked += index =>
         {
             var effect = Effects[index];
             var edited = Light();
             edited.Effect = effect.Id;
-            if (effect.Speed && (edited.Period < effect.MinPeriod || edited.Period > effect.MaxPeriod)) edited.Period = effect.DefaultPeriod;
+            if (effect.Speed && (edited.Period < effect.MinPeriod || edited.Period > effect.MaxPeriod))
+                edited.Period = effect.DefaultPeriod;
             Changed(true);
         };
         colorHead = Ui.Text(light, "Color", 14, 98, () => Theme.Dim, 9f);
@@ -204,7 +218,8 @@ class PageMouse : DevicePage
         if (!Manual) watch.Start();
 
         settingsArea = new Control[] { pictureBox, light, sensitivity };
-        viewPick = Ui.Add(this, new SegmentedPicker { Items = new[] { "Settings", "Buttons" }, AccessibleName = "View", Visible = false }, 440, 72, 196, 32);
+        viewPick = Ui.Add(this, new SegmentedPicker { Items = new[] { "Settings", "Buttons" }, AccessibleName = "View", Visible = false },
+            440, 72, 196, 32);
         viewPick.Picked += index => ShowView(index == 1);
         buttonsBox = Ui.Add(this, new RoundedBox { Visible = false }, 20, 118, 616, 543);
         Ui.Text(buttonsBox, "Buttons", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
@@ -223,7 +238,8 @@ class PageMouse : DevicePage
         {
             if (pressedRow < 0 || pressedRow >= 16 || !rowNames[pressedRow].Visible) return;
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            Ui.Fill(e.Graphics, new RectangleF(6 * Ui.DpiScale, (40 + 28 * pressedRow) * Ui.DpiScale, 360 * Ui.DpiScale, 26 * Ui.DpiScale), 6 * Ui.DpiScale, Theme.AccentBackground, Theme.AccentBackground);
+            Ui.Fill(e.Graphics, new RectangleF(6 * Ui.DpiScale, (40 + 28 * pressedRow) * Ui.DpiScale, 360 * Ui.DpiScale, 26 * Ui.DpiScale),
+                6 * Ui.DpiScale, Theme.AccentBackground, Theme.AccentBackground);
         };
         keyField = Ui.Add(buttonsBox, new TextField { Visible = false }, 380, 40, 222, 26);
         keyField.Box.KeyDown += (s, e) => { e.Handled = e.SuppressKeyPress = true; Recorded(e.KeyData); };
@@ -257,10 +273,15 @@ class PageMouse : DevicePage
         var saved = stored != null && stored.Buttons != null ? stored.Buttons : current.Buttons;
         if (current.Buttons == null) settings.Buttons = null;
         else if (settings.Buttons == null) settings.Buttons = Bindings.Copy(saved);
-        else settings.Buttons = Enumerable.Range(0, current.Buttons.Length).Select(i => i < settings.Buttons.Length ? settings.Buttons[i] : (byte[])saved[i].Clone()).ToArray();
-        if (settings.Buttons != null && !Bindings.HasLeft(settings.Buttons, ButtonCount)) settings.Buttons[0] = (byte[])Bindings.Actions[0].Bytes.Clone();
+        else settings.Buttons = Enumerable.Range(0, current.Buttons.Length)
+            .Select(i => i < settings.Buttons.Length ? settings.Buttons[i] : (byte[])saved[i].Clone())
+            .ToArray();
+        if (settings.Buttons != null && !Bindings.HasLeft(settings.Buttons, ButtonCount))
+            settings.Buttons[0] = (byte[])Bindings.Actions[0].Bytes.Clone();
         if (state != null && state.Dpis.Length > 0) settings.Dpi = state.Dpis[Nearest(state.Dpis, settings.Dpi)];
-        settings.Stage = state != null && Array.IndexOf(state.Stages, settings.Dpi) >= 0 ? Array.IndexOf(state.Stages, settings.Dpi) : current.Stage;
+        settings.Stage = state != null && Array.IndexOf(state.Stages, settings.Dpi) >= 0
+            ? Array.IndexOf(state.Stages, settings.Dpi)
+            : current.Stage;
         current = settings;
         Changed(true);
     }
@@ -291,7 +312,9 @@ class PageMouse : DevicePage
         var effect = light == null ? null : Effects.FirstOrDefault(info => info.Id == light.Effect);
         bool lit = ready && state.Zones.Count > 0, known = lit && effect != null;
         bool color = known && effect.Color, hasSpeed = known && effect.Speed, hasBrightness = known && light.Effect != 0x00;
-        lightHead.Text = !ready || lit ? (light == null && lit ? "Lighting (as saved on the mouse)" : "Lighting") : "Lighting (not supported on this mouse)";
+        lightHead.Text = !ready || lit
+            ? (light == null && lit ? "Lighting (as saved on the mouse)" : "Lighting")
+            : "Lighting (not supported on this mouse)";
         effects.Items = Effects.Select(info => info.Name).ToArray();
         effects.Enabled = lit;
         effects.Index = known ? Array.FindIndex(Effects, info => info.Id == light.Effect) : -1;
@@ -309,7 +332,10 @@ class PageMouse : DevicePage
         speed.Invalidate();
 
         bool hasStages = ready && state.Stages.Length > 0;
-        int stage = !hasStages ? -1 : !state.Writable ? Array.IndexOf(state.Stages, current.Dpi) : current.Stage >= 0 && current.Stage < state.Stages.Length ? current.Stage : -1;
+        int stage = !hasStages ? -1
+            : !state.Writable ? Array.IndexOf(state.Stages, current.Dpi)
+            : current.Stage >= 0 && current.Stage < state.Stages.Length ? current.Stage
+            : -1;
         var view = hasStages ? (int[])state.Stages.Clone() : new int[0];
         if (stage >= 0 && state.Writable) view[stage] = current.Dpi;
         stages.Items = hasStages ? view.Select(stageDpi => stageDpi.ToString()).ToArray() : new[] { "–" };
@@ -323,12 +349,15 @@ class PageMouse : DevicePage
         dpiValue.Text = ready ? current.Dpi.ToString() : "";
         bool rateOn = ready && state.Rates.Length > 0 && (!state.Onboard || state.Savable);
         int rate = ready ? (current.Rate > 0 ? current.Rate : state.Rate) : 0;
-        rates.Items = ready && state.Rates.Length > 0 ? state.Rates.Select(hz => hz >= 1000 ? hz / 1000 + "k" : hz.ToString()).ToArray() : new[] { "–" };
+        rates.Items = ready && state.Rates.Length > 0
+            ? state.Rates.Select(hz => hz >= 1000 ? hz / 1000 + "k" : hz.ToString()).ToArray()
+            : new[] { "–" };
         rates.Index = ready ? Array.IndexOf(state.Rates, rate) : -1;
         rates.Enabled = rateOn;
         rates.Invalidate();
         SetDimmed(rateHead, rateOn);
-        rateHead.Text = "Report rate" + (ready && state.Rates.Length > 0 ? " (Hz)" : "") + (ready && state.Onboard && state.Savable ? ", on save" : "");
+        rateHead.Text = "Report rate" + (ready && state.Rates.Length > 0 ? " (Hz)" : "")
+            + (ready && state.Onboard && state.Savable ? ", on save" : "");
         rateHint.Text = !ready || !state.Onboard || state.Savable ? "" : "Set by the saved profile.";
         invert.Visible = invertLabel.Visible = ready && state.CanInvert;
         invert.Checked = ready && state.Inverted;
@@ -341,7 +370,10 @@ class PageMouse : DevicePage
         backupsButton.Visible = mouse.HasFactory || ready && state.Writable;
 
         picture.Display(lit ? light : new MouseLight { Effect = 0 }, ready ? current.Dpi : 0,
-            !ready ? "" : stage >= 0 ? "Stage " + (stage + 1) + " of " + state.Stages.Length + (current.Dpi != state.Stages[stage] ? ", was " + state.Stages[stage] : "") : "",
+            !ready ? ""
+                : stage >= 0 ? "Stage " + (stage + 1) + " of " + state.Stages.Length
+                    + (current.Dpi != state.Stages[stage] ? ", was " + state.Stages[stage] : "")
+                : "",
             rate > 0 ? rate + " Hz report rate" + (ready && rate != state.Rate ? " after saving" : "") : "");
         loading = false;
     }
@@ -365,8 +397,16 @@ class PageMouse : DevicePage
         if (!Keepable) { ShowStatus("No button is set to Left click. Set one to save.", true); return; }
         bool buttons = stored != null && !Bindings.Same(current.Buttons, stored.Buttons);
         bool rate = stored != null && state.Onboard && current.Rate > 0 && current.Rate != stored.Rate;
-        if (dirty && (buttons || rate)) { ShowStatus((buttons && rate ? "Buttons and report rate change" : buttons ? "Buttons change" : "Report rate changes") + " when saved to the mouse"); return; }
-        ShowStatus(!dirty ? "Matches the mouse" : state.Savable ? "Applied to the mouse, not saved on it yet" : "Applied to the mouse, not saved on it");
+        if (dirty && (buttons || rate))
+        {
+            ShowStatus((buttons && rate ? "Buttons and report rate change"
+                : buttons ? "Buttons change"
+                : "Report rate changes") + " when saved to the mouse");
+            return;
+        }
+        ShowStatus(!dirty ? "Matches the mouse"
+            : state.Savable ? "Applied to the mouse, not saved on it yet"
+            : "Applied to the mouse, not saved on it");
     }
 
     string BackupId { get { return found.SettingsKey; } }
@@ -380,8 +420,11 @@ class PageMouse : DevicePage
     void ShowBroken()
     {
         const string bad = "The profile saved on the mouse is damaged.";
-        if (fix != null) ShowStatus(bad + " Last good backup: " + When(fix) + ".", true, () => Restore(Usable(fix), "the backup from " + When(fix)), "Restore backup");
-        else if (state.Writable && mouse.HasFactory) ShowStatus(bad, true, () => Restore(null, "the factory profile"), "Restore factory profile");
+        if (fix != null)
+            ShowStatus(bad + " Last good backup: " + When(fix) + ".", true,
+                () => Restore(Usable(fix), "the backup from " + When(fix)), "Restore backup");
+        else if (state.Writable && mouse.HasFactory)
+            ShowStatus(bad, true, () => Restore(null, "the factory profile"), "Restore factory profile");
         else ShowStatus(bad + " G-Lite can't repair it on this mouse.", true);
     }
 
@@ -389,7 +432,11 @@ class PageMouse : DevicePage
     {
         bool canRestore = state != null && state.Writable && !state.Fresh && mouse.HasFactory;
         BackupMenu(backupsButton, BackupId, canRestore ? "Restore the factory profile" : null, () => Restore(null, "the factory profile"),
-            entry => { var data = entry.Get(state == null ? "" : state.Key); return data == null ? "another profile" : mouse.Describe(data); },
+            entry =>
+            {
+                var data = entry.Get(state == null ? "" : state.Key);
+                return data == null ? "another profile" : mouse.Describe(data);
+            },
             entry => Usable(entry) != null, entry => Restore(Usable(entry), "the backup from " + When(entry)));
     }
 
@@ -447,7 +494,9 @@ class PageMouse : DevicePage
         {
             if (startedAt != sequence) return;
             mouse.SendDpi(hidpp, deviceState, want, sent);
-            if (!deviceState.Onboard && want.Rate > 0 && want.Rate != deviceState.Rate && (sent == null || sent.Rate != want.Rate) && deviceState.Rates.Contains(want.Rate)) mouse.SetRate(hidpp, want.Rate);
+            if (!deviceState.Onboard && want.Rate > 0 && want.Rate != deviceState.Rate && (sent == null || sent.Rate != want.Rate)
+                && deviceState.Rates.Contains(want.Rate))
+                mouse.SetRate(hidpp, want.Rate);
             if (want.Light != null && deviceState.Zones.Count > 0 && (sent == null || !want.Light.Same(sent.Light)))
             {
                 mouse.SetLight(hidpp, deviceState, want.Light);
@@ -470,7 +519,9 @@ class PageMouse : DevicePage
 
     void SyncButtons()
     {
-        int count = state == null || state.Buttons == null || current.Buttons == null ? 0 : Math.Min(state.ButtonCount, current.Buttons.Length);
+        int count = state == null || state.Buttons == null || current.Buttons == null
+            ? 0
+            : Math.Min(state.ButtonCount, current.Buttons.Length);
         var names = Bindings.Names(found, count);
         bool editable = state != null && state.Savable;
         for (int i = 0; i < 16; i++)
@@ -506,7 +557,14 @@ class PageMouse : DevicePage
         Assign(row, (byte[])Bindings.Actions[actionIndex].Bytes.Clone());
     }
 
-    protected override bool Keepable { get { return current.Buttons == null || Bindings.HasLeft(current.Buttons, ButtonCount) || stored == null || !Bindings.HasLeft(stored.Buttons, ButtonCount); } }
+    protected override bool Keepable
+    {
+        get
+        {
+            return current.Buttons == null || Bindings.HasLeft(current.Buttons, ButtonCount)
+                || stored == null || !Bindings.HasLeft(stored.Buttons, ButtonCount);
+        }
+    }
 
     int ButtonCount { get { return state == null || current.Buttons == null ? 0 : Math.Min(state.ButtonCount, current.Buttons.Length); } }
 
@@ -586,7 +644,13 @@ class PageMouse : DevicePage
         RunOnDevice(hidpp => { feature = hidpp.FeatureIndex(0x8110); hidpp.Call(feature, 1); }, () =>
         {
             if (!spying || spy != null) return;
-            try { spy = new ButtonSpy(found.Path, found.Index, feature, bits => { if (IsHandleCreated) BeginInvoke((Action)(() => Pressed(bits))); }); }
+            try
+            {
+                spy = new ButtonSpy(found.Path, found.Index, feature, bits =>
+                {
+                    if (IsHandleCreated) BeginInvoke((Action)(() => Pressed(bits)));
+                });
+            }
             catch (IOException) { }
             SyncButtons();
         });
@@ -686,8 +750,14 @@ class PageMouse : DevicePage
         {
             state = read;
             fix = read.ProfileOk ? null : Backups.List(BackupId).FirstOrDefault(entry => Usable(entry) != null);
-            int start = read.Stage >= 0 ? read.Stage : read.Profile != null && read.Stages.Length > 0 ? Math.Min(mouse.DefaultStage(read.Profile), read.Stages.Length - 1) : -1;
-            stored = new MouseSet { Dpi = read.Dpi, Rate = read.Rate, Light = read.Light, Stage = start, Buttons = Bindings.Copy(read.Buttons) };
+            int start = read.Stage >= 0 ? read.Stage
+                : read.Profile != null && read.Stages.Length > 0 ? Math.Min(mouse.DefaultStage(read.Profile), read.Stages.Length - 1)
+                : -1;
+            stored = new MouseSet
+            {
+                Dpi = read.Dpi, Rate = read.Rate, Light = read.Light, Stage = start,
+                Buttons = Bindings.Copy(read.Buttons)
+            };
             if (startedAt == sequence)
             {
                 current.Dpi = read.Dpi;
@@ -697,7 +767,11 @@ class PageMouse : DevicePage
                 recording = -1;
                 if (!lightSet || current.Light == null) current.Light = read.Light == null ? null : read.Light.Clone();
                 if (!lightSet) dirty = false;
-                sent = new MouseSet { Dpi = read.Dpi, Stage = start, Light = lightSet && current.Light != null ? current.Light.Clone() : read.Light };
+                sent = new MouseSet
+                {
+                    Dpi = read.Dpi, Stage = start,
+                    Light = lightSet && current.Light != null ? current.Light.Clone() : read.Light
+                };
             }
             RefreshControls();
             Loaded();

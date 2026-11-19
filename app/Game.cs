@@ -168,7 +168,11 @@ class Snake : KeyGame
 
     public override void Key(Keys key)
     {
-        var wanted = key == Keys.Up ? new Point(0, -1) : key == Keys.Down ? new Point(0, 1) : key == Keys.Left ? new Point(-1, 0) : key == Keys.Right ? new Point(1, 0) : direction;
+        var wanted = key == Keys.Up ? new Point(0, -1)
+            : key == Keys.Down ? new Point(0, 1)
+            : key == Keys.Left ? new Point(-1, 0)
+            : key == Keys.Right ? new Point(1, 0)
+            : direction;
         if (wanted.X != -direction.X || wanted.Y != -direction.Y) next = wanted;
     }
 

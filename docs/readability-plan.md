@@ -196,7 +196,9 @@ A local or parameter can hide a field of the same name without a compiler error 
 
 ## Step 2: break up long lines
 
-About 480 lines are over 150 characters. Target: none over 140, except golden byte strings in `SelfTest.cs` and `Fake.cs`, where one value per line is easier to compare.
+About 480 lines were over 150 characters (864 over 140 after step 1's longer names). Target: none over 140, except golden byte strings in `SelfTest.cs` and `Fake.cs`, where one value per line is easier to compare.
+
+2a, line breaks (done): whitespace only, checked file by file by comparing tokens with the commit before, whitespace ignored (a comment counts as its words, so it can be rewrapped). 17 lines are left over 140, each a string that stays whole: golden byte strings, and long UI texts such as the info page's. The exe came out the same size. 2b: the rewrites below that change code (ternaries, brackets, named locals), each diff read on its own.
 
 - LINQ chains: one call per line.
 - Nested ternaries: an `if` chain or a small method.
@@ -233,6 +235,7 @@ One subject per file. Keep the current file names where they still fit.
 - [x] 1b. Methods
 - [x] 1c. Fields and properties
 - [x] 1d. Parameters and locals (file by file)
-- [ ] 2. Long lines
+- [x] 2a. Long lines: line breaks
+- [ ] 2b. Long lines: rewrites (ternaries, brackets, named locals)
 - [ ] 3. Profile offsets
 - [ ] 4. Split files

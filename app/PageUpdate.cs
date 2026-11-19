@@ -10,7 +10,8 @@ using System.Windows.Forms;
 
 class PageUpdate : Control
 {
-    [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)] static extern int SetWindowTheme(IntPtr window, string subAppName, string subIdList);
+    [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
+    static extern int SetWindowTheme(IntPtr window, string subAppName, string subIdList);
     readonly Label heading, meta, link, whatsNew;
     readonly RoundedBox notesBox;
     readonly RichTextBox notes;
@@ -54,7 +55,11 @@ class PageUpdate : Control
 
         whatsNew = Ui.Text(this, "What's new", 20, 172, () => Theme.Dim, 9f, Ui.Semibold);
         notesBox = Ui.Add(this, new RoundedBox(), 20, 194, 616, 463);
-        notes = Ui.Add(notesBox, new RichTextBox { ReadOnly = true, WordWrap = true, ScrollBars = RichTextBoxScrollBars.Vertical, BorderStyle = BorderStyle.None, DetectUrls = false, AccessibleName = "Changelog" }, 18, 10, 594, 443);
+        notes = Ui.Add(notesBox, new RichTextBox
+        {
+            ReadOnly = true, WordWrap = true, ScrollBars = RichTextBoxScrollBars.Vertical, BorderStyle = BorderStyle.None,
+            DetectUrls = false, AccessibleName = "Changelog"
+        }, 18, 10, 594, 443);
         Ui.Style(notes, () => { notes.BackColor = Theme.Card; Dark(); Render(); });
         notes.HandleCreated += (s, e) => { Dark(); Later(Render); };
         notes.Resize += (s, e) => { if (notes.Width != renderedWidth) { renderedWidth = notes.Width; Later(Render); } };
@@ -162,7 +167,11 @@ class PageUpdate : Control
         showSkip = newState == "available" || newState == "failed" || newState == "downloading";
         skip.Enabled = primary.Enabled = newState != "downloading";
         showPrimary = newState != "checking";
-        primary.Text = newState == "ready" ? "Restart G-Lite" : newState == "available" ? "Update now" : newState == "failed" ? "Try again" : newState == "downloading" ? "Updating…" : "Check again";
+        primary.Text = newState == "ready" ? "Restart G-Lite"
+            : newState == "available" ? "Update now"
+            : newState == "failed" ? "Try again"
+            : newState == "downloading" ? "Updating…"
+            : "Check again";
         Arrange();
         Render();
     }
@@ -237,12 +246,14 @@ class PageUpdate : Control
         if (state != "current" && list != null)
         {
             var newest = list.FirstOrDefault(release => release.Version == version);
-            if (state == "available" && newest != null && newest.Date != "") meta.Text = "Released " + newest.Date + (list.Count > 1 ? ", " + list.Count + " versions newer than yours" : "");
+            if (state == "available" && newest != null && newest.Date != "")
+                meta.Text = "Released " + newest.Date + (list.Count > 1 ? ", " + list.Count + " versions newer than yours" : "");
             if (list.Count > 1) whatsNew.Text = "What's new since " + installed;
         }
         notes.Clear();
         string error;
-        if (list == null && version != null && changelogErrors.TryGetValue(version, out error)) Add("Couldn't load the changelog: " + error + "\nSee on GitHub shows it too.", 9.75f, Ui.Regular, Theme.Dim, false);
+        if (list == null && version != null && changelogErrors.TryGetValue(version, out error))
+            Add("Couldn't load the changelog: " + error + "\nSee on GitHub shows it too.", 9.75f, Ui.Regular, Theme.Dim, false);
         else if (list == null) Add("Loading the changelog…", 9.75f, Ui.Regular, Theme.Dim, false);
         else if (list.Count == 0) Add("The changelog doesn't list this version.", 9.75f, Ui.Regular, Theme.Dim, false);
         else
@@ -262,7 +273,8 @@ class PageUpdate : Control
                         Add("\n", 4.5f, Ui.Regular, Theme.Text, false);
                         Add(plain.TrimStart('#', ' ').ToUpperInvariant() + "\n", 8.25f, Ui.Semibold, Theme.Accent, false);
                     }
-                    else if (plain.StartsWith("- ") || plain.StartsWith("* ")) Add(plain.Substring(2) + "\n", 9.75f, Ui.Regular, Theme.Text, true);
+                    else if (plain.StartsWith("- ") || plain.StartsWith("* "))
+                        Add(plain.Substring(2) + "\n", 9.75f, Ui.Regular, Theme.Text, true);
                     else Add(plain + "\n", 9.75f, Ui.Regular, Theme.Text, false);
                 }
             }

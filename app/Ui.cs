@@ -9,7 +9,8 @@ using Microsoft.Win32;
 
 static class Theme
 {
-    public static Color Background, Sidebar, Card, Button, ButtonHover, ButtonPressed, Border, Text, Dim, Accent, AccentBackground, OnAccent, Warn, KeyOff, PictureBackground, Track;
+    public static Color Background, Sidebar, Card, Button, ButtonHover, ButtonPressed, Border, Text, Dim,
+        Accent, AccentBackground, OnAccent, Warn, KeyOff, PictureBackground, Track;
     public static bool Light;
     public static event Action Changed;
     public static readonly string[] Modes = { "system", "dark", "light" };
@@ -52,14 +53,18 @@ static class Theme
         Light = light;
         if (light)
         {
-            Background = FromHex(0xF7F7F7); Sidebar = FromHex(0xEDEDED); Card = FromHex(0xFFFFFF); Button = FromHex(0xECECEC); ButtonHover = FromHex(0xE0E0E0); ButtonPressed = FromHex(0xDADADA); Border = FromHex(0xD4D4D4);
-            Text = FromHex(0x1A1A1A); Dim = FromHex(0x5A5A5A); Accent = FromHex(0x1D7A60); AccentBackground = FromHex(0xD9EDE6); OnAccent = FromHex(0xFFFFFF);
+            Background = FromHex(0xF7F7F7); Sidebar = FromHex(0xEDEDED); Card = FromHex(0xFFFFFF);
+            Button = FromHex(0xECECEC); ButtonHover = FromHex(0xE0E0E0); ButtonPressed = FromHex(0xDADADA); Border = FromHex(0xD4D4D4);
+            Text = FromHex(0x1A1A1A); Dim = FromHex(0x5A5A5A);
+            Accent = FromHex(0x1D7A60); AccentBackground = FromHex(0xD9EDE6); OnAccent = FromHex(0xFFFFFF);
             Warn = FromHex(0x9A5B00); KeyOff = FromHex(0xD6D6D6); PictureBackground = FromHex(0xBDBDBD); Track = FromHex(0xC8C8C8);
         }
         else
         {
-            Background = FromHex(0x1C1C1C); Sidebar = FromHex(0x161616); Card = FromHex(0x232323); Button = FromHex(0x2B2B2B); ButtonHover = FromHex(0x353535); ButtonPressed = FromHex(0x242424); Border = FromHex(0x3A3A3A);
-            Text = FromHex(0xE8E8E8); Dim = FromHex(0xA3A3A3); Accent = FromHex(0x3FA98A); AccentBackground = FromHex(0x26302D); OnAccent = FromHex(0x0C1A15);
+            Background = FromHex(0x1C1C1C); Sidebar = FromHex(0x161616); Card = FromHex(0x232323);
+            Button = FromHex(0x2B2B2B); ButtonHover = FromHex(0x353535); ButtonPressed = FromHex(0x242424); Border = FromHex(0x3A3A3A);
+            Text = FromHex(0xE8E8E8); Dim = FromHex(0xA3A3A3);
+            Accent = FromHex(0x3FA98A); AccentBackground = FromHex(0x26302D); OnAccent = FromHex(0x0C1A15);
             Warn = FromHex(0xE0A458); KeyOff = FromHex(0x2E2E2E); PictureBackground = FromHex(0x151515); Track = FromHex(0x444444);
         }
     }
@@ -91,7 +96,11 @@ static class Ui
 
     public static void Restyle() { styles.RemoveAll(s => s.Key.IsDisposed); foreach (var s in styles) s.Value(); }
 
-    public static void Refont() { fonts.RemoveAll(entry => entry.Item1.IsDisposed); foreach (var entry in fonts) entry.Item1.Font = WindowHelpers.PixelFont(entry.Item2, DpiScale, entry.Item3); }
+    public static void Refont()
+    {
+        fonts.RemoveAll(entry => entry.Item1.IsDisposed);
+        foreach (var entry in fonts) entry.Item1.Font = WindowHelpers.PixelFont(entry.Item2, DpiScale, entry.Item3);
+    }
 
     public static Font Get(float points, string face)
     {
@@ -103,7 +112,10 @@ static class Ui
 
     public static Label Text(Control parent, string text, int x, int y, Func<Color> color, float points = 9.75f, string face = Regular)
     {
-        var label = new Label { Text = text, Location = new Point(x, y), AutoSize = true, BackColor = Color.Transparent, UseMnemonic = false };
+        var label = new Label
+        {
+            Text = text, Location = new Point(x, y), AutoSize = true, BackColor = Color.Transparent, UseMnemonic = false
+        };
         Style(label, () => label.ForeColor = color());
         Font(label, points, face);
         parent.Controls.Add(label);
@@ -153,7 +165,8 @@ static class Ui
     public static void Battery(Graphics graphics, float left, float top, int percent, float scale, Color? color = null)
     {
         int x = (int)Math.Round(left), y = (int)Math.Round(top);
-        int line = Math.Max(1, (int)Math.Round(scale)), width = (int)Math.Round(16 * scale), height = BatteryHeight(scale), nub = (int)Math.Round(3 * scale);
+        int line = Math.Max(1, (int)Math.Round(scale)), width = (int)Math.Round(16 * scale), height = BatteryHeight(scale),
+            nub = (int)Math.Round(3 * scale);
         var ink = color ?? Theme.Text;
         var smoothing = graphics.SmoothingMode;
         graphics.SmoothingMode = SmoothingMode.None;
@@ -173,7 +186,8 @@ static class Ui
                         int to = from;
                         while (to + 1 < Moon[row].Length && Moon[row][to + 1] == '#') to++;
                         int cell = Math.Max(1, (int)Math.Round(scale)), cellLeft = (int)Math.Round(from * scale);
-                        graphics.FillRectangle(brush, x + cellLeft, y + (int)Math.Round(row * scale), (int)Math.Round(to * scale) + cell - cellLeft, cell);
+                        graphics.FillRectangle(brush,
+                            x + cellLeft, y + (int)Math.Round(row * scale), (int)Math.Round(to * scale) + cell - cellLeft, cell);
                         from = to;
                     }
             graphics.SmoothingMode = smoothing;
@@ -198,7 +212,8 @@ static class Ui
                 for (int row = 0; row < Spark.Length / 2; row++)
                 {
                     int upper = y + (int)Math.Round((row + 1) * scale), lower = y + (int)Math.Round((row + 2) * scale);
-                    int from = x + (int)Math.Round((5 + Spark[row * 2]) * scale), to = x + (int)Math.Round((6 + Spark[row * 2 + 1]) * scale);
+                    int from = x + (int)Math.Round((5 + Spark[row * 2]) * scale),
+                        to = x + (int)Math.Round((6 + Spark[row * 2 + 1]) * scale);
                     spark.Union(new Rectangle(from, upper, to - from, lower - upper));
                 }
             var clip = graphics.Clip;
@@ -252,7 +267,10 @@ static class Ui
 
     public static Color Mix(Color from, Color to, double amount)
     {
-        return Color.FromArgb((int)(from.R + (to.R - from.R) * amount), (int)(from.G + (to.G - from.G) * amount), (int)(from.B + (to.B - from.B) * amount));
+        return Color.FromArgb(
+            (int)(from.R + (to.R - from.R) * amount),
+            (int)(from.G + (to.G - from.G) * amount),
+            (int)(from.B + (to.B - from.B) * amount));
     }
 
     // The text of something that can't be changed now.
@@ -260,7 +278,8 @@ static class Ui
 
     public static void Draw(Graphics graphics, string text, Font font, RectangleF bounds, Color color, TextFormatFlags flags)
     {
-        TextRenderer.DrawText(graphics, text, font, Rectangle.Round(bounds), color, flags | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding);
+        TextRenderer.DrawText(graphics, text, font, Rectangle.Round(bounds), color,
+            flags | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding);
     }
 }
 
@@ -280,10 +299,16 @@ static class Icons
                     graphics.DrawLines(pen, new[] { new PointF(20, 4), new PointF(20, 10.5f), new PointF(13.5f, 10.5f) });
                     break;
                 case "minus": graphics.DrawLine(pen, 6, 12, 18, 12); break;
-                case "lines": graphics.DrawLine(pen, 5, 7, 19, 7); graphics.DrawLine(pen, 5, 12, 19, 12); graphics.DrawLine(pen, 5, 17, 13, 17); break;
+                case "lines":
+                    graphics.DrawLine(pen, 5, 7, 19, 7); graphics.DrawLine(pen, 5, 12, 19, 12); graphics.DrawLine(pen, 5, 17, 13, 17);
+                    break;
                 case "power": graphics.DrawArc(pen, 5, 5.5f, 14, 14, -60, 300); graphics.DrawLine(pen, 12, 3.5f, 12, 11); break;
                 case "close": graphics.DrawLine(pen, 6.5f, 6.5f, 17.5f, 17.5f); graphics.DrawLine(pen, 17.5f, 6.5f, 6.5f, 17.5f); break;
-                case "download": graphics.DrawLine(pen, 12, 4, 12, 15); graphics.DrawLines(pen, new[] { new PointF(7.5f, 10.5f), new PointF(12, 15), new PointF(16.5f, 10.5f) }); graphics.DrawLine(pen, 5, 19.5f, 19, 19.5f); break;
+                case "download":
+                    graphics.DrawLine(pen, 12, 4, 12, 15);
+                    graphics.DrawLines(pen, new[] { new PointF(7.5f, 10.5f), new PointF(12, 15), new PointF(16.5f, 10.5f) });
+                    graphics.DrawLine(pen, 5, 19.5f, 19, 19.5f);
+                    break;
                 case "plus": graphics.DrawLine(pen, 12, 5, 12, 19); graphics.DrawLine(pen, 5, 12, 19, 12); break;
                 case "chevron": graphics.DrawLines(pen, new[] { new PointF(7, 10), new PointF(12, 15), new PointF(17, 10) }); break;
                 case "check": graphics.DrawLines(pen, new[] { new PointF(5, 12.5f), new PointF(10, 17.5f), new PointF(19, 7) }); break;
@@ -345,7 +370,8 @@ class DrawnControl : Control
 
     public DrawnControl()
     {
-        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer
+            | ControlStyles.ResizeRedraw, true);
         Cursor = Cursors.Hand;
     }
 
@@ -399,7 +425,11 @@ class DrawnControl : Control
 
     protected void DrawFocusRing(Graphics graphics, float radius) { DrawFocusRing(graphics, radius, Theme.Text); }
 
-    protected override void OnMouseDown(MouseEventArgs e) { if (e.Button == MouseButtons.Left) { down = true; Invalidate(); } base.OnMouseDown(e); }
+    protected override void OnMouseDown(MouseEventArgs e)
+    {
+        if (e.Button == MouseButtons.Left) { down = true; Invalidate(); }
+        base.OnMouseDown(e);
+    }
     protected override void OnMouseUp(MouseEventArgs e) { if (down) { down = false; Invalidate(); } base.OnMouseUp(e); }
     protected override void OnMouseCaptureChanged(EventArgs e) { if (down) { down = false; Invalidate(); } base.OnMouseCaptureChanged(e); }
 
@@ -463,7 +493,8 @@ class RoundedBox : Control
 {
     public RoundedBox()
     {
-        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer
+            | ControlStyles.ResizeRedraw, true);
         Ui.Style(this, () => BackColor = Theme.Card);
     }
 
@@ -492,14 +523,23 @@ class FlatButton : DrawnControl
         var graphics = Begin(e);
         Color fill, edge, fore;
         bool lit = Enabled && hover;
-        if (Style == ButtonStyle.Primary || Style == ButtonStyle.Solid) { fill = edge = Pressed ? Ui.Mix(Theme.Accent, Color.Black, 0.18) : lit ? Ui.Mix(Theme.Accent, Theme.Text, 0.12) : Theme.Accent; fore = Theme.OnAccent; }
-        else if (Style == ButtonStyle.Ghost) { fill = edge = Pressed ? Theme.ButtonPressed : On ? Theme.AccentBackground : lit ? Theme.Button : Under; fore = On || lit ? Theme.Text : Theme.Dim; }
+        if (Style == ButtonStyle.Primary || Style == ButtonStyle.Solid)
+        {
+            fill = edge = Pressed ? Ui.Mix(Theme.Accent, Color.Black, 0.18) : lit ? Ui.Mix(Theme.Accent, Theme.Text, 0.12) : Theme.Accent;
+            fore = Theme.OnAccent;
+        }
+        else if (Style == ButtonStyle.Ghost)
+        {
+            fill = edge = Pressed ? Theme.ButtonPressed : On ? Theme.AccentBackground : lit ? Theme.Button : Under;
+            fore = On || lit ? Theme.Text : Theme.Dim;
+        }
         else { fill = Pressed ? Theme.ButtonPressed : lit ? Theme.ButtonHover : Theme.Button; edge = Theme.Border; fore = Theme.Text; }
         if (!Enabled) { fill = Ui.Mix(Under, fill, 0.5); edge = Ui.Mix(Under, edge, 0.5); fore = Ui.Mix(Under, fore, 0.45); }
         Ui.Fill(graphics, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * DpiScale, fill, edge);
         if (Style == ButtonStyle.Solid && On)
             using (var pen = new Pen(Theme.OnAccent, 1.5f * DpiScale))
-            using (var path = Ui.Round(new RectangleF(2.5f * DpiScale, 2.5f * DpiScale, Width - 5 * DpiScale - 1, Height - 5 * DpiScale - 1), 4.5f * DpiScale))
+            using (var path = Ui.Round(
+                new RectangleF(2.5f * DpiScale, 2.5f * DpiScale, Width - 5 * DpiScale - 1, Height - 5 * DpiScale - 1), 4.5f * DpiScale))
                 graphics.DrawPath(pen, path);
         DrawFocusRing(graphics, 6 * DpiScale);
         var font = Ui.Get(9.75f, Style == ButtonStyle.Primary || Style == ButtonStyle.Solid ? Ui.Semibold : Ui.Regular);
@@ -510,9 +550,16 @@ class FlatButton : DrawnControl
             return;
         }
         float textWidth = TextRenderer.MeasureText(graphics, Text, font, Size.Empty, TextFormatFlags.NoPadding).Width;
-        float x = (Style == ButtonStyle.Ghost || Style == ButtonStyle.Solid) && Icon != null ? 10 * DpiScale : (Width - textWidth - (Icon != null ? icon + 8 * DpiScale : 0)) / 2;
-        if (Icon != null) { Icons.Draw(graphics, Icon, new RectangleF(x, (Height - icon) / 2, icon, icon), fore); x += icon + 8 * DpiScale; }
-        Ui.Draw(graphics, Text, font, new RectangleF(x, 0, Width - x - 4 * DpiScale, Height), fore, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+        float x = (Style == ButtonStyle.Ghost || Style == ButtonStyle.Solid) && Icon != null
+            ? 10 * DpiScale
+            : (Width - textWidth - (Icon != null ? icon + 8 * DpiScale : 0)) / 2;
+        if (Icon != null)
+        {
+            Icons.Draw(graphics, Icon, new RectangleF(x, (Height - icon) / 2, icon, icon), fore);
+            x += icon + 8 * DpiScale;
+        }
+        Ui.Draw(graphics, Text, font, new RectangleF(x, 0, Width - x - 4 * DpiScale, Height), fore,
+            TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
     }
 }
 
@@ -584,7 +631,12 @@ class SegmentedPicker : DrawnControl
         return -1;
     }
 
-    protected override void OnMouseMove(MouseEventArgs e) { int hit = Hit(e.Location); if (hit != hot) { hot = hit; Invalidate(); } base.OnMouseMove(e); }
+    protected override void OnMouseMove(MouseEventArgs e)
+    {
+        int hit = Hit(e.Location);
+        if (hit != hot) { hot = hit; Invalidate(); }
+        base.OnMouseMove(e);
+    }
     protected override void OnMouseLeave(EventArgs e) { hot = -1; base.OnMouseLeave(e); }
 
     protected override void OnMouseDown(MouseEventArgs e)
@@ -628,13 +680,19 @@ class Swatch : DrawnControl
     {
         var graphics = Begin(e);
         double fade = Enabled ? 1 : 0.35;
-        if (On) using (var path = Ui.Round(new RectangleF(DpiScale, DpiScale, Width - 2 * DpiScale, Height - 2 * DpiScale), 7 * DpiScale)) using (var pen = new Pen(Ui.Mix(Under, Theme.Text, fade), 2 * DpiScale)) graphics.DrawPath(pen, path);
+        if (On)
+            using (var path = Ui.Round(new RectangleF(DpiScale, DpiScale, Width - 2 * DpiScale, Height - 2 * DpiScale), 7 * DpiScale))
+            using (var pen = new Pen(Ui.Mix(Under, Theme.Text, fade), 2 * DpiScale))
+                graphics.DrawPath(pen, path);
         float inset = Pressed ? 5 * DpiScale : 4 * DpiScale;
         var box = new RectangleF(inset, inset, Width - 2 * inset - 1, Height - 2 * inset - 1);
         var fill = Fill ?? (Pressed ? Theme.ButtonPressed : hover && Enabled ? Theme.ButtonHover : Theme.Button);
         bool ring = Focused && ShowFocusCues && Enabled;
         Ui.Fill(graphics, box, 4 * DpiScale, Ui.Mix(Under, fill, fade), ring ? Theme.Text : Ui.Mix(Under, Theme.Border, fade));
-        if (Fill == null) Icons.Draw(graphics, "plus", new RectangleF(Width / 2f - 7 * DpiScale, Height / 2f - 7 * DpiScale, 14 * DpiScale, 14 * DpiScale), Ui.Mix(Under, Theme.Dim, fade));
+        if (Fill == null)
+            Icons.Draw(graphics, "plus",
+                new RectangleF(Width / 2f - 7 * DpiScale, Height / 2f - 7 * DpiScale, 14 * DpiScale, 14 * DpiScale),
+                Ui.Mix(Under, Theme.Dim, fade));
     }
 }
 
@@ -684,12 +742,16 @@ class Toggle : DrawnControl
         var box = new RectangleF(0.5f, 0.5f, Width - 1, Height - 1);
         float position = Now;
         float faded = Enabled ? 0 : 0.6f;
-        Ui.Fill(graphics, box, box.Height / 2, Ui.Mix(Ui.Mix(Theme.Button, Theme.Accent, position), Theme.Card, faded), Ui.Mix(Ui.Mix(Theme.Border, Theme.Accent, position), Theme.Card, faded));
+        Ui.Fill(graphics, box, box.Height / 2,
+            Ui.Mix(Ui.Mix(Theme.Button, Theme.Accent, position), Theme.Card, faded),
+            Ui.Mix(Ui.Mix(Theme.Border, Theme.Accent, position), Theme.Card, faded));
         DrawFocusRing(graphics, box.Height / 2);
         float knob = Height - 8 * DpiScale;
         float stretch = Pressed ? 4 * DpiScale : 0;
         using (var brush = new SolidBrush(Ui.Mix(Ui.Mix(Theme.Dim, Theme.OnAccent, position), Theme.Card, faded)))
-        using (var path = Ui.Round(new RectangleF(4 * DpiScale + position * (Width - 8 * DpiScale - knob - stretch), 4 * DpiScale, knob + stretch, knob), knob / 2))
+        using (var path = Ui.Round(
+            new RectangleF(4 * DpiScale + position * (Width - 8 * DpiScale - knob - stretch), 4 * DpiScale, knob + stretch, knob),
+            knob / 2))
             graphics.FillPath(brush, path);
     }
 }
@@ -720,7 +782,10 @@ class Dropdown : DrawnControl
     {
         base.OnClick(e);
         if (!Enabled || Items.Count == 0) return;
-        var menu = new ContextMenuStrip { Renderer = Ui.Menus, Font = Ui.Get(9.75f, Ui.Regular), ShowImageMargin = false, ShowCheckMargin = true };
+        var menu = new ContextMenuStrip
+        {
+            Renderer = Ui.Menus, Font = Ui.Get(9.75f, Ui.Regular), ShowImageMargin = false, ShowCheckMargin = true
+        };
         menu.BackColor = Theme.Card;
         menu.ForeColor = Theme.Text;
         for (int i = 0; i < Items.Count; i++)
@@ -739,10 +804,13 @@ class Dropdown : DrawnControl
     {
         var graphics = Begin(e);
         Color fore = Enabled ? Theme.Text : Ui.Mix(Theme.Button, Theme.Text, 0.45);
-        Ui.Fill(graphics, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * DpiScale, Pressed ? Theme.ButtonPressed : Enabled && hover ? Theme.ButtonHover : Theme.Button, Theme.Border);
+        Ui.Fill(graphics, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * DpiScale,
+            Pressed ? Theme.ButtonPressed : Enabled && hover ? Theme.ButtonHover : Theme.Button, Theme.Border);
         DrawFocusRing(graphics, 6 * DpiScale);
-        Ui.Draw(graphics, Text, Ui.Get(9.75f, Ui.Regular), new RectangleF(10 * DpiScale, 0, Width - 38 * DpiScale, Height), fore, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
-        Icons.Draw(graphics, "chevron", new RectangleF(Width - 26 * DpiScale, (Height - 16 * DpiScale) / 2, 16 * DpiScale, 16 * DpiScale), Enabled ? Theme.Dim : fore);
+        Ui.Draw(graphics, Text, Ui.Get(9.75f, Ui.Regular), new RectangleF(10 * DpiScale, 0, Width - 38 * DpiScale, Height), fore,
+            TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+        Icons.Draw(graphics, "chevron",
+            new RectangleF(Width - 26 * DpiScale, (Height - 16 * DpiScale) / 2, 16 * DpiScale, 16 * DpiScale), Enabled ? Theme.Dim : fore);
     }
 }
 
@@ -773,7 +841,8 @@ class TextField : DrawnControl
     protected override void OnPaint(PaintEventArgs e)
     {
         var graphics = Begin(e);
-        Ui.Fill(graphics, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * DpiScale, Theme.Button, Box.Focused ? Theme.Accent : Theme.Border);
+        Ui.Fill(graphics, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * DpiScale,
+            Theme.Button, Box.Focused ? Theme.Accent : Theme.Border);
     }
 }
 
@@ -787,7 +856,8 @@ class Slider : DrawnControl
 
     protected override bool IsInputKey(Keys keyData)
     {
-        return keyData == Keys.PageUp || keyData == Keys.PageDown || keyData == Keys.Home || keyData == Keys.End || base.IsInputKey(keyData);
+        return keyData == Keys.PageUp || keyData == Keys.PageDown || keyData == Keys.Home || keyData == Keys.End
+            || base.IsInputKey(keyData);
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
@@ -838,14 +908,16 @@ class Slider : DrawnControl
         var graphics = Begin(e);
         var color = Enabled ? Theme.Accent : Theme.Border;
         float mid = Height / 2f;
-        using (var track = new SolidBrush(Theme.Track)) graphics.FillRectangle(track, 7 * DpiScale, mid - 2 * DpiScale, Width - 14 * DpiScale, 4 * DpiScale);
+        using (var track = new SolidBrush(Theme.Track))
+            graphics.FillRectangle(track, 7 * DpiScale, mid - 2 * DpiScale, Width - 14 * DpiScale, 4 * DpiScale);
         using (var brush = new SolidBrush(color))
         {
             graphics.FillRectangle(brush, 7 * DpiScale, mid - 2 * DpiScale, X(Value) - 7 * DpiScale, 4 * DpiScale);
             graphics.FillEllipse(brush, X(Value) - 7 * DpiScale, mid - 7 * DpiScale, 14 * DpiScale, 14 * DpiScale);
         }
         if (Focused && ShowFocusCues && Enabled)
-            using (var pen = new Pen(Theme.Text, 2 * DpiScale)) graphics.DrawEllipse(pen, X(Value) - 6 * DpiScale, mid - 6 * DpiScale, 12 * DpiScale, 12 * DpiScale);
+            using (var pen = new Pen(Theme.Text, 2 * DpiScale))
+                graphics.DrawEllipse(pen, X(Value) - 6 * DpiScale, mid - 6 * DpiScale, 12 * DpiScale, 12 * DpiScale);
     }
 
     protected override void OnMouseDown(MouseEventArgs e)
@@ -891,11 +963,14 @@ class StatusLine : DrawnControl
     {
         var graphics = Begin(e);
         if (text == "") return;
-        using (var brush = new SolidBrush(warn ? Theme.Warn : Theme.Accent)) graphics.FillEllipse(brush, 0, Height / 2f - 4 * DpiScale, 8 * DpiScale, 8 * DpiScale);
+        using (var brush = new SolidBrush(warn ? Theme.Warn : Theme.Accent))
+            graphics.FillEllipse(brush, 0, Height / 2f - 4 * DpiScale, 8 * DpiScale, 8 * DpiScale);
         var font = Ui.Get(9f, Ui.Regular);
         var flags = TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding;
-        int width = Width - (int)(16 * DpiScale), height = Math.Min(Height, TextRenderer.MeasureText(graphics, text, font, new Size(width, Height), flags).Height);
-        TextRenderer.DrawText(graphics, text, font, new Rectangle((int)(16 * DpiScale), (Height - height) / 2, width, height), warn ? Theme.Text : Theme.Dim, flags);
+        int width = Width - (int)(16 * DpiScale),
+            height = Math.Min(Height, TextRenderer.MeasureText(graphics, text, font, new Size(width, Height), flags).Height);
+        TextRenderer.DrawText(graphics, text, font, new Rectangle((int)(16 * DpiScale), (Height - height) / 2, width, height),
+            warn ? Theme.Text : Theme.Dim, flags);
     }
 }
 
@@ -906,7 +981,8 @@ class DeviceList : Control
 
     public DeviceList()
     {
-        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer
+            | ControlStyles.ResizeRedraw, true);
         Ui.Style(this, () => BackColor = Theme.Sidebar);
         glide.Tick += (s, e) => Glide();
     }
@@ -998,7 +1074,8 @@ class DeviceList : Control
         var area = new RectangleF(0, top - item.Top, item.Width, height);
         if (strength <= 0 || area.Bottom <= 0 || area.Top >= item.Height) return;
         Color clear = Color.FromArgb(0, Theme.Sidebar), solid = Color.FromArgb((int)Math.Round(255 * strength), Theme.Sidebar);
-        using (var brush = new LinearGradientBrush(new RectangleF(0, area.Top - 1, 1, area.Height + 2), fromTop ? solid : clear, fromTop ? clear : solid, LinearGradientMode.Vertical))
+        using (var brush = new LinearGradientBrush(new RectangleF(0, area.Top - 1, 1, area.Height + 2),
+            fromTop ? solid : clear, fromTop ? clear : solid, LinearGradientMode.Vertical))
             graphics.FillRectangle(brush, area);
     }
 }
@@ -1014,13 +1091,19 @@ class DeviceListItem : DrawnControl
     protected override void OnPaint(PaintEventArgs e)
     {
         var graphics = Begin(e);
-        if (On || hover) { var color = On ? Theme.AccentBackground : Pressed ? Theme.ButtonPressed : Theme.Button; Ui.Fill(graphics, new RectangleF(0, 0, Width, Height), 6 * DpiScale, color, color); }
+        if (On || hover)
+        {
+            var color = On ? Theme.AccentBackground : Pressed ? Theme.ButtonPressed : Theme.Button;
+            Ui.Fill(graphics, new RectangleF(0, 0, Width, Height), 6 * DpiScale, color, color);
+        }
         DrawFocusRing(graphics, 6 * DpiScale);
         float s = 32 * DpiScale, y = (Height - s) / 2;
         Ui.Fill(graphics, new RectangleF(8 * DpiScale, y, s, s), 6 * DpiScale, Theme.Button, Theme.Button);
-        Icons.Draw(graphics, Icon, new RectangleF(8 * DpiScale + 7 * DpiScale, y + 7 * DpiScale, 18 * DpiScale, 18 * DpiScale), On ? Theme.Accent : Theme.Dim);
+        Icons.Draw(graphics, Icon, new RectangleF(8 * DpiScale + 7 * DpiScale, y + 7 * DpiScale, 18 * DpiScale, 18 * DpiScale),
+            On ? Theme.Accent : Theme.Dim);
         float x = 8 * DpiScale + s + 10 * DpiScale;
-        Ui.Draw(graphics, Title, Ui.Get(9.75f, Ui.Semibold), new RectangleF(x, 0, Width - x - 4 * DpiScale, Height / 2f + 1), Theme.Text, TextFormatFlags.Bottom | TextFormatFlags.EndEllipsis);
+        Ui.Draw(graphics, Title, Ui.Get(9.75f, Ui.Semibold), new RectangleF(x, 0, Width - x - 4 * DpiScale, Height / 2f + 1), Theme.Text,
+            TextFormatFlags.Bottom | TextFormatFlags.EndEllipsis);
         var font = Ui.Get(8.6f, Ui.Regular);
         float top = Height / 2f + 1;
         float right = Width - 10 * DpiScale;
@@ -1032,11 +1115,13 @@ class DeviceListItem : DrawnControl
             {
                 float valueWidth = TextRenderer.MeasureText(graphics, Value, font, Size.Empty, TextFormatFlags.NoPadding).Width;
                 right -= 5 * DpiScale + valueWidth;
-                Ui.Draw(graphics, Value, font, new RectangleF(right, top, valueWidth + 4 * DpiScale, Height / 2f), Theme.Dim, TextFormatFlags.Top);
+                Ui.Draw(graphics, Value, font, new RectangleF(right, top, valueWidth + 4 * DpiScale, Height / 2f), Theme.Dim,
+                    TextFormatFlags.Top);
             }
             right -= 6 * DpiScale;
         }
-        Ui.Draw(graphics, Subtitle, font, new RectangleF(x, top, right - x, Height / 2f), Theme.Dim, TextFormatFlags.Top | TextFormatFlags.EndEllipsis);
+        Ui.Draw(graphics, Subtitle, font, new RectangleF(x, top, right - x, Height / 2f), Theme.Dim,
+            TextFormatFlags.Top | TextFormatFlags.EndEllipsis);
         var list = Parent as DeviceList;
         if (list != null) list.Fade(graphics, this);
     }
@@ -1049,7 +1134,8 @@ class DeviceSubtitle : Control
 
     public DeviceSubtitle()
     {
-        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.SupportsTransparentBackColor, true);
+        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer
+            | ControlStyles.ResizeRedraw | ControlStyles.SupportsTransparentBackColor, true);
         BackColor = Color.Transparent;
     }
 
@@ -1099,7 +1185,8 @@ class TitleLogo : DrawnControl
     {
         var graphics = Begin(e);
         float x = 8 * DpiScale;
-        Ui.Draw(graphics, "G-Lite", Ui.Get(10.5f, Ui.Semibold), new RectangleF(x, 0, Width - x, Height), Theme.Text, TextFormatFlags.VerticalCenter);
+        Ui.Draw(graphics, "G-Lite", Ui.Get(10.5f, Ui.Semibold), new RectangleF(x, 0, Width - x, Height), Theme.Text,
+            TextFormatFlags.VerticalCenter);
     }
 }
 
@@ -1247,7 +1334,9 @@ class TrayTip : Form
             foreach (var row in rows)
             {
                 nameWidth = Math.Max(nameWidth, TextRenderer.MeasureText(graphics, row[0], font, Size.Empty, flags).Width);
-                valueWidth = Math.Max(valueWidth, TextRenderer.MeasureText(graphics, row[1], font, Size.Empty, flags).Width + (HasIcon(row) ? S(18) + (row[1] == "" ? 0 : S(5)) : 0));
+                valueWidth = Math.Max(valueWidth,
+                    TextRenderer.MeasureText(graphics, row[1], font, Size.Empty, flags).Width
+                        + (HasIcon(row) ? S(18) + (row[1] == "" ? 0 : S(5)) : 0));
             }
         var size = new Size(pad * 2 + nameWidth + gap + valueWidth, S(8) * 2 + rowHeight * rows.Count);
         // Placed from the icon, not the cursor, so it stays put while the mouse moves over the icon, like the system's tray tooltips.
@@ -1326,7 +1415,8 @@ class MenuRow : ToolStripMenuItem
         float scale = Owner != null ? Owner.DeviceDpi / 96f : 1;
         var flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix;
         var size = TextRenderer.MeasureText(graphics, value, Font, Size.Empty, flags);
-        int right = (Owner != null ? Owner.Width - 2 * Bounds.X : Width) - TextLeft - (int)(2 * scale), y = area.Top + (area.Height - size.Height) / 2;
+        int right = (Owner != null ? Owner.Width - 2 * Bounds.X : Width) - TextLeft - (int)(2 * scale),
+            y = area.Top + (area.Height - size.Height) / 2;
         var color = Enabled ? Theme.Text : Theme.Dim;
         if (Level != -1)
         {

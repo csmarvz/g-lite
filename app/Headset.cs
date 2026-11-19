@@ -18,11 +18,16 @@ class MicrophoneCapture : IDisposable
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    struct Header { public IntPtr Data; public int Length, Recorded; public IntPtr User; public int Flags, Loops; public IntPtr Next, Reserved; }
+    struct Header
+    {
+        public IntPtr Data; public int Length, Recorded; public IntPtr User;
+        public int Flags, Loops; public IntPtr Next, Reserved;
+    }
 
     [DllImport("winmm.dll")] static extern int waveInGetNumDevs();
     [DllImport("winmm.dll", CharSet = CharSet.Unicode)] static extern int waveInGetDevCapsW(IntPtr id, ref Caps caps, int size);
-    [DllImport("winmm.dll")] static extern int waveInOpen(out IntPtr waveIn, IntPtr id, ref Format format, IntPtr callback, IntPtr instance, int flags);
+    [DllImport("winmm.dll")]
+    static extern int waveInOpen(out IntPtr waveIn, IntPtr id, ref Format format, IntPtr callback, IntPtr instance, int flags);
     [DllImport("winmm.dll")] static extern int waveInPrepareHeader(IntPtr waveIn, IntPtr header, int size);
     [DllImport("winmm.dll")] static extern int waveInUnprepareHeader(IntPtr waveIn, IntPtr header, int size);
     [DllImport("winmm.dll")] static extern int waveInAddBuffer(IntPtr waveIn, IntPtr header, int size);
@@ -42,7 +47,9 @@ class MicrophoneCapture : IDisposable
         for (int i = 0; i < waveInGetNumDevs(); i++)
         {
             var caps = new Caps();
-            if (waveInGetDevCapsW((IntPtr)i, ref caps, Marshal.SizeOf(typeof(Caps))) == 0 && caps.Name != null && caps.Name.IndexOf(part, StringComparison.OrdinalIgnoreCase) >= 0) return i;
+            if (waveInGetDevCapsW((IntPtr)i, ref caps, Marshal.SizeOf(typeof(Caps))) == 0 && caps.Name != null
+                && caps.Name.IndexOf(part, StringComparison.OrdinalIgnoreCase) >= 0)
+                return i;
         }
         return -1;
     }
@@ -136,7 +143,13 @@ static class HeadsetProtocol
         return state;
     }
 
-    public static void SetSidetone(Hidpp hidpp, int level) { hidpp.Call(hidpp.FeatureIndex(0x8300), 1, (byte)Math.Max(0, Math.Min(100, level))); }
+    public static void SetSidetone(Hidpp hidpp, int level)
+    {
+        hidpp.Call(hidpp.FeatureIndex(0x8300), 1, (byte)Math.Max(0, Math.Min(100, level)));
+    }
 
-    public static void SetOff(Hidpp hidpp, int minutes) { hidpp.Call(hidpp.FeatureIndex(0x1F20), 2, (byte)Math.Max(0, Math.Min(90, minutes))); }
+    public static void SetOff(Hidpp hidpp, int minutes)
+    {
+        hidpp.Call(hidpp.FeatureIndex(0x1F20), 2, (byte)Math.Max(0, Math.Min(90, minutes)));
+    }
 }

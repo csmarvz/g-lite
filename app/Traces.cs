@@ -34,7 +34,11 @@ class Script : IDisposable
     {
         lines.Add("open");
         Hidpp.Tap = text => { lock (gate) lines.Add("  " + text); };
-        host = new TraceHost { ShowInTaskbar = false, StartPosition = FormStartPosition.Manual, Location = new Point(-32000, -32000), FormBorderStyle = FormBorderStyle.None, Opacity = 0, ClientSize = new Size(656, 730) };
+        host = new TraceHost
+        {
+            ShowInTaskbar = false, StartPosition = FormStartPosition.Manual, Location = new Point(-32000, -32000),
+            FormBorderStyle = FormBorderStyle.None, Opacity = 0, ClientSize = new Size(656, 730)
+        };
         try
         {
             Page = make();
@@ -165,7 +169,8 @@ class Script : IDisposable
     Point Where(Control control)
     {
         var offset = Point.Empty;
-        for (var ancestor = control; ancestor != null && ancestor != Page; ancestor = ancestor.Parent) offset.Offset(ancestor.Left, ancestor.Top);
+        for (var ancestor = control; ancestor != null && ancestor != Page; ancestor = ancestor.Parent)
+            offset.Offset(ancestor.Left, ancestor.Top);
         return offset;
     }
 
@@ -174,12 +179,27 @@ class Script : IDisposable
         var parts = new List<string>();
         var status = All<StatusLine>().FirstOrDefault(line => line.Visible);
         parts.Add("status " + (status == null ? "-" : "\"" + status.Shown + "\""));
-        foreach (var control in All<Control>().Where(control => control.Visible).OrderBy(control => Where(control).Y).ThenBy(control => Where(control).X))
+        foreach (var control in All<Control>()
+            .Where(control => control.Visible)
+            .OrderBy(control => Where(control).Y)
+            .ThenBy(control => Where(control).X))
         {
             string disabled = control.Enabled ? "" : " (off)";
             if (control is FlatButton && control.Text != "") parts.Add("[" + control.Text + disabled + "]");
-            else if (control is SegmentedPicker) { var picker = (SegmentedPicker)control; parts.Add(control.AccessibleName + "=" + (picker.Index >= 0 && picker.Index < picker.Items.Length ? picker.Items[picker.Index] : "-") + disabled + (picker.Off.Length == 0 ? "" : " (no " + string.Join(", ", picker.Off.Where(i => i >= 0 && i < picker.Items.Length).Select(i => picker.Items[i])) + ")")); }
-            else if (control is Dropdown) parts.Add(control.AccessibleName + "=" + (control.AccessibleName == "Monitor" ? "<monitor>" : control.Text == "" ? "-" : control.Text) + disabled);
+            else if (control is SegmentedPicker)
+            {
+                var picker = (SegmentedPicker)control;
+                parts.Add(control.AccessibleName + "="
+                    + (picker.Index >= 0 && picker.Index < picker.Items.Length ? picker.Items[picker.Index] : "-") + disabled
+                    + (picker.Off.Length == 0
+                        ? ""
+                        : " (no "
+                            + string.Join(", ", picker.Off.Where(i => i >= 0 && i < picker.Items.Length).Select(i => picker.Items[i]))
+                            + ")"));
+            }
+            else if (control is Dropdown)
+                parts.Add(control.AccessibleName + "="
+                    + (control.AccessibleName == "Monitor" ? "<monitor>" : control.Text == "" ? "-" : control.Text) + disabled);
             else if (control is Slider) parts.Add(control.AccessibleName + "=" + ((Slider)control).Value + disabled);
             else if (control is Toggle) parts.Add(control.AccessibleName + "=" + (((Toggle)control).Checked ? "on" : "off") + disabled);
             else if (control is Swatch && ((Swatch)control).On) parts.Add("<" + control.AccessibleName + ">");
@@ -230,7 +250,11 @@ static class Traces
     static string G515()
     {
         var device = new FakeHidpp();
-        var found = new FoundDevice { Key = "trace|g515", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40B4, Features = Keyboard };
+        var found = new FoundDevice
+        {
+            Key = "trace|g515", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard",
+            Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40B4, Features = Keyboard
+        };
         Page515 page = null;
         using (var script = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, device, null)))
         {
@@ -267,7 +291,12 @@ static class Traces
 
     static string G915()
     {
-        var found = new FoundDevice { Key = "trace|g915", Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x408E, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 } };
+        var found = new FoundDevice
+        {
+            Key = "trace|g915", Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard",
+            Link = "LIGHTSPEED", Index = 1, WirelessId = 0x408E,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 }
+        };
         Page515 page = null;
         using (var script = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, new FakeG915(), null)))
         {
@@ -293,7 +322,11 @@ static class Traces
 
     static string G512X()
     {
-        var found = new FoundDevice { Key = "trace|g512x", Name = "G512 X 75", Kind = "keyboard", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x8071, 0x8081, 0x8040, 0x8101, 0x4540 } };
+        var found = new FoundDevice
+        {
+            Key = "trace|g512x", Name = "G512 X 75", Kind = "keyboard", Link = "USB", Index = 0xFF,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x8071, 0x8081, 0x8040, 0x8101, 0x4540 }
+        };
         Page515 page = null;
         using (var script = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, FakeG915.G512X(), null)))
         {
@@ -322,7 +355,11 @@ static class Traces
 
     static string Generic()
     {
-        var found = new FoundDevice { Key = "trace|prox60", Name = "PRO X 60", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } };
+        var found = new FoundDevice
+        {
+            Key = "trace|prox60", Name = "PRO X 60", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 }
+        };
         Page515 page = null;
         using (var script = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, FakeG915.G512X(), null)))
         {
@@ -337,7 +374,11 @@ static class Traces
 
     static string G512()
     {
-        var found = new FoundDevice { Key = "trace|g512", Name = "G512 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8060, 0x8070, 0x8080 } };
+        var found = new FoundDevice
+        {
+            Key = "trace|g512", Name = "G512 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Link = "USB", Index = 0xFF,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8060, 0x8070, 0x8080 }
+        };
         using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeSpeaker { Count = 2 }, null)))
         {
             script.Pick("Effect", "Static");
@@ -355,7 +396,14 @@ static class Traces
 
     static string G213()
     {
-        var found = new FoundDevice { Key = "trace|g213", Name = "Gaming Keyboard G213", Kind = "keyboard", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x1E00, 0x4540, 0x1EB0, 0x8060, 0x00C2, 0x1801, 0x1802, 0x8070, 0x1821, 0x1BC0, 0x1806 } };
+        var found = new FoundDevice
+        {
+            Key = "trace|g213", Name = "Gaming Keyboard G213", Kind = "keyboard", Link = "USB", Index = 0xFF,
+            Features = new[]
+            {
+                0x0001, 0x0003, 0x4522, 0x0005, 0x1E00, 0x4540, 0x1EB0, 0x8060, 0x00C2, 0x1801, 0x1802, 0x8070, 0x1821, 0x1BC0, 0x1806
+            }
+        };
         using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeSpeaker { Count = 6, G213 = true }, null)))
         {
             script.Pick("Effect", "Static");
@@ -389,7 +437,11 @@ static class Traces
 
     static string G510()
     {
-        var found = new FoundDevice { Key = "trace|g510", Name = "G510s Gaming Keyboard", Kind = "keyboard", Link = "USB", Index = 0xFF, PlainHid = true, HasVendorCollection = true, Path = @"\\?\hid#vid_046d&pid_c22d&mi_01&col02" };
+        var found = new FoundDevice
+        {
+            Key = "trace|g510", Name = "G510s Gaming Keyboard", Kind = "keyboard", Link = "USB", Index = 0xFF,
+            PlainHid = true, HasVendorCollection = true, Path = @"\\?\hid#vid_046d&pid_c22d&mi_01&col02"
+        };
         using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeG510(), null)))
         {
             script.Press("Color FF2020");
@@ -411,7 +463,11 @@ static class Traces
 
     static string G560()
     {
-        var found = new FoundDevice { Key = "trace|g560", Name = "G560 Gaming Speaker", Kind = "device", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 } };
+        var found = new FoundDevice
+        {
+            Key = "trace|g560", Name = "G560 Gaming Speaker", Kind = "device", Link = "USB", Index = 0xFF,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 }
+        };
         string text;
         using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeSpeaker(), null)))
         {
@@ -461,7 +517,11 @@ static class Traces
 
     static string Litra()
     {
-        var found = new FoundDevice { Key = "trace|litra", Name = "Litra Beam LX", Kind = "light", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1990, 0x8040, 0x8071, 0x8081 } };
+        var found = new FoundDevice
+        {
+            Key = "trace|litra", Name = "Litra Beam LX", Kind = "light", Link = "USB", Index = 0xFF,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1990, 0x8040, 0x8071, 0x8081 }
+        };
         string text;
         using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeLight(), null)))
         {
@@ -501,7 +561,11 @@ static class Traces
 
     static string MxMaster()
     {
-        var found = new FoundDevice { Key = "trace|mxmaster", Name = "MX Master 3S", Kind = "mouse", Link = "Bolt receiver", Index = 2, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x2110, 0x2121, 0x2150, 0x2201 } };
+        var found = new FoundDevice
+        {
+            Key = "trace|mxmaster", Name = "MX Master 3S", Kind = "mouse", Link = "Bolt receiver", Index = 2,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x2110, 0x2121, 0x2150, 0x2201 }
+        };
         string first;
         using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeOther(), null)))
         {
@@ -526,7 +590,11 @@ static class Traces
 
     static string MxKeys()
     {
-        var found = new FoundDevice { Key = "trace|mxkeys", Name = "MX Keys S", Kind = "keyboard", Link = "Bolt receiver", Index = 3, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x1982, 0x40A3 } };
+        var found = new FoundDevice
+        {
+            Key = "trace|mxkeys", Name = "MX Keys S", Kind = "keyboard", Link = "Bolt receiver", Index = 3,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x1982, 0x40A3 }
+        };
         using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeOther(), null)))
         {
             script.Slide("Level", 5);
@@ -543,7 +611,11 @@ static class Traces
 
     static string Keypad()
     {
-        var found = new FoundDevice { Key = "trace|keypad", Name = "MX Creative Keypad", Kind = "device", Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1B04, 0x8040 } };
+        var found = new FoundDevice
+        {
+            Key = "trace|keypad", Name = "MX Creative Keypad", Kind = "device", Link = "USB", Index = 0xFF,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1B04, 0x8040 }
+        };
         using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeOther(), null)))
         {
             script.Slide("Brightness", 40);
@@ -554,7 +626,11 @@ static class Traces
 
     static string Mouse(string name, FakeMouse device, int[] features)
     {
-        var found = new FoundDevice { Key = "trace|" + name, Name = name, Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x4079, Features = features };
+        var found = new FoundDevice
+        {
+            Key = "trace|" + name, Name = name, Kind = "mouse",
+            Link = "LIGHTSPEED", Index = 1, WirelessId = 0x4079, Features = features
+        };
         using (var script = Begin(() => DeviceTable.For(found).Make(found, device, null)))
         {
             script.Slide("DPI", 20);
@@ -573,14 +649,22 @@ static class Traces
             script.Press("Update");
             script.Pick("Preset", "None");
             script.Menu("Backups", "Restore the factory profile");
-            script.Do("the mouse's DPI button", () => { device.PressDpiButton(); ((PageMouse)script.Page).Heard(device.FeatureIndex(0x8100), 1); });
+            script.Do("the mouse's DPI button", () =>
+            {
+                device.PressDpiButton();
+                ((PageMouse)script.Page).Heard(device.FeatureIndex(0x8100), 1);
+            });
             return script.Text;
         }
     }
 
     static string TraceWideDpiMouse()
     {
-        var found = new FoundDevice { Key = "trace|superlight2", Name = "PRO X SUPERLIGHT 2", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40A9, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2202, 0x8061, 0x8100 } };
+        var found = new FoundDevice
+        {
+            Key = "trace|superlight2", Name = "PRO X SUPERLIGHT 2", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40A9,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2202, 0x8061, 0x8100 }
+        };
         using (var script = Begin(() => DeviceTable.For(found).Make(found, FakeMouse.ProX2(), null)))
         {
             script.Slide("DPI", 20);
@@ -593,7 +677,12 @@ static class Traces
     static string Wheel()
     {
         var device = new FakeMouse { Wheel = true };
-        var found = new FoundDevice { Key = "trace|wheel", Name = "G502 LIGHTSPEED Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x407F, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2121, 0x2201, 0x8060, 0x8070, 0x8100 } };
+        var found = new FoundDevice
+        {
+            Key = "trace|wheel", Name = "G502 LIGHTSPEED Wireless Gaming Mouse", Kind = "mouse",
+            Link = "LIGHTSPEED", Index = 1, WirelessId = 0x407F,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2121, 0x2201, 0x8060, 0x8070, 0x8100 }
+        };
         PageMouse page = null;
         using (var script = Begin(() => page = (PageMouse)DeviceTable.For(found).Make(found, device, null)))
         {
@@ -610,7 +699,12 @@ static class Traces
     static string Buttons()
     {
         var device = FakeMouse.G502();
-        var found = new FoundDevice { Key = "trace|buttons", Name = "G502 LIGHTSPEED Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x407F, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2121, 0x2201, 0x8060, 0x8070, 0x8100, 0x8110 } };
+        var found = new FoundDevice
+        {
+            Key = "trace|buttons", Name = "G502 LIGHTSPEED Wireless Gaming Mouse", Kind = "mouse",
+            Link = "LIGHTSPEED", Index = 1, WirelessId = 0x407F,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2121, 0x2201, 0x8060, 0x8070, 0x8100, 0x8110 }
+        };
         PageMouse page = null;
         using (var script = Begin(() => page = (PageMouse)DeviceTable.For(found).Make(found, device, null)))
         {
@@ -643,7 +737,11 @@ static class Traces
 
     static string G9x()
     {
-        var found = new FoundDevice { Key = "trace|g9x", Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04" };
+        var found = new FoundDevice
+        {
+            Key = "trace|g9x", Name = "G9x Laser Mouse", Kind = "mouse",
+            Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04"
+        };
         using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeG9x(), null)))
         {
             script.Slide("DPI", 30);
@@ -659,7 +757,12 @@ static class Traces
 
     static string Headset()
     {
-        var found = new FoundDevice { Key = "trace|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "LIGHTSPEED", Index = 0xFF, Path = @"\\?\hid#vid_046d&pid_0aba&mi_03&col01", Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300 } };
+        var found = new FoundDevice
+        {
+            Key = "trace|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset",
+            Link = "LIGHTSPEED", Index = 0xFF, Path = @"\\?\hid#vid_046d&pid_0aba&mi_03&col01",
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300 }
+        };
         using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeHeadset(), null)))
         {
             script.Slide("Sidetone", 40);
@@ -686,8 +789,10 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("prox60", Generic);
         yield return new KeyValuePair<string, Func<string>>("litra", Litra);
         yield return new KeyValuePair<string, Func<string>>("superlight2", TraceWideDpiMouse);
-        yield return new KeyValuePair<string, Func<string>>("gpro", () => Mouse("G Pro Wireless Gaming Mouse", new FakeMouse(), new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 }));
-        yield return new KeyValuePair<string, Func<string>>("g305", () => Mouse("G305 Lightspeed Wireless Gaming Mouse", FakeMouse.G305(), new[] { 0x0001, 0x0003, 0x0005, 0x1000, 0x2201, 0x8060, 0x8070, 0x8100 }));
+        yield return new KeyValuePair<string, Func<string>>("gpro", () => Mouse("G Pro Wireless Gaming Mouse", new FakeMouse(),
+            new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 }));
+        yield return new KeyValuePair<string, Func<string>>("g305", () => Mouse("G305 Lightspeed Wireless Gaming Mouse", FakeMouse.G305(),
+            new[] { 0x0001, 0x0003, 0x0005, 0x1000, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("wheel", Wheel);
         yield return new KeyValuePair<string, Func<string>>("buttons", Buttons);
         yield return new KeyValuePair<string, Func<string>>("g9x", G9x);

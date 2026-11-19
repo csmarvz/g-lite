@@ -8,7 +8,13 @@ static class WindowHelpers
     public const int DpiChanged = 0x02E0;
     public static bool Rounded;
 
-    struct MemoryCounters { public int Size, PageFaults; public IntPtr PeakWorkingSet, WorkingSet, PeakPagedPool, PagedPool, PeakNonPagedPool, NonPagedPool, Pagefile, PeakPagefile, Private, PrivateWorkingSet; public long SharedCommit; }
+    struct MemoryCounters
+    {
+        public int Size, PageFaults;
+        public IntPtr PeakWorkingSet, WorkingSet, PeakPagedPool, PagedPool, PeakNonPagedPool, NonPagedPool,
+            Pagefile, PeakPagefile, Private, PrivateWorkingSet;
+        public long SharedCommit;
+    }
     [DllImport("psapi.dll")] static extern bool GetProcessMemoryInfo(IntPtr process, ref MemoryCounters counters, int size);
     [DllImport("psapi.dll")] static extern bool EmptyWorkingSet(IntPtr process);
     [DllImport("kernel32.dll")] static extern IntPtr GetCurrentProcess();
@@ -29,7 +35,8 @@ static class WindowHelpers
     public static long PrivateMemory()
     {
         var counters = new MemoryCounters { Size = Marshal.SizeOf(typeof(MemoryCounters)) };
-        if (GetProcessMemoryInfo(GetCurrentProcess(), ref counters, counters.Size) && counters.PrivateWorkingSet != IntPtr.Zero) return counters.PrivateWorkingSet.ToInt64();
+        if (GetProcessMemoryInfo(GetCurrentProcess(), ref counters, counters.Size) && counters.PrivateWorkingSet != IntPtr.Zero)
+            return counters.PrivateWorkingSet.ToInt64();
         return System.Diagnostics.Process.GetCurrentProcess().WorkingSet64;
     }
 
@@ -103,7 +110,11 @@ static class WindowHelpers
         form.HandleCreated += (s, e) =>
         {
             int round = corners, border = 0x3A3A3A;
-            try { Rounded = DwmSetWindowAttribute(form.Handle, 33, ref round, 4) == 0 && DwmSetWindowAttribute(form.Handle, 34, ref border, 4) == 0; }
+            try
+            {
+                Rounded = DwmSetWindowAttribute(form.Handle, 33, ref round, 4) == 0
+                    && DwmSetWindowAttribute(form.Handle, 34, ref border, 4) == 0;
+            }
             catch (DllNotFoundException) { }
         };
     }

@@ -33,7 +33,11 @@ class LightState
 
     public string FrontText() { return (FrontOn ? 1 : 0) + "," + Lumen + "," + Kelvin; }
 
-    public string BackText() { return (BackOn ? 1 : 0) + "," + BackLevel + "," + string.Join("/", Colors.Select(color => color.ToString("X6"))) + "," + Effect + "," + Period; }
+    public string BackText()
+    {
+        return (BackOn ? 1 : 0) + "," + BackLevel + "," + string.Join("/", Colors.Select(color => color.ToString("X6")))
+            + "," + Effect + "," + Period;
+    }
 
     public bool ReadFront(string text)
     {
@@ -51,7 +55,9 @@ class LightState
         var parts = (text ?? "").Split(',');
         int level, effect = Static, period = 5000;
         if ((parts.Length != 3 && parts.Length != 5) || !int.TryParse(parts[1], out level)) return false;
-        if (parts.Length == 5 && (!int.TryParse(parts[3], out effect) || !int.TryParse(parts[4], out period) || effect < 0 || effect >= Effects.Length)) return false;
+        if (parts.Length == 5
+            && (!int.TryParse(parts[3], out effect) || !int.TryParse(parts[4], out period) || effect < 0 || effect >= Effects.Length))
+            return false;
         var colors = parts[2].Split('/');
         if (colors.Length != Zones) return false;
         var parsed = new int[Zones];
@@ -117,7 +123,8 @@ static class LitraProtocol
                 if (i >= colors.Length) { parameters.AddRange(new byte[] { 0xFF, 0, 0, 0 }); continue; }
                 int color = colors[i];
                 parameters.Add((byte)(i + 1));
-                parameters.AddRange(new[] { color >> 16 & 0xFF, color >> 8 & 0xFF, color & 0xFF }.Select(channel => (byte)Math.Max(1, channel)));
+                parameters.AddRange(new[] { color >> 16 & 0xFF, color >> 8 & 0xFF, color & 0xFF }
+                    .Select(channel => (byte)Math.Max(1, channel)));
             }
             if (quiet) hidpp.CallUnlogged(feature, 1, parameters.ToArray()); else hidpp.Call(feature, 1, parameters.ToArray());
         }
@@ -154,14 +161,21 @@ static class LitraProtocol
         else
         {
             parameters[2] = (byte)(color >> 16); parameters[3] = (byte)(color >> 8); parameters[4] = (byte)color;
-            // Two colours, the period at parameters 7–8 and the intensity at 9 (spec x8071 v4, effect 24); the light's own default period is 3000 ms.
-            if (id == 0x18) { parameters[5] = (byte)(other >> 16); parameters[6] = (byte)(other >> 8); parameters[7] = (byte)other; parameters[8] = (byte)(period >> 8); parameters[9] = (byte)period; parameters[10] = 100; }
+            // Two colours, the period at parameters 7–8 and the intensity at 9 (spec x8071 v4, effect 24);
+            // the light's own default period is 3000 ms.
+            if (id == 0x18)
+            {
+                parameters[5] = (byte)(other >> 16); parameters[6] = (byte)(other >> 8); parameters[7] = (byte)other;
+                parameters[8] = (byte)(period >> 8); parameters[9] = (byte)period;
+                parameters[10] = 100;
+            }
         }
         parameters[12] = 1;
         return parameters;
     }
 
-    // 0x8071 fn 1 needs software control of the clusters (fn 5 bit 0) first: without it the Beam LX answers 0x05 (an owner's report, docs/lighting-control.md).
+    // 0x8071 fn 1 needs software control of the clusters (fn 5 bit 0) first: without it the Beam LX answers 0x05
+    // (an owner's report, docs/lighting-control.md).
     public static void TryEffect(Hidpp hidpp, int group, int index, byte id, LightState state)
     {
         hidpp.Call(hidpp.FeatureIndex(0x8071), 5, 0x01, 0x01, 0x00);
@@ -190,7 +204,9 @@ static class LitraProtocol
 
     static int Scale(int color, double factor)
     {
-        return (int)Math.Round((color >> 16 & 0xFF) * factor) << 16 | (int)Math.Round((color >> 8 & 0xFF) * factor) << 8 | (int)Math.Round((color & 0xFF) * factor);
+        return (int)Math.Round((color >> 16 & 0xFF) * factor) << 16
+            | (int)Math.Round((color >> 8 & 0xFF) * factor) << 8
+            | (int)Math.Round((color & 0xFF) * factor);
     }
 
     public static int Hue(double turn)
@@ -198,13 +214,24 @@ static class LitraProtocol
         double position = (turn % 1 + 1) % 1 * 6;
         int sector = (int)position % 6;
         int rise = (int)Math.Round((position - Math.Floor(position)) * 255), fall = 255 - rise;
-        var rgb = new[] { new[] { 255, rise, 0 }, new[] { fall, 255, 0 }, new[] { 0, 255, rise }, new[] { 0, fall, 255 }, new[] { rise, 0, 255 }, new[] { 255, 0, fall } }[sector];
+        var rgb = new[]
+        {
+            new[] { 255, rise, 0 }, new[] { fall, 255, 0 }, new[] { 0, 255, rise },
+            new[] { 0, fall, 255 }, new[] { rise, 0, 255 }, new[] { 255, 0, fall }
+        }[sector];
         return rgb[0] << 16 | rgb[1] << 8 | rgb[2];
     }
 
     public static List<Zone> ScreenZones()
     {
-        return Enumerable.Range(0, LightState.Zones).Select(i => new Zone { Name = (i + 1).ToString(), MarkColor = ScreenSetup.MarkColors[i], Area = new RectangleF((float)Math.Round(i / 7.0 + 0.01, 3), 0.1f, (float)Math.Round(1 / 7.0 - 0.02, 3), 0.8f) }).ToList();
+        return Enumerable.Range(0, LightState.Zones)
+            .Select(i => new Zone
+            {
+                Name = (i + 1).ToString(),
+                MarkColor = ScreenSetup.MarkColors[i],
+                Area = new RectangleF((float)Math.Round(i / 7.0 + 0.01, 3), 0.1f, (float)Math.Round(1 / 7.0 - 0.02, 3), 0.8f)
+            })
+            .ToList();
     }
 
     public static ScreenSetup Screen(string text)
@@ -230,7 +257,8 @@ class LightPicture : DrawnControl
         AccessibleName = "Light";
     }
 
-    public void Display(bool hasBack, bool frontLit, double frontLevel, int frontKelvin, bool backLit, double backLevel, int[] zones, int pick)
+    public void Display(bool hasBack, bool frontLit, double frontLevel, int frontKelvin,
+        bool backLit, double backLevel, int[] zones, int pick)
     {
         back = hasBack;
         frontOn = frontLit;
@@ -244,7 +272,14 @@ class LightPicture : DrawnControl
         Invalidate();
     }
 
-    RectangleF Bar { get { float width = Width * 0.64f, height = width / 12; return new RectangleF((Width - width) / 2, Height - height - 4 * DpiScale, width, height); } }
+    RectangleF Bar
+    {
+        get
+        {
+            float width = Width * 0.64f, height = width / 12;
+            return new RectangleF((Width - width) / 2, Height - height - 4 * DpiScale, width, height);
+        }
+    }
 
     static Color Warmth(int kelvin)
     {
@@ -264,7 +299,8 @@ class LightPicture : DrawnControl
             for (int zone = 0; zone < zones.Length; zone++)
             {
                 if (zones[zone] < 0) continue;
-                var glow = new RectangleF(housing.X + zone * zoneWidth - zoneWidth * 0.35f, 0, zoneWidth * 1.7f, housing.Y * 2 + bar.Height * 0.4f);
+                var glow = new RectangleF(housing.X + zone * zoneWidth - zoneWidth * 0.35f, 0,
+                    zoneWidth * 1.7f, housing.Y * 2 + bar.Height * 0.4f);
                 using (var path = new GraphicsPath())
                 {
                     path.AddEllipse(glow);
@@ -272,7 +308,8 @@ class LightPicture : DrawnControl
                     {
                         int alpha = (int)(255 * Math.Max(0.35, level));
                         brush.CenterColor = Color.FromArgb(alpha, zones[zone] >> 16 & 0xFF, zones[zone] >> 8 & 0xFF, zones[zone] & 0xFF);
-                        brush.SurroundColors = new[] { Color.FromArgb(0, zones[zone] >> 16 & 0xFF, zones[zone] >> 8 & 0xFF, zones[zone] & 0xFF) };
+                        brush.SurroundColors = new[]
+                            { Color.FromArgb(0, zones[zone] >> 16 & 0xFF, zones[zone] >> 8 & 0xFF, zones[zone] & 0xFF) };
                         graphics.FillPath(brush, path);
                     }
                 }
@@ -285,7 +322,10 @@ class LightPicture : DrawnControl
         {
             float zoneWidth = bar.Width / zones.Length;
             using (var pen = new Pen(Theme.Accent, 2 * DpiScale))
-            using (var path = Ui.Round(new RectangleF(bar.X + (selected - 1) * zoneWidth + 2 * DpiScale, bar.Bottom + 5 * DpiScale, zoneWidth - 4 * DpiScale, 3 * DpiScale), 1.5f * DpiScale))
+            using (var path = Ui.Round(
+                new RectangleF(bar.X + (selected - 1) * zoneWidth + 2 * DpiScale, bar.Bottom + 5 * DpiScale,
+                    zoneWidth - 4 * DpiScale, 3 * DpiScale),
+                1.5f * DpiScale))
                 graphics.DrawPath(pen, path);
         }
     }
@@ -316,7 +356,8 @@ class PageLight : DevicePage
     DateTime nextRefresh;
     ScreenSetup setup;
     readonly bool back;
-    readonly Timer debounce = new Timer { Interval = 120 }, screenTimer = new Timer { Interval = 100 }, animationTimer = new Timer { Interval = 50 }, snapTimer = new Timer { Interval = 1000 };
+    readonly Timer debounce = new Timer { Interval = 120 }, screenTimer = new Timer { Interval = 100 },
+        animationTimer = new Timer { Interval = 50 }, snapTimer = new Timer { Interval = 1000 };
 
     internal override bool Busy { get { return debounce.Enabled; } }
 
@@ -336,7 +377,8 @@ class PageLight : DevicePage
     string Saved { get { return "screen." + found.SettingsKey; } }
     string Active { get { return "screen.on." + found.SettingsKey; } }
 
-    public PageLight(FoundDevice found, Hidpp fake, MouseEventHandler drag) : base(found, fake, drag, found.ShortName, "light", "profile." + found.SettingsKey + ".")
+    public PageLight(FoundDevice found, Hidpp fake, MouseEventHandler drag)
+        : base(found, fake, drag, found.ShortName, "light", "profile." + found.SettingsKey + ".")
     {
         back = found.Has(0x8081);
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };
@@ -352,17 +394,26 @@ class PageLight : DevicePage
         Ui.Text(front, "Brightness", 110, 36, () => Theme.Dim, 9f);
         lumenValue = Value(front, 110, 36, 230);
         lumen = Ui.Add(front, new Slider { AccessibleName = "Front brightness" }, 110, 54, 230, 24);
-        lumen.Changed += (s, e) => { int snapped = lumens.Snap(lumens.Min + (lumens.Max - lumens.Min) * lumen.Value / 100); Edit(edited => edited.Lumen = snapped, false); };
+        lumen.Changed += (s, e) =>
+        {
+            int snapped = lumens.Snap(lumens.Min + (lumens.Max - lumens.Min) * lumen.Value / 100);
+            Edit(edited => edited.Lumen = snapped, false);
+        };
         Ui.Text(front, "Color temperature", 366, 36, () => Theme.Dim, 9f);
         kelvinValue = Value(front, 366, 36, 236);
         kelvin = Ui.Add(front, new Slider { AccessibleName = "Color temperature", Step = 1 }, 366, 54, 236, 24);
-        kelvin.Changed += (s, e) => { int snapped = kelvins.Snap(kelvins.Min + kelvin.Value * kelvins.Step); Edit(edited => edited.Kelvin = snapped, false); };
+        kelvin.Changed += (s, e) =>
+        {
+            int snapped = kelvins.Snap(kelvins.Min + kelvin.Value * kelvins.Step);
+            Edit(edited => edited.Kelvin = snapped, false);
+        };
 
         backBox = Ui.Add(this, new RoundedBox { Visible = back }, 20, 320, 616, 268);
         Ui.Text(backBox, "Back light", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         if (back && found.Has(0x8071))
         {
-            tryButton = Ui.Add(backBox, new FlatButton { Text = "Try effect", AccessibleName = "Try the light's own effects" }, 490, 6, 112, 28);
+            tryButton = Ui.Add(backBox, new FlatButton { Text = "Try effect", AccessibleName = "Try the light's own effects" },
+                490, 6, 112, 28);
             tryButton.Click += (s, e) => TryMenu();
         }
         backPower = Power(backBox, 14, 36, "Back light on", on => Edit(edited => edited.BackOn = on, true));
@@ -373,9 +424,15 @@ class PageLight : DevicePage
         speedHead = Ui.Text(backBox, "Speed", 366, 36, () => Theme.Dim, 9f);
         speedValue = Value(backBox, 366, 36, 236);
         speed = Ui.Add(backBox, new Slider { AccessibleName = "Speed" }, 366, 54, 236, 24);
-        speed.Changed += (s, e) => { int period = LightState.MaxPeriod - (LightState.MaxPeriod - LightState.MinPeriod) * speed.Value / 100; Edit(edited => edited.Period = period, false); };
+        speed.Changed += (s, e) =>
+        {
+            int period = LightState.MaxPeriod - (LightState.MaxPeriod - LightState.MinPeriod) * speed.Value / 100;
+            Edit(edited => edited.Period = period, false);
+        };
         Ui.Text(backBox, "Effect", 14, 88, () => Theme.Dim, 9f);
-        effects = Ui.Add(backBox, new SegmentedPicker { Items = LightState.Effects.Concat(new[] { "Screen" }).ToArray(), AccessibleName = "Effect" }, 14, 106, 588, 30);
+        effects = Ui.Add(backBox,
+            new SegmentedPicker { Items = LightState.Effects.Concat(new[] { "Screen" }).ToArray(), AccessibleName = "Effect" },
+            14, 106, 588, 30);
         effects.Picked += index =>
         {
             if (index == LightState.Effects.Length) { if (!screening) { ScreenOn(); Edited(); } return; }
@@ -383,7 +440,13 @@ class PageLight : DevicePage
             Edit(edited => { colorsChosen = true; edited.Effect = index; }, true);
         };
         zoneHead = Ui.Text(backBox, "Zone", 14, 146, () => Theme.Dim, 9f);
-        zonePicker = Ui.Add(backBox, new SegmentedPicker { Items = new[] { "All" }.Concat(Enumerable.Range(1, LightState.Zones).Select(i => i.ToString())).ToArray(), AccessibleName = "Zone", Index = 0 }, 14, 164, 588, 30);
+        zonePicker = Ui.Add(backBox,
+            new SegmentedPicker
+            {
+                Items = new[] { "All" }.Concat(Enumerable.Range(1, LightState.Zones).Select(i => i.ToString())).ToArray(),
+                AccessibleName = "Zone", Index = 0
+            },
+            14, 164, 588, 30);
         zonePicker.Picked += index => { picked = index; RefreshControls(); };
         colorHead = Ui.Text(backBox, "Color", 14, 204, () => Theme.Dim, 9f);
         colors = new ColorRow(backBox, 221);
@@ -400,7 +463,8 @@ class PageLight : DevicePage
         preview = Ui.Add(frame, new ScreenPreview(), 8, 8, 314, 142);
         preview.Picked += index => { selectedZone = index; preview.Selected = index; preview.Invalidate(); };
         preview.Done += ScreenChanged;
-        var resetAreas = Ui.Add(areas, new FlatButton { Text = "Reset areas", AccessibleName = "Reset the screen areas" }, 14, 200, 110, 30);
+        var resetAreas = Ui.Add(areas, new FlatButton { Text = "Reset areas", AccessibleName = "Reset the screen areas" },
+            14, 200, 110, 30);
         resetAreas.Click += (s, e) => { setup.Zones = LitraProtocol.ScreenZones(); selectedZone = 0; ScreenChanged(); };
         Ui.Text(settingsBox, "Monitor", 14, 12, () => Theme.Dim, 9f);
         monitorDropdown = Ui.Add(settingsBox, new Dropdown { AccessibleName = "Monitor" }, 14, 34, 218, 30);
@@ -427,7 +491,8 @@ class PageLight : DevicePage
             ScreenChanged();
         };
         smoothToggle = Option(settingsBox, "Smooth changes", 14, 168, 20, () => setup.Smooth = !setup.Smooth);
-        lockToggle = Option(settingsBox, "Pause when screen off or locked", 14, 194, 36, () => setup.PauseWhenLocked = !setup.PauseWhenLocked);
+        lockToggle = Option(settingsBox, "Pause when screen off or locked", 14, 194, 36,
+            () => setup.PauseWhenLocked = !setup.PauseWhenLocked);
 
         screenTimer.Tick += (s, e) => Tick();
         snapTimer.Tick += (s, e) => Snap();
@@ -482,7 +547,8 @@ class PageLight : DevicePage
             {
                 int group = groupIndex, index = i;
                 byte id = list[groupIndex][i];
-                menu.Items.Add(new ToolStripMenuItem("Group " + groupIndex + ": " + LitraProtocol.EffectName(id), null, (s, e) => TryEffect(group, index, id)));
+                menu.Items.Add(new ToolStripMenuItem("Group " + groupIndex + ": " + LitraProtocol.EffectName(id), null,
+                    (s, e) => TryEffect(group, index, id)));
             }
             menu.Items.Add(new ToolStripSeparator());
         }
@@ -501,7 +567,8 @@ class PageLight : DevicePage
         RefreshControls();
         LogUserAction("Try effect " + name);
         var state = current.Clone();
-        RunOnDevice(hidpp => LitraProtocol.TryEffect(hidpp, group, index, id, state), () => ShowStatus("Sent " + name + ". What lit up? Please say in your issue."));
+        RunOnDevice(hidpp => LitraProtocol.TryEffect(hidpp, group, index, id, state),
+            () => ShowStatus("Sent " + name + ". What lit up? Please say in your issue."));
     }
 
     void StopTrying()
@@ -511,7 +578,12 @@ class PageLight : DevicePage
         colorsChosen = true;
         framed = null;
         LogUserAction("Back to G-Lite's colours");
-        RunOnDevice(hidpp => { LitraProtocol.Release(hidpp); var was = sent; if (was != null) was.Colors = Enumerable.Repeat(-1, LightState.Zones).ToArray(); });
+        RunOnDevice(hidpp =>
+        {
+            LitraProtocol.Release(hidpp);
+            var was = sent;
+            if (was != null) was.Colors = Enumerable.Repeat(-1, LightState.Zones).ToArray();
+        });
         RefreshControls();
         Send();
     }
@@ -522,7 +594,12 @@ class PageLight : DevicePage
         if (!trying) return;
         trying = false;
         framed = null;
-        RunOnDevice(hidpp => { LitraProtocol.Release(hidpp); var was = sent; if (was != null) was.Colors = Enumerable.Repeat(-1, LightState.Zones).ToArray(); });
+        RunOnDevice(hidpp =>
+        {
+            LitraProtocol.Release(hidpp);
+            var was = sent;
+            if (was != null) was.Colors = Enumerable.Repeat(-1, LightState.Zones).ToArray();
+        });
     }
 
     void Edit(Action<LightState> change, bool now)
@@ -539,7 +616,11 @@ class PageLight : DevicePage
 
     public override void Restyle() { RefreshControls(); }
 
-    protected override string Current() { return current == null ? "" : "front:" + current.FrontText() + (back ? ";back:" + current.BackText() : "") + (screening ? "|" + setup.ToText() : ""); }
+    protected override string Current()
+    {
+        return current == null ? ""
+            : "front:" + current.FrontText() + (back ? ";back:" + current.BackText() : "") + (screening ? "|" + setup.ToText() : "");
+    }
 
     protected override void ApplyPreset(string text)
     {
@@ -600,7 +681,8 @@ class PageLight : DevicePage
         shown = null;
         framed = null;
         colorsChosen = true;
-        if (ready) RunOnDevice(hidpp => { var was = sent; if (was != null) was.Colors = Enumerable.Repeat(-1, LightState.Zones).ToArray(); });
+        if (ready)
+            RunOnDevice(hidpp => { var was = sent; if (was != null) was.Colors = Enumerable.Repeat(-1, LightState.Zones).ToArray(); });
         LogUserAction("Screen effect off");
         RefreshControls();
     }
@@ -757,7 +839,9 @@ class PageLight : DevicePage
         frontBox.Top = backBox.Width * (liveBox.Visible ? 224 : 118) / 616;
         backBox.Top = backBox.Width * (liveBox.Visible ? 320 : 214) / 616;
         liveHead.Text = trying ? "Live on the light: trying " + tried + ", look at the light" : "Live on the light";
-        Show(light == null ? null : light.Effect == LightState.Static ? light.Colors : LitraProtocol.Frame(light, clock.Elapsed.TotalMilliseconds));
+        Show(light == null ? null
+            : light.Effect == LightState.Static ? light.Colors
+            : LitraProtocol.Frame(light, clock.Elapsed.TotalMilliseconds));
         Animation();
         areas.Visible = settingsBox.Visible = back && screening;
         if (back && screening) Monitors();
@@ -802,13 +886,18 @@ class PageLight : DevicePage
         if (light == null || !ready) { picture.Display(back, false, 0, 4000, false, 0, null, -1); return; }
         double frontLevel = (light.Lumen - lumens.Min) / (double)Math.Max(1, lumens.Max - lumens.Min);
         bool zoned = light.Effect == LightState.Static || light.Effect == LightState.Breathe;
-        picture.Display(back, light.FrontOn, frontLevel, light.Kelvin, light.BackOn && !trying, light.BackLevel / 100.0, zones, zoned && !screening && !trying ? picked : -1);
+        picture.Display(back, light.FrontOn, frontLevel, light.Kelvin,
+            light.BackOn && !trying, light.BackLevel / 100.0, zones, zoned && !screening && !trying ? picked : -1);
     }
 
     protected override void ClearStatus()
     {
         if (screening) { ShowStatus("Screen effect, not saved to the light"); return; }
-        if (back && current != null && current.Effect != LightState.Static) { ShowStatus(LightState.Effects[current.Effect] + ": G-Lite runs it, so it stops if you quit G-Lite"); return; }
+        if (back && current != null && current.Effect != LightState.Static)
+        {
+            ShowStatus(LightState.Effects[current.Effect] + ": G-Lite runs it, so it stops if you quit G-Lite");
+            return;
+        }
         ShowStatus(back && Settings.Get(Remembered) != "" ? "Back light set by G-Lite, not saved to the light" : "");
     }
 
@@ -819,7 +908,8 @@ class PageLight : DevicePage
         var want = current.Clone();
         bool colorsToo = !screening && colorsChosen;
         int startedAt = ++sequence;
-        if (back && (Settings.Get(Remembered) != "" || colorsChosen || want.BackOn != before.BackOn || want.BackLevel != before.BackLevel)) Settings.Set(Remembered, want.BackText());
+        if (back && (Settings.Get(Remembered) != "" || colorsChosen || want.BackOn != before.BackOn || want.BackLevel != before.BackLevel))
+            Settings.Set(Remembered, want.BackText());
         RunOnDevice(hidpp =>
         {
             if (startedAt != sequence) return;
@@ -838,7 +928,8 @@ class PageLight : DevicePage
         {
             if (was.BackOn != want.BackOn) LitraProtocol.SetBackOn(hidpp, want.BackOn);
             if (was.BackLevel != want.BackLevel) LitraProtocol.SetBackLevel(hidpp, want.BackLevel);
-            if (colorsToo && want.Effect == LightState.Static && !was.Colors.SequenceEqual(want.Colors)) LitraProtocol.Colors(hidpp, want.Colors, false);
+            if (colorsToo && want.Effect == LightState.Static && !was.Colors.SequenceEqual(want.Colors))
+                LitraProtocol.Colors(hidpp, want.Colors, false);
         }
         var unsent = colorsToo && want.Effect != LightState.Static ? Enumerable.Repeat(-1, LightState.Zones).ToArray() : was.Colors;
         var now = want.Clone();
@@ -862,7 +953,10 @@ class PageLight : DevicePage
             if (wasTrying) LitraProtocol.Release(hidpp);
             readLumens = LitraProtocol.Lumens(hidpp);
             readKelvins = LitraProtocol.Kelvins(hidpp);
-            read = new LightState { FrontOn = LitraProtocol.FrontOn(hidpp), Lumen = LitraProtocol.Get(hidpp, 3), Kelvin = LitraProtocol.Get(hidpp, 8) };
+            read = new LightState
+            {
+                FrontOn = LitraProtocol.FrontOn(hidpp), Lumen = LitraProtocol.Get(hidpp, 3), Kelvin = LitraProtocol.Get(hidpp, 8)
+            };
             if (back)
             {
                 read.BackLevel = Math.Max(1, Math.Min(100, LitraProtocol.BackLevel(hidpp)));

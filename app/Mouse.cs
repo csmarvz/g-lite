@@ -13,7 +13,8 @@ class MouseLight
 
     public bool Same(MouseLight other)
     {
-        return other != null && Effect == other.Effect && Color == other.Color && Period == other.Period && Bright == other.Bright && (Effect != 0x04 || Direction == other.Direction);
+        return other != null && Effect == other.Effect && Color == other.Color && Period == other.Period && Bright == other.Bright
+            && (Effect != 0x04 || Direction == other.Direction);
     }
 }
 
@@ -21,7 +22,11 @@ class MouseAction
 {
     public string Name;
     public byte[] Bytes;
-    public MouseAction(string name, string hex) { Name = name; Bytes = Enumerable.Range(0, 4).Select(i => Convert.ToByte(hex.Substring(i * 2, 2), 16)).ToArray(); }
+    public MouseAction(string name, string hex)
+    {
+        Name = name;
+        Bytes = Enumerable.Range(0, 4).Select(i => Convert.ToByte(hex.Substring(i * 2, 2), 16)).ToArray();
+    }
 }
 
 static class Bindings
@@ -30,17 +35,23 @@ static class Bindings
     {
         new MouseAction("Left click", "80010001"), new MouseAction("Right click", "80010002"), new MouseAction("Middle click", "80010004"),
         new MouseAction("Back", "80010008"), new MouseAction("Forward", "80010010"),
-        new MouseAction("DPI up", "90030000"), new MouseAction("DPI down", "90040000"), new MouseAction("DPI cycle", "90050000"), new MouseAction("DPI shift", "90070000"),
+        new MouseAction("DPI up", "90030000"), new MouseAction("DPI down", "90040000"),
+        new MouseAction("DPI cycle", "90050000"), new MouseAction("DPI shift", "90070000"),
         new MouseAction("Scroll left", "90010000"), new MouseAction("Scroll right", "90020000"),
-        new MouseAction("Next profile", "90080000"), new MouseAction("Previous profile", "90090000"), new MouseAction("G-shift", "900B0000"), new MouseAction("Battery level", "900C0000"),
-        new MouseAction("Play or pause", "800300CD"), new MouseAction("Next track", "800300B5"), new MouseAction("Previous track", "800300B6"),
+        new MouseAction("Next profile", "90080000"), new MouseAction("Previous profile", "90090000"),
+        new MouseAction("G-shift", "900B0000"), new MouseAction("Battery level", "900C0000"),
+        new MouseAction("Play or pause", "800300CD"), new MouseAction("Next track", "800300B5"),
+        new MouseAction("Previous track", "800300B6"),
         new MouseAction("Volume up", "800300E9"), new MouseAction("Volume down", "800300EA"), new MouseAction("Mute", "800300E2"),
         new MouseAction("Disabled", "80000000"),
     };
 
     static readonly string[] Modifiers = { "Ctrl", "Shift", "Alt", "Win" };
 
-    public static bool HasLeft(byte[][] buttons, int count) { return buttons != null && buttons.Take(count).Any(binding => binding != null && binding.SequenceEqual(Actions[0].Bytes)); }
+    public static bool HasLeft(byte[][] buttons, int count)
+    {
+        return buttons != null && buttons.Take(count).Any(binding => binding != null && binding.SequenceEqual(Actions[0].Bytes));
+    }
 
     // Factory profiles store a special's last two bytes as FF FF (G502 HERO) or FF 00 (a G502 X LIGHTSPEED; a 409F on
     // MPM 30.00 has 00 00), G HUB as 00 00,
@@ -55,7 +66,8 @@ static class Bindings
 
     static readonly Dictionary<int, string> Specials = new Dictionary<int, string>
     {
-        { 0x06, "Default DPI" }, { 0x0A, "Cycle profile" }, { 0x0E, "Mode switch" }, { 0x0F, "Host button" }, { 0x10, "Scroll down" }, { 0x11, "Scroll up" },
+        { 0x06, "Default DPI" }, { 0x0A, "Cycle profile" }, { 0x0E, "Mode switch" }, { 0x0F, "Host button" },
+        { 0x10, "Scroll down" }, { 0x11, "Scroll up" },
     };
 
     public static byte[] Key(int modifiers, int usage) { return new byte[] { 0x80, 0x02, (byte)modifiers, (byte)usage }; }
@@ -67,10 +79,12 @@ static class Bindings
         if (usage >= 0x3A && usage <= 0x45) return "F" + (usage - 0x39);
         var names = new Dictionary<int, string>
         {
-            { 0x27, "0" }, { 0x28, "Enter" }, { 0x29, "Esc" }, { 0x2A, "Backspace" }, { 0x2B, "Tab" }, { 0x2C, "Space" }, { 0x2D, "-" }, { 0x2E, "=" },
-            { 0x2F, "[" }, { 0x30, "]" }, { 0x31, "\\" }, { 0x33, ";" }, { 0x34, "'" }, { 0x35, "`" }, { 0x36, "," }, { 0x37, "." }, { 0x38, "/" },
-            { 0x39, "Caps Lock" }, { 0x46, "Print Screen" }, { 0x47, "Scroll Lock" }, { 0x48, "Pause" }, { 0x49, "Insert" }, { 0x4A, "Home" },
-            { 0x4B, "Page Up" }, { 0x4C, "Delete" }, { 0x4D, "End" }, { 0x4E, "Page Down" }, { 0x4F, "Right" }, { 0x50, "Left" }, { 0x51, "Down" }, { 0x52, "Up" },
+            { 0x27, "0" }, { 0x28, "Enter" }, { 0x29, "Esc" }, { 0x2A, "Backspace" }, { 0x2B, "Tab" }, { 0x2C, "Space" },
+            { 0x2D, "-" }, { 0x2E, "=" }, { 0x2F, "[" }, { 0x30, "]" }, { 0x31, "\\" }, { 0x33, ";" }, { 0x34, "'" }, { 0x35, "`" },
+            { 0x36, "," }, { 0x37, "." }, { 0x38, "/" },
+            { 0x39, "Caps Lock" }, { 0x46, "Print Screen" }, { 0x47, "Scroll Lock" }, { 0x48, "Pause" }, { 0x49, "Insert" },
+            { 0x4A, "Home" }, { 0x4B, "Page Up" }, { 0x4C, "Delete" }, { 0x4D, "End" }, { 0x4E, "Page Down" },
+            { 0x4F, "Right" }, { 0x50, "Left" }, { 0x51, "Down" }, { 0x52, "Up" },
         };
         string name;
         return names.TryGetValue(usage, out name) ? name : "key " + usage.ToString("X2");
@@ -83,7 +97,11 @@ static class Bindings
         if (i >= 0) return Actions[i].Name;
         if (binding[0] == 0x80 && binding[1] == 0x02)
         {
-            var parts = Enumerable.Range(0, 8).Where(bit => (binding[2] >> bit & 1) != 0).Select(bit => Modifiers[bit % 4]).Distinct().ToList();
+            var parts = Enumerable.Range(0, 8)
+                .Where(bit => (binding[2] >> bit & 1) != 0)
+                .Select(bit => Modifiers[bit % 4])
+                .Distinct()
+                .ToList();
             if (binding[3] != 0) parts.Add(KeyName(binding[3]));
             return string.Join(" + ", parts);
         }
@@ -104,17 +122,35 @@ static class Bindings
         return first.Length == second.Length && first.Zip(second, (x, y) => x.SequenceEqual(y)).All(x => x);
     }
 
-    public static byte[][] Copy(byte[][] buttons) { return buttons == null ? null : buttons.Select(binding => (byte[])binding.Clone()).ToArray(); }
+    public static byte[][] Copy(byte[][] buttons)
+    {
+        return buttons == null ? null : buttons.Select(binding => (byte[])binding.Clone()).ToArray();
+    }
 
     // The G502 HERO (USB C08B) has the G502 LIGHTSPEED's slots (g502-hub's docs/hardware-notes.md, from its button spy).
     public static string[] Names(FoundDevice found, int count)
     {
         int wpid = found.Models.Contains("C08B") ? 0x407F : found.WirelessId;
-        var known = wpid == 0x407F ? new[] { "Left button", "Right button", "Wheel click", "Thumb, back", "Thumb, front", "Sniper", "G7", "G8", "G9", "Wheel tilt right", "Wheel tilt left" }
+        var known = wpid == 0x407F
+                ? new[]
+                {
+                    "Left button", "Right button", "Wheel click", "Thumb, back", "Thumb, front", "Sniper", "G7", "G8", "G9",
+                    "Wheel tilt right", "Wheel tilt left"
+                }
             // The G502 X LIGHTSPEED's slots, from its factory bindings (docs/reports/g502x-409f.txt): Back, DPI shift, Forward, Scroll left
             // and right, Cycle profile, DPI up and down.
-            : wpid == 0x409F ? new[] { "Left button", "Right button", "Wheel click", "Thumb, back (G4)", "Sniper (G6)", "Thumb, front (G5)", "Wheel tilt left", "Wheel tilt right", "G9", "G8", "G7" }
-            : wpid == 0x4079 ? new[] { "Left button", "Right button", "Wheel click", "Left side, back", "Left side, front", "DPI, underneath", "Right side, back", "Right side, front" }
+            : wpid == 0x409F
+                ? new[]
+                {
+                    "Left button", "Right button", "Wheel click", "Thumb, back (G4)", "Sniper (G6)", "Thumb, front (G5)",
+                    "Wheel tilt left", "Wheel tilt right", "G9", "G8", "G7"
+                }
+            : wpid == 0x4079
+                ? new[]
+                {
+                    "Left button", "Right button", "Wheel click", "Left side, back", "Left side, front", "DPI, underneath",
+                    "Right side, back", "Right side, front"
+                }
             : new[] { "Left button", "Right button", "Wheel click" };
         return Enumerable.Range(0, count).Select(i => i < known.Length ? known[i] : "Button " + (i + 1)).ToArray();
     }
@@ -152,7 +188,15 @@ class MouseSet
     public MouseLight Light;
     public byte[][] Buttons;
 
-    public MouseSet Clone() { return new MouseSet { Dpi = Dpi, Rate = Rate, Stage = Stage, Light = Light == null ? null : Light.Clone(), Buttons = Bindings.Copy(Buttons) }; }
+    public MouseSet Clone()
+    {
+        return new MouseSet
+        {
+            Dpi = Dpi, Rate = Rate, Stage = Stage,
+            Light = Light == null ? null : Light.Clone(),
+            Buttons = Bindings.Copy(Buttons)
+        };
+    }
 
     public string ToText()
     {
@@ -168,9 +212,19 @@ class MouseSet
         return new MouseSet
         {
             Dpi = int.Parse(parts[0]),
-            Light = new MouseLight { Effect = byte.Parse(parts[1]), Color = int.Parse(parts[2], NumberStyles.HexNumber), Period = int.Parse(parts[3]), Bright = int.Parse(parts[4]) },
+            Light = new MouseLight
+            {
+                Effect = byte.Parse(parts[1]), Color = int.Parse(parts[2], NumberStyles.HexNumber),
+                Period = int.Parse(parts[3]), Bright = int.Parse(parts[4])
+            },
             Rate = parts.Length > 5 ? int.Parse(parts[5]) : 0,
-            Buttons = parts.Length > 6 && parts[6].Length % 8 == 0 && parts[6].Length > 0 ? Enumerable.Range(0, parts[6].Length / 8).Select(i => Enumerable.Range(0, 4).Select(byteIndex => Convert.ToByte(parts[6].Substring(i * 8 + byteIndex * 2, 2), 16)).ToArray()).ToArray() : null,
+            Buttons = parts.Length > 6 && parts[6].Length % 8 == 0 && parts[6].Length > 0
+                ? Enumerable.Range(0, parts[6].Length / 8)
+                    .Select(i => Enumerable.Range(0, 4)
+                        .Select(byteIndex => Convert.ToByte(parts[6].Substring(i * 8 + byteIndex * 2, 2), 16))
+                        .ToArray())
+                    .ToArray()
+                : null,
         };
     }
 }
@@ -181,7 +235,10 @@ static class MouseProtocol
     {
         new EffectInfo { Id = 0x00, Name = "Off" },
         new EffectInfo { Id = 0x01, Name = "Static", Color = true },
-        new EffectInfo { Id = 0x0A, Name = "Breathe", Color = true, Speed = true, MinPeriod = 1000, MaxPeriod = 20000, DefaultPeriod = 5000 },
+        new EffectInfo
+        {
+            Id = 0x0A, Name = "Breathe", Color = true, Speed = true, MinPeriod = 1000, MaxPeriod = 20000, DefaultPeriod = 5000
+        },
         new EffectInfo { Id = 0x03, Name = "Cycle", Speed = true, MinPeriod = 1000, MaxPeriod = 20000, DefaultPeriod = 8000 },
     };
 
@@ -211,7 +268,8 @@ static class MouseProtocol
         }
 
         // Format 2 (G502 HERO, G303, G502 Proteus Spectrum) has format 3's layout up to the LED blocks at 0xD0 and 0xDB:
-        // libratbag, Solaar and cvuchener's hidpp agree (summed up in g502-hub's docs/protocol.md). Format 1 ends at 0xD0, 4 and 5 differ in the LED area.
+        // libratbag, Solaar and cvuchener's hidpp agree (summed up in g502-hub's docs/protocol.md). Format 1 ends at 0xD0, 4 and 5
+        // differ in the LED area.
         public static bool KnownFormat(int format) { return format == 2 || format == 3; }
         public bool Savable { get { return Writable && ProfileOk; } }
         public string Key { get { return Sector.ToString("X4"); } }
@@ -232,7 +290,8 @@ static class MouseProtocol
 
     public static bool Valid(byte[] profile)
     {
-        return profile != null && profile.Length >= 0xF0 && Crc(profile, profile.Length - 2) == ReadUInt16BigEndian(profile, profile.Length - 2);
+        return profile != null && profile.Length >= 0xF0
+            && Crc(profile, profile.Length - 2) == ReadUInt16BigEndian(profile, profile.Length - 2);
     }
 
     public static void WriteChecksum(byte[] profile)
@@ -244,12 +303,18 @@ static class MouseProtocol
 
     public static int[] StagesOf(byte[] profile)
     {
-        return Enumerable.Range(0, 5).Select(i => profile[3 + 2 * i] | profile[4 + 2 * i] << 8).TakeWhile(x => x != 0 && x != 0xFFFF).ToArray();
+        return Enumerable.Range(0, 5)
+            .Select(i => profile[3 + 2 * i] | profile[4 + 2 * i] << 8)
+            .TakeWhile(x => x != 0 && x != 0xFFFF)
+            .ToArray();
     }
 
     public static int[] WideStages(byte[] profile, int[] dpis)
     {
-        var stages = Enumerable.Range(0, 5).Select(i => profile[4 + 5 * i] | profile[5 + 5 * i] << 8).TakeWhile(x => x != 0 && x != 0xFFFF).ToArray();
+        var stages = Enumerable.Range(0, 5)
+            .Select(i => profile[4 + 5 * i] | profile[5 + 5 * i] << 8)
+            .TakeWhile(x => x != 0 && x != 0xFFFF)
+            .ToArray();
         return dpis.Length > 0 && stages.All(x => x >= dpis[0] && x <= dpis[dpis.Length - 1]) ? stages : new int[0];
     }
 
@@ -278,7 +343,9 @@ static class MouseProtocol
         if (!Valid(profile)) return "damaged, can't be restored";
         var stages = StagesOf(profile);
         var light = Decode(profile.Skip(0xDB).Take(11).ToArray());
-        return (profile[1] < stages.Length ? stages[profile[1]] + " DPI" : "DPI stages") + ", " + (light == null ? "lighting" : EffectById(light.Effect).Name) + ", " + (profile[0] > 0 ? 1000 / profile[0] + " Hz" : "");
+        return (profile[1] < stages.Length ? stages[profile[1]] + " DPI" : "DPI stages")
+            + ", " + (light == null ? "lighting" : EffectById(light.Effect).Name)
+            + ", " + (profile[0] > 0 ? 1000 / profile[0] + " Hz" : "");
     }
 
     public static byte[] Build(byte[] old, MouseSet want, int zones)
@@ -296,7 +363,8 @@ static class MouseProtocol
         {
             int count = Math.Min(want.Buttons.Length, 16);
             var before = Enumerable.Range(0, count).Select(button => built.Skip(0x20 + 4 * button).Take(4).ToArray()).ToArray();
-            if (Bindings.HasLeft(before, count) && !Bindings.HasLeft(want.Buttons, count)) throw new RefusedException("No button is set to Left click, not saving");
+            if (Bindings.HasLeft(before, count) && !Bindings.HasLeft(want.Buttons, count))
+                throw new RefusedException("No button is set to Left click, not saving");
             for (int button = 0; button < count; button++) want.Buttons[button].CopyTo(built, 0x20 + 4 * button);
         }
         if (want.Light != null)
@@ -311,7 +379,9 @@ static class MouseProtocol
 
     public static byte[] Factory(byte[] rom, byte[] current)
     {
-        if (rom[0] == 0 || rom[0] > 8 || StagesOf(rom).Length == 0) throw new RefusedException("Couldn't read the mouse's factory profile, not restoring it (it starts " + BitConverter.ToString(rom, 0, Math.Min(13, rom.Length)).Replace("-", " ") + ")");
+        if (rom[0] == 0 || rom[0] > 8 || StagesOf(rom).Length == 0)
+            throw new RefusedException("Couldn't read the mouse's factory profile, not restoring it (it starts "
+                + BitConverter.ToString(rom, 0, Math.Min(13, rom.Length)).Replace("-", " ") + ")");
         var built = (byte[])rom.Clone();
         if (Valid(current)) Array.Copy(current, 0xA0, built, 0xA0, 0x30);
         WriteChecksum(built);
@@ -349,21 +419,30 @@ static class MouseProtocol
             hidpp.Call(feature, 7, chunk);
         }
         hidpp.Call(feature, 8);
-        if (!ReadSector(hidpp, sector, profile.Length).SequenceEqual(profile)) throw new IOException("The profile on the mouse didn't read back the same after saving");
+        if (!ReadSector(hidpp, sector, profile.Length).SequenceEqual(profile))
+            throw new IOException("The profile on the mouse didn't read back the same after saving");
     }
 
     // An empty directory, or a sector never written: all 00 on a G502 HERO (Solaar #2313), all FF on a G502 X LIGHTSPEED (omalogi).
     // Solaar treats both as no directory, and the mouse runs its factory profiles.
     public static bool Unwritten(byte[] directory)
     {
-        return Valid(directory) && ReadUInt16BigEndian(directory, 0) == 0xFFFF || directory.All(value => value == 0x00) || directory.All(value => value == 0xFF);
+        return Valid(directory) && ReadUInt16BigEndian(directory, 0) == 0xFFFF
+            || directory.All(value => value == 0x00)
+            || directory.All(value => value == 0xFF);
     }
 
     public static byte[] Directory(int size, int profiles)
     {
         if (profiles < 1 || profiles > 8 || size < 0xF0) throw new RefusedException("Refusing to build that profile directory");
         var directory = Enumerable.Repeat((byte)0xFF, size).ToArray();
-        for (int i = 0; i < profiles; i++) { directory[4 * i] = 0; directory[4 * i + 1] = (byte)(i + 1); directory[4 * i + 2] = (byte)(i == 0 ? 1 : 0); directory[4 * i + 3] = 0; }
+        for (int i = 0; i < profiles; i++)
+        {
+            directory[4 * i] = 0;
+            directory[4 * i + 1] = (byte)(i + 1);
+            directory[4 * i + 2] = (byte)(i == 0 ? 1 : 0);
+            directory[4 * i + 3] = 0;
+        }
         directory[4 * profiles + 2] = 0;
         directory[4 * profiles + 3] = 0;
         WriteChecksum(directory);
@@ -372,18 +451,24 @@ static class MouseProtocol
 
     public static void Setup(Hidpp hidpp, State state, byte[] profile)
     {
-        if (!state.Fresh || !State.KnownFormat(state.Format) || profile.Length != state.SectorSize) throw new RefusedException("Saving isn't supported on this mouse");
+        if (!state.Fresh || !State.KnownFormat(state.Format) || profile.Length != state.SectorSize)
+            throw new RefusedException("Saving isn't supported on this mouse");
         WriteSector(hidpp, 1, profile);
         var directory = Directory(state.SectorSize, 1);
         Write(hidpp, 0x0000, directory);
         try { hidpp.Call(hidpp.FeatureIndex(0x8100), 3, 0x00, 0x01); }
         catch (HidppError) { }
-        if (hidpp.DeviceLabel != null) Log.Add(hidpp.DeviceLabel, "sent", "Onboard memory set up: the profile at 0001, built from the factory profile at " + state.Sector.ToString("X4") + ", and the directory at 0000", "ok");
+        if (hidpp.DeviceLabel != null)
+            Log.Add(hidpp.DeviceLabel, "sent",
+                "Onboard memory set up: the profile at 0001, built from the factory profile at " + state.Sector.ToString("X4")
+                    + ", and the directory at 0000",
+                "ok");
     }
 
     public static void Store(Hidpp hidpp, State state, byte[] profile)
     {
-        if (!state.Writable || state.Fresh || profile.Length != state.SectorSize) throw new RefusedException("Saving isn't supported on this mouse");
+        if (!state.Writable || state.Fresh || profile.Length != state.SectorSize)
+            throw new RefusedException("Saving isn't supported on this mouse");
         WriteSector(hidpp, state.Sector, profile);
         try { hidpp.Call(hidpp.FeatureIndex(0x8100), 3, state.Current); }
         catch (HidppError) { }
@@ -421,12 +506,19 @@ static class MouseProtocol
         var parameters = new byte[10];
         int color = light.Color, brightness = Math.Max(1, Math.Min(100, light.Bright));
         if (light.Effect == 0x01)
-            color = ((color >> 16 & 0xFF) * brightness / 100) << 16 | ((color >> 8 & 0xFF) * brightness / 100) << 8 | (color & 0xFF) * brightness / 100;
+            color = ((color >> 16 & 0xFF) * brightness / 100) << 16
+                | ((color >> 8 & 0xFF) * brightness / 100) << 8
+                | (color & 0xFF) * brightness / 100;
         switch (light.Effect)
         {
             case 0x01: parameters[0] = (byte)(color >> 16); parameters[1] = (byte)(color >> 8); parameters[2] = (byte)color; break;
-            case 0x0A: parameters[0] = (byte)(color >> 16); parameters[1] = (byte)(color >> 8); parameters[2] = (byte)color; parameters[3] = (byte)(light.Period >> 8); parameters[4] = (byte)light.Period; parameters[6] = (byte)brightness; break;
-            case 0x03: parameters[5] = (byte)(light.Period >> 8); parameters[6] = (byte)light.Period; parameters[7] = (byte)brightness; break;
+            case 0x0A:
+                parameters[0] = (byte)(color >> 16); parameters[1] = (byte)(color >> 8); parameters[2] = (byte)color;
+                parameters[3] = (byte)(light.Period >> 8); parameters[4] = (byte)light.Period; parameters[6] = (byte)brightness;
+                break;
+            case 0x03:
+                parameters[5] = (byte)(light.Period >> 8); parameters[6] = (byte)light.Period; parameters[7] = (byte)brightness;
+                break;
         }
         return parameters;
     }
@@ -445,7 +537,9 @@ static class MouseProtocol
                 light.Color = (record[1] * 255 / max) << 16 | (record[2] * 255 / max) << 8 | record[3] * 255 / max;
                 light.Bright = Math.Max(1, (max * 100 + 127) / 255);
                 break;
-            case 0x0A: light.Color = color; light.Period = ReadUInt16BigEndian(record, 4); light.Bright = record[7] == 0 ? 100 : record[7]; break;
+            case 0x0A:
+                light.Color = color; light.Period = ReadUInt16BigEndian(record, 4); light.Bright = record[7] == 0 ? 100 : record[7];
+                break;
             case 0x03: light.Period = ReadUInt16BigEndian(record, 6); light.Bright = record[8] == 0 ? 100 : record[8]; break;
         }
         if (effect.Speed) light.Period = Math.Max(effect.MinPeriod, Math.Min(effect.MaxPeriod, light.Period));
@@ -498,7 +592,8 @@ static class MouseProtocol
                 var info = hidpp.Call(lightFeature, 1, (byte)zone, 0xFF, 0);
                 if (ReadUInt16BigEndian(info, 1) == 2) logo = zone;
                 var map = new Dictionary<int, int>();
-                for (int effect = 0; effect < info[3]; effect++) map[ReadUInt16BigEndian(hidpp.Call(lightFeature, 2, (byte)zone, (byte)effect, 0xFF, 0), 2)] = effect;
+                for (int effect = 0; effect < info[3]; effect++)
+                    map[ReadUInt16BigEndian(hidpp.Call(lightFeature, 2, (byte)zone, (byte)effect, 0xFF, 0), 2)] = effect;
                 state.Zones[zone] = map;
             }
         }
@@ -541,11 +636,14 @@ static class MouseProtocol
                     else
                     {
                         state.Stages = StagesOf(state.Profile);
-                        state.Buttons = Enumerable.Range(0, state.ButtonCount).Select(i => state.Profile.Skip(0x20 + 4 * i).Take(4).ToArray()).ToArray();
+                        state.Buttons = Enumerable.Range(0, state.ButtonCount)
+                            .Select(i => state.Profile.Skip(0x20 + 4 * i).Take(4).ToArray())
+                            .ToArray();
                         if (logo >= 0 && logo < 2) state.Light = Decode(state.Profile.Skip(0xD0 + 11 * logo).Take(11).ToArray());
                     }
                 }
-                if (state.Sector >= 0x100 && State.KnownFormat(state.Format) && info[3] >= 1 && state.SectorSize >= 0xF0 && state.SectorSize <= 0x1000)
+                if (state.Sector >= 0x100 && State.KnownFormat(state.Format) && info[3] >= 1
+                    && state.SectorSize >= 0xF0 && state.SectorSize <= 0x1000)
                 {
                     try { state.Fresh = Unwritten(ReadSector(hidpp, 0x0000, state.SectorSize)); }
                     catch (HidppError ex) { state.Fresh = ex.Code == 2; }
@@ -647,9 +745,19 @@ class HidppMouse : IMouse
     public void SetLight(Hidpp hidpp, MouseProtocol.State state, MouseLight light) { MouseProtocol.SetLight(hidpp, state, light); }
     public void SetRate(Hidpp hidpp, int hz) { MouseProtocol.SetRate(hidpp, hz); }
     public void SetInvert(Hidpp hidpp, bool on) { MouseProtocol.SetInvert(hidpp, on); }
-    public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state) { return MouseProtocol.ReadSector(hidpp, state.Sector, state.SectorSize); }
-    public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSet want) { MouseProtocol.Setup(hidpp, state, MouseProtocol.Build(MouseProtocol.ReadSector(hidpp, state.Sector, state.SectorSize), want, state.Zones.Count)); }
-    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSet want) { MouseProtocol.Store(hidpp, state, MouseProtocol.Build(now, want, state.Zones.Count)); }
+    public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state)
+    {
+        return MouseProtocol.ReadSector(hidpp, state.Sector, state.SectorSize);
+    }
+    public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSet want)
+    {
+        MouseProtocol.Setup(hidpp, state,
+            MouseProtocol.Build(MouseProtocol.ReadSector(hidpp, state.Sector, state.SectorSize), want, state.Zones.Count));
+    }
+    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSet want)
+    {
+        MouseProtocol.Store(hidpp, state, MouseProtocol.Build(now, want, state.Zones.Count));
+    }
     // Reloading the active profile (fn 3) leaves a G305's DPI as it was set live, so the restored default stage is set too.
     public void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data)
     {
@@ -668,17 +776,23 @@ class HidppMouse : IMouse
 // (0x63 in units of 400/17 DPI, 200–5700), the G500s another (units of 50 DPI, 200–8200), and neither has the G9x's colour light (0x57).
 class G9xModel
 {
-    public static readonly G9xModel G9x = new G9xModel(17, 400, 5700, true, true), G500 = new G9xModel(17, 400, 5700, false, true), G500s = new G9xModel(1, 50, 8200, false, true);
+    public static readonly G9xModel G9x = new G9xModel(17, 400, 5700, true, true),
+        G500 = new G9xModel(17, 400, 5700, false, true),
+        G500s = new G9xModel(1, 50, 8200, false, true);
 
-    // The G700 and G700s have the G500's and G500s's sensors, but another profile layout (4-byte modes, 13 buttons from 35) and memory commands
-    // nobody has confirmed (g500 doc/hidpp10.md marks 0xA0 and 0xA1 "?"): live DPI and rate only, no pages read or written.
+    // The G700 and G700s have the G500's and G500s's sensors, but another profile layout (4-byte modes, 13 buttons from 35) and
+    // memory commands nobody has confirmed (g500 doc/hidpp10.md marks 0xA0 and 0xA1 "?"): live DPI and rate only, no pages read or
+    // written.
     public static readonly G9xModel G700 = new G9xModel(17, 400, 5700, false, false), G700s = new G9xModel(1, 50, 8200, false, false);
 
     readonly int rawPerStep, dpiPerStep;
     public readonly int Max;
     public readonly bool Light, Pages;
 
-    G9xModel(int rawPerStep, int dpiPerStep, int max, bool light, bool pages) { this.rawPerStep = rawPerStep; this.dpiPerStep = dpiPerStep; Max = max; Light = light; Pages = pages; }
+    G9xModel(int rawPerStep, int dpiPerStep, int max, bool light, bool pages)
+    {
+        this.rawPerStep = rawPerStep; this.dpiPerStep = dpiPerStep; Max = max; Light = light; Pages = pages;
+    }
 
     public int Dpi(int raw) { return (int)Math.Round(raw * (double)dpiPerStep / rawPerStep / 50) * 50; }
 
@@ -711,8 +825,14 @@ class G9xMouse : IMouse
     public void SetRate(Hidpp hidpp, int hz) { G9xRegisters.SetRate(hidpp, hz); }
     public void SetInvert(Hidpp hidpp, bool on) { throw new RefusedException("This mouse can't invert its wheel"); }
     public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state) { return G9xRegisters.ReadPage(hidpp, state.Sector); }
-    public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSet want) { throw new RefusedException("Saving isn't supported on this mouse"); }
-    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSet want) { G9xRegisters.Store(hidpp, state, G9xRegisters.Build(now, want, state.Rate, model), now); }
+    public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSet want)
+    {
+        throw new RefusedException("Saving isn't supported on this mouse");
+    }
+    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSet want)
+    {
+        G9xRegisters.Store(hidpp, state, G9xRegisters.Build(now, want, state.Rate, model), now);
+    }
 
     public void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data)
     {
@@ -768,13 +888,25 @@ class G5Mouse : IMouse
         if (sent == null || want.Dpi != sent.Dpi) hidpp.Register(0x80, 0x63, (byte)DpiToRaw(want.Dpi));
     }
 
-    public void SetLight(Hidpp hidpp, MouseProtocol.State state, MouseLight light) { throw new RefusedException("G-Lite can't set this mouse's light yet"); }
+    public void SetLight(Hidpp hidpp, MouseProtocol.State state, MouseLight light)
+    {
+        throw new RefusedException("G-Lite can't set this mouse's light yet");
+    }
     public void SetRate(Hidpp hidpp, int hz) { G9xRegisters.SetRate(hidpp, hz); }
     public void SetInvert(Hidpp hidpp, bool on) { throw new RefusedException("This mouse can't invert its wheel"); }
     public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state) { return null; }
-    public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSet want) { throw new RefusedException("Saving isn't supported on this mouse"); }
-    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSet want) { throw new RefusedException("Saving isn't supported on this mouse"); }
-    public void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data) { throw new RefusedException("Saving isn't supported on this mouse"); }
+    public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSet want)
+    {
+        throw new RefusedException("Saving isn't supported on this mouse");
+    }
+    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSet want)
+    {
+        throw new RefusedException("Saving isn't supported on this mouse");
+    }
+    public void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data)
+    {
+        throw new RefusedException("Saving isn't supported on this mouse");
+    }
     public string Describe(byte[] profile) { return ""; }
     public int DefaultStage(byte[] profile) { return 0; }
 }
@@ -804,7 +936,11 @@ static class G9xRegisters
 
     public static int[] StagesOf(byte[] page, G9xModel model)
     {
-        return Enumerable.Range(0, 5).Select(stage => page[4 + 6 * stage] << 8 | page[5 + 6 * stage]).TakeWhile(raw => raw != 0 && raw != 0xFFFF).Select(model.Dpi).ToArray();
+        return Enumerable.Range(0, 5)
+            .Select(stage => page[4 + 6 * stage] << 8 | page[5 + 6 * stage])
+            .TakeWhile(raw => raw != 0 && raw != 0xFFFF)
+            .Select(model.Dpi)
+            .ToArray();
     }
 
     public static MouseLight Light(byte[] color)
@@ -821,7 +957,10 @@ static class G9xRegisters
 
     public static MouseProtocol.State Read(Hidpp device, G9xModel model)
     {
-        var state = new MouseProtocol.State { ProfileOk = true, Flash = model.Pages, Effects = Effects, Rates = Rates, Dpis = model.Dpis() };
+        var state = new MouseProtocol.State
+        {
+            ProfileOk = true, Flash = model.Pages, Effects = Effects, Rates = Rates, Dpis = model.Dpis()
+        };
         var resolution = device.Register(0x83, 0x63);
         state.Dpi = model.Dpi(resolution[0] | resolution[1] << 8);
         int interval = device.Register(0x81, 0x64)[0];
@@ -919,12 +1058,14 @@ static class G9xRegisters
             }
             catch (Exception)
             {
-                throw new IOException("Saving failed halfway (" + ex.Message + "). The mouse is on its factory profile: restore the backup from Backups, or replug it and save again.", ex);
+                throw new IOException("Saving failed halfway (" + ex.Message
+                    + "). The mouse is on its factory profile: restore the backup from Backups, or replug it and save again.", ex);
             }
             throw new IOException("Saving failed (" + ex.Message + "), so the profile as it was is back on the mouse.", ex);
         }
         device.Register(0x80, 0x0F, 0x00, state.Current[0]);
-        if (!ReadPage(device, pageNumber).SequenceEqual(page)) throw new IOException("The profile on the mouse didn't read back the same after saving");
+        if (!ReadPage(device, pageNumber).SequenceEqual(page))
+            throw new IOException("The profile on the mouse didn't read back the same after saving");
     }
 
     static void WritePage(Hidpp device, byte pageNumber, byte[] page, Action erasing)

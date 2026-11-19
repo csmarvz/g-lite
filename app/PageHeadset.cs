@@ -37,24 +37,34 @@ class HeadsetPicture : DrawnControl
         using (var band = new Pen(Theme.KeyOff, 9 * DpiScale) { StartCap = LineCap.Round, EndCap = LineCap.Round })
             graphics.DrawArc(band, x + cupW / 2, y + 4 * DpiScale, width - cupW, height * 1.05f, 180, 180);
         using (var boom = new Pen(Theme.KeyOff, 5 * DpiScale) { StartCap = LineCap.Round, EndCap = LineCap.Round })
-            graphics.DrawBezier(boom, x + cupW * 0.6f, cupY + cupH * 0.8f, x + cupW * 0.4f, y + height * 1.02f, x + width * 0.28f, y + height * 0.98f, x + width * 0.4f, y + height * 0.96f);
+            graphics.DrawBezier(boom, x + cupW * 0.6f, cupY + cupH * 0.8f, x + cupW * 0.4f, y + height * 1.02f,
+                x + width * 0.28f, y + height * 0.98f, x + width * 0.4f, y + height * 0.96f);
         foreach (var cupX in new[] { x, x + width - cupW })
         {
             Ui.Fill(graphics, new RectangleF(cupX, cupY, cupW, cupH), cupW * 0.42f, Theme.KeyOff, Theme.Border);
-            Ui.Fill(graphics, new RectangleF(cupX + cupW * 0.22f, cupY + cupH * 0.16f, cupW * 0.56f, cupH * 0.68f), cupW * 0.26f, Theme.PictureBackground, Theme.PictureBackground);
+            Ui.Fill(graphics, new RectangleF(cupX + cupW * 0.22f, cupY + cupH * 0.16f, cupW * 0.56f, cupH * 0.68f),
+                cupW * 0.26f, Theme.PictureBackground, Theme.PictureBackground);
         }
-        using (var brush = new SolidBrush(Theme.Accent)) graphics.FillEllipse(brush, x + width * 0.4f - 4 * DpiScale, y + height * 0.96f - 4 * DpiScale, 8 * DpiScale, 8 * DpiScale);
+        using (var brush = new SolidBrush(Theme.Accent))
+            graphics.FillEllipse(brush, x + width * 0.4f - 4 * DpiScale, y + height * 0.96f - 4 * DpiScale, 8 * DpiScale, 8 * DpiScale);
 
         float textX = x + width + 70 * DpiScale, top = Height / 2f - 46 * DpiScale;
         var bigFont = Ui.Get(27f, Ui.Semibold);
         var text = battery < 0 ? "–" : battery + "%";
-        Ui.Draw(graphics, text, bigFont, new RectangleF(textX, top, Width - textX, 48 * DpiScale), Theme.Text, TextFormatFlags.Left | TextFormatFlags.Bottom);
+        Ui.Draw(graphics, text, bigFont, new RectangleF(textX, top, Width - textX, 48 * DpiScale),
+            Theme.Text, TextFormatFlags.Left | TextFormatFlags.Bottom);
         float percentWidth = TextRenderer.MeasureText(graphics, text, bigFont, Size.Empty, TextFormatFlags.NoPadding).Width;
-        Ui.Draw(graphics, charging ? "charging" : "battery", Ui.Get(11f, Ui.Semibold), new RectangleF(textX + percentWidth + 8 * DpiScale, top, 120 * DpiScale, 44 * DpiScale), Theme.Dim, TextFormatFlags.Left | TextFormatFlags.Bottom);
+        Ui.Draw(graphics, charging ? "charging" : "battery", Ui.Get(11f, Ui.Semibold),
+            new RectangleF(textX + percentWidth + 8 * DpiScale, top, 120 * DpiScale, 44 * DpiScale),
+            Theme.Dim, TextFormatFlags.Left | TextFormatFlags.Bottom);
         var small = Ui.Get(9.75f, Ui.Regular);
-        var volts = millivolts > 0 ? (millivolts / 1000.0).ToString("0.00", CultureInfo.InvariantCulture) + " V" + (approx ? ", estimated from the voltage" : "") : "";
-        Ui.Draw(graphics, volts, small, new RectangleF(textX, top + 58 * DpiScale, Width - textX, 20 * DpiScale), Theme.Dim, TextFormatFlags.Left);
-        Ui.Draw(graphics, line, small, new RectangleF(textX, top + 80 * DpiScale, Width - textX, 20 * DpiScale), Theme.Dim, TextFormatFlags.Left);
+        var volts = millivolts > 0
+            ? (millivolts / 1000.0).ToString("0.00", CultureInfo.InvariantCulture) + " V" + (approx ? ", estimated from the voltage" : "")
+            : "";
+        Ui.Draw(graphics, volts, small, new RectangleF(textX, top + 58 * DpiScale, Width - textX, 20 * DpiScale),
+            Theme.Dim, TextFormatFlags.Left);
+        Ui.Draw(graphics, line, small, new RectangleF(textX, top + 80 * DpiScale, Width - textX, 20 * DpiScale),
+            Theme.Dim, TextFormatFlags.Left);
     }
 }
 
@@ -77,7 +87,8 @@ class PageHeadset : DevicePage
     readonly Dropdown offBox;
     readonly HeadsetPicture picture;
 
-    public PageHeadset(FoundDevice found, Hidpp fake, MouseEventHandler drag) : base(found, fake, drag, found.ShortName, "headset", "profile." + found.SettingsKey + ".")
+    public PageHeadset(FoundDevice found, Hidpp fake, MouseEventHandler drag)
+        : base(found, fake, drag, found.ShortName, "headset", "profile." + found.SettingsKey + ".")
     {
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };
 
@@ -91,7 +102,9 @@ class PageHeadset : DevicePage
         sideValue = Value(sound, 14, 40, 352);
         sidetone = Ui.Add(sound, new Slider { AccessibleName = "Sidetone" }, 14, 60, 352, 24);
         sidetone.Changed += (s, e) => { current.Sidetone = sidetone.Value; Changed(false); };
-        var hint = Ui.Text(sound, "How much of your own voice you hear while you talk. It works while an app is using the microphone, like a call or a voice chat.", 14, 92, () => Theme.Dim, 9f);
+        var hint = Ui.Text(sound,
+            "How much of your own voice you hear while you talk. It works while an app is using the microphone, like a call or a voice chat.",
+            14, 92, () => Theme.Dim, 9f);
         hint.AutoSize = false;
         hint.Size = new Size(352, 54);
         testButton = Ui.Add(sound, new FlatButton { Text = "Test sidetone", Icon = "headset" }, 14, 150, 150, 32);
@@ -187,7 +200,9 @@ class PageHeadset : DevicePage
         sidetone.Value = current.Sidetone;
         sideValue.Text = hasSide ? current.Sidetone + "%" : "";
         sidetone.Invalidate();
-        offMinutes = current.AutoOffMinutes >= 0 && !HeadsetProtocol.OffMinutes.Contains(current.AutoOffMinutes) ? HeadsetProtocol.OffMinutes.Concat(new[] { current.AutoOffMinutes }).OrderBy(minutes => minutes).ToArray() : HeadsetProtocol.OffMinutes;
+        offMinutes = current.AutoOffMinutes >= 0 && !HeadsetProtocol.OffMinutes.Contains(current.AutoOffMinutes)
+            ? HeadsetProtocol.OffMinutes.Concat(new[] { current.AutoOffMinutes }).OrderBy(minutes => minutes).ToArray()
+            : HeadsetProtocol.OffMinutes;
         offBox.Items.Clear();
         offBox.Items.AddRange(offMinutes.Select(OffText));
         offBox.Index = hasOff ? Array.IndexOf(offMinutes, current.AutoOffMinutes) : -1;
@@ -197,7 +212,9 @@ class PageHeadset : DevicePage
         firmware.Text = found.Firmware == "" ? "–" : found.Firmware;
         int readMillivolts = ready && state.Millivolts > 0 ? state.Millivolts : found.Millivolts;
         bool charging = ready && state.Charging;
-        int percent = !charging ? (readMillivolts > 0 ? FoundDevice.FromVolts(readMillivolts) : found.Battery) : found.Battery >= 0 ? found.Battery : FoundDevice.FromChargingVolts(readMillivolts);
+        int percent = !charging ? (readMillivolts > 0 ? FoundDevice.FromVolts(readMillivolts) : found.Battery)
+            : found.Battery >= 0 ? found.Battery
+            : FoundDevice.FromChargingVolts(readMillivolts);
         picture.Display(percent, readMillivolts > 0 || found.BatteryFromVoltage, readMillivolts, ready && state.Charging,
             hasOff ? (current.AutoOffMinutes == 0 ? "Stays on when idle" : "Turns off after " + current.AutoOffMinutes + " min idle") : "");
         loading = false;
@@ -218,7 +235,11 @@ class PageHeadset : DevicePage
     protected override void ClearStatus()
     {
         if (microphone != null) return;
-        if (state != null && !state.HasSidetone && !state.HasOff && state.Millivolts == 0) { ShowStatus("The headset didn't answer. Is it on?", true, Load, "Try again"); return; }
+        if (state != null && !state.HasSidetone && !state.HasOff && state.Millivolts == 0)
+        {
+            ShowStatus("The headset didn't answer. Is it on?", true, Load, "Try again");
+            return;
+        }
         ShowStatus(state == null ? "" : dirty ? "Applied to the headset" : "Matches the headset");
     }
 
@@ -230,8 +251,10 @@ class PageHeadset : DevicePage
         RunOnDevice(hidpp =>
         {
             if (startedAt != sequence) return;
-            if (deviceState.HasSidetone && (sent == null || want.Sidetone != sent.Sidetone)) HeadsetProtocol.SetSidetone(hidpp, want.Sidetone);
-            if (deviceState.HasOff && want.AutoOffMinutes >= 0 && (sent == null || want.AutoOffMinutes != sent.AutoOffMinutes)) HeadsetProtocol.SetOff(hidpp, want.AutoOffMinutes);
+            if (deviceState.HasSidetone && (sent == null || want.Sidetone != sent.Sidetone))
+                HeadsetProtocol.SetSidetone(hidpp, want.Sidetone);
+            if (deviceState.HasOff && want.AutoOffMinutes >= 0 && (sent == null || want.AutoOffMinutes != sent.AutoOffMinutes))
+                HeadsetProtocol.SetOff(hidpp, want.AutoOffMinutes);
             sent = want;
         }, () => { if (startedAt == sequence) ClearStatus(); });
     }

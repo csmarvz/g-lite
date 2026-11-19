@@ -21,7 +21,11 @@ static class Updater
     const string RawUrl = "https://raw.githubusercontent.com/csmarvz/g-lite/v";
     static readonly string Temp = Path.Combine(Path.GetTempPath(), "GLite-update.exe");
 
-    public static bool CheckForUpdates { get { return Settings.Get("check-updates") != "0"; } set { Settings.Set("check-updates", value ? "1" : "0"); } }
+    public static bool CheckForUpdates
+    {
+        get { return Settings.Get("check-updates") != "0"; }
+        set { Settings.Set("check-updates", value ? "1" : "0"); }
+    }
     public static bool Auto { get { return Settings.Get("auto-update") == "1"; } set { Settings.Set("auto-update", value ? "1" : "0"); } }
     public static string Skipped { get { return Settings.Get("skip-version"); } set { Settings.Set("skip-version", value); } }
 
@@ -42,7 +46,8 @@ static class Updater
         var versionNumber = new Version(versionDash < 0 ? version : version.Substring(0, versionDash));
         var otherNumber = new Version(otherDash < 0 ? other : other.Substring(0, otherDash));
         if (versionNumber != otherNumber) return versionNumber > otherNumber;
-        string versionLabel = versionDash < 0 ? "" : version.Substring(versionDash + 1), otherLabel = otherDash < 0 ? "" : other.Substring(otherDash + 1);
+        string versionLabel = versionDash < 0 ? "" : version.Substring(versionDash + 1),
+            otherLabel = otherDash < 0 ? "" : other.Substring(otherDash + 1);
         if (versionLabel == otherLabel) return false;
         if (versionLabel == "") return true;
         if (otherLabel == "") return false;
@@ -75,7 +80,14 @@ static class Updater
             if (head.Success)
             {
                 DateTime day;
-                current = new Release { Version = head.Groups[1].Value, Date = DateTime.TryParseExact(head.Groups[2].Value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out day) ? day.ToString("d MMMM yyyy", CultureInfo.InvariantCulture) : "" };
+                current = new Release
+                {
+                    Version = head.Groups[1].Value,
+                    Date = DateTime.TryParseExact(head.Groups[2].Value, "yyyy-MM-dd",
+                            CultureInfo.InvariantCulture, DateTimeStyles.None, out day)
+                        ? day.ToString("d MMMM yyyy", CultureInfo.InvariantCulture)
+                        : ""
+                };
                 list.Add(current);
             }
             else if (current != null && line != "") current.Lines.Add(line);
@@ -85,7 +97,11 @@ static class Updater
 
     public static List<Release> Between(List<Release> all, string installed, string latest)
     {
-        return all.Where(release => { try { return IsNewerVersion(release.Version, installed) && !IsNewerVersion(release.Version, latest); } catch (Exception) { return false; } }).ToList();
+        return all.Where(release =>
+        {
+            try { return IsNewerVersion(release.Version, installed) && !IsNewerVersion(release.Version, latest); }
+            catch (Exception) { return false; }
+        }).ToList();
     }
 
     public static string Changelog(string version)
@@ -155,7 +171,10 @@ static class Updater
 
     public static void Restart()
     {
-        var args = Environment.GetCommandLineArgs().Skip(1).Where(arg => arg != "--restart" && arg != "--tray").Concat(new[] { "--restart" });
+        var args = Environment.GetCommandLineArgs()
+            .Skip(1)
+            .Where(arg => arg != "--restart" && arg != "--tray")
+            .Concat(new[] { "--restart" });
         Process.Start(Exe, string.Join(" ", args));
     }
 
@@ -164,7 +183,10 @@ static class Updater
         File.WriteAllBytes(Temp, exeBytes);
         Process process;
         try { process = Process.Start(new ProcessStartInfo(Temp, "--swap \"" + exe + "\"") { Verb = "runas", UseShellExecute = true }); }
-        catch (System.ComponentModel.Win32Exception) { throw new Exception("the update needs administrator rights, and they weren't given"); }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            throw new Exception("the update needs administrator rights, and they weren't given");
+        }
         process.WaitForExit();
         if (process.ExitCode != 0) throw new Exception("couldn't replace " + exe);
     }
@@ -184,7 +206,14 @@ static class Updater
 
     public static void Cleanup()
     {
-        try { if (File.Exists(Exe + ".old")) { File.Delete(Exe + ".old"); Log.Add("", "update", "Removed the previous version, GLite.exe.old"); } }
+        try
+        {
+            if (File.Exists(Exe + ".old"))
+            {
+                File.Delete(Exe + ".old");
+                Log.Add("", "update", "Removed the previous version, GLite.exe.old");
+            }
+        }
         catch (Exception ex) { Log.Add("", "update", "Couldn't remove GLite.exe.old: " + ex.Message); }
         try { if (File.Exists(Temp)) File.Delete(Temp); } catch { }
     }

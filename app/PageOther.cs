@@ -9,11 +9,13 @@ using System.Windows.Forms;
 class OtherSettings
 {
     // Away, Near and Powered are the backlight's fade delays in seconds: hands away from the keys, hands near them, on external power.
-    public const int Bright = 0, Dpi = 1, Shift = 2, Invert = 3, Thumb = 4, Light = 5, Auto = 6, Level = 7, Away = 8, Near = 9, Powered = 10, Count = 11;
+    public const int Bright = 0, Dpi = 1, Shift = 2, Invert = 3, Thumb = 4, Light = 5, Auto = 6, Level = 7,
+        Away = 8, Near = 9, Powered = 10, Count = 11;
     public static readonly int[] Delays = { Away, Near, Powered };
     static readonly string[] Keys = { "bright", "dpi", "shift", "invert", "thumb", "light", "auto", "level", "away", "near", "powered" };
 
-    // -1 is a setting the device doesn't have, or one this set leaves alone. Shift is SmartShift's threshold: 1–50, or 255 when it's off (the wheel never switches to free spin).
+    // -1 is a setting the device doesn't have, or one this set leaves alone. Shift is SmartShift's threshold: 1–50, or 255 when it's off
+    // (the wheel never switches to free spin).
     readonly int[] values = Enumerable.Repeat(-1, Count).ToArray();
 
     public int this[int setting] { get { return values[setting]; } set { values[setting] = value; } }
@@ -25,9 +27,17 @@ class OtherSettings
         return copy;
     }
 
-    public void Merge(OtherSettings over) { for (int setting = 0; setting < Count; setting++) if (over[setting] >= 0) values[setting] = over[setting]; }
+    public void Merge(OtherSettings over)
+    {
+        for (int setting = 0; setting < Count; setting++) if (over[setting] >= 0) values[setting] = over[setting];
+    }
 
-    public string ToText() { return string.Join(",", Enumerable.Range(0, Count).Where(setting => values[setting] >= 0).Select(setting => Keys[setting] + ":" + values[setting])); }
+    public string ToText()
+    {
+        return string.Join(",", Enumerable.Range(0, Count)
+            .Where(setting => values[setting] >= 0)
+            .Select(setting => Keys[setting] + ":" + values[setting]));
+    }
 
     public static OtherSettings FromText(string text)
     {
@@ -44,7 +54,8 @@ class OtherSettings
     public bool Same(OtherSettings other) { return ToText() == other.ToText(); }
 }
 
-// The settings of Logitech devices that aren't G devices. Bytes from Solaar's settings, OpenLogi's captures of an MX Master 3S and MX Keys S, and the MX Creative Keypad's report. See docs/other-devices.md.
+// The settings of Logitech devices that aren't G devices. Bytes from Solaar's settings, OpenLogi's captures of an MX Master 3S
+// and MX Keys S, and the MX Creative Keypad's report. See docs/other-devices.md.
 static class OtherDevice
 {
     // 0x1814 alone doesn't get the screen: a device with only Easy-Switch has nothing else to set.
@@ -110,7 +121,8 @@ static class OtherDevice
         {
             var capabilities = Try(device, 0x2121, 0);
             var mode = Try(device, 0x2121, 1);
-            if (capabilities != null && (capabilities[1] & 0x08) != 0 && mode != null) set[OtherSettings.Invert] = (mode[0] & 0x04) != 0 ? 1 : 0;
+            if (capabilities != null && (capabilities[1] & 0x08) != 0 && mode != null)
+                set[OtherSettings.Invert] = (mode[0] & 0x04) != 0 ? 1 : 0;
         }
         if (found.Has(0x2150))
         {
@@ -123,15 +135,20 @@ static class OtherDevice
             if (config != null)
             {
                 set[OtherSettings.Light] = config[0] & 1;
-                // Mode 2 (temporary manual) is automatic nudged with the keys: the keyboard goes back to automatic at the next power-on (spec x1982 v3).
+                // Mode 2 (temporary manual) is automatic nudged with the keys: the keyboard goes back to automatic at the next power-on
+                // (spec x1982 v3).
                 int mode = config[1] >> 3 & 3;
                 if ((config[2] & 0x08) != 0 && (config[2] & 0x20) != 0) set[OtherSettings.Auto] = mode == 1 || mode == 2 ? 1 : 0;
                 var info = (config[2] & 0x20) != 0 ? Try(device, 0x1982, 2) : null;
-                // In mode 3 the level is fn 0's b5, the stored setting, like Solaar. Outside it b5 reads 0 (spec x1982 v3), so the slider shows
-                // fn 2's b1, the level lit now (it fades when idle).
-                if (info != null && info[0] > 1) { state.Levels = info[0]; set[OtherSettings.Level] = Math.Min(info[0] - 1, mode == 3 ? config[5] : info[1]); }
-                // Bytes 6–11: the fade delays, little-endian, in units of 5 s (spec x1982 v3, named by Solaar). Offered only when all three read,
-                // since an older version of the feature may not have them.
+                // In mode 3 the level is fn 0's b5, the stored setting, like Solaar. Outside it b5 reads 0 (spec x1982 v3),
+                // so the slider shows fn 2's b1, the level lit now (it fades when idle).
+                if (info != null && info[0] > 1)
+                {
+                    state.Levels = info[0];
+                    set[OtherSettings.Level] = Math.Min(info[0] - 1, mode == 3 ? config[5] : info[1]);
+                }
+                // Bytes 6–11: the fade delays, little-endian, in units of 5 s (spec x1982 v3, named by Solaar).
+                // Offered only when all three read, since an older version of the feature may not have them.
                 var delays = OtherSettings.Delays.Select((setting, index) => config[6 + 2 * index] | config[7 + 2 * index] << 8).ToArray();
                 if (delays.All(units => units > 0))
                     for (int index = 0; index < delays.Length; index++) set[OtherSettings.Delays[index]] = delays[index] * 5;
@@ -144,7 +161,9 @@ static class OtherDevice
             state.Names = new string[state.Hosts];
             state.Paired = Enumerable.Repeat(true, state.Hosts).ToArray();
             // The names are only shown, so a computer that doesn't answer for them doesn't stop the screen.
-            if (state.Hosts > 0 && found.Has(0x1815)) try { ReadNames(device, state); } catch (TimeoutException) { state.PairedKnown = false; }
+            if (state.Hosts > 0 && found.Has(0x1815))
+                try { ReadNames(device, state); }
+                catch (TimeoutException) { state.PairedKnown = false; }
         }
         return state;
     }
@@ -171,7 +190,14 @@ static class OtherDevice
         }
     }
 
-    public static string Name(int setting) { return new[] { "brightness", "pointer speed", "SmartShift", "invert scrolling", "thumb wheel", "backlight", "backlight", "backlight", "backlight", "backlight", "backlight" }[setting]; }
+    public static string Name(int setting)
+    {
+        return new[]
+        {
+            "brightness", "pointer speed", "SmartShift", "invert scrolling", "thumb wheel",
+            "backlight", "backlight", "backlight", "backlight", "backlight", "backlight"
+        }[setting];
+    }
 
     // Each setting is sent on its own, so one the device refuses doesn't stop the others. Returns the refused settings.
     public static List<int> Apply(Hidpp device, State state, OtherSettings want, OtherSettings sent)
@@ -183,16 +209,22 @@ static class OtherDevice
             try { write(); }
             catch (HidppError) { refused.Add(setting); }
         };
-        send(OtherSettings.Bright, () => device.Call(device.FeatureIndex(0x8040), 2, (byte)(want[OtherSettings.Bright] >> 8), (byte)want[OtherSettings.Bright]));
-        send(OtherSettings.Dpi, () => device.Call(device.FeatureIndex(0x2201), 3, 0, (byte)(want[OtherSettings.Dpi] >> 8), (byte)want[OtherSettings.Dpi]));
+        send(OtherSettings.Bright, () => device.Call(device.FeatureIndex(0x8040), 2,
+            (byte)(want[OtherSettings.Bright] >> 8), (byte)want[OtherSettings.Bright]));
+        send(OtherSettings.Dpi, () => device.Call(device.FeatureIndex(0x2201), 3,
+            0, (byte)(want[OtherSettings.Dpi] >> 8), (byte)want[OtherSettings.Dpi]));
         // 0 in a SmartShift byte leaves it, so the wheel's mode, set with its button, isn't touched. 0x2110 goes back to its third byte
-        // (autoDisengageDefault) at each reset, so it gets the threshold too; 0x2111 keeps its settings and its third byte is the torque (specs x2110, x2111).
-        send(OtherSettings.Shift, () => device.Call(device.FeatureIndex(state.ShiftFeature), state.ShiftFeature == 0x2111 ? 2 : 1, 0, (byte)want[OtherSettings.Shift], state.ShiftFeature == 0x2111 ? (byte)0 : (byte)want[OtherSettings.Shift]));
-        // Read just before writing: Logi Options+ may have diverted the wheel since (bit 0). Only bit 2 changes. Bit 1 (high resolution) makes Windows scroll many times too fast.
+        // (autoDisengageDefault) at each reset, so it gets the threshold too; 0x2111 keeps its settings and its third byte is the torque
+        // (specs x2110, x2111).
+        send(OtherSettings.Shift, () => device.Call(device.FeatureIndex(state.ShiftFeature), state.ShiftFeature == 0x2111 ? 2 : 1,
+            0, (byte)want[OtherSettings.Shift], state.ShiftFeature == 0x2111 ? (byte)0 : (byte)want[OtherSettings.Shift]));
+        // Read just before writing: Logi Options+ may have diverted the wheel since (bit 0). Only bit 2 changes.
+        // Bit 1 (high resolution) makes Windows scroll many times too fast.
         send(OtherSettings.Invert, () =>
         {
             var mode = device.Call(device.FeatureIndex(0x2121), 1);
-            device.Call(device.FeatureIndex(0x2121), 2, (byte)(mode[0] & ~0x04 | (want[OtherSettings.Invert] == 1 ? 0x04 : 0)), mode[1], mode[2]);
+            device.Call(device.FeatureIndex(0x2121), 2,
+                (byte)(mode[0] & ~0x04 | (want[OtherSettings.Invert] == 1 ? 0x04 : 0)), mode[1], mode[2]);
         });
         send(OtherSettings.Thumb, () =>
         {
@@ -206,14 +238,22 @@ static class OtherDevice
             try
             {
                 // The keyboard stores this write. Delays not picked go back as read; the level is sent only in mode 3, else 0, like Solaar.
-                // Mode 2 can't be set (spec x1982 v3), so a keyboard in it is written back as automatic. Outside mode 3 the stored level reads 0,
-                // so going to mode 3 without a level picked takes the level lit now (fn 2 byte 1) rather than turning the backlight off.
+                // Mode 2 can't be set (spec x1982 v3), so a keyboard in it is written back as automatic.
+                // Outside mode 3 the stored level reads 0, so going to mode 3 without a level picked takes the level lit now
+                // (fn 2 byte 1) rather than turning the backlight off.
                 var config = device.Call(device.FeatureIndex(0x1982), 0);
                 int now = config[1] >> 3 & 3;
-                int mode = want[OtherSettings.Auto] == 1 ? 1 : want[OtherSettings.Auto] == 0 || want[OtherSettings.Level] >= 0 && want[OtherSettings.Level] != sent[OtherSettings.Level] ? 3 : now == 2 ? 1 : now;
+                int mode = want[OtherSettings.Auto] == 1 ? 1
+                    : want[OtherSettings.Auto] == 0
+                        || want[OtherSettings.Level] >= 0 && want[OtherSettings.Level] != sent[OtherSettings.Level] ? 3
+                    : now == 2 ? 1
+                    : now;
                 byte options = (byte)(config[1] & ~0x18 | mode << 3);
                 bool picked = want[OtherSettings.Level] >= 0 && want[OtherSettings.Level] != sent[OtherSettings.Level];
-                int level = mode != 3 ? 0 : picked ? want[OtherSettings.Level] : now == 3 ? config[5] : device.Call(device.FeatureIndex(0x1982), 2)[1];
+                int level = mode != 3 ? 0
+                    : picked ? want[OtherSettings.Level]
+                    : now == 3 ? config[5]
+                    : device.Call(device.FeatureIndex(0x1982), 2)[1];
                 // A level nobody picked that reads 0 (faded, or never set) would store the backlight off: take the middle level instead.
                 if (mode == 3 && !picked && level == 0) level = Math.Max(1, (state.Levels - 1) / 2);
                 bool on = want[OtherSettings.Light] >= 0 ? want[OtherSettings.Light] == 1 : (config[0] & 1) != 0;
@@ -225,7 +265,10 @@ static class OtherDevice
                     delays[2 * index] = (byte)units;
                     delays[2 * index + 1] = (byte)(units >> 8);
                 }
-                device.Call(device.FeatureIndex(0x1982), 1, new byte[] { (byte)(on ? 1 : 0), options, 0xFF, (byte)level }.Concat(delays).Concat(new byte[] { 0, 0 }).ToArray());
+                device.Call(device.FeatureIndex(0x1982), 1, new byte[] { (byte)(on ? 1 : 0), options, 0xFF, (byte)level }
+                    .Concat(delays)
+                    .Concat(new byte[] { 0, 0 })
+                    .ToArray());
             }
             catch (HidppError) { refused.AddRange(lightSettings.Where(setting => want[setting] >= 0)); }
         }
@@ -271,7 +314,8 @@ class PageOtherDevice : DevicePage
 {
     class SettingBox { public string Title; public bool Half; public Func<RoundedBox, int, int> Fill; }
 
-    // current is on the screen, sent is on the device, stored is what was read at load, and remembered holds only what the user changed: it's sent again at each load.
+    // current is on the screen, sent is on the device, stored is what was read at load, and remembered holds only what the user changed:
+    // it's sent again at each load.
     OtherSettings current = new OtherSettings(), stored, sent, remembered, rememberedAtLoad;
     OtherDevice.State state;
     bool loading, dirty;
@@ -293,7 +337,8 @@ class PageOtherDevice : DevicePage
 
     string Noun { get { return found.Kind == "mouse" || found.Kind == "keyboard" ? found.Kind : "device"; } }
 
-    public PageOtherDevice(FoundDevice found, Hidpp fake, MouseEventHandler drag) : base(found, fake, drag, found.ShortName, "device", "profile." + found.SettingsKey + ".")
+    public PageOtherDevice(FoundDevice found, Hidpp fake, MouseEventHandler drag)
+        : base(found, fake, drag, found.ShortName, "device", "profile." + found.SettingsKey + ".")
     {
         debounce.Tick += (sender, e) => { debounce.Stop(); Send(); };
         remembered = OtherSettings.FromText(Settings.Get(Remembered));
@@ -301,7 +346,8 @@ class PageOtherDevice : DevicePage
         var parts = new List<SettingBox>();
         if (found.Has(0x8040)) parts.Add(new SettingBox { Title = found.Kind == "device" ? "Screens" : "Brightness", Fill = Brightness });
         if (found.Has(0x2201)) parts.Add(new SettingBox { Title = "Pointer", Fill = Pointer });
-        if (found.Has(0x2110) || found.Has(0x2111) || found.Has(0x2121)) parts.Add(new SettingBox { Title = "Scroll wheel", Half = true, Fill = Wheel });
+        if (found.Has(0x2110) || found.Has(0x2111) || found.Has(0x2121))
+            parts.Add(new SettingBox { Title = "Scroll wheel", Half = true, Fill = Wheel });
         if (found.Has(0x2150)) parts.Add(new SettingBox { Title = "Thumb wheel", Half = true, Fill = ThumbWheel });
         if (found.Has(0x1982)) parts.Add(new SettingBox { Title = "Backlight", Half = true, Fill = Backlight });
         if (found.Has(0x1814)) parts.Add(new SettingBox { Title = "Easy-Switch", Fill = EasySwitch });
@@ -368,7 +414,11 @@ class PageOtherDevice : DevicePage
         Label head;
         bright = SliderRow(box, "Brightness", 40, width, out head, out brightValue);
         bright.Changed += (sender, e) => Change(OtherSettings.Bright, bright.Value);
-        AddHint(box, found.Kind == "device" ? "How bright the key screens are. Logi Options+ may set it again when it starts." : "Logi Options+ may set it again when it starts.", 14, 98, width, 20);
+        AddHint(box,
+            found.Kind == "device"
+                ? "How bright the key screens are. Logi Options+ may set it again when it starts."
+                : "Logi Options+ may set it again when it starts.",
+            14, 98, width, 20);
         return 118;
     }
 
@@ -377,7 +427,10 @@ class PageOtherDevice : DevicePage
         Label head;
         dpi = SliderRow(box, "Speed", 40, width, out head, out dpiValue);
         dpi.Step = 1;
-        dpi.Changed += (sender, e) => { if (state != null && dpi.Value < state.Dpis.Length) Change(OtherSettings.Dpi, state.Dpis[dpi.Value]); };
+        dpi.Changed += (sender, e) =>
+        {
+            if (state != null && dpi.Value < state.Dpis.Length) Change(OtherSettings.Dpi, state.Dpis[dpi.Value]);
+        };
         return 84;
     }
 
@@ -413,7 +466,8 @@ class PageOtherDevice : DevicePage
 
     int Backlight(RoundedBox box, int width)
     {
-        // Plugged in, the MX Keys S's hand sensor seems off: turned on, it stays dark until a key is pressed. On battery it lights at once (an owner, 2026-11).
+        // Plugged in, the MX Keys S's hand sensor seems off: turned on, it stays dark until a key is pressed.
+        // On battery it lights at once (an owner, 2026-11).
         light = ToggleRow(box, "Backlight", "Plugged in, the keys light up when you next type.", 40, width);
         light.Changed += () => Change(OtherSettings.Light, light.Checked ? 1 : 0);
         auto = ToggleRow(box, "Automatic", "Dims by itself with the room's light.", 102, width);
@@ -428,7 +482,8 @@ class PageOtherDevice : DevicePage
         {
             int setting = OtherSettings.Delays[index], x = 14 + index * (column + 12);
             delayLabels[index] = Ui.Text(box, names[index], x, 242, () => Theme.Dim, 9f);
-            delayDropdowns[index] = Ui.Add(box, new Dropdown { AccessibleName = "Fades after, " + names[index].ToLowerInvariant() }, x, 262, column, 30);
+            delayDropdowns[index] = Ui.Add(box, new Dropdown { AccessibleName = "Fades after, " + names[index].ToLowerInvariant() },
+                x, 262, column, 30);
             delayDropdowns[index].Picked += picked => Change(setting, DelayChoices(current[setting])[picked]);
         }
         return 306;
@@ -446,7 +501,8 @@ class PageOtherDevice : DevicePage
     string HostName(int host)
     {
         var name = state != null && host < state.Names.Length ? state.Names[host] : null;
-        return (host + 1) + (state != null && host < state.Paired.Length && !state.Paired[host] ? ": –" : name == null ? "" : ": " + name);
+        return (host + 1)
+            + (state != null && host < state.Paired.Length && !state.Paired[host] ? ": –" : name == null ? "" : ": " + name);
     }
 
     void AskSwitch(int host)
@@ -454,15 +510,22 @@ class PageOtherDevice : DevicePage
         if (state == null || host == state.Host) return;
         hosts.Index = state.Host;
         hosts.Invalidate();
-        if (!state.Paired[host]) { ShowStatus("Nothing is paired on computer " + (host + 1) + " yet. Pair it with the Easy-Switch button first."); return; }
+        if (!state.Paired[host])
+        {
+            ShowStatus("Nothing is paired on computer " + (host + 1) + " yet. Pair it with the Easy-Switch button first.");
+            return;
+        }
         var name = state.Names[host] ?? "computer " + (host + 1);
-        ShowStatus("Switch the " + Noun + " to " + name + "? It leaves this PC until you switch back" + (state.PairedKnown ? "." : ". If nothing is paired there, press its Easy-Switch button to come back."), false, () => Switch(host), "Switch");
+        ShowStatus("Switch the " + Noun + " to " + name + "? It leaves this PC until you switch back"
+                + (state.PairedKnown ? "." : ". If nothing is paired there, press its Easy-Switch button to come back."),
+            false, () => Switch(host), "Switch");
     }
 
     void Switch(int host)
     {
         LogUserAction("Switch to computer " + (host + 1));
-        RunOnDevice(device => OtherDevice.Switch(device, host), () => ShowStatus("Switched to computer " + (host + 1) + ". Press the Easy-Switch button to come back."));
+        RunOnDevice(device => OtherDevice.Switch(device, host),
+            () => ShowStatus("Switched to computer " + (host + 1) + ". Press the Easy-Switch button to come back."));
     }
 
     void Change(int setting, int value)
@@ -494,7 +557,9 @@ class PageOtherDevice : DevicePage
             bright.Enabled = on;
             bright.Max = ready ? state.BrightMax : 100;
             bright.Value = Math.Max(0, current[OtherSettings.Bright]);
-            brightValue.Text = !on ? "" : state.BrightMax == 100 ? current[OtherSettings.Bright] + "%" : current[OtherSettings.Bright] + " of " + state.BrightMax;
+            brightValue.Text = !on ? ""
+                : state.BrightMax == 100 ? current[OtherSettings.Bright] + "%"
+                : current[OtherSettings.Bright] + " of " + state.BrightMax;
         }
         if (dpi != null)
         {
@@ -515,8 +580,16 @@ class PageOtherDevice : DevicePage
             SetDimmed(shiftHead, on);
             shiftValue.Text = on ? (threshold / 4.0).ToString("0.##", CultureInfo.InvariantCulture) + " turns a second" : "";
         }
-        if (invert != null) { invert.Enabled = ready && current[OtherSettings.Invert] >= 0; invert.Checked = current[OtherSettings.Invert] == 1; }
-        if (thumb != null) { thumb.Enabled = ready && current[OtherSettings.Thumb] >= 0; thumb.Checked = current[OtherSettings.Thumb] == 1; }
+        if (invert != null)
+        {
+            invert.Enabled = ready && current[OtherSettings.Invert] >= 0;
+            invert.Checked = current[OtherSettings.Invert] == 1;
+        }
+        if (thumb != null)
+        {
+            thumb.Enabled = ready && current[OtherSettings.Thumb] >= 0;
+            thumb.Checked = current[OtherSettings.Thumb] == 1;
+        }
         if (light != null)
         {
             bool lit = current[OtherSettings.Light] == 1;
@@ -559,7 +632,12 @@ class PageOtherDevice : DevicePage
     static readonly int[] DelaySteps = { 5, 10, 15, 30, 60, 120, 300, 600, 1800, 3600 };
 
     // The usual delays, with the keyboard's own when it isn't one of them.
-    static int[] DelayChoices(int seconds) { return seconds <= 0 || DelaySteps.Contains(seconds) ? DelaySteps : DelaySteps.Concat(new[] { seconds }).OrderBy(step => step).ToArray(); }
+    static int[] DelayChoices(int seconds)
+    {
+        return seconds <= 0 || DelaySteps.Contains(seconds)
+            ? DelaySteps
+            : DelaySteps.Concat(new[] { seconds }).OrderBy(step => step).ToArray();
+    }
 
     static string DelayText(int seconds)
     {
@@ -578,7 +656,8 @@ class PageOtherDevice : DevicePage
     {
         if (state == null) return;
         var preset = OtherDevice.KeepSupported(OtherSettings.FromText(text), state);
-        for (int setting = 0; setting < OtherSettings.Count; setting++) if (preset[setting] >= 0 && preset[setting] != current[setting]) remembered[setting] = preset[setting];
+        for (int setting = 0; setting < OtherSettings.Count; setting++)
+            if (preset[setting] >= 0 && preset[setting] != current[setting]) remembered[setting] = preset[setting];
         current.Merge(preset);
         Changed();
     }

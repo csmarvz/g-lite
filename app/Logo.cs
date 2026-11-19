@@ -34,7 +34,10 @@ static class Logo
                 matrix.Translate(14.8f, 20);
                 matrix.Multiply(new Matrix(1, 0, -0.2493f, 1, 0, 0));
                 graphics.Transform = matrix;
-                graphics.DrawLines(pen, new[] { new PointF(46, 10), new PointF(14, 10), new PointF(14, 50), new PointF(46, 50), new PointF(46, 30), new PointF(32, 30) });
+                graphics.DrawLines(pen, new[]
+                {
+                    new PointF(46, 10), new PointF(14, 10), new PointF(14, 50), new PointF(46, 50), new PointF(46, 30), new PointF(32, 30)
+                });
                 graphics.DrawLines(pen, new[] { new PointF(60, 10), new PointF(60, 50), new PointF(88, 50) });
             }
             for (int y = 0; y < size; y++)
@@ -54,7 +57,8 @@ static class Logo
         int height = (int)Math.Round(size * 0.54f);
         int stroke = Math.Max(2, (int)Math.Round(height * 0.21f));
         if ((height - stroke) % 2 != 0) height++;
-        int gWidth = (int)Math.Round(height * 0.84f), lWidth = (int)Math.Round(height * 0.75f), gap = Math.Max(1, (int)Math.Round(stroke * 0.33f));
+        int gWidth = (int)Math.Round(height * 0.84f), lWidth = (int)Math.Round(height * 0.75f),
+            gap = Math.Max(1, (int)Math.Round(stroke * 0.33f));
         int slant = (int)Math.Ceiling(height * 0.25f);
         while (gWidth + gap + lWidth + slant > size) { if (lWidth >= gWidth) lWidth--; else gWidth--; }
         int left = (size - (gWidth + gap + lWidth + slant)) / 2, top = (size - height) / 2;

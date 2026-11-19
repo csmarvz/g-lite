@@ -21,7 +21,14 @@ static class Backups
 
         public G515Profile.Files Files
         {
-            get { return new G515Profile.Files { FactoryProfile = Get("0101"), FactoryDir = Get("0100"), UserProfile = Get("0008"), UserDir = Get("0000") }; }
+            get
+            {
+                return new G515Profile.Files
+                {
+                    FactoryProfile = Get("0101"), FactoryDir = Get("0100"),
+                    UserProfile = Get("0008"), UserDir = Get("0000")
+                };
+            }
         }
     }
 
@@ -29,7 +36,12 @@ static class Backups
 
     static string Hex(byte[] bytes) { return bytes == null ? "" : string.Concat(bytes.Select(value => value.ToString("x2"))); }
 
-    static byte[] Bytes(string hex) { return hex == "" ? null : Enumerable.Range(0, hex.Length / 2).Select(i => Convert.ToByte(hex.Substring(i * 2, 2), 16)).ToArray(); }
+    static byte[] Bytes(string hex)
+    {
+        return hex == ""
+            ? null
+            : Enumerable.Range(0, hex.Length / 2).Select(i => Convert.ToByte(hex.Substring(i * 2, 2), 16)).ToArray();
+    }
 
     static bool Same(byte[] first, byte[] second) { return first == null ? second == null : second != null && first.SequenceEqual(second); }
 
@@ -40,7 +52,11 @@ static class Backups
 
     public static Dictionary<string, byte[]> FromFiles(G515Profile.Files files)
     {
-        return new Dictionary<string, byte[]> { { "0101", files.FactoryProfile }, { "0100", files.FactoryDir }, { "0008", files.UserProfile }, { "0000", files.UserDir } };
+        return new Dictionary<string, byte[]>
+        {
+            { "0101", files.FactoryProfile }, { "0100", files.FactoryDir },
+            { "0008", files.UserProfile }, { "0000", files.UserDir }
+        };
     }
 
     public static void Save(string device, G515Profile.Files files, string who = null) { Save(device, FromFiles(files), who); }
@@ -64,7 +80,8 @@ static class Backups
         }
         catch (Exception ex)
         {
-            if (ex is IOException || ex is UnauthorizedAccessException) throw new RefusedException("Couldn't make a backup, so nothing was written: " + ex.Message);
+            if (ex is IOException || ex is UnauthorizedAccessException)
+                throw new RefusedException("Couldn't make a backup, so nothing was written: " + ex.Message);
             throw;
         }
     }
@@ -81,11 +98,16 @@ static class Backups
             bool first = name.StartsWith("first-");
             if (first) name = name.Substring(6);
             DateTime when;
-            if (!DateTime.TryParseExact(name, Utc, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out when)
-                && !DateTime.TryParseExact(name, Stamp, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal | DateTimeStyles.AdjustToUniversal, out when)) continue;
+            if (!DateTime.TryParseExact(name, Utc, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out when)
+                && !DateTime.TryParseExact(name, Stamp, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeLocal | DateTimeStyles.AdjustToUniversal, out when))
+                continue;
             try
             {
-                var data = File.ReadAllLines(file).Where(line => line.Length > 4 && line[4] == '=').ToDictionary(line => line.Substring(0, 4), line => Bytes(line.Substring(5).Trim()));
+                var data = File.ReadAllLines(file)
+                    .Where(line => line.Length > 4 && line[4] == '=')
+                    .ToDictionary(line => line.Substring(0, 4), line => Bytes(line.Substring(5).Trim()));
                 entries.Add(new Entry { File = file, When = when, First = first, Data = data });
             }
             catch (Exception) { }
