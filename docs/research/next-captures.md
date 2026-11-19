@@ -28,7 +28,7 @@ Existing notes were preserved; this dated research directory supersedes only the
 
 ## Current repository discovery and control gaps
 
-These come from reading `app/Devices.cs`, `app/FoundDevice.cs`, `app/Mouse.cs` and `app/Report.cs`, not running them:
+These come from reading `app/Devices.cs`, `app/FoundDevice.cs`, `app/MouseProtocol.cs` and `app/Report.cs`, not running them:
 
 - `FoundDevice.IsMouse` requires 2201. Known 2202-only captures establish a real missing family.
 - `MouseProtocol` sets DPI with 2201 and rate with 8060. Newer argument layouts/rate indexes require separate dispatch.

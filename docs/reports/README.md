@@ -10,8 +10,8 @@ Reports from G-Lite's Report button, kept as they were sent, so the facts in the
 | [g512x75-c35f.txt](g512x75-c35f.txt) | G512 X 75 (USB C35F) | U1 81.05, build 0020 | 2026-11-11 | An owner | [G512X.md](../G512X.md) |
 | [g213-c336.txt](g213-c336.txt) | G213 (USB C336) | U1 09.00, build 0006 | 2026-11-15 | The maintainer's keyboard | [G213.md](../G213.md) |
 | [g510s-c22d.txt](g510s-c22d.txt) | G510s (USB C22D), no HID++ | | 2026-11-14 | An owner | [G510.md](../G510.md) |
-| [gprowireless-4079.txt](gprowireless-4079.txt) | G Pro Wireless (4079, USB C088), through its receiver | MPM 15.02, build 0026 | 2026-11-18 | The maintainer's mouse | `MouseProtocol` in `app/Mouse.cs` |
-| [g502lightspeed-407f.txt](g502lightspeed-407f.txt) | G502 LIGHTSPEED (407F, USB C08D), through its receiver | MPM 17.00, build 0008 | 2026-11-10 | The maintainer's mouse | `Bindings` and `ButtonSpy` in `app/Mouse.cs` |
+| [gprowireless-4079.txt](gprowireless-4079.txt) | G Pro Wireless (4079, USB C088), through its receiver | MPM 15.02, build 0026 | 2026-11-18 | The maintainer's mouse | `MouseProtocol` in `app/MouseProtocol.cs` |
+| [g502lightspeed-407f.txt](g502lightspeed-407f.txt) | G502 LIGHTSPEED (407F, USB C08D), through its receiver | MPM 17.00, build 0008 | 2026-11-10 | The maintainer's mouse | `Bindings` and `ButtonSpy` in `app/MouseButtons.cs` |
 | [g305-4074.txt](g305-4074.txt) | G305 (4074), through its receiver | RQM 68.02, build 0021 | 2026-11-19 | The maintainer's mouse | `FakeMouse.G305` in `app/Fake.cs`, [adding-a-device.md](../adding-a-device.md), [G305.md](../G305.md) |
 | [proxwireless-0aba.txt](proxwireless-0aba.txt) | PRO X Wireless headset, through its dongle (USB 0ABA) | U1 12.01, build 0203 | 2026-11-18 | The maintainer's headset | `HeadsetProtocol` in `app/Headset.cs` |
 | [g560-0a78.txt](g560-0a78.txt) | G560 speakers (USB 0A78) | U1 22.03, build 0023 | 2026-11-11 | An owner | [G560.md](../G560.md) |

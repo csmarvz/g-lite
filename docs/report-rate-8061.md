@@ -48,7 +48,7 @@ On the G Pro Wireless in onboard mode, 0x8060 fn 2 is refused, and the rate only
 
 | File | Change |
 |---|---|
-| `app/Mouse.cs` | `State.Rates` and `Rate` from 0x8061 when present, else 0x8060. `SetRate` picks the feature. A rate table for the indexes. |
+| `app/MouseProtocol.cs` | `State.Rates` and `Rate` from 0x8061 when present, else 0x8060. `SetRate` picks the feature. A rate table for the indexes. |
 | `app/PageMouse.cs` | The rate list already comes from `State.Rates`. Show 2000, 4000 and 8000 Hz. Mark a rate the profile can't hold. |
 | `app/Report.cs` | Add 0x8061 fn 0, 1 and 2 to `Reads` (all only read). Show fn 0 for both connections, fn 1, and fn 2 for both. Name it "report rate". |
 | `app/Fake.cs` | `FakeMouse` with 0x8061 as an option, for the demo and self-tests. |

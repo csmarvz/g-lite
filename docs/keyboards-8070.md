@@ -57,7 +57,7 @@ fn 1 gives each zone's location: 1 primary (the keys), 2 logo, 6–11 primary 1 
 | File | Change |
 |---|---|
 | `app/FoundDevice.cs` | `FoundDevice.IsLedKeyboard`: kind keyboard, has 0x8070, no 0x8071. |
-| `app/Mouse.cs` | Move the 0x8070 parts of `MouseProtocol` (zones, `Encode`, `Decode`, `SetLight`) into a small `Led` class both use. Add the persistence byte. |
+| `app/MouseProtocol.cs` | Move the 0x8070 parts of `MouseProtocol` (zones, `Encode`, `Decode`, `SetLight`) into a small `Led` class both use. Add the persistence byte. |
 | `app/PageKeyboard.cs` | Effect, colour, speed, brightness, the key picture, Save to keyboard. Smaller than `Page515`: no 0x8101 files, no idle settings, no backups (nothing is overwritten that G-Lite can't set again). |
 | `app/models/g512.json` | The full-size layout. |
 | `app/Fake.cs` | `FakeLedKeyboard` for the demo and self-tests. |

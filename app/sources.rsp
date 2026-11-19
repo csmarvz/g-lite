@@ -20,7 +20,10 @@ Devices.cs
 Hidpp.cs
 Keyboard.cs
 Backup.cs
+MouseButtons.cs
 Mouse.cs
+MouseProtocol.cs
+G9x.cs
 Headset.cs
 Report.cs
 Log.cs
