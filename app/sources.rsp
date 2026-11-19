@@ -11,6 +11,8 @@ PageLight.cs
 PageOther.cs
 PageUpdate.cs
 Pages.cs
+ReportView.cs
+LogsPage.cs
 Devices.cs
 Keyboard.cs
 Backup.cs
