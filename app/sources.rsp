@@ -13,6 +13,7 @@ PageUpdate.cs
 Pages.cs
 ReportView.cs
 LogsPage.cs
+FoundDevice.cs
 Devices.cs
 Hidpp.cs
 Keyboard.cs
