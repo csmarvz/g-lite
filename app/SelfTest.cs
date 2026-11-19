@@ -487,6 +487,9 @@ static class SelfTest
         Log.Sent("M", 0x8100, 7, new byte[] { 2 }, "ok");
         var folded = Log.MergeRepeatedSends(Log.Read());
         Check(folded.Count == 2 && folded[1].Times == 2 && Log.Format(folded[1]).Contains("8100 fn7  ok ×2       01"), "the log folds calls in a row to the same function");
+        try { labeledMouse.Call(labeledMouse.FeatureIndex(0x8100), 5, 0x00, 0x42, 0x00, 0x00); } catch (HidppError) { }
+        var refusedRead = Log.Read().Last();
+        Check(refusedRead.Text == "8100 fn5  00 42 00 00" && refusedRead.Result == "error 02", "a read the device refuses is logged");
         Log.Clear();
         var spy = new Recorder(new FakeMouse());
         var mreport = Report.Build(spy, new FoundDevice { Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x4079, Path = @"\\?\hid#vid_046d&pid_c547&mi_02&col02#7&abc&0&0001#{x}", Features = new[] { 0x2201, 0x8060, 0x8070, 0x8100 } }, "PageMouse");

@@ -183,7 +183,7 @@ class Hidpp : IDisposable
             if (!read) Log.Sent(DeviceLabel, id, fn, parameters, "ok");
             return reply;
         }
-        catch (HidppError ex) { if (!read) Log.Sent(DeviceLabel, id, fn, parameters, "error " + ex.Code.ToString("X2")); throw; }
+        catch (HidppError ex) { Log.Sent(DeviceLabel, id, fn, parameters, "error " + ex.Code.ToString("X2")); throw; }
         catch (TimeoutException) { Log.Sent(DeviceLabel, id, fn, parameters, "no answer"); throw; }
     }
 
@@ -605,7 +605,7 @@ static class G915Lighting
             var ids = new List<byte>();
             for (int effectIndex = 0; effectIndex < 32; effectIndex++)
             {
-                try { ids.Add(hidpp.Call(feature, 0, (byte)cluster, (byte)effectIndex, 0)[3]); }
+                try { ids.Add(hidpp.CallUnlogged(feature, 0, (byte)cluster, (byte)effectIndex, 0)[3]); }
                 catch (HidppError) { break; }
             }
             if (ids.Count == 0) break;

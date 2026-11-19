@@ -68,7 +68,7 @@ static class Report
             if (misses >= 2) { Error = "no answer"; return null; }
             try
             {
-                var reply = Device.Call(Device.FeatureIndex(feature), fn, parameters);
+                var reply = Device.CallUnlogged(Device.FeatureIndex(feature), fn, parameters);
                 misses = 0;
                 return reply;
             }
