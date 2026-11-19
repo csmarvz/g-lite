@@ -192,6 +192,7 @@ static class MouseProtocol
         public int Dpi, Stage = -1, Rate;
         public int[] Dpis = new int[0], Stages = new int[0], Rates = new int[0];
         public bool Onboard, ProfileOk = true, Flash, Fresh, CanInvert, Inverted;
+        public byte ProfilesFeature;
         public MouseLight Light;
         public EffectInfo[] Effects = MouseProtocol.Effects;
         public Dictionary<int, Dictionary<int, int>> Zones = new Dictionary<int, Dictionary<int, int>>();
@@ -515,6 +516,7 @@ static class MouseProtocol
         try
         {
             byte profilesFeature = hidpp.FeatureIndex(0x8100);
+            state.ProfilesFeature = profilesFeature;
             state.Onboard = hidpp.Call(profilesFeature, 2)[0] == 1;
             if (state.Onboard)
             {
@@ -555,6 +557,17 @@ static class MouseProtocol
         catch (NotSupportedException) { }
         catch (HidppError) { }
         return state;
+    }
+
+    // After the mouse's own DPI button, which 0x8100 reports as event fn 1 (MyHUB, docs/research/more-references.md).
+    public static void ReadDpiAndStage(Hidpp hidpp, State state, out int dpi, out int stage)
+    {
+        var now = new State();
+        try { now.Dpi = ReadUInt16BigEndian(hidpp.Call(hidpp.FeatureIndex(0x2201), 2, 0), 1); }
+        catch (NotSupportedException) { ReadWideDpi(hidpp, now); }
+        dpi = now.Dpi;
+        stage = hidpp.Call(state.ProfilesFeature, 0xB)[0];
+        if (stage >= state.Stages.Length) stage = -1;
     }
 
     public static void SetDpi(Hidpp hidpp, int dpi)
@@ -637,7 +650,16 @@ class HidppMouse : IMouse
     public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state) { return MouseProtocol.ReadSector(hidpp, state.Sector, state.SectorSize); }
     public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSet want) { MouseProtocol.Setup(hidpp, state, MouseProtocol.Build(MouseProtocol.ReadSector(hidpp, state.Sector, state.SectorSize), want, state.Zones.Count)); }
     public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSet want) { MouseProtocol.Store(hidpp, state, MouseProtocol.Build(now, want, state.Zones.Count)); }
-    public void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data) { MouseProtocol.Store(hidpp, state, data ?? MouseProtocol.Factory(MouseProtocol.ReadSector(hidpp, MouseProtocol.RomSector, state.SectorSize), now)); }
+    // Reloading the active profile (fn 3) leaves a G305's DPI as it was set live, so the restored default stage is set too.
+    public void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data)
+    {
+        var restored = data ?? MouseProtocol.Factory(MouseProtocol.ReadSector(hidpp, MouseProtocol.RomSector, state.SectorSize), now);
+        MouseProtocol.Store(hidpp, state, restored);
+        int stage = DefaultStage(restored);
+        if (stage < MouseProtocol.StagesOf(restored).Length)
+            try { MouseProtocol.SetStage(hidpp, stage); }
+            catch (HidppError) { }
+    }
     public string Describe(byte[] profile) { return MouseProtocol.Describe(profile); }
     public int DefaultStage(byte[] profile) { return profile[1]; }
 }

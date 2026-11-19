@@ -573,6 +573,7 @@ static class Traces
             script.Press("Update");
             script.Pick("Preset", "None");
             script.Menu("Backups", "Restore the factory profile");
+            script.Do("the mouse's DPI button", () => { device.PressDpiButton(); ((PageMouse)script.Page).Heard(device.FeatureIndex(0x8100), 1); });
             return script.Text;
         }
     }

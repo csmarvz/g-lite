@@ -386,11 +386,18 @@ class MainWindow : Form
     void Heard(string path, byte[] report)
     {
         if (report[0] == 0x10 && report[2] == 0x41) { BeginInvoke((Action)RescanSoon); return; }
-        if (report[0] != 0x11 || report[3] != 0x00) return;
+        // Events have software id 0; replies to G-Lite's own calls don't.
+        if (report[0] != 0x11 || (report[3] & 0x0F) != 0) return;
         BeginInvoke((Action)(() =>
         {
             var device = found.FirstOrDefault(candidate => candidate.Path == path && candidate.Index == report[1] && !candidate.Asleep && candidate.BatteryFeature != 0 && candidate.BatteryFeature == report[2]);
-            if (device == null) return;
+            if (device == null || report[3] != 0x00)
+            {
+                var sender = found.FirstOrDefault(candidate => candidate.Path == path && candidate.Index == report[1] && !candidate.Asleep);
+                Control page;
+                if (sender != null && pages.TryGetValue(sender.Key, out page) && page is PageMouse) ((PageMouse)page).Heard(report[2], report[3] >> 4);
+                return;
+            }
             var now = new FoundDevice { Name = device.Name, BatteryId = device.BatteryId };
             Devices.Decode(now, report.Skip(4).ToArray());
             if (now.BatteryFromVoltage) Devices.Remember(now, DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute);

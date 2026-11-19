@@ -504,6 +504,9 @@ class FakeMouse : Hidpp
 
     int[] Stages { get { return Wide ? MouseProtocol.WideStages(Sectors[current], new[] { 100, 32000 }) : MouseProtocol.StagesOf(Sectors[current]); } }
 
+    // The DPI button under the wheel: the next stage, as the mouse does on its own before it sends 0x8100 event fn 1.
+    public void PressDpiButton() { Stage = (Math.Max(0, Stage) + 1) % Stages.Length; Dpi = Stages[Stage]; }
+
     public override void Dispose() { }
 
     protected override byte[] Send(byte featureIndex, int fn, byte[] parameters)

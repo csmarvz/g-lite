@@ -655,6 +655,22 @@ class PageMouse : DevicePage
         base.Dispose(disposing);
     }
 
+    // The mouse's own buttons: 0x8100 event fn 0 is a new active profile, fn 1 a new DPI stage (MyHUB, docs/research/more-references.md).
+    public void Heard(byte feature, int fn)
+    {
+        if (state == null || state.ProfilesFeature == 0 || feature != state.ProfilesFeature) return;
+        if (fn == 0) { Load(); return; }
+        if (fn != 1) return;
+        int dpi = 0, stage = -1, startedAt = sequence;
+        RunOnDevice(hidpp => MouseProtocol.ReadDpiAndStage(hidpp, state, out dpi, out stage), () =>
+        {
+            if (startedAt != sequence || dpi == 0) return;
+            foreach (var set in new[] { current, sent, stored })
+                if (set != null) { set.Dpi = dpi; set.Stage = stage; }
+            RefreshControls();
+        }, message => { });
+    }
+
     void SendRate(int hz)
     {
         RunOnDevice(hidpp => mouse.SetRate(hidpp, hz), () => Load());

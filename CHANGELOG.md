@@ -2,10 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- Mice: the screen follows the mouse's own DPI button: the stage and DPI change as you press it, and a profile picked with the profile button is read again. The mouse tells G-Lite through its onboard profiles feature (0x8100).
+
 ### Fixed
 
 - G915, G915 TKL and G815: Dim after and Turn off after no longer offer Never. Saved as never, the G915 TKL dimmed and turned off at once.
 - G815: Save to keyboard works without idle times. The G815 is wired and has none, so Save used to refuse; its screen no longer shows Dim after, Dim to and Turn off after.
+- Mice: after Restore the factory profile (or a backup), the mouse goes to the restored profile's default DPI stage. The G305 kept the DPI set before, so the screen showed it as a custom stage.
 - The log now shows a read the device refuses, with its error, as well as one it doesn't answer. A failed read could leave a screen half loaded with nothing in the log to say why.
 
 ## [0.0.32-alpha] - 2026-11-17
