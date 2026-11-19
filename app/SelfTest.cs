@@ -129,9 +129,10 @@ static class SelfTest
         MouseProtocol.SetLight(mouse, mouseState, new MouseLight { Effect = 0x0A, Color = 0xFF0000, Period = 3000, Bright = 80 });
         Check(mouse.Dpi == 3200 && mouse.Zones[1][1] == 3 && mouse.Zones[1][2] == 0xFF && mouse.Zones[1][8] == 80,
             "mouse stage and lighting are set");
-        var mset = MouseSet.FromText(
+        var mouseRoundTrip = MouseSet.FromText(
             new MouseSet { Dpi = 1200, Light = new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 3000, Bright = 70 } }.ToText());
-        Check(mset.Dpi == 1200 && mset.Light.Same(new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 3000, Bright = 70 }),
+        Check(mouseRoundTrip.Dpi == 1200
+            && mouseRoundTrip.Light.Same(new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 3000, Bright = 70 }),
             "a mouse profile round-trips through text");
         var real = Hex("01020290012003d007800c0019ffffffff00ffffffffffffffffffffffffffff8001000180010002800100048001000880010010900500008001000880010010ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff8001000180010002800100048001000880010010900500008001000880010010ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff440065006600610075006c0074000000000000000000000000000000000000000000000000000000000000000000000001ffffff0000000000000001ffffff00000000000000ffffffffffffffffffffffffffffffffffffffffffff00bfdd");
         Check(MouseProtocol.Valid(real) && MouseProtocol.Crc(real, 253) == 0xBFDD, "the profile checksum matches the real mouse");
@@ -155,26 +156,27 @@ static class SelfTest
         MouseProtocol.Store(secondMouse, secondState, MouseProtocol.Build(secondState.Profile,
             new MouseSet { Dpi = 3200, Rate = 500, Stage = 3, Light = new MouseLight { Effect = 0x01, Color = 0xFF2020, Bright = 100 } },
             2));
-        var st2 = MouseProtocol.Read(secondMouse);
-        Check(st2.Dpi == 3200 && st2.Rate == 500 && st2.Light != null && st2.Light.Effect == 0x01 && st2.Light.Color == 0xFF2020
-            && secondMouse.Reloads == 1 && st2.ProfileOk, "saving to the mouse sticks and reloads the profile");
-        MouseProtocol.Store(secondMouse, st2,
-            MouseProtocol.Factory(MouseProtocol.ReadSector(secondMouse, MouseProtocol.RomSector, 255), st2.Profile));
-        var st3 = MouseProtocol.Read(secondMouse);
-        Check(st3.Dpi == 1600 && st3.Light.Effect == 0x03 && st3.ProfileOk
-            && System.Text.Encoding.Unicode.GetString(st3.Profile, 0xA0, 14) == "Default",
+        var savedState = MouseProtocol.Read(secondMouse);
+        Check(savedState.Dpi == 3200 && savedState.Rate == 500
+            && savedState.Light != null && savedState.Light.Effect == 0x01 && savedState.Light.Color == 0xFF2020
+            && secondMouse.Reloads == 1 && savedState.ProfileOk, "saving to the mouse sticks and reloads the profile");
+        MouseProtocol.Store(secondMouse, savedState,
+            MouseProtocol.Factory(MouseProtocol.ReadSector(secondMouse, MouseProtocol.RomSector, 255), savedState.Profile));
+        var restoredState = MouseProtocol.Read(secondMouse);
+        Check(restoredState.Dpi == 1600 && restoredState.Light.Effect == 0x03 && restoredState.ProfileOk
+            && System.Text.Encoding.Unicode.GetString(restoredState.Profile, 0xA0, 14) == "Default",
             "the factory profile comes back with the profile's name");
         int refusals = 0;
-        foreach (var sec in new[] { 0x0000, 0x0101 })
+        foreach (var sector in new[] { 0x0000, 0x0101 })
         {
-            try { MouseProtocol.WriteSector(secondMouse, sec, st3.Profile); } catch (RefusedException) { refusals++; }
+            try { MouseProtocol.WriteSector(secondMouse, sector, restoredState.Profile); } catch (RefusedException) { refusals++; }
         }
-        var broken = (byte[])st3.Profile.Clone();
+        var broken = (byte[])restoredState.Profile.Clone();
         broken[5] ^= 1;
         try { MouseProtocol.WriteSector(secondMouse, 1, broken); } catch (RefusedException) { refusals++; }
         Check(refusals == 3 && MouseProtocol.Valid(secondMouse.Sectors[1]) && MouseProtocol.Valid(secondMouse.Sectors[0x0101]) == false,
             "the directory, the factory profile and bad checksums are never written");
-        Check(!st3.Fresh, "a mouse with a profile isn't set up again");
+        Check(!restoredState.Fresh, "a mouse with a profile isn't set up again");
         var fresh = new FakeMouse(true);
         var freshFactory = (byte[])fresh.Sectors[0x0101].Clone();
         var freshState = MouseProtocol.Read(fresh);
@@ -183,17 +185,18 @@ static class SelfTest
         int freshRefusals = 0;
         try { MouseProtocol.Store(fresh, freshState, MouseProtocol.Build(freshState.Profile, new MouseSet { Dpi = 800 }, 2)); }
         catch (RefusedException) { freshRefusals++; }
-        try { MouseProtocol.Setup(secondMouse, st3, st3.Profile); } catch (RefusedException) { freshRefusals++; }
+        try { MouseProtocol.Setup(secondMouse, restoredState, restoredState.Profile); } catch (RefusedException) { freshRefusals++; }
         try { MouseProtocol.Directory(255, 0); } catch (RefusedException) { freshRefusals++; }
         Check(freshRefusals == 3 && !fresh.Sectors.ContainsKey(0x0001) && !fresh.Sectors.ContainsKey(0x0000),
             "setting up is refused on a mouse that has a profile, and a save never writes the factory profile");
         MouseProtocol.Setup(fresh, freshState,
             MouseProtocol.Build(freshState.Profile, new MouseSet { Dpi = 3200, Rate = 500, Stage = 3 }, 2));
-        var fs2 = MouseProtocol.Read(fresh);
-        var dir = fresh.Sectors[0x0000];
-        Check(fs2.Sector == 1 && !fs2.Fresh && fs2.Savable && fs2.Dpi == 3200 && fs2.Rate == 500 && fresh.Reloads == 1
-            && MouseProtocol.Valid(dir) && dir.Take(8).SequenceEqual(FakeHidpp.Hex("00010100FFFF0000"))
-            && dir.Skip(8).Take(245).All(x => x == 0xFF) && fresh.Sectors[0x0101].SequenceEqual(freshFactory),
+        var setUpState = MouseProtocol.Read(fresh);
+        var writtenDirectory = fresh.Sectors[0x0000];
+        Check(setUpState.Sector == 1 && !setUpState.Fresh && setUpState.Savable
+            && setUpState.Dpi == 3200 && setUpState.Rate == 500 && fresh.Reloads == 1
+            && MouseProtocol.Valid(writtenDirectory) && writtenDirectory.Take(8).SequenceEqual(FakeHidpp.Hex("00010100FFFF0000"))
+            && writtenDirectory.Skip(8).Take(245).All(value => value == 0xFF) && fresh.Sectors[0x0101].SequenceEqual(freshFactory),
             "the first save writes the profile and the directory, and leaves the factory profile as it was");
 
         var hero = new FakeMouse { Info = "01020105050B1000FF0A01" };
@@ -207,7 +210,7 @@ static class SelfTest
             && MouseProtocol.Valid(heroFresh.Sectors[0x0000]) && MouseProtocol.Read(heroFresh).Sector == 1
             && !MouseProtocol.Read(new FakeMouse { Info = "01010105050B1000FF0A01" }).Writable
             && !MouseProtocol.Read(new FakeMouse { Info = "01040105020B1000FF0A01" }).Writable
-            && MouseProtocol.Unwritten(Enumerable.Repeat((byte)0xFF, 255).ToArray()) && !MouseProtocol.Unwritten(st3.Profile),
+            && MouseProtocol.Unwritten(Enumerable.Repeat((byte)0xFF, 255).ToArray()) && !MouseProtocol.Unwritten(restoredState.Profile),
             "profile format 2 (G502 HERO) saves like format 3, a directory of zeros counts as none, formats 1 and 4 stay read-only");
 
         var headset = new FakeHeadset();
@@ -217,8 +220,8 @@ static class SelfTest
         HeadsetProtocol.SetSidetone(headset, 55);
         HeadsetProtocol.SetOff(headset, 10);
         Check(headset.Sidetone == 55 && headset.AutoOffMinutes == 10, "headset sidetone and auto-off are set");
-        var hset = HeadsetSettings.FromText(new HeadsetSettings { Sidetone = 20, AutoOffMinutes = 15 }.ToText());
-        Check(hset.Sidetone == 20 && hset.AutoOffMinutes == 15, "a headset profile round-trips through text");
+        var headsetRoundTrip = HeadsetSettings.FromText(new HeadsetSettings { Sidetone = 20, AutoOffMinutes = 15 }.ToText());
+        Check(headsetRoundTrip.Sidetone == 20 && headsetRoundTrip.AutoOffMinutes == 15, "a headset profile round-trips through text");
         Check(new FoundDevice { Name = "G Pro Wireless Gaming Mouse" }.SettingsKey == "gprowireless", "profile names for a device");
         var layout = KeyLayout.Load("g515-tkl.json");
         Check(layout.Name == "G515 LIGHTSPEED TKL" && layout.Rows.Length == 7 && layout.Rows[6].EndsWith("→"), "keyboard model loads");
@@ -727,29 +730,29 @@ static class SelfTest
         var refusedRead = Log.Read().Last();
         Check(refusedRead.Text == "8100 fn5  00 42 00 00" && refusedRead.Result == "error 02", "a read the device refuses is logged");
         Log.Clear();
-        var spy = new Recorder(new FakeMouse());
-        var mreport = Report.Build(spy, new FoundDevice
+        var mouseSpy = new Recorder(new FakeMouse());
+        var mouseReport = Report.Build(mouseSpy, new FoundDevice
             {
                 Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x4079,
                 Path = @"\\?\hid#vid_046d&pid_c547&mi_02&col02#7&abc&0&0001#{x}", Features = new[] { 0x2201, 0x8060, 0x8070, 0x8100 }
             }, "PageMouse");
-        Check(mreport.Contains("ID 4079, USB 046D:C547") && mreport.Contains("0000=0001")
-            && mreport.Contains("0001=" + BitConverter.ToString(spy.Inner.Sectors[1]).Replace("-", ""))
-            && mreport.Contains("0101=") && mreport.Contains("dpi list=")
-            && mreport.Contains("zone 1 effect 3=") && !mreport.Contains("abc"),
+        Check(mouseReport.Contains("ID 4079, USB 046D:C547") && mouseReport.Contains("0000=0001")
+            && mouseReport.Contains("0001=" + BitConverter.ToString(mouseSpy.Inner.Sectors[1]).Replace("-", ""))
+            && mouseReport.Contains("0101=") && mouseReport.Contains("dpi list=")
+            && mouseReport.Contains("zone 1 effect 3=") && !mouseReport.Contains("abc"),
             "the mouse report has its features, profiles and no device path");
-        Check(spy.Calls.Count > 20
-            && spy.Calls.All(call => Report.Reads.ContainsKey(call.Item1) && Report.Reads[call.Item1].Contains(call.Item2)),
+        Check(mouseSpy.Calls.Count > 20
+            && mouseSpy.Calls.All(call => Report.Reads.ContainsKey(call.Item1) && Report.Reads[call.Item1].Contains(call.Item2)),
             "the mouse report only reads");
-        var kspy = new Recorder(new FakeHidpp());
-        var kreport = Report.Build(kspy, new FoundDevice
+        var keyboardSpy = new Recorder(new FakeHidpp());
+        var keyboardReport = Report.Build(keyboardSpy, new FoundDevice
             {
                 Name = "G515 LS TKL", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40B4,
                 Features = new[] { 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 }
             }, "Page515");
-        Check(kreport.Contains("lit ids=01 02 03") && kreport.Contains(" 4F 61 62") && kreport.Contains("layout=0D")
-            && kreport.Contains("0008=") && kreport.Contains("0101=") && kreport.Contains("cluster 0 effect 1=")
-            && kspy.Calls.All(call => Report.Reads.ContainsKey(call.Item1) && Report.Reads[call.Item1].Contains(call.Item2)),
+        Check(keyboardReport.Contains("lit ids=01 02 03") && keyboardReport.Contains(" 4F 61 62") && keyboardReport.Contains("layout=0D")
+            && keyboardReport.Contains("0008=") && keyboardReport.Contains("0101=") && keyboardReport.Contains("cluster 0 effect 1=")
+            && keyboardSpy.Calls.All(call => Report.Reads.ContainsKey(call.Item1) && Report.Reads[call.Item1].Contains(call.Item2)),
             "the keyboard report reads its files and effects only");
         var g915Report = Report.Build(new FakeG915(), new FoundDevice
             {
@@ -759,14 +762,14 @@ static class SelfTest
         Check(g915Report.Contains("0000=000101FF000201FF000301FF") && g915Report.Contains("0001=0100")
             && g915Report.Contains("0002=error 02") && g915Report.Contains("0101=0100"),
             "the G915 report reads the profiles its directory lists, and goes on past one it can't read");
-        var hreport = Report.Build(new FakeHeadset(),
+        var headsetReport = Report.Build(new FakeHeadset(),
             new FoundDevice
             {
                 Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "LIGHTSPEED", Index = 0xFF,
                 Features = new[] { 0x8300, 0x1F20 }
             },
             "PageHeadset");
-        Check(hreport.Contains("sidetone=1E") && hreport.Contains("auto-off=1E") && hreport.Contains("%, 3926 mV"),
+        Check(headsetReport.Contains("sidetone=1E") && headsetReport.Contains("auto-off=1E") && headsetReport.Contains("%, 3926 mV"),
             "the headset report reads sidetone, auto-off and the battery");
         Check(!Report.Reads[0x8100].Intersect(new[] { 1, 3, 6, 7, 8, 0xC }).Any()
             && !Report.Reads[0x8101].Intersect(new[] { 2, 3, 6, 7 }).Any()
@@ -816,11 +819,12 @@ static class SelfTest
         screen.Keys[0x26] = 3;
         screen.Add();
         screen.Zones[4].Area = new System.Drawing.RectangleF(0.1f, 0.2f, 0.3f, 0.4f);
-        var back2 = ScreenSetup.FromText(screen.ToText());
-        Check(back2.Monitor == screen.Monitor && back2.Boost == 60 && back2.Interval == 300
-            && !back2.Smooth && !back2.PauseOnBattery && !back2.PauseWhenLocked
-            && back2.Zones.Count == 5 && back2.Zones[4].Name == "Zone 5" && Math.Abs(back2.Zones[4].Area.Height - 0.4f) < 0.001f
-            && back2.Keys[0x26] == 3, "screen setup round-trips through text");
+        var screenRoundTrip = ScreenSetup.FromText(screen.ToText());
+        Check(screenRoundTrip.Monitor == screen.Monitor && screenRoundTrip.Boost == 60 && screenRoundTrip.Interval == 300
+            && !screenRoundTrip.Smooth && !screenRoundTrip.PauseOnBattery && !screenRoundTrip.PauseWhenLocked
+            && screenRoundTrip.Zones.Count == 5 && screenRoundTrip.Zones[4].Name == "Zone 5"
+            && Math.Abs(screenRoundTrip.Zones[4].Area.Height - 0.4f) < 0.001f
+            && screenRoundTrip.Keys[0x26] == 3, "screen setup round-trips through text");
         Check(ScreenSetup.FromText("garbage;zones:x").Zones.Count == 4 && ScreenSetup.FromText("ms:5000").Interval == 1000,
             "bad screen setup text falls back to defaults");
         Check(screen.Add() == -1, "at most five zones");
