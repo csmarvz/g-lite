@@ -510,7 +510,7 @@ class MainWindow : Form
         sleepers.Enabled = list.Any(device => device.Asleep && !Devices.Shorts.ContainsKey(device.Path ?? ""));
         if (!demo) Listen(list);
         if (!settingsPage.Visible && !logsPage.Visible && !updatePage.Visible) Pick(selected);
-        foreach (var page in made) if (page != shown) page.LoadForPreset();
+        foreach (var page in made) if (page != shown) page.LoadToSendAgain();
     }
 
     static Type PageFor(FoundDevice found)
@@ -592,6 +592,9 @@ class MainWindow : Form
                 Link = "LIGHTSPEED", Index = 2, WirelessId = 0x407C, Battery = 46, BatteryFromVoltage = true, Millivolts = 3780,
                 Firmware = "MPK 12.01, build 0019",
                 Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 } },
+            new FoundDevice { Key = "demo|g305", Name = "G305 Lightspeed Wireless Gaming Mouse", Kind = "mouse",
+                Link = "LIGHTSPEED", Index = 6, WirelessId = 0x4074, Battery = 90, Firmware = "RQM 68.02, build 0021",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1000, 0x1D4B, 0x2201, 0x8060, 0x8070, 0x8100 } },
             new FoundDevice { Key = "demo|g502", Name = "G502 LIGHTSPEED Wireless Gaming Mouse", Kind = "mouse",
                 Link = "LIGHTSPEED", Index = 3, WirelessId = 0x407F, Battery = 88, BatteryFromVoltage = true, Millivolts = 4020,
                 Firmware = "MPM 16.01, build 0020",

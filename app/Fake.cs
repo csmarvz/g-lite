@@ -569,7 +569,10 @@ class FakeMouse : Hidpp
 
     public static FakeMouse For(FoundDevice found)
     {
-        return found.Models.Contains("C08B") ? Hero() : found.WirelessId == 0x407F ? G502() : new FakeMouse();
+        return found.Models.Contains("C08B") ? Hero()
+            : found.WirelessId == 0x407F ? G502()
+            : found.WirelessId == 0x4074 ? G305()
+            : new FakeMouse();
     }
 
     public static FakeMouse G305()
@@ -610,7 +613,7 @@ class FakeMouse : Hidpp
             case 0:
                 int id = readUInt16(0);
                 reply[0] = (byte)(id == 0x2201 ? 1 : id == 0x8060 ? 2 : id == 0x8070 ? 3 : id == 0x8100 ? 4
-                    : id == 0x2121 && Wheel ? 5 : 0);
+                    : id == 0x2121 && Wheel ? 5 : id == 0x1D4B ? 9 : 0);
                 if (Wide) reply[0] = (byte)(id == 0x2202 ? 6 : id == 0x8061 ? 7 : id == 0x8100 ? 4 : 0);
                 break;
             case 6:

@@ -244,10 +244,13 @@ abstract class DevicePage : Control, IPage
 
     protected void LogUserAction(string what) { Log.Add(DeviceLabel, "you", what); }
 
-    // A screen that didn't read its device when made, and isn't shown, reads it now, so its preset is sent again without opening it.
-    public void LoadForPreset()
+    // Whether the screen has something to send to its device after a scan: its preset, by default.
+    protected virtual bool SendsAgain { get { return Settings.Get(PresetKey) != ""; } }
+
+    // A screen that didn't read its device when made, and isn't shown, reads it now, so what it keeps is sent again without opening it.
+    public void LoadToSendAgain()
     {
-        if (queuedWork || Settings.Get(PresetKey) == "") return;
+        if (queuedWork || !SendsAgain) return;
         // Started in the tray, a hidden screen has no handle yet, and Do's callbacks need one.
         if (!IsHandleCreated) CreateHandle();
         Load();

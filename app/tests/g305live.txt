@@ -1,0 +1,201 @@
+open
+  2201 fn1
+  2201 fn2
+  8060 fn0
+  8060 fn1
+  8070 fn0
+  8070 fn1  00 FF
+  8070 fn2  00 00 FF
+  8070 fn2  00 01 FF
+  8070 fn2  00 02 FF
+  8070 fn2  00 03 FF
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  01 01
+  8100 fn5  01 01 00 10
+  8100 fn5  01 01 00 20
+  8100 fn5  01 01 00 30
+  8100 fn5  01 01 00 40
+  8100 fn5  01 01 00 50
+  8100 fn5  01 01 00 60
+  8100 fn5  01 01 00 70
+  8100 fn5  01 01 00 80
+  8100 fn5  01 01 00 90
+  8100 fn5  01 01 00 A0
+  8100 fn5  01 01 00 B0
+  8100 fn5  01 01 00 C0
+  8100 fn5  01 01 00 D0
+  8100 fn5  01 01 00 E0
+  8100 fn5  01 01 00 EF
+  8100 fn5
+  8100 fnB
+  = status "Matches the mouse" [Report] [Backups] Preset=None [New…] […] View=Settings Effect=Off DPI stage=800 DPI=14 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+pick Effect Static
+  8070 fn3  00 01 FF FF FF
+  = status "Matches the mouse" [Report] [Backups] Preset=None [New…] […] View=Settings Effect=Static DPI stage=800 <Color FFFFFF> DPI=14 Report rate=1k Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+press Color FFD000
+  8070 fn3  00 01 FF D0
+  = status "Matches the mouse" [Report] [Backups] Preset=None [New…] […] View=Settings Effect=Static DPI stage=800 <Color FFD000> DPI=14 Report rate=1k Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+pick DPI stage 400
+  8100 fnC
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] Preset=None [New…] […] View=Settings Effect=Static DPI stage=400 <Color FFD000> DPI=6 Report rate=1k Brightness=100 Speed=0 (off) [Revert] [Save to mouse]
+press Save to mouse
+  8100 fn5  01 01
+  8100 fn5  01 01 00 10
+  8100 fn5  01 01 00 20
+  8100 fn5  01 01 00 30
+  8100 fn5  01 01 00 40
+  8100 fn5  01 01 00 50
+  8100 fn5  01 01 00 60
+  8100 fn5  01 01 00 70
+  8100 fn5  01 01 00 80
+  8100 fn5  01 01 00 90
+  8100 fn5  01 01 00 A0
+  8100 fn5  01 01 00 B0
+  8100 fn5  01 01 00 C0
+  8100 fn5  01 01 00 D0
+  8100 fn5  01 01 00 E0
+  8100 fn5  01 01 00 EF
+  8100 fn6  00 01 00 00 00 FF
+  8100 fn7  01 00 00 90 01 20 03 40 06 80 0C 00 00 FF FF FF
+  8100 fn7  FF 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  80 01 00 01 80 01 00 02 80 01 00 04 80 01 00 08
+  8100 fn7  80 01 00 10 90 05 00 00 FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  00 00 00 00 00 00 1F 40
+  8100 fn7  00 1F 40 00 00 00 FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF B1 5C
+  8100 fn8
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fn6  00 00 00 00 00 FF
+  8100 fn7  00 01 01 00 FF FF 00 00 FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF 58 7C
+  8100 fn8
+  8100 fn5
+  8100 fn5  00 00 00 10
+  8100 fn5  00 00 00 20
+  8100 fn5  00 00 00 30
+  8100 fn5  00 00 00 40
+  8100 fn5  00 00 00 50
+  8100 fn5  00 00 00 60
+  8100 fn5  00 00 00 70
+  8100 fn5  00 00 00 80
+  8100 fn5  00 00 00 90
+  8100 fn5  00 00 00 A0
+  8100 fn5  00 00 00 B0
+  8100 fn5  00 00 00 C0
+  8100 fn5  00 00 00 D0
+  8100 fn5  00 00 00 E0
+  8100 fn5  00 00 00 EF
+  8100 fn3  00 01
+  2201 fn1
+  2201 fn2
+  8060 fn0
+  8060 fn1
+  8070 fn0
+  8070 fn1  00 FF
+  8070 fn2  00 00 FF
+  8070 fn2  00 01 FF
+  8070 fn2  00 02 FF
+  8070 fn2  00 03 FF
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fnB
+  8070 fn3  00 01 FF D0
+  = status "Matches the mouse" [Report] [Backups] Preset=None [New…] […] View=Settings Effect=Static DPI stage=400 <Color FFD000> DPI=6 Report rate=1k Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+the mouse reconnects, switched off and on
+  8070 fn3  00 01 FF D0
+  = status "Matches the mouse" [Report] [Backups] Preset=None [New…] […] View=Settings Effect=Static DPI stage=400 <Color FFD000> DPI=6 Report rate=1k Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+the screen loads again
+  2201 fn1
+  2201 fn2
+  8060 fn0
+  8060 fn1
+  8070 fn0
+  8070 fn1  00 FF
+  8070 fn2  00 00 FF
+  8070 fn2  00 01 FF
+  8070 fn2  00 02 FF
+  8070 fn2  00 03 FF
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fnB
+  8070 fn3  00 01 FF D0
+  = status "Matches the mouse" [Report] [Backups] Preset=None [New…] […] View=Settings Effect=Static DPI stage=400 <Color FFD000> DPI=6 Report rate=1k Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+the mouse's DPI button
+  2201 fn2
+  8100 fnB
+  = status "Matches the mouse" [Report] [Backups] Preset=None [New…] […] View=Settings Effect=Static DPI stage=800 <Color FFD000> DPI=14 Report rate=1k Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+lighting record after the save: unchanged

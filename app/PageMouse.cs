@@ -217,6 +217,7 @@ class PageMouse : DevicePage
         watch.Tick += (s, e) => Watch();
         if (!Manual) watch.Start();
 
+
         settingsArea = new Control[] { pictureBox, light, sensitivity };
         viewPick = Ui.Add(this, new SegmentedPicker { Items = new[] { "Settings", "Buttons" }, AccessibleName = "View", Visible = false },
             440, 72, 196, 32);
@@ -313,7 +314,9 @@ class PageMouse : DevicePage
         bool lit = ready && state.Zones.Count > 0, known = lit && effect != null;
         bool color = known && effect.Color, hasSpeed = known && effect.Speed, hasBrightness = known && light.Effect != 0x00;
         lightHead.Text = !ready || lit
-            ? (light == null && lit ? "Lighting (as saved on the mouse)" : "Lighting")
+            ? (light == null && lit ? "Lighting (as saved on the mouse)"
+                : found.LightIsLiveOnly ? "Lighting (live only)"
+                : "Lighting")
             : "Lighting (not supported on this mouse)";
         effects.Items = Effects.Select(info => info.Name).ToArray();
         effects.Enabled = lit;
@@ -443,6 +446,7 @@ class PageMouse : DevicePage
     void Save()
     {
         var want = current.Clone();
+        if (found.LightIsLiveOnly) want.Light = null;
         var deviceState = state;
         debounce.Stop();
         saveButton.Enabled = false;
@@ -500,10 +504,15 @@ class PageMouse : DevicePage
             if (want.Light != null && deviceState.Zones.Count > 0 && (sent == null || !want.Light.Same(sent.Light)))
             {
                 mouse.SetLight(hidpp, deviceState, want.Light);
-                lightSet = !want.Light.Same(deviceState.Light);
+                lightSet = !found.LightIsLiveOnly && !want.Light.Same(deviceState.Light);
             }
             sent = want;
-        }, () => { if (startedAt == sequence) ClearStatus(); });
+        }, () =>
+        {
+            if (startedAt != sequence) return;
+            if (found.LightIsLiveOnly && want.Light != null) Keep(want.Light);
+            ClearStatus();
+        });
     }
 
     void ShowView(bool buttons)
@@ -722,7 +731,9 @@ class PageMouse : DevicePage
     // The mouse's own buttons: 0x8100 event fn 0 is a new active profile, fn 1 a new DPI stage (MyHUB, docs/research/more-references.md).
     public void Heard(byte feature, int fn)
     {
-        if (state == null || state.ProfilesFeature == 0 || feature != state.ProfilesFeature) return;
+        if (state == null) return;
+        if (found.LightIsLiveOnly && fn == 0 && feature != state.ProfilesFeature) { Reconnected(feature); return; }
+        if (state.ProfilesFeature == 0 || feature != state.ProfilesFeature) return;
         if (fn == 0) { Load(); return; }
         if (fn != 1) return;
         int dpi = 0, stage = -1, startedAt = sequence;
@@ -733,6 +744,47 @@ class PageMouse : DevicePage
                 if (set != null) { set.Dpi = dpi; set.Stage = stage; }
             RefreshControls();
         }, message => { });
+    }
+
+    // A wireless device sends 0x1D4B (wireless device status) event 0 when it reconnects, after a sleep, and wants its software
+    // settings again; Solaar re-applies its settings on it. The index is looked up only then, so the mouse's read sends nothing more.
+    void Reconnected(byte feature)
+    {
+        var kept = KeptLight();
+        var deviceState = state;
+        RunOnDevice(hidpp =>
+        {
+            try { if (hidpp.FeatureIndex(0x1D4B) != feature) return; }
+            catch (NotSupportedException) { return; }
+            Log.Add(DeviceLabel, "found", "woke up (wireless status event)");
+            if (kept != null && deviceState.Zones.Count > 0) mouse.SetLight(hidpp, deviceState, kept);
+        }, null, message => { });
+    }
+
+    string LightKey { get { return "lighting." + found.SettingsKey; } }
+
+    // A G305 loses its live light when switched off, and a scan remakes its screen: the new one reads the mouse to send it again.
+    protected override bool SendsAgain { get { return base.SendsAgain || (found.LightIsLiveOnly && KeptLight() != null); } }
+
+    MouseLight KeptLight()
+    {
+        var text = Settings.Get(LightKey);
+        if (text == "") return null;
+        try { return MouseLight.FromText(text); }
+        catch (FormatException) { return null; }
+        catch (IndexOutOfRangeException) { return null; }
+    }
+
+    // A mouse that ignores the profile's lighting: G-Lite keeps it, and it's no change to save.
+    void Keep(MouseLight light)
+    {
+        if (!light.Same(KeptLight())) Settings.Set(LightKey, light.ToText());
+        if (stored == null) return;
+        stored.Light = light.Clone();
+        if (current.Dpi == stored.Dpi && current.Stage == stored.Stage && current.Rate == stored.Rate
+            && Bindings.Same(current.Buttons, stored.Buttons))
+            dirty = false;
+        RefreshControls();
     }
 
     void SendRate(int hz)
@@ -767,11 +819,18 @@ class PageMouse : DevicePage
                 recording = -1;
                 if (!lightSet || current.Light == null) current.Light = read.Light == null ? null : read.Light.Clone();
                 if (!lightSet) dirty = false;
+                var kept = found.LightIsLiveOnly && read.Zones.Count > 0 ? KeptLight() : null;
+                if (kept != null)
+                {
+                    current.Light = kept;
+                    stored.Light = kept.Clone();
+                }
                 sent = new MouseSet
                 {
                     Dpi = read.Dpi, Stage = start,
                     Light = lightSet && current.Light != null ? current.Light.Clone() : read.Light
                 };
+                if (kept != null) Send();
             }
             RefreshControls();
             Loaded();

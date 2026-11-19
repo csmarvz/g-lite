@@ -44,6 +44,10 @@ class FoundDevice
     }
     public bool IsG560 { get { return Name.ToUpper().Contains("G560") && Has(0x8070); } }
     public bool IsMouse { get { return Kind == "mouse" && (Has(0x2201) || Has(0x2202)); } }
+
+    // The G305 and G304 (4074) have one status LED that 0x8070 drives live, but the mouse ignores the profile's lighting record: saved
+    // as Static, the LED went off at the reload (tried on a G305; libratbag lists no LEDs for it).
+    public bool LightIsLiveOnly { get { return WirelessId == 0x4074; } }
     public bool IsG9x { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_(C066|C249)", RegexOptions.IgnoreCase); } }
     public bool IsG500
     {
@@ -676,8 +680,13 @@ class DeviceWatcher : IDisposable
             {
                 int read;
                 try { read = stream.Read(buffer, 0, size); }
-                catch (Exception) { return; }
-                if (read >= 7) heard(key, (byte[])buffer.Clone());
+                catch (Exception ex)
+                {
+                    if (!done) Log.Add("G-Lite", "error", "stopped listening to a device's events: " + ex.Message);
+                    return;
+                }
+                try { if (read >= 7) heard(key, (byte[])buffer.Clone()); }
+                catch (Exception ex) { Log.Add("G-Lite", "error", "a device event failed: " + ex.GetType().Name + ", " + ex.Message); }
             }
         });
     }

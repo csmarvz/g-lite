@@ -11,6 +11,18 @@ class MouseLight
     public int Color = 0xFFFFFF, Period = 5000, Bright = 100, Direction = 6;
     public MouseLight Clone() { return (MouseLight)MemberwiseClone(); }
 
+    public string ToText() { return string.Join(",", Effect, Color.ToString("X6"), Period, Bright); }
+
+    public static MouseLight FromText(string text)
+    {
+        var parts = text.Split(',');
+        return new MouseLight
+        {
+            Effect = byte.Parse(parts[0]), Color = int.Parse(parts[1], NumberStyles.HexNumber),
+            Period = int.Parse(parts[2]), Bright = int.Parse(parts[3])
+        };
+    }
+
     public bool Same(MouseLight other)
     {
         return other != null && Effect == other.Effect && Color == other.Color && Period == other.Period && Bright == other.Bright

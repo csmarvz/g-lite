@@ -659,6 +659,34 @@ static class Traces
         }
     }
 
+    // The G305's lighting is live only: Save leaves the profile's lighting record alone, and G-Lite sends it again when the mouse wakes
+    // (0x1D4B event 0) and when the screen loads.
+    static string LiveLightMouse()
+    {
+        var found = new FoundDevice
+        {
+            Key = "trace|g305live", Name = "G305 Lightspeed Wireless Gaming Mouse", Kind = "mouse",
+            Link = "LIGHTSPEED", Index = 1, WirelessId = 0x4074,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1000, 0x1D4B, 0x2201, 0x8060, 0x8070, 0x8100 }
+        };
+        var device = FakeMouse.G305();
+        var factoryLight = device.Sectors[MouseProtocol.RomSector]
+            .Skip(MouseProtocol.LightRecordsAt).Take(MouseProtocol.LightRecordLength).ToArray();
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device, null)))
+        {
+            script.Pick("Effect", "Static");
+            script.Press("Color FFD000");
+            script.Pick("DPI stage", "400");
+            script.Press("Save to mouse");
+            script.Do("the mouse reconnects, switched off and on", () => ((PageMouse)script.Page).Heard(device.FeatureIndex(0x1D4B), 0));
+            script.Do("the screen loads again", () => ((PageMouse)script.Page).Load());
+            script.Do("the mouse's DPI button", () => { device.PressDpiButton(); ((PageMouse)script.Page).Heard(device.FeatureIndex(0x8100), 1); });
+            var savedLight = device.Sectors[1].Skip(MouseProtocol.LightRecordsAt).Take(MouseProtocol.LightRecordLength).ToArray();
+            return script.Text
+                + "lighting record after the save: " + (savedLight.SequenceEqual(factoryLight) ? "unchanged" : "changed") + "\n";
+        }
+    }
+
     static string TraceWideDpiMouse()
     {
         var found = new FoundDevice
@@ -794,6 +822,7 @@ static class Traces
             new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("g305", () => Mouse("G305 Lightspeed Wireless Gaming Mouse", FakeMouse.G305(),
             new[] { 0x0001, 0x0003, 0x0005, 0x1000, 0x2201, 0x8060, 0x8070, 0x8100 }));
+        yield return new KeyValuePair<string, Func<string>>("g305live", LiveLightMouse);
         yield return new KeyValuePair<string, Func<string>>("wheel", Wheel);
         yield return new KeyValuePair<string, Func<string>>("buttons", Buttons);
         yield return new KeyValuePair<string, Func<string>>("g9x", G9x);
