@@ -156,7 +156,7 @@ The G700 and G700s on their cable get the G9x screen with `G9xModel.G700` and `G
 | File | Change |
 |---|---|
 | `app/Devices.cs` | Done: the scan finds HID++ 1.0 devices at index 0x00 (`FoundDevice.Hidpp10`, `FoundDevice.ShortPath`). `FoundDevice.IsG9x`: Hidpp10, PID C066 or C249. |
-| `app/Keyboard.cs` | Done: `Hidpp.Register(subId, register, parameters)` sends HID++ 1.0 register calls on the short collection (long sets on the long one) and reads replies from both. Sets are logged as `register XX`. |
+| `app/Hidpp.cs` | Done: `Hidpp.Register(subId, register, parameters)` sends HID++ 1.0 register calls on the short collection (long sets on the long one) and reads replies from both. Sets are logged as `register XX`. |
 | `app/Mouse.cs` | Done: `G9xRegisters` reads the colour, DPI, rate and the active profile's stages, and sets colour, DPI and rate live. `G9xRegisters.Build` puts the DPI (in the chosen stage, made the default), the rate and the colour into the page; `G9xRegisters.Store` writes it as above and reads it back. It refuses any page the directory doesn't point to as the active profile, and pages 0 and 1. |
 | `app/PageMouse.cs` | Done: the mouse screen, with the G9x's effects (Off, Static), Save to mouse and Backups. No factory restore: the G9x has no factory profile page to copy. |
 | `app/Fake.cs` | Done: `FakeG9x` with registers and pages, uploads to RAM, erase and copy, for `--demo` and the self-tests. |

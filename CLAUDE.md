@@ -14,8 +14,8 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 
 ## Files
 
+- `app/Hidpp.cs`: `Hidpp`: HID++ 2.0 over the receiver, and `Register` and `Upload` for HID++ 1.0 registers and memory uploads when it's given the short collection, and its errors (`HidppError`, `RefusedException`, `HalfWrittenException`)
 - `app/Keyboard.cs`:
-  - `Hidpp`: HID++ 2.0 over the receiver, and `Register` and `Upload` for HID++ 1.0 registers and memory uploads when it's given the short collection
   - `Lighting`: the lighting settings
   - `G515Profile`: the effect table, profile encode and decode, CRC32, onboard file read and write, preview
   - `G915Lighting`: live lighting on the G915, G915 TKL and G815 (0x8071 keys and logo clusters, the older effect ids; `G915Lighting.Claim` also sets full power with fn 8, since the keyboard wakes from its own sleep in power mode 3 and ignores effects until then). Live lighting tested on a G915 TKL. The G815 is wired: 256-byte sectors, no idle times (`KeyboardKinds.NoIdleTimes` hides them, and `Build` keeps the profile's and copies records 0–1 to 2–3). Save to keyboard writes the active onboard profile (format 4: lighting records at 0xD0, idle times at 0x1C, after a backup under `backups\<device>\`), and Backups can restore the factory copy's lighting only. See `docs/G915.md`.

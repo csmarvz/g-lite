@@ -14,6 +14,7 @@ Pages.cs
 ReportView.cs
 LogsPage.cs
 Devices.cs
+Hidpp.cs
 Keyboard.cs
 Backup.cs
 Mouse.cs
