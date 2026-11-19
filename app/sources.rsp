@@ -35,5 +35,9 @@ Update.cs
 Settings.cs
 Win.cs
 Logo.cs
+Theme.cs
 Ui.cs
+Controls.cs
+DeviceList.cs
+Tray.cs
 Screen.cs
