@@ -1,6 +1,7 @@
 # The app's source files, in compile order, for csc (build.cmd passes it as @sources.rsp). The self-test adds SelfTest.cs and
 # Traces.cs. A new source file goes here.
 Program.cs
+DeviceTable.cs
 Page515.cs
 PageMouse.cs
 PageHeadset.cs

@@ -61,7 +61,7 @@ fn 1 gives each zone's location: 1 primary (the keys), 2 logo, 6–11 primary 1 
 | `app/PageKeyboard.cs` | Effect, colour, speed, brightness, the key picture, Save to keyboard. Smaller than `Page515`: no 0x8101 files, no idle settings, no backups (nothing is overwritten that G-Lite can't set again). |
 | `app/models/g512.json` | The full-size layout. |
 | `app/Fake.cs` | `FakeLedKeyboard` for the demo and self-tests. |
-| `app/Program.cs` | Open the page for `IsLedKeyboard`. |
+| `app/DeviceTable.cs` | Open the page for `IsLedKeyboard`. |
 
 ## Reading the lighting
 

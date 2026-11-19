@@ -1,0 +1,73 @@
+using System;
+using System.Linq;
+using System.Windows.Forms;
+
+class DeviceTable
+{
+    public Func<FoundDevice, bool> Matches;
+    public Type Screen;
+    public Func<FoundDevice, Hidpp, MouseEventHandler, Control> Make;
+    public Func<FoundDevice, Hidpp> Fake;
+
+    public static readonly DeviceTable[] All =
+    {
+        new DeviceTable { Matches = found => found.IsG515, Screen = typeof(Page515),
+            Make = (found, fake, drag) => new Page515(found, fake, drag, KeyboardKinds.G515) },
+        new DeviceTable { Matches = found => found.IsG915, Screen = typeof(Page515),
+            Make = (found, fake, drag) => new Page515(found, fake, drag,
+                found.Name.ToUpper().Contains("TKL") ? KeyboardKinds.G915Tkl
+                : found.Name.ToUpper().Contains("G815") ? KeyboardKinds.G815
+                : KeyboardKinds.G915),
+            Fake = found => new FakeG915() },
+        new DeviceTable { Matches = found => found.IsG512X, Screen = typeof(Page515),
+            Make = (found, fake, drag) => new Page515(found, fake, drag, KeyboardKinds.G512X),
+            Fake = found => FakeG915.G512X() },
+        new DeviceTable { Matches = found => found.IsRgbKeyboard, Screen = typeof(Page515),
+            Make = (found, fake, drag) => new Page515(found, fake, drag, KeyboardKinds.For(found)),
+            Fake = found => FakeG915.G512X() },
+        new DeviceTable { Matches = found => found.IsLedKeyboard, Screen = typeof(PageSpeaker),
+            Make = (found, fake, drag) => new PageSpeaker(found, fake, drag),
+            Fake = found => new FakeSpeaker { Count = 2 } },
+        new DeviceTable { Matches = found => found.IsG510, Screen = typeof(PageG510),
+            Make = (found, fake, drag) => new PageG510(found, fake, drag),
+            Fake = found => new FakeG510() },
+        new DeviceTable { Matches = found => found.IsG9x, Screen = typeof(PageMouse),
+            Make = (found, fake, drag) => new PageMouse(found, fake, drag, new G9xMouse(G9xModel.G9x)),
+            Fake = found => new FakeG9x() },
+        new DeviceTable { Matches = found => found.IsG5, Screen = typeof(PageMouse),
+            Make = (found, fake, drag) => new PageMouse(found, fake, drag, G5Mouse.G5()),
+            Fake = found => FakeG9x.Short(0x82) },
+        new DeviceTable { Matches = found => found.IsG9, Screen = typeof(PageMouse),
+            Make = (found, fake, drag) => new PageMouse(found, fake, drag, G5Mouse.G9()),
+            Fake = found => FakeG9x.Short(0x84) },
+        new DeviceTable { Matches = found => found.IsG500, Screen = typeof(PageMouse),
+            Make = (found, fake, drag) => new PageMouse(found, fake, drag, new G9xMouse(found.G500Model)),
+            Fake = found => FakeG9x.G500s() },
+        new DeviceTable { Matches = found => found.IsMouse && found.Has(0x2202), Screen = typeof(PageMouse),
+            Make = (found, fake, drag) => new PageMouse(found, fake, drag, new HidppMouse()),
+            Fake = found => FakeMouse.ProX2() },
+        new DeviceTable { Matches = found => found.IsMouse, Screen = typeof(PageMouse),
+            Make = (found, fake, drag) => new PageMouse(found, fake, drag, new HidppMouse()),
+            Fake = found => FakeMouse.For(found) },
+        new DeviceTable { Matches = found => found.IsG560, Screen = typeof(PageSpeaker),
+            Make = (found, fake, drag) => new PageSpeaker(found, fake, drag),
+            Fake = found => new FakeSpeaker() },
+        new DeviceTable { Matches = found => found.IsLight, Screen = typeof(PageLight),
+            Make = (found, fake, drag) => new PageLight(found, fake, drag),
+            Fake = found => new FakeLight() },
+        new DeviceTable { Matches = found => found.IsHeadset, Screen = typeof(PageHeadset),
+            Make = (found, fake, drag) => new PageHeadset(found, fake, drag),
+            Fake = found => new FakeHeadset() },
+    };
+
+    public static readonly DeviceTable Other = new DeviceTable { Matches = OtherDevice.Supports, Screen = typeof(PageOtherDevice),
+        Make = (found, fake, drag) => new PageOtherDevice(found, fake, drag),
+        Fake = found => new FakeOther() };
+
+    public static DeviceTable For(FoundDevice found)
+    {
+        if (found.Asleep) return null;
+        if (!found.IsG) return Other.Matches(found) ? Other : null;
+        return All.FirstOrDefault(entry => entry.Matches(found));
+    }
+}
