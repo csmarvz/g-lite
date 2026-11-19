@@ -239,6 +239,16 @@ One subject per file. Keep the current file names where they still fit.
 
 `app\build.cmd` lists the source files by name, twice (the self-test and the app; the app leaves out `SelfTest.cs` and `Traces.cs`): add each new file to both lists, or replace them with a list kept in one place. Update the file list in `CLAUDE.md`.
 
+Done, one commit per file: `app\sources.rsp` now lists the sources once, in compile order, for both builds. Moved byte for byte (copied, never retyped), each new file with only the `using` lines it compiles without:
+
+- `Ui.cs`: `Theme.cs`, `Controls.cs` (with `ButtonStyle`), `DeviceList.cs` (with `DeviceSubtitle` and `TitleLogo`), `Tray.cs` (with `MenuRenderer` and `MenuColorTable`, which style every menu). `Ui` and `Icons` stay.
+- `Mouse.cs`: `MouseButtons.cs` (`MouseAction`, `Bindings`, `ButtonSpy`), `MouseProtocol.cs`, `G9x.cs` (`G9xModel`, `G9xMouse`, `G5Mouse`, `G9xRegisters`). `MouseLight`, `MouseSet`, `IMouse` and `HidppMouse` stay.
+- `Keyboard.cs`: `Hidpp.cs`, with `HidppError`, `RefusedException` and `HalfWrittenException`.
+- `Pages.cs`: `ReportView.cs`, `LogsPage.cs`. `Program.cs`: `DeviceTable.cs` (the version attributes stay in `Program.cs`, where the release workflow reads them). `Page515.cs`: `KeyPicture.cs`, `KeyboardKinds.cs`. `Fake.cs`: `KeyLayout.cs`, `KeyboardView.cs`. `Devices.cs`: `FoundDevice.cs`.
+- The protocols out of the page files: `G510.cs`, `ZoneLighting.cs`, `OtherDevice.cs`, `Litra.cs`.
+
+Each commit, and the whole step against the tree before it: the traces pass unchanged, every line and every type's text (with its comments) is the same and appears once, every method's IL is the same (tokens resolved to names), and the exe is the same size. `Page515.cs` (1242 lines) and `Program.cs` (1036) stay big: each is one class (`Page515`, `MainWindow`), and splitting a class with `partial` wouldn't give one subject per file. That would be a redesign of those classes, not a move.
+
 ## Progress
 
 - [x] 1a. Classes
@@ -248,4 +258,4 @@ One subject per file. Keep the current file names where they still fit.
 - [x] 2a. Long lines: line breaks
 - [x] 2b. Long lines: rewrites (ternaries, brackets, named locals)
 - [x] 3. Profile offsets
-- [ ] 4. Split files
+- [x] 4. Split files
