@@ -14,6 +14,9 @@ open
   8071 fn0  01 07
   8071 fn0  02
   8100 fn2
+  8100 fn4
+  8100 fn5
+  8100 fn2
   8100 fn0
   8100 fn4
   8100 fn5  00 01
@@ -48,6 +51,9 @@ open
   8071 fn0  01 07
   8071 fn0  02
   8100 fn2
+  8100 fn4
+  8100 fn5
+  8100 fn2
   8100 fn0
   8100 fn4
   8100 fn5  00 01
@@ -67,21 +73,21 @@ open
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8040 fn1
-  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=None [New…] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 [Revert (off)] [Save to keyboard (off)]
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
 pick Effect Static
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 01 FF FF FF 02 00 00 00 00 00 00 01
   8071 fn1  01 01 FF FF FF 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=None [New…] […] Effect=Static Dim after=1 min <Color FFFFFF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 (off) [Revert] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static Dim after=1 min <Color FFFFFF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 (off) Onboard profile=M1 [Revert] [Save to M1]
 press Color 30D050
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 01 30 D0 50 02 00 00 00 00 00 00 01
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=None [New…] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 (off) [Revert] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 (off) Onboard profile=M1 [Revert] [Save to M1]
 slide Brightness 50
   8040 fn1
   8040 fn2  00 32
@@ -89,22 +95,22 @@ slide Brightness 50
   8071 fn8  01 01
   8071 fn1  00 01 30 D0 50 02 00 00 00 00 00 00 01
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=None [New…] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) Onboard profile=M1 [Revert] [Save to M1]
 menu More preset actions > Save as new preset…
   menu: Save as new preset… | Rename… (off) | Delete (off)
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] [Save] [Cancel] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] [Save] [Cancel] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) Onboard profile=M1 [Revert] [Save to M1]
 type Green
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] [Save] [Cancel] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] [Save] [Cancel] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) Onboard profile=M1 [Revert] [Save to M1]
 press Save
-  = status "Saved the preset Green" [Report] [Backups] G-Lite preset=Green [Update (off)] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert (off)] [Save to keyboard]
+  = status "Saved the preset Green" [Report] [Backups] G-Lite preset=Green [Update (off)] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) Onboard profile=M1 [Revert (off)] [Save to M1]
 pick Effect Breathe
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 03 30 D0 50 27 10 00 64 00 00 00 01
   8071 fn1  01 02 30 D0 50 27 10 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Breathe Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
-pick G-Lite preset None
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Breathe Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 Onboard profile=M1 [Revert] [Save to M1]
+pick G-Lite preset –
   8071 fn5  01
   8040 fn1
   8071 fn0
@@ -122,6 +128,9 @@ pick G-Lite preset None
   8071 fn0  01 07
   8071 fn0  02
   8100 fn2
+  8100 fn4
+  8100 fn5
+  8100 fn2
   8100 fn0
   8100 fn4
   8100 fn5  00 01
@@ -141,29 +150,29 @@ pick G-Lite preset None
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8040 fn1
-  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=None [New…] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert (off)] [Save to keyboard (off)]
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
 pick G-Lite preset Green
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 03 30 D0 50 27 10 00 64 00 00 00 01
   8071 fn1  01 02 30 D0 50 27 10 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Breathe Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Breathe Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 Onboard profile=M1 [Revert] [Save to M1]
 pick Dim after 15 s
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 03 30 D0 50 27 10 00 64 00 00 00 01
   8071 fn1  01 02 30 D0 50 27 10 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Breathe Dim after=15 s <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Breathe Dim after=15 s <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 Onboard profile=M1 [Revert] [Save to M1]
 pick Turn off after 10 min
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 03 30 D0 50 27 10 00 64 00 00 00 01
   8071 fn1  01 02 30 D0 50 27 10 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Breathe Dim after=15 s <Color 30D050> Dim to=50% Direction=- (off) Turn off after=10 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
-press Save to keyboard
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Breathe Dim after=15 s <Color 30D050> Dim to=50% Direction=- (off) Turn off after=10 min Brightness=50 Speed=52 Onboard profile=M1 [Revert] [Save to M1]
+press Save to M1
   8100 fn2
   8100 fn0
   8100 fn4
@@ -219,21 +228,21 @@ press Save to keyboard
   8100 fn5  00 01 00 EF
   8100 fn3  00 01
   8071 fn5  01
-  = status "Saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Breathe Dim after=15 s <Color 30D050> Dim to=50% Direction=- (off) Turn off after=10 min Brightness=50 Speed=52 [Revert] [Save to keyboard (off)]
+  = status "Saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Breathe Dim after=15 s <Color 30D050> Dim to=50% Direction=- (off) Turn off after=10 min Brightness=50 Speed=52 Onboard profile=M1 [Revert] [Save to M1 (off)]
 pick Effect Wave
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 02 00 00 00 00 00 27 10 64 00 00 01
   8071 fn1  01 04 00 00 00 00 00 00 10 01 64 27 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Wave Dim after=15 s Dim to=50% Direction=Right Turn off after=10 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Wave Dim after=15 s Dim to=50% Direction=Right Turn off after=10 min Brightness=50 Speed=52 Onboard profile=M1 [Revert] [Save to M1]
 press Revert
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 01 30 D0 50 02 00 00 00 00 00 00 01
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green [Update (off)] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert (off)] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green [Update (off)] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) Onboard profile=M1 [Revert (off)] [Save to M1]
 menu Backups > Restore the factory lighting
   menu: Restore the factory lighting | Restore a backup (off) | <when>, Cycle, first backup | Open the backups folder
   8100 fn2
@@ -322,6 +331,9 @@ menu Backups > Restore the factory lighting
   8071 fn0  01 07
   8071 fn0  02
   8100 fn2
+  8100 fn4
+  8100 fn5
+  8100 fn2
   8100 fn0
   8100 fn4
   8100 fn5  00 01
@@ -341,6 +353,109 @@ menu Backups > Restore the factory lighting
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8040 fn1
-  = status "Restored the factory lighting" [Report] [Backups] G-Lite preset=Green [Update (off)] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=78 [Revert (off)] [Save to keyboard (off)]
+  = status "Restored the factory lighting" [Report] [Backups] G-Lite preset=Green [Update (off)] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=78 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
+pick G-Lite preset Green
+  8040 fn1
+  8071 fn5  01 03 04
+  8071 fn8  01 01
+  8071 fn1  00 01 30 D0 50 02 00 00 00 00 00 00 01
+  8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green [Update (off)] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=78 (off) Onboard profile=M1 [Revert (off)] [Save to M1]
+pick Onboard profile M2
+  8071 fn5  01
+  8100 fn3  00 02
+  8071 fn0
+  8071 fn0  00 01
+  8071 fn0  00 02
+  8071 fn0  00 03
+  8071 fn0  00 04
+  8071 fn0  01
+  8071 fn0  01 01
+  8071 fn0  01 02
+  8071 fn0  01 03
+  8071 fn0  01 04
+  8071 fn0  01 05
+  8071 fn0  01 06
+  8071 fn0  01 07
+  8071 fn0  02
+  8100 fn2
+  8100 fn4
+  8100 fn5
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 02
+  8100 fn5  00 02 00 10
+  8100 fn5  00 02 00 20
+  8100 fn5  00 02 00 30
+  8100 fn5  00 02 00 40
+  8100 fn5  00 02 00 50
+  8100 fn5  00 02 00 60
+  8100 fn5  00 02 00 70
+  8100 fn5  00 02 00 80
+  8100 fn5  00 02 00 90
+  8100 fn5  00 02 00 A0
+  8100 fn5  00 02 00 B0
+  8100 fn5  00 02 00 C0
+  8100 fn5  00 02 00 D0
+  8100 fn5  00 02 00 E0
+  8100 fn5  00 02 00 EF
+  8040 fn1
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static Dim after=1 min <Your color> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=78 (off) Onboard profile=M2 [Revert (off)] [Save to M2 (off)]
+pick Effect Wave
+  8040 fn1
+  8071 fn5  01 03 04
+  8071 fn8  01 01
+  8071 fn1  00 02 00 00 00 00 00 13 88 64 00 00 01
+  8071 fn1  01 04 00 00 00 00 00 00 88 01 64 13 01
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=50 Speed=78 Onboard profile=M2 [Revert] [Save to M2]
+M3 pressed on the keyboard
+  8100 fn4
+  8071 fn5  01
+  8071 fn0
+  8071 fn0  00 01
+  8071 fn0  00 02
+  8071 fn0  00 03
+  8071 fn0  00 04
+  8071 fn0  01
+  8071 fn0  01 01
+  8071 fn0  01 02
+  8071 fn0  01 03
+  8071 fn0  01 04
+  8071 fn0  01 05
+  8071 fn0  01 06
+  8071 fn0  01 07
+  8071 fn0  02
+  8100 fn2
+  8100 fn4
+  8100 fn5
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 03
+  8100 fn5  00 03 00 10
+  8100 fn5  00 03 00 20
+  8100 fn5  00 03 00 30
+  8100 fn5  00 03 00 40
+  8100 fn5  00 03 00 50
+  8100 fn5  00 03 00 60
+  8100 fn5  00 03 00 70
+  8100 fn5  00 03 00 80
+  8100 fn5  00 03 00 90
+  8100 fn5  00 03 00 A0
+  8100 fn5  00 03 00 B0
+  8100 fn5  00 03 00 C0
+  8100 fn5  00 03 00 D0
+  8100 fn5  00 03 00 E0
+  8100 fn5  00 03 00 EF
+  8040 fn1
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static Dim after=1 min <Your color> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=78 (off) Onboard profile=M3 [Revert (off)] [Save to M3 (off)]
+the window comes to the front
+  8100 fn4
+  8040 fn1
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static Dim after=1 min <Your color> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=78 (off) Onboard profile=M3 [Revert (off)] [Save to M3 (off)]
+the brightness key pressed
+  8040 fn1
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static Dim after=1 min <Your color> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=30 Speed=78 (off) Onboard profile=M3 [Revert (off)] [Save to M3 (off)]
 quit
-  = status "Restored the factory lighting" [Report] [Backups] G-Lite preset=Green [Update (off)] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=78 [Revert (off)] [Save to keyboard (off)]
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static Dim after=1 min <Your color> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=30 Speed=78 (off) Onboard profile=M3 [Revert (off)] [Save to M3 (off)]

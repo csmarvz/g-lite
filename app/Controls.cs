@@ -494,6 +494,8 @@ class TextField : DrawnControl
 class Slider : DrawnControl
 {
     public int Max = 100, Value, Step = 5;
+    // The only values the slider takes, in order, each marked with a tick under the track; null for any value.
+    public int[] Stops;
     public event EventHandler Changed;
     int wheel, grab;
 
@@ -512,8 +514,8 @@ class Slider : DrawnControl
         int value;
         switch (e.KeyCode)
         {
-            case Keys.Left: case Keys.Down: value = Value - 1; break;
-            case Keys.Right: case Keys.Up: value = Value + 1; break;
+            case Keys.Left: case Keys.Down: value = Stops != null ? Next(-1) : Value - 1; break;
+            case Keys.Right: case Keys.Up: value = Stops != null ? Next(1) : Value + 1; break;
             case Keys.PageDown: value = Value - 10; break;
             case Keys.PageUp: value = Value + 10; break;
             case Keys.Home: value = 0; break;
@@ -534,12 +536,26 @@ class Slider : DrawnControl
         int notches = wheel / 120;
         if (notches == 0) return;
         wheel -= notches * 120;
-        SetValue(Value + notches * Step);
+        SetValue(Stops != null ? Next(Math.Sign(notches)) : Value + notches * Step);
+    }
+
+    int Next(int direction)
+    {
+        int at = Array.IndexOf(Stops, Nearest(Value));
+        return Stops[Math.Max(0, Math.Min(Stops.Length - 1, at + direction))];
+    }
+
+    int Nearest(int value)
+    {
+        int best = Stops[0];
+        foreach (int stop in Stops) if (Math.Abs(stop - value) < Math.Abs(best - value)) best = stop;
+        return best;
     }
 
     public void SetValue(int value)
     {
         value = Math.Max(0, Math.Min(Max, value));
+        if (Stops != null && Stops.Length > 0) value = Nearest(value);
         if (value == Value) return;
         Value = value;
         Invalidate();
@@ -560,6 +576,17 @@ class Slider : DrawnControl
             graphics.FillRectangle(brush, 7 * DpiScale, mid - 2 * DpiScale, X(Value) - 7 * DpiScale, 4 * DpiScale);
             graphics.FillEllipse(brush, X(Value) - 7 * DpiScale, mid - 7 * DpiScale, 14 * DpiScale, 14 * DpiScale);
         }
+        // Ticks under the track, between the track's grey and the labels': dots on the track looked cluttered over the fill.
+        if (Stops != null)
+            using (var tick = new SolidBrush(Color.FromArgb((Theme.Dim.R + Theme.Track.R) / 2, (Theme.Dim.G + Theme.Track.G) / 2,
+                (Theme.Dim.B + Theme.Track.B) / 2)))
+            {
+                // Whole pixels: a tick between two is smoothed over both and looks blurred.
+                int width = Math.Max(1, (int)Math.Round(2 * DpiScale)), top = (int)Math.Round(mid + 7 * DpiScale),
+                    length = Math.Min((int)Math.Round(5 * DpiScale), Height - top);
+                foreach (int stop in Stops)
+                    graphics.FillRectangle(tick, (int)Math.Round(X(stop)) - width / 2, top, width, length);
+            }
         if (Focused && ShowFocusCues && Enabled)
             using (var pen = new Pen(Theme.Text, 2 * DpiScale))
                 graphics.DrawEllipse(pen, X(Value) - 6 * DpiScale, mid - 6 * DpiScale, 12 * DpiScale, 12 * DpiScale);
@@ -587,10 +614,34 @@ class StatusLine : DrawnControl
     string text = "";
     bool warn;
     Action click;
+    readonly ToolTip whole = new ToolTip();
+    const TextFormatFlags Flags = TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix
+        | TextFormatFlags.NoPadding;
 
     public StatusLine() { Cursor = Cursors.Default; TabStop = false; }
 
     public string Shown { get { return text; } }
+
+    // True when the text needs more than the two lines there is room for, and ends in an ellipsis. The traces mark it.
+    public bool Cut
+    {
+        get
+        {
+            if (text == "") return false;
+            int width = Math.Max(1, Width - (int)(16 * DpiScale));
+            return TextRenderer.MeasureText(text, Ui.Get(9f, Ui.Regular), new Size(width, int.MaxValue), Flags).Height > Height;
+        }
+    }
+
+    void ShowWhole() { whole.SetToolTip(this, Cut ? text : null); }
+
+    protected override void OnResize(EventArgs e) { base.OnResize(e); ShowWhole(); }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) whole.Dispose();
+        base.Dispose(disposing);
+    }
 
     public void Set(string message, bool isWarning, Action action)
     {
@@ -599,6 +650,7 @@ class StatusLine : DrawnControl
         click = action;
         Cursor = action != null ? Cursors.Hand : Cursors.Default;
         AccessibleName = text;
+        ShowWhole();
         Invalidate();
     }
 
@@ -611,10 +663,9 @@ class StatusLine : DrawnControl
         using (var brush = new SolidBrush(warn ? Theme.Warn : Theme.Accent))
             graphics.FillEllipse(brush, 0, Height / 2f - 4 * DpiScale, 8 * DpiScale, 8 * DpiScale);
         var font = Ui.Get(9f, Ui.Regular);
-        var flags = TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding;
         int width = Width - (int)(16 * DpiScale),
-            height = Math.Min(Height, TextRenderer.MeasureText(graphics, text, font, new Size(width, Height), flags).Height);
+            height = Math.Min(Height, TextRenderer.MeasureText(graphics, text, font, new Size(width, Height), Flags).Height);
         TextRenderer.DrawText(graphics, text, font, new Rectangle((int)(16 * DpiScale), (Height - height) / 2, width, height),
-            warn ? Theme.Text : Theme.Dim, flags);
+            warn ? Theme.Text : Theme.Dim, Flags);
     }
 }

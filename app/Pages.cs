@@ -21,7 +21,7 @@ abstract class DevicePage : Control, IPage
     readonly Hidpp fake;
     Hidpp connection;
     Task queue = Task.FromResult(0);
-    const string NoPreset = "None";
+    const string NoPreset = "–";
     readonly string prefix;
     readonly DeviceSubtitle subtitle;
     readonly Dropdown profiles;
@@ -35,6 +35,8 @@ abstract class DevicePage : Control, IPage
     string baseline, renaming, loaded, remembered;
     readonly Dictionary<string, string[]> drafts = new Dictionary<string, string[]>();
     public string Note;
+    // A control a screen puts in the footer, left of Revert (the keyboard's M1-M3).
+    protected Control FooterPicker;
 
     protected DevicePage(FoundDevice device, Hidpp fake, MouseEventHandler drag, string title, string noun, string prefix)
     {
@@ -185,20 +187,31 @@ abstract class DevicePage : Control, IPage
         subtitle.Set(found.Subtitle, found.Level, found.BatteryText, "");
     }
 
+    static int ActionWidth(string action, bool primary)
+    {
+        return TextRenderer.MeasureText(action, Ui.Get(9.75f, primary ? Ui.Semibold : Ui.Regular)).Width + (int)(28 * Ui.DpiScale);
+    }
+
     public void ShowStatus(string text, bool warn = false, Action click = null, string action = null)
     {
+        int footerLeft = FooterPicker != null && FooterPicker.Visible ? FooterPicker.Left : undoButton.Left;
+        // With too little room left for the text beside a button, the text itself takes the click and names the action.
+        if (action != null && footerLeft - status.Left - ActionWidth(action, true) < (int)(220 * Ui.DpiScale))
+        {
+            text = text + " " + action + ".";
+            action = null;
+        }
         actDo = action != null ? click : null;
         actionButton.Visible = action != null;
         status.Set(text, warn, action != null ? null : click);
         ShowSets();
-        if (action == null) { status.Width = undoButton.Left - status.Left - (int)(12 * Ui.DpiScale); return; }
+        footerLeft = FooterPicker != null && FooterPicker.Visible ? FooterPicker.Left : undoButton.Left;
+        if (action == null) { status.Width = footerLeft - status.Left - (int)(12 * Ui.DpiScale); return; }
         var main = MainButton();
         actionButton.Style = main == null || !main.Enabled ? ButtonStyle.Primary : ButtonStyle.Normal;
         actionButton.Text = action;
-        int width = TextRenderer.MeasureText(action,
-                Ui.Get(9.75f, actionButton.Style == ButtonStyle.Primary ? Ui.Semibold : Ui.Regular)).Width
-            + (int)(28 * Ui.DpiScale);
-        int right = undoButton.Left - (int)(8 * Ui.DpiScale);
+        int width = ActionWidth(action, actionButton.Style == ButtonStyle.Primary);
+        int right = footerLeft - (int)(8 * Ui.DpiScale);
         actionButton.Bounds = new Rectangle(right - width, actionButton.Top, width, actionButton.Height);
         status.Width = actionButton.Left - status.Left - (int)(12 * Ui.DpiScale);
     }
@@ -380,6 +393,9 @@ abstract class DevicePage : Control, IPage
         moreButton.Width = (int)((naming ? 76 : 36) * Ui.DpiScale);
         var main = MainButton();
         undoButton.Left = (main != null ? main.Left - (int)(8 * Ui.DpiScale) : (int)(636 * Ui.DpiScale)) - undoButton.Width;
+        if (FooterPicker != null)
+            FooterPicker.Bounds = new Rectangle(undoButton.Left - (int)(8 * Ui.DpiScale) - FooterPicker.Width, undoButton.Top,
+                FooterPicker.Width, undoButton.Height);
     }
 
     bool Changed() { return touched && baseline != null && Current() != baseline; }
@@ -454,6 +470,23 @@ abstract class DevicePage : Control, IPage
             catch (Exception) { ShowStatus("This preset couldn't be read from settings.txt", true); }
         }
         restoring = false;
+        ShowSets();
+    }
+
+    // The device switched to another onboard profile (an M key): the preset no longer describes what runs, so it goes back to –
+    // without sending anything. Changes not saved to it stay as a draft, as when another preset is picked.
+    protected void DropPreset()
+    {
+        if (loaded != null)
+        {
+            if (Changed()) drafts[loaded] = new[] { baseline, Current() };
+            else drafts.Remove(loaded);
+        }
+        baseline = null;
+        loaded = null;
+        touched = false;
+        restoring = false;
+        profiles.Index = 0;
         ShowSets();
     }
 

@@ -295,7 +295,7 @@ class FakeG915 : Hidpp
         { 1, FakeHidpp.Hex("010000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFF3C002C018002003A8002003B8002003C8002003D8002003E8002003F800200408002004180020042800200438002004480020045900DFF01900DFF02900DFF03FFFFFFFF00040000000400020004000400040006000400080004000A0004000C0004000E00040010000400120004001400040016900DFF01900DFF02900DFF03FFFFFFFF500052004F00460049004C0045005F004E0041004D0045005F00440045004600410055004C00540000000000000000000300000000002710320000030000000000271032000003000000000027101900000300000000002710190000004349") },
         { 0x101, FakeHidpp.Hex("010000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFF3C002C018002003A8002003B8002003C8002003D8002003E8002003F800200408002004180020042800200438002004480020045900DFF01900DFF02900D0001900D0002900D0003FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0300000000001388640000030000000000138864000003000000000013883200000300000000001388320000FFFFFF") }
     };
-    public int Reloads, Power = 1;
+    public int Reloads, Power = 1, Running = 1;
     public readonly List<byte> Modes = new List<byte> { 1 };
     List<byte> pending = new List<byte>();
     int writeTo, writeLength;
@@ -303,13 +303,27 @@ class FakeG915 : Hidpp
     public int Brightness = 80, Claimed;
     public byte Layout = 1;
 
-    // The owner's directory lists profiles 1 to 3 (docs/G815-G915.md); this fake has only profile 1.
+    // The owner's directory lists profiles 1 to 3 (docs/G815-G915.md). Profiles 2 and 3 are copies of 1 with static red and blue keys.
     public FakeG915() : base(false)
     {
         var directory = Enumerable.Repeat((byte)0xFF, 255).ToArray();
         FakeHidpp.Hex("000101FF000201FF000301FF").CopyTo(directory, 0);
         MouseProtocol.WriteChecksum(directory);
         Sectors[0] = directory;
+        Sectors[2] = Recolored(Sectors[1], "01FF0000");
+        Sectors[3] = Recolored(Sectors[1], "010000FF");
+    }
+
+    static byte[] Recolored(byte[] profile, string record)
+    {
+        var copy = (byte[])profile.Clone();
+        for (int at = 0xD0; at < 0xE6; at += 11)
+        {
+            for (int i = 0; i < 11; i++) copy[at + i] = 0;
+            FakeHidpp.Hex(record).CopyTo(copy, at);
+        }
+        MouseProtocol.WriteChecksum(copy);
+        return copy;
     }
 
     public static FakeG915 G512X()
@@ -334,8 +348,8 @@ class FakeG915 : Hidpp
             if (fn == 0) FakeHidpp.Hex("01040103030F1000FF3604").CopyTo(reply, 0);
             if (fn == 1) Modes.Add(parameters[0]);
             if (fn == 2) reply[0] = Modes.Last();
-            if (fn == 3) Reloads++;
-            if (fn == 4) reply[1] = 1;
+            if (fn == 3) { Reloads++; Running = parameters[0] << 8 | parameters[1]; }
+            if (fn == 4) reply[1] = (byte)Running;
             if (fn == 5 && !Sectors.ContainsKey(parameters[0] << 8 | parameters[1])) throw new HidppError(2, "invalid argument");
             if (fn == 5)
                 Sectors[parameters[0] << 8 | parameters[1]].Skip(parameters[2] << 8 | parameters[3]).Take(16).ToArray().CopyTo(reply, 0);

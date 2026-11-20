@@ -1,10 +1,10 @@
 open
   8040 fn0
   8040 fn1
-  = status "" [Report] G-Lite preset=None [New…] […] Brightness=100 [Revert (off)]
+  = status "" [Report] G-Lite preset=– [New…] […] Brightness=100 [Revert (off)]
 slide Brightness 40
   8040 fn2  00 28
-  = status "Applied to the device." [Report] G-Lite preset=None [New…] […] Brightness=40 [Revert]
+  = status "Applied to the device." [Report] G-Lite preset=– [New…] […] Brightness=40 [Revert]
 press Revert changes
   8040 fn2  00 64
-  = status "" [Report] G-Lite preset=None [New…] […] Brightness=100 [Revert (off)]
+  = status "" [Report] G-Lite preset=– [New…] […] Brightness=100 [Revert (off)]

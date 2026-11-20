@@ -12,6 +12,8 @@ class KeyboardKinds
     public bool NoIdleTimes;
     // The G815 runs a profile written again only after leaving onboard mode and coming back (G915Lighting.Store).
     public bool ReloadThroughHostMode;
+    // The brightness levels 0x8040 keeps; any other value drops to the one below (the G815, tried on an owner's keyboard). Null for any.
+    public int[] BrightnessLevels;
     public int[] Bar;
 
     public static string File(string name)
@@ -49,7 +51,7 @@ class KeyboardKinds
         G915Tkl = new KeyboardKinds { Keys = KeyLayout.Load("g915-tkl.json"), Prefix = "profile.g915.", Profile = true },
         G915 = new KeyboardKinds { Keys = KeyLayout.Load("g915.json"), Prefix = "profile.g915.", Profile = true },
         G815 = new KeyboardKinds { Keys = KeyLayout.Load("g815.json"), Prefix = "profile.g815.", Profile = true, NoIdleTimes = true,
-            ReloadThroughHostMode = true },
+            ReloadThroughHostMode = true, BrightnessLevels = new[] { 0, 12, 25, 50, 100 } },
         G512X = new KeyboardKinds
         {
             Keys = KeyLayout.Load("g512-x-75.json"), Prefix = "profile.g512x.", Bar = Enumerable.Range(0xA0, 33).ToArray()

@@ -6,22 +6,22 @@ The steps to finish the G815: its onboard profiles, following M1–M3, G1–G5 b
 
 - **Three profiles** at sectors 0001–0003. Every profile maps M1–M3 to `90 0D FF 01`…`03`, so an M key makes the keyboard switch profiles on its own, and the firmware lights the active M key.
 - **G1–G5** are the profile's first 5 buttons, from 0x20: F1–F5 in profile 1 (`80 02 00 3A`…), 1–5 in profile 2, 6–0 in profile 3. The same 4-byte format as the mice (`MouseButtons.cs`).
-- **Macros:** none on the G815 yet. The G915 TKL's G-shift layer points to `00 04 00 00`, `00 04 00 02`…: sector 0004 and offsets. No report has read a macro sector yet, so the format isn't known.
+- **Macros:** G HUB saved two to the G815 on 2026-11-20, and the report read them: key down `43`, key up `44`, wait `40`, go on in another sector `60`, end `FF`, in sectors of their own with a CRC. G HUB saves System copy, a media key and a mouse click as plain bindings, not macros. See [G815-G915.md](G815-G915.md), "Macros".
 
 ## Steps
 
-### 1. Onboard profiles
+### 1. Onboard profiles (built, to test on the G815)
 
 Build the slots of [on-board-memory.md](on-board-memory.md) for the G815 and G915, with one change to its screen:
 
-- **M1, M2, M3 in the header**, right of the device name, as a `SegmentedPicker` in the Effect picker's style. It replaces the spec's footer dropdown.
+- **M1, M2, M3 in the footer**, left of Revert and as tall, as a `SegmentedPicker` in the Effect picker's style.
 - It shows the profile the keyboard runs (0x8100 fn 4). Picking one switches the keyboard to it (fn 3), like pressing the M key, and loads its lighting.
 - Save to Mn writes the slot shown. Save to keyboard already writes the active profile.
 
-### 2. Follow M1–M3
+### 2. Follow M1–M3 (built, to test on the G815)
 
 - Mice send a 0x8100 event (fn 0) when their buttons switch profiles, and `MousePage.Heard` loads again. The keyboard screen gets the same.
-- If the G815 sends no event, read fn 4 when the window opens or gets the focus.
+- Built both ways: the event, and fn 4 read when the window is activated, which costs one call and catches a missed event.
 - An M key switch releases a live lighting that isn't saved and shows the new slot's saved lighting, as the keyboard itself does. The G-Lite preset goes back to None, which means the keyboard's own lighting (picking None already releases it and reads the profile again). A preset with changes not saved keeps them as a draft, as when another preset is picked.
 - The same for a switch made in G-Lite (step 1).
 
@@ -32,17 +32,17 @@ The mouse's button editor (`MouseButtons.Bindings`) on the keyboard screen: a ke
 ### 4. Macros
 
 - Done: the report reads the sectors the profiles' macros point to (`macro 0004=…`, fn 5 only). Ask the G915 TKL owner, who has macros, and the G815 owner for new reports, after recording a macro in G HUB.
-- Decode the format. libratbag (MIT) describes the onboard macro format: use it to check.
+- Decode the format: the G815's `asd` and long text gave key down, key up, wait, jump and end; libratbag's list of the other steps is in [G815-G915.md](G815-G915.md), "Macros". G HUB no longer saves macros to the G815, so the rest waits for G-Lite's own editor, tested with short macros of each step.
 - An editor: a list of key down, key up and delay steps, and Record, which takes the keystrokes typed while the G-Lite window has the focus.
 - Writing picks a free sector and keeps the directory and the other profiles right. New ground: backups, read back, a fake and traces before a real keyboard.
 
 ### 5. MR
 
-Left alone. G HUB's MR records a macro on the fly by taking over MR and the G keys (0x8030, 0x8010 in software mode) and watching the keystrokes. That is button diversion, and it only works while the app runs. Record in step 4 does the same job. MR stays drawn, dark and unbound.
+Left alone. The manual's MR steps (MR, a G key, the keys, MR) record nothing on the keyboard alone: MR doesn't even light (tried on 2026-11-20). G HUB's MR records a macro on the fly by taking over MR and the G keys (0x8030, 0x8010 in software mode) and watching the keystrokes. That is button diversion, and it only works while the app runs. Record in step 4 does the same job. MR stays drawn, dark and unbound.
 
 ## Also
 
-- **A G815 in `--demo`:** a fake with 256-byte sectors and three profiles, and traces. Needed for steps 1–4, since the owner can test only now and then.
+- **A G815 in `--demo`:** done, on `FakeG915` with three profiles (its sectors are 255 bytes, not 256). The G915 trace covers steps 1 and 2.
 - **Game mode (0x4522, in the report):** which keys the Game mode key turns off. G HUB turns off the Win key by default and lets you pick others. Check the format first.
 - **Restore a whole factory profile**, bindings included, once G-Lite changes them. Today it restores the lighting only.
 - **Report rate (0x8060):** the mouse code has it. Cheap, of little use on a keyboard.
@@ -53,5 +53,6 @@ Left alone. G HUB's MR records a macro on the fly by taking over MR and the G ke
 One session, before any screen is built:
 
 - Press M1–M3 with `log.txt` on: does the 0x8100 event come?
-- A report with the macro sectors, after recording a macro in G HUB.
+- Done on 2026-11-20: a macro made in G HUB's editor and saved to G1 in onboard memory mode, then a report ([G815-G915.md](G815-G915.md), "Macros"). MR records nothing onboard. Next: macros with modifiers (Ctrl+C), a media key and a long text, to learn the other step codes.
+- Change the lighting with brightness + a number key, then send a report: does it land in the running profile?
 - Does 0x8071 fn 8 (power modes) answer? (already a "To check" in [G815-G915.md](G815-G915.md))

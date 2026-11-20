@@ -766,6 +766,9 @@ static class SelfTest
             "the keyboard report reads its files and effects only");
         var g915WithMacros = new FakeG915();
         g915WithMacros.Sectors[4] = Enumerable.Repeat((byte)0xAB, 255).ToArray();
+        g915WithMacros.Sectors[6] = Enumerable.Repeat((byte)0xFF, 255).ToArray();
+        g915WithMacros.Sectors[7] = new byte[255];
+        g915WithMacros.Sectors.Remove(2);
         var g915Report = Report.Build(g915WithMacros, new FoundDevice
             {
                 Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1,
@@ -774,8 +777,12 @@ static class SelfTest
         Check(g915Report.Contains("0000=000101FF000201FF000301FF") && g915Report.Contains("0001=0100")
             && g915Report.Contains("0002=error 02") && g915Report.Contains("0101=0100"),
             "the G915 report reads the profiles its directory lists, and goes on past one it can't read");
-        Check(g915Report.Contains("macro 0004=ABAB") && g915Report.Split('\n').Count(line => line.StartsWith("macro ")) == 1,
-            "the G915 report reads once the sector its G-shift macros point to");
+        var g915Lines = g915Report.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+        Check(g915Lines.Contains("0004=" + string.Concat(Enumerable.Repeat("AB", 255)))
+            && g915Lines.Contains("unused=0006 0007")
+            && g915Lines.Any(line => line.StartsWith("unreadable=0005 (error 02) 0008 (error 02)"))
+            && g915Lines.Count(line => line.StartsWith("0001=")) == 1,
+            "the G915 report reads every other user sector once, for the macros, and lists the unused and unreadable ones");
         var headsetReport = Report.Build(new FakeHeadset(),
             new FoundDevice
             {
@@ -882,10 +889,21 @@ static class SelfTest
                     + " (run build\\selftest.exe --record after changing a layout)");
         }
 
+        using (var stepped = new Slider { Stops = KeyboardKinds.G815.BrightnessLevels, Value = 100 })
+        {
+            stepped.SetValue(40);
+            int dragged = stepped.Value;
+            stepped.SetValue(90);
+            Check(dragged == 50 && stepped.Value == 100, "a slider with stops takes the nearest one (the G815's brightness levels)");
+        }
+
         var traceFailures = Traces.Run(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\tests"),
             args.Contains("--record"));
         foreach (var failure in traceFailures) Console.WriteLine("FAIL " + failure);
         if (traceFailures.Count > 0) return 1;
+        foreach (var trace in System.IO.Directory.GetFiles(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\tests"), "*.txt"))
+            Check(!System.IO.File.ReadAllText(trace).Contains("\" (cut)"),
+                System.IO.Path.GetFileName(trace) + " shows no status cut short (shorten the text, or make room in the footer)");
         Console.WriteLine("selftest ok");
         return 0;
     }

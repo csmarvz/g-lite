@@ -1,18 +1,18 @@
 open
   get feature 05
-  = status "" [Report] G-Lite preset=None [New…] […] Effect=Static <Color FFFFFF> Brightness=100 Speed=78 (off) [Revert (off)]
+  = status "" [Report] G-Lite preset=– [New…] […] Effect=Static <Color FFFFFF> Brightness=100 Speed=78 (off) [Revert (off)]
 press Color FF2020
   set feature  05 FF 20 20
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=None [New…] […] Effect=Static <Color FF2020> Brightness=100 Speed=78 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Effect=Static <Color FF2020> Brightness=100 Speed=78 (off) [Revert]
 slide Brightness 50
   set feature  05 7F 10 10
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=None [New…] […] Effect=Static <Color FF2020> Brightness=50 Speed=78 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Effect=Static <Color FF2020> Brightness=50 Speed=78 (off) [Revert]
 pick Effect Off
   set feature  05
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=None [New…] […] Effect=Off Brightness=50 (off) Speed=78 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Effect=Off Brightness=50 (off) Speed=78 (off) [Revert]
 pick Effect Static
   set feature  05 7F 10 10
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=None [New…] […] Effect=Static <Color FF2020> Brightness=50 Speed=78 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Effect=Static <Color FF2020> Brightness=50 Speed=78 (off) [Revert]
 menu More preset actions > Save as new preset…
   menu: Save as new preset… | Rename… (off) | Delete (off)
   = status "Set by G-Lite, not saved to the keyboard" [Report] [Save] [Cancel] Effect=Static <Color FF2020> Brightness=50 Speed=78 (off) [Revert]
@@ -32,6 +32,6 @@ pick Effect Cycle
 pick Effect Static
   set feature  05 18 40 7F
   = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Red • [Update] […] Effect=Static <Color 3080FF> Brightness=50 Speed=50 (off) [Revert]
-pick G-Lite preset None
+pick G-Lite preset –
   set feature  05 FF FF FF
-  = status "" [Report] G-Lite preset=None [New…] […] Effect=Static <Color FFFFFF> Brightness=100 Speed=78 (off) [Revert (off)]
+  = status "" [Report] G-Lite preset=– [New…] […] Effect=Static <Color FFFFFF> Brightness=100 Speed=78 (off) [Revert (off)]

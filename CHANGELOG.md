@@ -6,14 +6,19 @@
 
 - Mice: the screen follows the mouse's own DPI button: the stage and DPI change as you press it, and a profile picked with the profile button is read again. The mouse tells G-Lite through its onboard profiles feature (0x8100).
 - G815: its own key picture, from Logitech's drawing: the logo above the G keys, M1–M3, MR and Game mode (which don't light and stay dark), the brightness and media keys where they sit, a right Win key in place of the G915's Fn, and a two-row numpad + and Enter.
-- Reports read the sectors that onboard profiles point to as macros, so the macro format can be learned.
+- Reports read the sectors that onboard profiles point to as macros, so the macro format can be learned, and list the other sectors as unused or unreadable.
+- G915, G915 TKL and G815: M1, M2 and M3, next to Revert, show the onboard profile it runs, and switch it. Pressing an M key on the keyboard is followed: the screen shows that profile's lighting and the G-Lite preset goes back to –. Save to keyboard is now Save to M1 (or M2, M3).
+- A G815 in the demo.
+- Keyboards: the Brightness slider follows the keyboard's own brightness key.
+- G815: the Brightness slider stops at the five levels the keyboard has (0, 12, 25, 50 and 100%), marked on the track. Other values dropped to the level below while the slider showed them.
 
 ### Changed
 
-- The preset row is labelled G-Lite preset, so it isn't mistaken for a device's onboard profiles.
+- The preset row is labelled G-Lite preset, so it isn't mistaken for a device's onboard profiles, and no preset shows as – instead of None.
 
 ### Fixed
 
+- The status line at the bottom of a screen is never cut without a way to read it: a longer text shows whole in a tooltip, and when a button beside it would leave too little room, the text itself takes the click instead.
 - G815: after Save to keyboard or Restore the factory lighting, the keys run the new lighting at once. The keyboard kept running its old copy of the profile until an M key was pressed; G-Lite now makes it read the profile again by leaving onboard mode and coming back, which shows as a faint flash of the M key.
 - G915, G915 TKL and G815: Dim after and Turn off after no longer offer Never. Saved as never, the G915 TKL dimmed and turned off at once.
 - G815: Save to keyboard works without idle times. The G815 is wired and has none, so Save used to refuse; its screen no longer shows Dim after, Dim to and Turn off after.

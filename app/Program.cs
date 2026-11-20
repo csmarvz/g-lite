@@ -421,6 +421,8 @@ class MainWindow : Form
                 Control page;
                 if (sender != null && pages.TryGetValue(sender.Key, out page) && page is MousePage)
                     ((MousePage)page).Heard(report[2], report[3] >> 4);
+                if (sender != null && pages.TryGetValue(sender.Key, out page) && page is KeyboardPage)
+                    ((KeyboardPage)page).Heard(report[2], report[3] >> 4);
                 return;
             }
             var now = new FoundDevice { Name = device.Name, BatteryId = device.BatteryId };
@@ -553,6 +555,9 @@ class MainWindow : Form
                 Link = "LIGHTSPEED", Index = 1, WirelessId = 0x408E, Battery = 70, BatteryFromVoltage = true, Millivolts = 3923,
                 Firmware = "MPK 14.01, build 0021",
                 Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 } },
+            new FoundDevice { Key = "demo|g815", Name = "G815 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard",
+                Link = "USB", Index = 0xFF, Firmware = "U1 31.02, build 0018",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8040, 0x8071, 0x8100 } },
             new FoundDevice { Key = "demo|g512x", Name = "G512 X 75", Kind = "keyboard",
                 Link = "USB", Index = 0xFF, Firmware = "U1 81.05, build 0020",
                 Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
@@ -656,6 +661,12 @@ class MainWindow : Form
         ReleaseCapture();
         SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero);
         moved = true;
+    }
+
+    protected override void OnActivated(EventArgs e)
+    {
+        base.OnActivated(e);
+        if (shown is KeyboardPage) ((KeyboardPage)shown).CheckKeyboard();
     }
 
     protected override void OnPaint(PaintEventArgs e)

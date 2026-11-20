@@ -2,12 +2,12 @@ open
   8300 fn0
   1F20 fn0
   1F20 fn1
-  = status "Matches the headset" [Report] G-Lite preset=None [New…] […] Turn off after=30 min Sidetone=30 [Test sidetone] [Revert (off)]
+  = status "Matches the headset" [Report] G-Lite preset=– [New…] […] Turn off after=30 min Sidetone=30 [Test sidetone] [Revert (off)]
 slide Sidetone 40
   8300 fn1  28
-  = status "Applied to the headset" [Report] G-Lite preset=None [New…] […] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert]
+  = status "Applied to the headset" [Report] G-Lite preset=– [New…] […] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert]
 pick Turn off after 30 min
-  = status "Applied to the headset" [Report] G-Lite preset=None [New…] […] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert]
+  = status "Applied to the headset" [Report] G-Lite preset=– [New…] […] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert]
 menu More preset actions > Save as new preset…
   menu: Save as new preset… | Rename… (off) | Delete (off)
   = status "Applied to the headset" [Report] [Save] [Cancel] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert]
@@ -21,6 +21,6 @@ slide Sidetone 10
 press Revert changes
   8300 fn1  28
   = status "Applied to the headset" [Report] G-Lite preset=Calls [Update (off)] […] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert (off)]
-pick G-Lite preset None
+pick G-Lite preset –
   8300 fn1  1E
-  = status "Matches the headset" [Report] G-Lite preset=None [New…] […] Turn off after=30 min Sidetone=30 [Test sidetone] [Revert (off)]
+  = status "Matches the headset" [Report] G-Lite preset=– [New…] […] Turn off after=30 min Sidetone=30 [Test sidetone] [Revert (off)]

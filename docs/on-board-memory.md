@@ -1,6 +1,6 @@
 # On-board memory slots
 
-A spec for picking which on-board profile a keyboard runs and saves into, from G-Lite. Not built yet. First target: the G915 TKL, whose report and tests are in [G815-G915.md](G815-G915.md). It applies to any device whose on-board profiles G-Lite can already save (0x8100, format 4 on the G915).
+A spec for picking which on-board profile a keyboard runs and saves into, from G-Lite. Built on 2026-11-20, except Reload (the footer still says Revert) and asking before a switch drops unsaved changes (an M key on the keyboard can't ask either). First target: the G915 TKL, whose report and tests are in [G815-G915.md](G815-G915.md). It applies to any device whose on-board profiles G-Lite can already save (0x8100, format 4 on the G915).
 
 Mockups: the G-Lite design canvas "G915 Onboard Profiles", design E (private to the owner).
 
@@ -13,7 +13,7 @@ Mockups: the G-Lite design canvas "G915 Onboard Profiles", design E (private to 
 
 ## Screen
 
-The slots are a segmented picker in the header, right of the device name, in the Effect picker's style: M1, M2, M3, the one the keyboard runs picked ([G815-plan.md](G815-plan.md), replacing a footer dropdown). The footer, on the right, left to right:
+The slots are a segmented picker in the footer, left of Revert and as tall, in the Effect picker's style: M1, M2, M3, the one the keyboard runs picked (first built right of the device name, moved on 2026-11-20 at the owner's request). The footer, on the right, left to right:
 
 1. **Reload**, which is Revert renamed. Same behaviour as Revert today: it reads the keyboard again (with None: releases the live lighting and shows what's saved).
 2. **Save to M1**: the primary button, named after the slot shown.

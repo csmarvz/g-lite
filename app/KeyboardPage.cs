@@ -77,6 +77,13 @@ class KeyboardPage : DevicePage
     readonly FlatButton saveButton, backupsButton;
     readonly KeyPicture picture;
     Backups.Entry fix;
+    readonly SegmentedPicker slotPicker;
+    readonly Control pictureBox, lightBox;
+    bool wide;
+    List<int> slots = new List<int>();
+    int running;
+    volatile byte profilesFeature, brightnessFeature;
+    volatile bool checkingSlot, checkingBrightness;
 
     public KeyboardPage(FoundDevice found, Hidpp fake, MouseEventHandler drag, KeyboardKinds kind)
         : base(found, fake, drag, kind.Keys.Name, "keyboard", kind.Prefix)
@@ -97,7 +104,14 @@ class KeyboardPage : DevicePage
             backupsButton.Click += (s, e) => ShowProfileBackups();
         }
 
-        var pictureBox = Ui.Add(this, new RoundedBox(), 20, 118, 616, 209);
+        if (kind.Profile)
+        {
+            slotPicker = Ui.Add(this, new SegmentedPicker { AccessibleName = "Onboard profile", Visible = false }, 264, 685, 144, 32);
+            slotPicker.Picked += i => { if (i >= 0 && i < slots.Count) SlotSwitched(slots[i]); };
+            FooterPicker = slotPicker;
+        }
+
+        pictureBox = Ui.Add(this, new RoundedBox(), 20, 118, 616, 209);
         Ui.Text(pictureBox, "Live on the keyboard", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         picture = Ui.Add(pictureBox, new KeyPicture(kind.Keys), 14, 36, 588, 161);
         if (Parts)
@@ -108,7 +122,7 @@ class KeyboardPage : DevicePage
 
         canScreen = found.Has(0x8081);
         setup = ScreenSettings.FromText(Settings.Get(Saved));
-        var light = Ui.Add(this, new RoundedBox(), 20, 339, 380, 272);
+        var light = lightBox = Ui.Add(this, new RoundedBox(), 20, 339, 380, 272);
         lightHead = Ui.Text(light, "Lighting", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         var effectHead = Ui.Text(light, "Effect", 14, 40, () => Theme.Dim, 9f);
         var names = G515Profile.Effects.Select(effect => effect.Name).ToList();
@@ -142,7 +156,7 @@ class KeyboardPage : DevicePage
 
         Ui.Text(light, kind.Bar != null ? "Brightness (all)" : "Brightness", 14, 214, () => Theme.Dim, 9f);
         brightValue = Value(light, 14, 214, 172);
-        bright = Ui.Add(light, new Slider { AccessibleName = "Brightness" }, 14, 234, 172, 24);
+        bright = Ui.Add(light, new Slider { AccessibleName = "Brightness", Stops = kind.BrightnessLevels }, 14, 234, 172, 24);
         bright.Changed += (s, e) => BrightnessChanged(bright.Value);
         speedHead = Ui.Text(light, "Speed", 194, 214, () => Theme.Dim, 9f);
         speedValue = Value(light, 194, 214, 172);
@@ -230,7 +244,7 @@ class KeyboardPage : DevicePage
         };
         Ui.Text(screenBox, "Brightness", 14, 78, () => Theme.Dim, 9f);
         screenBrightValue = Value(screenBox, 14, 78, 196);
-        screenBright = Ui.Add(screenBox, new Slider { AccessibleName = "Brightness" }, 14, 96, 196, 20);
+        screenBright = Ui.Add(screenBox, new Slider { AccessibleName = "Brightness", Stops = kind.BrightnessLevels }, 14, 96, 196, 20);
         screenBright.Changed += (s, e) => BrightnessChanged(screenBright.Value);
         Ui.Text(screenBox, "Update rate", 14, 120, () => Theme.Dim, 9f);
         rateValue = Value(screenBox, 14, 120, 196);
@@ -262,7 +276,7 @@ class KeyboardPage : DevicePage
         bool note = live && !kind.Profile;
         Ui.Text(idle, note ? "Saving" : "When idle", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         var noteText = Ui.Text(idle,
-            "G-Lite can't save to this keyboard yet. It keeps your lighting and sets it again when G-Lite starts and when you open this screen. Picking None gives the keyboard its own lighting back."
+            "G-Lite can't save to this keyboard yet. It keeps your lighting and sets it again when G-Lite starts and when you open this screen. Picking – as the G-Lite preset gives the keyboard its own lighting back."
                 + (kind.Guessed ? " The key picture is a guess for this model." : ""),
             14, 40, () => Theme.Dim, 9f);
         noteText.AutoSize = false;
@@ -328,6 +342,13 @@ class KeyboardPage : DevicePage
         label.Size = new Size(156, tall);
         toggle.Follow(label);
         return toggle;
+    }
+
+    // A preset's brightness on a keyboard with fixed levels: the level below, as the keyboard itself would take it.
+    int Allowed(int level)
+    {
+        if (kind.BrightnessLevels == null) return level;
+        return kind.BrightnessLevels.Where(stop => stop <= level).DefaultIfEmpty(0).Max();
     }
 
     void BrightnessChanged(int value)
@@ -699,7 +720,7 @@ class KeyboardPage : DevicePage
         bool was = Screening;
         if (parts.Length > 1) setup = ScreenSettings.FromText(parts[1]);
         current = lighting;
-        brightness = Math.Max(0, Math.Min(100, level));
+        brightness = Allowed(Math.Max(0, Math.Min(100, level)));
         if (was && !Screening) ScreenOff();
         if (!was && Screening) ScreenOn();
         if (Screening) ScreenChanged();
@@ -732,6 +753,7 @@ class KeyboardPage : DevicePage
         foreach (var control in screenLight) control.Visible = screening;
         screenBox.Visible = screening;
         idleArea.Visible = !screening && !kind.NoIdleTimes;
+        Widen(!screening && kind.NoIdleTimes && !Parts);
         if (picture.Live != screening) picture.Live = screening;
         var view = Viewed;
         var effect = G515Profile.EffectById(view.Effect);
@@ -772,6 +794,7 @@ class KeyboardPage : DevicePage
         sleepBox.Index = Nearest(SleepSecs.Skip(never).ToArray(), current.Sleep);
         dimBox.Enabled = current.Idle > 0;
         saveButton.Enabled = dirty && !broken;
+        ShowSlots();
         picture.Display(known ? current : null, known ? bar : null, brightness);
         if (screening)
         {
@@ -782,6 +805,108 @@ class KeyboardPage : DevicePage
             SyncScreen();
         }
         loading = false;
+    }
+
+    // Without idle settings, the Lighting box takes the whole width, back to its half while the Screen effect shows its own box.
+    // Sizes come from the picture box above, which is already scaled to the screen's DPI.
+    void Widen(bool on)
+    {
+        if (on == wide) return;
+        wide = on;
+        int gap = lightBox.Top - pictureBox.Bottom;
+        int extra = pictureBox.Right - idleArea.Left + gap;
+        int change = on ? extra : -extra, half = on ? extra / 2 : -(extra / 2);
+        lightBox.Width += change;
+        effects.Width += change;
+        directions.Width += change;
+        bright.Width += half;
+        brightValue.Width += half;
+        foreach (Control control in new Control[] { speedHead, speedValue, speed }) control.Left += half;
+        speed.Width += half;
+        speedValue.Width += half;
+    }
+
+    void ShowSlots()
+    {
+        if (slotPicker == null) return;
+        slotPicker.Items = slots.Select(sector => "M" + sector).ToArray();
+        slotPicker.Visible = slots.Count > 1;
+        slotPicker.Index = slots.IndexOf(running);
+        slotPicker.Invalidate();
+        saveButton.Text = slotPicker.Visible && slots.Contains(running) ? "Save to M" + running : "Save to keyboard";
+        saveButton.Invalidate();
+    }
+
+    // 0x8100 event fn 0 is a new running profile on the mice (MousePage.Heard); 0x8040 event fn 0 a new brightness, from the
+    // keyboard's brightness key. Neither is seen from a G815 yet, so the window's activation checks too (MainWindow).
+    public void Heard(byte feature, int fn)
+    {
+        if (fn != 0) return;
+        if (profilesFeature != 0 && feature == profilesFeature) CheckSlot();
+        if (brightnessFeature != 0 && feature == brightnessFeature) CheckBrightness();
+    }
+
+    public void CheckKeyboard()
+    {
+        CheckSlot();
+        CheckBrightness();
+    }
+
+    void CheckBrightness()
+    {
+        if (brightnessFeature == 0 || checkingBrightness) return;
+        checkingBrightness = true;
+        int level = -1, startedAt = previewSequence;
+        RunOnDevice(hidpp => level = G515Profile.Brightness(hidpp), () =>
+        {
+            checkingBrightness = false;
+            if (level < 0 || level > 100 || level == brightness || startedAt != previewSequence || debounce.Enabled) return;
+            Log.Add(DeviceLabel, "found", "brightness " + level + "% set on the keyboard");
+            brightness = level;
+            storedBrightness = level;
+            if (!Screening && Settings.Get(Remembered) != null) Settings.Set(Remembered, current.ToText(level) + BarText(level));
+            Edited();
+            RefreshControls();
+        }, message => { checkingBrightness = false; });
+    }
+
+    void CheckSlot()
+    {
+        if (slotPicker == null || slots.Count < 2 || checkingSlot) return;
+        checkingSlot = true;
+        int now = 0;
+        RunOnDevice(hidpp =>
+        {
+            var reply = hidpp.CallUnlogged(hidpp.FeatureIndex(0x8100), 4);
+            now = reply[0] << 8 | reply[1];
+        }, () =>
+        {
+            checkingSlot = false;
+            if (now == 0 || now == running) return;
+            Log.Add(DeviceLabel, "found", "M" + now + " picked on the keyboard");
+            SlotSwitched(0);
+        }, message => { checkingSlot = false; });
+    }
+
+    // Another onboard profile runs, picked here (switchTo) or with an M key (0). The keyboard shows that profile's saved lighting, so a
+    // live lighting not saved goes, as it does on the keyboard alone, and the preset goes back to – (docs/G815-plan.md, step 2).
+    void SlotSwitched(int switchTo)
+    {
+        if (switchTo == running) return;
+        if (switchTo != 0) { LogUserAction("Switch to M" + switchTo); running = switchTo; }
+        bool screening = Screening;
+        DropPreset();
+        if (!screening) { Settings.Remove(Remembered); bar = null; part = 0; }
+        dirty = false;
+        edits++;
+        previewSequence++;
+        debounce.Stop();
+        RunOnDevice(hidpp =>
+        {
+            if (!screening) { G915Lighting.Release(hidpp); claimed = false; }
+            if (switchTo != 0) hidpp.Call(hidpp.FeatureIndex(0x8100), 3, (byte)(switchTo >> 8), (byte)switchTo);
+        });
+        Load();
     }
 
     void Changed(bool now)
@@ -1078,10 +1203,16 @@ class KeyboardPage : DevicePage
         bool dropped = false;
         bool screening = Screening, readLayout = layoutCode < 0 && found.Has(0x4540);
         Lighting saved = null;
+        var slotsRead = new List<int>();
+        int runningRead = 0;
         RunOnDevice(hidpp =>
         {
             if (readLayout) layoutCode = hidpp.Call(hidpp.FeatureIndex(0x4540), 0)[0];
             clusters = G915Lighting.Clusters(hidpp);
+            if (slotPicker != null)
+                try { slotsRead = G915Lighting.Slots(hidpp, out runningRead); profilesFeature = hidpp.FeatureIndex(0x8100); }
+                catch (Exception) { slotsRead = new List<int>(); }
+            brightnessFeature = hidpp.FeatureIndex(0x8040);
             // Only when nothing is remembered: a remembered lighting replaces what's saved. Optional, so any failure leaves the
             // screen on live lighting as before.
             if (kind.Profile && lighting == null)
@@ -1099,6 +1230,8 @@ class KeyboardPage : DevicePage
         }, () =>
         {
             if (dropped) { Settings.Remove(Remembered); lighting = null; }
+            slots = slotsRead;
+            running = runningRead;
             storedBrightness = level;
             if (editsAtStart == edits)
             {
@@ -1128,6 +1261,7 @@ class KeyboardPage : DevicePage
         RunOnDevice(hidpp =>
         {
             if (readLayout) layoutCode = hidpp.Call(hidpp.FeatureIndex(0x4540), 0)[0];
+            brightnessFeature = hidpp.FeatureIndex(0x8040);
             G515Profile.Files files;
             try { files = G515Profile.Snapshot(hidpp); }
             catch (HalfWrittenException) { half = true; level = G515Profile.Brightness(hidpp); return; }
