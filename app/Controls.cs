@@ -516,8 +516,8 @@ class Slider : DrawnControl
         {
             case Keys.Left: case Keys.Down: value = Stops != null ? Next(-1) : Value - 1; break;
             case Keys.Right: case Keys.Up: value = Stops != null ? Next(1) : Value + 1; break;
-            case Keys.PageDown: value = Value - 10; break;
-            case Keys.PageUp: value = Value + 10; break;
+            case Keys.PageDown: value = Stops != null ? Next(-1) : Value - 10; break;
+            case Keys.PageUp: value = Stops != null ? Next(1) : Value + 10; break;
             case Keys.Home: value = 0; break;
             case Keys.End: value = Max; break;
             default: return;

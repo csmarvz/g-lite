@@ -7,7 +7,7 @@
 - Mice: the screen follows the mouse's own DPI button: the stage and DPI change as you press it, and a profile picked with the profile button is read again. The mouse tells G-Lite through its onboard profiles feature (0x8100).
 - G815: its own key picture, from Logitech's drawing: the logo above the G keys, M1–M3, MR and Game mode (which don't light and stay dark), the brightness and media keys where they sit, a right Win key in place of the G915's Fn, and a two-row numpad + and Enter.
 - Reports read the sectors that onboard profiles point to as macros, so the macro format can be learned, and list the other sectors as unused or unreadable.
-- G915, G915 TKL and G815: M1, M2 and M3, next to Revert, show the onboard profile it runs, and switch it. Pressing an M key on the keyboard is followed: the screen shows that profile's lighting and the G-Lite preset goes back to –. Save to keyboard is now Save to M1 (or M2, M3).
+- G915, G915 TKL and G815: M1, M2 and M3, next to Revert, show the onboard profile it runs, and switch it. Pressing an M key on the keyboard is followed: the screen shows that profile's lighting and the G-Lite preset goes back to –. Save to keyboard is now Save to M1 (or M2, M3). A switch drops a lighting set live and not saved, without asking, as the M keys do.
 - A G815 in the demo.
 - Keyboards: the Brightness slider follows the keyboard's own brightness key.
 - G815: the Brightness slider stops at the five levels the keyboard has (0, 12, 25, 50 and 100%), marked on the track. Other values dropped to the level below while the slider showed them.

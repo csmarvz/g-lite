@@ -16,13 +16,13 @@ Build the slots of [on-board-memory.md](on-board-memory.md) for the G815 and G91
 
 - **M1, M2, M3 in the footer**, left of Revert and as tall, as a `SegmentedPicker` in the Effect picker's style.
 - It shows the profile the keyboard runs (0x8100 fn 4). Picking one switches the keyboard to it (fn 3), like pressing the M key, and loads its lighting.
-- Save to Mn writes the slot shown. Save to keyboard already writes the active profile.
+- Save to Mn writes the slot shown, the running one: Save to keyboard renamed.
 
 ### 2. Follow M1–M3 (built, to test on the G815)
 
 - Mice send a 0x8100 event (fn 0) when their buttons switch profiles, and `MousePage.Heard` loads again. The keyboard screen gets the same.
 - Built both ways: the event, and fn 4 read when the window is activated, which costs one call and catches a missed event.
-- An M key switch releases a live lighting that isn't saved and shows the new slot's saved lighting, as the keyboard itself does. The G-Lite preset goes back to None, which means the keyboard's own lighting (picking None already releases it and reads the profile again). A preset with changes not saved keeps them as a draft, as when another preset is picked.
+- An M key switch releases a live lighting that isn't saved and shows the new slot's saved lighting, as the keyboard itself does. The G-Lite preset goes back to –, which means the keyboard's own lighting (picking – already releases it and reads the profile again). A preset with changes not saved keeps them as a draft, as when another preset is picked.
 - The same for a switch made in G-Lite (step 1).
 
 ### 3. G1–G5 bindings
@@ -52,7 +52,7 @@ Left alone. The manual's MR steps (MR, a G key, the keys, MR) record nothing on 
 
 One session, before any screen is built:
 
-- Press M1–M3 with `log.txt` on: does the 0x8100 event come?
+- Press M1–M3 with G-Lite in front: does the screen follow at once (the 0x8100 event comes) or only when the window comes back to the front? `log.txt` says "M2 picked on the keyboard" either way. The brightness key's 0x8040 event does come (2026-11-20).
 - Done on 2026-11-20: a macro made in G HUB's editor and saved to G1 in onboard memory mode, then a report ([G815-G915.md](G815-G915.md), "Macros"). MR records nothing onboard. Next: macros with modifiers (Ctrl+C), a media key and a long text, to learn the other step codes.
 - Change the lighting with brightness + a number key, then send a report: does it land in the running profile?
 - Does 0x8071 fn 8 (power modes) answer? (already a "To check" in [G815-G915.md](G815-G915.md))

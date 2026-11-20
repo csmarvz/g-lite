@@ -37,6 +37,8 @@ abstract class DevicePage : Control, IPage
     public string Note;
     // A control a screen puts in the footer, left of Revert (the keyboard's M1-M3).
     protected Control FooterPicker;
+    // Whether the screen shows FooterPicker: its Visible reads false while the window is hidden in the tray.
+    protected bool FooterPickerShown;
 
     protected DevicePage(FoundDevice device, Hidpp fake, MouseEventHandler drag, string title, string noun, string prefix)
     {
@@ -194,7 +196,8 @@ abstract class DevicePage : Control, IPage
 
     public void ShowStatus(string text, bool warn = false, Action click = null, string action = null)
     {
-        int footerLeft = FooterPicker != null && FooterPicker.Visible ? FooterPicker.Left : undoButton.Left;
+        ShowSets();
+        int footerLeft = FooterPicker != null && FooterPickerShown ? FooterPicker.Left : undoButton.Left;
         // With too little room left for the text beside a button, the text itself takes the click and names the action.
         if (action != null && footerLeft - status.Left - ActionWidth(action, true) < (int)(220 * Ui.DpiScale))
         {
@@ -204,8 +207,6 @@ abstract class DevicePage : Control, IPage
         actDo = action != null ? click : null;
         actionButton.Visible = action != null;
         status.Set(text, warn, action != null ? null : click);
-        ShowSets();
-        footerLeft = FooterPicker != null && FooterPicker.Visible ? FooterPicker.Left : undoButton.Left;
         if (action == null) { status.Width = footerLeft - status.Left - (int)(12 * Ui.DpiScale); return; }
         var main = MainButton();
         actionButton.Style = main == null || !main.Enabled ? ButtonStyle.Primary : ButtonStyle.Normal;

@@ -107,7 +107,7 @@ class KeyboardPage : DevicePage
         if (kind.Profile)
         {
             slotPicker = Ui.Add(this, new SegmentedPicker { AccessibleName = "Onboard profile", Visible = false }, 264, 685, 144, 32);
-            slotPicker.Picked += i => { if (i >= 0 && i < slots.Count) SlotSwitched(slots[i]); };
+            slotPicker.Picked += i => { if (i >= 0 && i < slots.Count) SlotSwitched(slots[i], true); };
             FooterPicker = slotPicker;
         }
 
@@ -831,6 +831,7 @@ class KeyboardPage : DevicePage
         if (slotPicker == null) return;
         slotPicker.Items = slots.Select(sector => "M" + sector).ToArray();
         slotPicker.Visible = slots.Count > 1;
+        FooterPickerShown = slotPicker.Visible;
         slotPicker.Index = slots.IndexOf(running);
         slotPicker.Invalidate();
         saveButton.Text = slotPicker.Visible && slots.Contains(running) ? "Save to M" + running : "Save to keyboard";
@@ -846,8 +847,10 @@ class KeyboardPage : DevicePage
         if (brightnessFeature != 0 && feature == brightnessFeature) CheckBrightness();
     }
 
+    // On activation. An asleep keyboard takes about 3 s per read, which would hold edits made right after.
     public void CheckKeyboard()
     {
+        if (found.Asleep) return;
         CheckSlot();
         CheckBrightness();
     }
@@ -884,16 +887,18 @@ class KeyboardPage : DevicePage
             checkingSlot = false;
             if (now == 0 || now == running) return;
             Log.Add(DeviceLabel, "found", "M" + now + " picked on the keyboard");
-            SlotSwitched(0);
+            SlotSwitched(now, false);
         }, message => { checkingSlot = false; });
     }
 
-    // Another onboard profile runs, picked here (switchTo) or with an M key (0). The keyboard shows that profile's saved lighting, so a
-    // live lighting not saved goes, as it does on the keyboard alone, and the preset goes back to – (docs/G815-plan.md, step 2).
-    void SlotSwitched(int switchTo)
+    // Another onboard profile runs, picked here or with an M key. The keyboard shows that profile's saved lighting, so a live lighting
+    // not saved goes, as it does on the keyboard alone, and the preset goes back to – (docs/G815-plan.md, step 2). Save is off until
+    // the new slot is read, or it would write the old slot's lighting into it.
+    void SlotSwitched(int sector, bool picked)
     {
-        if (switchTo == running) return;
-        if (switchTo != 0) { LogUserAction("Switch to M" + switchTo); running = switchTo; }
+        if (sector == running) return;
+        if (picked) LogUserAction("Switch to M" + sector);
+        running = sector;
         bool screening = Screening;
         DropPreset();
         if (!screening) { Settings.Remove(Remembered); bar = null; part = 0; }
@@ -901,10 +906,11 @@ class KeyboardPage : DevicePage
         edits++;
         previewSequence++;
         debounce.Stop();
+        RefreshControls();
         RunOnDevice(hidpp =>
         {
             if (!screening) { G915Lighting.Release(hidpp); claimed = false; }
-            if (switchTo != 0) hidpp.Call(hidpp.FeatureIndex(0x8100), 3, (byte)(switchTo >> 8), (byte)switchTo);
+            if (picked) hidpp.Call(hidpp.FeatureIndex(0x8100), 3, (byte)(sector >> 8), (byte)sector);
         });
         Load();
     }
@@ -1012,6 +1018,7 @@ class KeyboardPage : DevicePage
         {
             Settings.Set(Saved, setup.ToText());
             int screenLevel = brightness;
+            previewSequence++;
             RunOnDevice(hidpp =>
             {
                 if (screenLevel != G515Profile.Brightness(hidpp)) G515Profile.SetBrightness(hidpp, screenLevel);
