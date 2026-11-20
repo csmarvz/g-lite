@@ -29,7 +29,7 @@ class KeyboardPage : DevicePage
     readonly KeyboardKinds kind;
     readonly bool live, canScreen;
     List<byte[]> clusters;
-    ScreenSetup setup;
+    ScreenSettings setup;
     readonly Timer screenTimer = new Timer { Interval = 100 }, snapTimer = new Timer { Interval = 1000 },
         watchTimer = new Timer { Interval = 500 };
     volatile bool sending, failing, statusDirty, layoutDirty, capturing, snapping, watching, claimed;
@@ -107,7 +107,7 @@ class KeyboardPage : DevicePage
         }
 
         canScreen = found.Has(0x8081);
-        setup = ScreenSetup.FromText(Settings.Get(Saved));
+        setup = ScreenSettings.FromText(Settings.Get(Saved));
         var light = Ui.Add(this, new RoundedBox(), 20, 339, 380, 272);
         lightHead = Ui.Text(light, "Lighting", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         var effectHead = Ui.Text(light, "Effect", 14, 40, () => Theme.Dim, 9f);
@@ -397,8 +397,8 @@ class KeyboardPage : DevicePage
     string Paused()
     {
         if (setup.PauseWhenLocked && (Presence.Locked || Presence.DisplayOff)) return "Paused while the screen is off or locked.";
-        if (setup.PauseOnBattery && battery >= 0 && !charging && battery < ScreenSetup.BatteryLimit)
-            return "Paused: battery below " + ScreenSetup.BatteryLimit + "%.";
+        if (setup.PauseOnBattery && battery >= 0 && !charging && battery < ScreenSettings.BatteryLimit)
+            return "Paused: battery below " + ScreenSettings.BatteryLimit + "%.";
         return null;
     }
 
@@ -622,7 +622,7 @@ class KeyboardPage : DevicePage
         zoneList.Selected = selectedZone;
         zoneList.Count = i => i < counts.Length ? counts[i] : 0;
         zoneList.Invalidate();
-        addZone.Enabled = setup.Zones.Count < ScreenSetup.MaxZones;
+        addZone.Enabled = setup.Zones.Count < ScreenSettings.MaxZones;
         boostSlider.Value = setup.Boost;
         boostValue.Text = setup.Boost + "%";
         screenBright.Value = brightness;
@@ -697,7 +697,7 @@ class KeyboardPage : DevicePage
         bar = lighting.Effect == ScreenEffect ? null : BarFrom(pieces);
         part = bar == null ? 0 : 1;
         bool was = Screening;
-        if (parts.Length > 1) setup = ScreenSetup.FromText(parts[1]);
+        if (parts.Length > 1) setup = ScreenSettings.FromText(parts[1]);
         current = lighting;
         brightness = Math.Max(0, Math.Min(100, level));
         if (was && !Screening) ScreenOff();

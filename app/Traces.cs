@@ -680,7 +680,11 @@ static class Traces
             script.Press("Save to mouse");
             script.Do("the mouse reconnects, switched off and on", () => ((MousePage)script.Page).Heard(device.FeatureIndex(0x1D4B), 0));
             script.Do("the screen loads again", () => ((MousePage)script.Page).Load());
-            script.Do("the mouse's DPI button", () => { device.PressDpiButton(); ((MousePage)script.Page).Heard(device.FeatureIndex(0x8100), 1); });
+            script.Do("the mouse's DPI button", () =>
+            {
+                device.PressDpiButton();
+                ((MousePage)script.Page).Heard(device.FeatureIndex(0x8100), 1);
+            });
             var savedLight = device.Sectors[1].Skip(MouseProtocol.LightRecordsAt).Take(MouseProtocol.LightRecordLength).ToArray();
             return script.Text
                 + "lighting record after the save: " + (savedLight.SequenceEqual(factoryLight) ? "unchanged" : "changed") + "\n";

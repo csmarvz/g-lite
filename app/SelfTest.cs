@@ -129,24 +129,25 @@ static class SelfTest
         MouseProtocol.SetLight(mouse, mouseState, new MouseLight { Effect = 0x0A, Color = 0xFF0000, Period = 3000, Bright = 80 });
         Check(mouse.Dpi == 3200 && mouse.Zones[1][1] == 3 && mouse.Zones[1][2] == 0xFF && mouse.Zones[1][8] == 80,
             "mouse stage and lighting are set");
-        var mouseRoundTrip = MouseSet.FromText(
-            new MouseSet { Dpi = 1200, Light = new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 3000, Bright = 70 } }.ToText());
+        var mouseRoundTrip = MouseSettings.FromText(
+            new MouseSettings { Dpi = 1200, Light = new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 3000, Bright = 70 } }
+                .ToText());
         Check(mouseRoundTrip.Dpi == 1200
             && mouseRoundTrip.Light.Same(new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 3000, Bright = 70 }),
             "a mouse profile round-trips through text");
         var real = Hex("01020290012003d007800c0019ffffffff00ffffffffffffffffffffffffffff8001000180010002800100048001000880010010900500008001000880010010ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff8001000180010002800100048001000880010010900500008001000880010010ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff440065006600610075006c0074000000000000000000000000000000000000000000000000000000000000000000000001ffffff0000000000000001ffffff00000000000000ffffffffffffffffffffffffffffffffffffffffffff00bfdd");
         Check(MouseProtocol.Valid(real) && MouseProtocol.Crc(real, 253) == 0xBFDD, "the profile checksum matches the real mouse");
         var mouseLight = new MouseLight { Effect = 0x0A, Color = 0xFF0000, Period = 3000, Bright = 80 };
-        var built = MouseProtocol.Build(real, new MouseSet { Dpi = 1200, Rate = 500, Light = mouseLight, Stage = 2 }, 2);
+        var built = MouseProtocol.Build(real, new MouseSettings { Dpi = 1200, Rate = 500, Light = mouseLight, Stage = 2 }, 2);
         var allowed = new HashSet<int>(new[] { 0, 1, 253, 254 }.Concat(Enumerable.Range(3, 10)).Concat(Enumerable.Range(0xD0, 22)));
         Check(MouseProtocol.Valid(built) && built[0] == 2 && built[1] == 2
             && MouseProtocol.StagesOf(built).SequenceEqual(new[] { 400, 800, 1200, 3200, 6400 })
             && built[0xD0] == 0x0A && built[0xDB] == 0x0A && Enumerable.Range(0, 255).All(i => allowed.Contains(i) || built[i] == real[i]),
             "a saved mouse profile changes only DPI, report rate and lighting");
-        var picked = MouseProtocol.Build(real, new MouseSet { Dpi = 800, Stage = 1 }, 2);
+        var picked = MouseProtocol.Build(real, new MouseSettings { Dpi = 800, Stage = 1 }, 2);
         Check(picked[1] == 1 && MouseProtocol.StagesOf(picked).SequenceEqual(MouseProtocol.StagesOf(real)) && picked[0] == real[0],
             "saving a DPI stage only makes it the default");
-        var moved = MouseProtocol.Build(real, new MouseSet { Dpi = 800, Stage = 2 }, 2);
+        var moved = MouseProtocol.Build(real, new MouseSettings { Dpi = 800, Stage = 2 }, 2);
         Check(moved[1] == 2 && MouseProtocol.StagesOf(moved).SequenceEqual(new[] { 400, 800, 800, 3200, 6400 }),
             "a stage dragged to another stage's value keeps its place");
         var secondMouse = new FakeMouse();
@@ -154,7 +155,11 @@ static class SelfTest
         Check(secondState.Savable && secondState.Sector == 1 && secondState.SectorSize == 255 && secondState.Format == 3,
             "the fake mouse can be saved to");
         MouseProtocol.Store(secondMouse, secondState, MouseProtocol.Build(secondState.Profile,
-            new MouseSet { Dpi = 3200, Rate = 500, Stage = 3, Light = new MouseLight { Effect = 0x01, Color = 0xFF2020, Bright = 100 } },
+            new MouseSettings
+            {
+                Dpi = 3200, Rate = 500, Stage = 3,
+                Light = new MouseLight { Effect = 0x01, Color = 0xFF2020, Bright = 100 }
+            },
             2));
         var savedState = MouseProtocol.Read(secondMouse);
         Check(savedState.Dpi == 3200 && savedState.Rate == 500
@@ -183,14 +188,14 @@ static class SelfTest
         Check(freshState.Fresh && freshState.Writable && freshState.Savable && freshState.Sector == 0x0101,
             "a mouse with only its factory profile can be saved to");
         int freshRefusals = 0;
-        try { MouseProtocol.Store(fresh, freshState, MouseProtocol.Build(freshState.Profile, new MouseSet { Dpi = 800 }, 2)); }
+        try { MouseProtocol.Store(fresh, freshState, MouseProtocol.Build(freshState.Profile, new MouseSettings { Dpi = 800 }, 2)); }
         catch (RefusedException) { freshRefusals++; }
         try { MouseProtocol.Setup(secondMouse, restoredState, restoredState.Profile); } catch (RefusedException) { freshRefusals++; }
         try { MouseProtocol.Directory(255, 0); } catch (RefusedException) { freshRefusals++; }
         Check(freshRefusals == 3 && !fresh.Sectors.ContainsKey(0x0001) && !fresh.Sectors.ContainsKey(0x0000),
             "setting up is refused on a mouse that has a profile, and a save never writes the factory profile");
         MouseProtocol.Setup(fresh, freshState,
-            MouseProtocol.Build(freshState.Profile, new MouseSet { Dpi = 3200, Rate = 500, Stage = 3 }, 2));
+            MouseProtocol.Build(freshState.Profile, new MouseSettings { Dpi = 3200, Rate = 500, Stage = 3 }, 2));
         var setUpState = MouseProtocol.Read(fresh);
         var writtenDirectory = fresh.Sectors[0x0000];
         Check(setUpState.Sector == 1 && !setUpState.Fresh && setUpState.Savable
@@ -201,11 +206,11 @@ static class SelfTest
 
         var hero = new FakeMouse { Info = "01020105050B1000FF0A01" };
         var heroState = MouseProtocol.Read(hero);
-        MouseProtocol.Store(hero, heroState, MouseProtocol.Build(heroState.Profile, new MouseSet { Dpi = 3200 }, 2));
+        MouseProtocol.Store(hero, heroState, MouseProtocol.Build(heroState.Profile, new MouseSettings { Dpi = 3200 }, 2));
         var heroFresh = new FakeMouse(true) { Info = "01020105050B1000FF0A01" };
         heroFresh.Sectors[0x0000] = new byte[255];
         var heroFreshState = MouseProtocol.Read(heroFresh);
-        MouseProtocol.Setup(heroFresh, heroFreshState, MouseProtocol.Build(heroFreshState.Profile, new MouseSet { Dpi = 800 }, 2));
+        MouseProtocol.Setup(heroFresh, heroFreshState, MouseProtocol.Build(heroFreshState.Profile, new MouseSettings { Dpi = 800 }, 2));
         Check(heroState.Savable && MouseProtocol.Read(hero).Dpi == 3200 && heroFreshState.Fresh && heroFreshState.Savable
             && MouseProtocol.Valid(heroFresh.Sectors[0x0000]) && MouseProtocol.Read(heroFresh).Sector == 1
             && !MouseProtocol.Read(new FakeMouse { Info = "01010105050B1000FF0A01" }).Writable
@@ -467,7 +472,7 @@ static class SelfTest
             "the light's breathe, cycle and wave frames, and its effect round-trips through text");
         var lightScreen = LitraProtocol.Screen("");
         Check(lightScreen.Zones.Count == 7 && LitraProtocol.Screen(lightScreen.ToText()).Zones[6].Area == lightScreen.Zones[6].Area
-            && LitraProtocol.Screen(new ScreenSetup().ToText()).Zones.Count == 7,
+            && LitraProtocol.Screen(new ScreenSettings().ToText()).Zones.Count == 7,
             "the light's screen effect has seven areas and keeps them");
         var fakeLight = new FakeLight();
         var lumenRange = LitraProtocol.Lumens(fakeLight);
@@ -481,7 +486,7 @@ static class SelfTest
         var breathe = new MouseLight { Effect = 0x0A, Color = 0x30D050, Period = 4800, Bright = 50 };
         var speakerScreen = ZoneLighting.Screen("");
         Check(speakerScreen.Zones.Count == 4 && ZoneLighting.Screen(speakerScreen.ToText()).Zones[3].Area == speakerScreen.Zones[3].Area
-            && ZoneLighting.Screen(new ScreenSetup().ToText()).Zones.Count == 4,
+            && ZoneLighting.Screen(new ScreenSettings().ToText()).Zones.Count == 4,
             "the speakers' screen effect has one area per zone and keeps it");
         var speakerLights = ZoneLighting.FromText(ZoneLighting.ToText(new[] { breathe, null, new MouseLight(), breathe }), 4);
         var oneForAll = ZoneLighting.FromText("1,FF0000,5000,100", 4);
@@ -530,7 +535,7 @@ static class SelfTest
         var g9xBefore = G9xRegisters.Read(g9xSaver, G9xModel.G9x);
         var g9xOtherPage = (byte[])g9xSaver.Pages[3].Clone();
         var g9xPage = G9xRegisters.Build(g9xSaver.Pages[2],
-            new MouseSet { Dpi = 1200, Stage = 2, Light = new MouseLight { Effect = 0x01, Color = 0x00FF00, Bright = 100 } },
+            new MouseSettings { Dpi = 1200, Stage = 2, Light = new MouseLight { Effect = 0x01, Color = 0x00FF00, Bright = 100 } },
             1000, G9xModel.G9x);
         G9xRegisters.Store(g9xSaver, g9xBefore, g9xPage, g9xBefore.Profile);
         var g9xAfter = G9xRegisters.Read(g9xSaver, G9xModel.G9x);
@@ -555,7 +560,7 @@ static class SelfTest
         try
         {
             G9xRegisters.Store(g9xCut, g9xCutState,
-                G9xRegisters.Build(g9xKept, new MouseSet { Dpi = 1200, Stage = 2 }, 1000, G9xModel.G9x), g9xKept);
+                G9xRegisters.Build(g9xKept, new MouseSettings { Dpi = 1200, Stage = 2 }, 1000, G9xModel.G9x), g9xKept);
         }
         catch (System.IO.IOException ex) { g9xCutError = ex.Message; }
         Check(g9xCutError != null && g9xCutError.Contains("as it was is back")
@@ -574,22 +579,22 @@ static class SelfTest
         };
         Check(g510.IsG510 && DeviceTable.For(g510).Screen == typeof(G510Page)
             && !new FoundDevice { Name = "G510s Gaming Keyboard", PlainHid = true, Path = g510.Path }.IsG510
-            && G510Lighting.Frame(new G510Set { Color = 0xFF2020, Bright = 50 }, 0) == 0x7F1010
-            && G510Lighting.Frame(new G510Set { On = false }, 0) == 0
-            && G510Lighting.Frame(new G510Set { Effect = G510Set.Breathe, Period = 2000 }, 1000) == 0xFFFFFF
-            && G510Lighting.Frame(new G510Set { Effect = G510Set.Breathe, Period = 2000 }, 0) == 0
-            && G510Lighting.Frame(new G510Set { Effect = G510Set.Cycle }, 0) == 0xFF0000
-            && G510Set.FromText(new G510Set { Color = 0x3080FF, Bright = 40, On = false }.ToText())
-                .Same(new G510Set { Color = 0x3080FF, Bright = 40, On = false })
-            && G510Set.FromText(new G510Set { Effect = G510Set.Cycle, Period = 3000 }.ToText())
-                .Same(new G510Set { Effect = G510Set.Cycle, Period = 3000 })
-            && G510Set.FromText("1,FF0000,100").Effect == G510Set.Static,
+            && G510Lighting.Frame(new G510Settings { Color = 0xFF2020, Bright = 50 }, 0) == 0x7F1010
+            && G510Lighting.Frame(new G510Settings { On = false }, 0) == 0
+            && G510Lighting.Frame(new G510Settings { Effect = G510Settings.Breathe, Period = 2000 }, 1000) == 0xFFFFFF
+            && G510Lighting.Frame(new G510Settings { Effect = G510Settings.Breathe, Period = 2000 }, 0) == 0
+            && G510Lighting.Frame(new G510Settings { Effect = G510Settings.Cycle }, 0) == 0xFF0000
+            && G510Settings.FromText(new G510Settings { Color = 0x3080FF, Bright = 40, On = false }.ToText())
+                .Same(new G510Settings { Color = 0x3080FF, Bright = 40, On = false })
+            && G510Settings.FromText(new G510Settings { Effect = G510Settings.Cycle, Period = 3000 }.ToText())
+                .Same(new G510Settings { Effect = G510Settings.Cycle, Period = 3000 })
+            && G510Settings.FromText("1,FF0000,100").Effect == G510Settings.Static,
             "the G510 gets its screen only when its vendor collection was found, and its backlight is the colour scaled by brightness");
         var g500s = FakeG9x.G500s();
         var g500sState = G9xRegisters.Read(g500s, G9xModel.G500s);
         G9xRegisters.SetDpi(g500s, 8200, G9xModel.G500s);
         var g500sPage = G9xRegisters.Build(g500s.Pages[2],
-            new MouseSet { Dpi = 6400, Stage = 3, Light = new MouseLight { Effect = 0x01, Color = 0x00FF00, Bright = 100 } },
+            new MouseSettings { Dpi = 6400, Stage = 3, Light = new MouseLight { Effect = 0x01, Color = 0x00FF00, Bright = 100 } },
             1000, G9xModel.G500s);
         G9xRegisters.Store(g500s, g500sState, g500sPage, g500sState.Profile);
         var g500sAfter = G9xRegisters.Read(g500s, G9xModel.G500s);
@@ -602,12 +607,12 @@ static class SelfTest
             "the G500s reads and saves its DPI in units of 50 up to 8200, and has no colour light to read or save");
         var g5Mouse = FakeG9x.Short(0x82);
         var g5State = G5Mouse.G5().Read(g5Mouse);
-        G5Mouse.G5().SendDpi(g5Mouse, g5State, new MouseSet { Dpi = 2000 }, null);
+        G5Mouse.G5().SendDpi(g5Mouse, g5State, new MouseSettings { Dpi = 2000 }, null);
         var g9Mouse = FakeG9x.Short(0x84);
         var g9State = G5Mouse.G9().Read(g9Mouse);
-        G5Mouse.G9().SendDpi(g9Mouse, g9State, new MouseSet { Dpi = 3200 }, null);
+        G5Mouse.G9().SendDpi(g9Mouse, g9State, new MouseSettings { Dpi = 3200 }, null);
         bool g5Refused = false;
-        try { G5Mouse.G5().SendDpi(g5Mouse, g5State, new MouseSet { Dpi = 1000 }, null); }
+        try { G5Mouse.G5().SendDpi(g5Mouse, g5State, new MouseSettings { Dpi = 1000 }, null); }
         catch (RefusedException) { g5Refused = true; }
         Check(g5State.Dpi == 1600 && g5State.Rate == 500 && !g5State.Writable && g5State.Light == null
             && g5Mouse.Registers[0x63][0] == 0x83 && g5Refused
@@ -812,20 +817,20 @@ static class SelfTest
         Check(ansiIds.Distinct().Count() == 87 && isoIds.Distinct().Count() == 88, "the G515 has 87 keys in ANSI and 88 in ISO");
         Check(ansiIds.Contains(0x6F) && ansiIds.Contains(0x62) && ansiIds.Contains(0x6E), "Fn, Menu and AltGr have ids");
 
-        var screen = new ScreenSetup
+        var screen = new ScreenSettings
         {
             Monitor = @"\\.\DISPLAY2", Boost = 60, Interval = 300, Smooth = false, PauseOnBattery = false, PauseWhenLocked = false
         };
         screen.Keys[0x26] = 3;
         screen.Add();
         screen.Zones[4].Area = new System.Drawing.RectangleF(0.1f, 0.2f, 0.3f, 0.4f);
-        var screenRoundTrip = ScreenSetup.FromText(screen.ToText());
+        var screenRoundTrip = ScreenSettings.FromText(screen.ToText());
         Check(screenRoundTrip.Monitor == screen.Monitor && screenRoundTrip.Boost == 60 && screenRoundTrip.Interval == 300
             && !screenRoundTrip.Smooth && !screenRoundTrip.PauseOnBattery && !screenRoundTrip.PauseWhenLocked
             && screenRoundTrip.Zones.Count == 5 && screenRoundTrip.Zones[4].Name == "Zone 5"
             && Math.Abs(screenRoundTrip.Zones[4].Area.Height - 0.4f) < 0.001f
             && screenRoundTrip.Keys[0x26] == 3, "screen setup round-trips through text");
-        Check(ScreenSetup.FromText("garbage;zones:x").Zones.Count == 4 && ScreenSetup.FromText("ms:5000").Interval == 1000,
+        Check(ScreenSettings.FromText("garbage;zones:x").Zones.Count == 4 && ScreenSettings.FromText("ms:5000").Interval == 1000,
             "bad screen setup text falls back to defaults");
         Check(screen.Add() == -1, "at most five zones");
         screen.Remove(3);

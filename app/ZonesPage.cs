@@ -19,7 +19,7 @@ class ZonesPage : DevicePage
     int[] shown;
     volatile int[] framed;
     DateTime nextRefresh;
-    ScreenSetup setup;
+    ScreenSettings setup;
     readonly Timer debounce = new Timer { Interval = 120 }, screenTimer = new Timer { Interval = 100 },
         snapTimer = new Timer { Interval = 1000 }, frameTimer = new Timer { Interval = 50 };
     readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();

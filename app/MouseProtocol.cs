@@ -132,7 +132,7 @@ static class MouseProtocol
             + ", " + (interval > 0 ? 1000 / interval + " Hz" : "");
     }
 
-    public static byte[] Build(byte[] old, MouseSet want, int zones)
+    public static byte[] Build(byte[] old, MouseSettings want, int zones)
     {
         var built = (byte[])old.Clone();
         var stages = StagesOf(built);

@@ -109,12 +109,12 @@ static class ZoneLighting
             new RectangleF(0.05f, 0.55f, 0.4f, 0.35f), new RectangleF(0.55f, 0.55f, 0.4f, 0.35f),
             new RectangleF(0.05f, 0.1f, 0.4f, 0.35f), new RectangleF(0.55f, 0.1f, 0.4f, 0.35f)
         };
-        return areas.Select((area, i) => new Zone { Name = Names[i], MarkColor = ScreenSetup.MarkColors[i], Area = area }).ToList();
+        return areas.Select((area, i) => new Zone { Name = Names[i], MarkColor = ScreenSettings.MarkColors[i], Area = area }).ToList();
     }
 
-    public static ScreenSetup Screen(string text)
+    public static ScreenSettings Screen(string text)
     {
-        var setup = ScreenSetup.FromText(text);
+        var setup = ScreenSettings.FromText(text);
         if (string.IsNullOrEmpty(text) || setup.Zones.Count != 4) setup.Zones = ScreenZones();
         for (int i = 0; i < 4; i++) setup.Zones[i].Name = Names[i];
         return setup;

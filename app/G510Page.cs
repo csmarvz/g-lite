@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 class G510Page : DevicePage
 {
-    G510Set current, read, sent;
+    G510Settings current, read, sent;
     bool loading, ready, framing;
     int sequence;
     volatile int framed = -1;
@@ -31,7 +31,7 @@ class G510Page : DevicePage
         var light = Ui.Add(this, new RoundedBox(), 20, 118, 616, 256);
         lightHead = Ui.Text(light, "Backlight", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         effectHead = Ui.Text(light, "Effect", 14, 40, () => Theme.Dim, 9f);
-        effects = Ui.Add(light, new SegmentedPicker { Items = G510Set.Effects, AccessibleName = "Effect" }, 14, 58, 440, 32);
+        effects = Ui.Add(light, new SegmentedPicker { Items = G510Settings.Effects, AccessibleName = "Effect" }, 14, 58, 440, 32);
         effects.Picked += index => Edit(settings => { settings.On = index > 0; if (index > 0) settings.Effect = index - 1; }, true);
         colorHead = Ui.Text(light, "Color", 14, 100, () => Theme.Dim, 9f);
         colors = new ColorRow(light, 117);
@@ -45,7 +45,7 @@ class G510Page : DevicePage
         speed = Ui.Add(light, new Slider { AccessibleName = "Speed" }, 290, 180, 260, 24);
         speed.Changed += (s, e) =>
         {
-            int period = G510Set.MaxPeriod - (G510Set.MaxPeriod - G510Set.MinPeriod) * speed.Value / 100;
+            int period = G510Settings.MaxPeriod - (G510Settings.MaxPeriod - G510Settings.MinPeriod) * speed.Value / 100;
             Edit(settings => settings.Period = period, false);
         };
         var note = Ui.Text(light,
@@ -54,7 +54,7 @@ class G510Page : DevicePage
         note.AutoSize = false;
         note.Size = new Size(588, 36);
 
-        current = G510Set.FromText(Settings.Get(Remembered));
+        current = G510Settings.FromText(Settings.Get(Remembered));
         RefreshControls();
         if (current != null) Load();
     }
@@ -71,7 +71,7 @@ class G510Page : DevicePage
 
     protected override void ApplyPreset(string text)
     {
-        var settings = G510Set.FromText(text);
+        var settings = G510Settings.FromText(text);
         if (settings == null) return;
         current = settings;
         Changed(true);
@@ -90,10 +90,10 @@ class G510Page : DevicePage
         Send(read.Clone());
     }
 
-    void Edit(Action<G510Set> change, bool now)
+    void Edit(Action<G510Settings> change, bool now)
     {
         if (loading || !ready) return;
-        var settings = (current ?? read ?? new G510Set()).Clone();
+        var settings = (current ?? read ?? new G510Settings()).Clone();
         change(settings);
         current = settings;
         Changed(now);
@@ -113,7 +113,7 @@ class G510Page : DevicePage
         loading = true;
         var settings = current ?? read;
         bool known = ready && settings != null, lit = known && settings.On,
-            color = lit && settings.Effect != G510Set.Cycle, moving = lit && settings.Effect != G510Set.Static;
+            color = lit && settings.Effect != G510Settings.Cycle, moving = lit && settings.Effect != G510Settings.Static;
         lightHead.Text = ready && read == null ? "Backlight (couldn't be read)" : "Backlight";
         SetDimmed(effectHead, ready);
         effects.Enabled = ready;
@@ -128,14 +128,14 @@ class G510Page : DevicePage
         bright.Invalidate();
         SetDimmed(speedHead, moving);
         speed.Enabled = moving;
-        speed.Value = known ? (G510Set.MaxPeriod - settings.Period) * 100 / (G510Set.MaxPeriod - G510Set.MinPeriod) : 0;
+        speed.Value = known ? (G510Settings.MaxPeriod - settings.Period) * 100 / (G510Settings.MaxPeriod - G510Settings.MinPeriod) : 0;
         speedValue.Text = moving ? speed.Value + "%" : "";
         speed.Invalidate();
         loading = false;
         Animation();
     }
 
-    bool Animated { get { return ready && current != null && current.On && current.Effect != G510Set.Static; } }
+    bool Animated { get { return ready && current != null && current.On && current.Effect != G510Settings.Static; } }
 
     void Animation()
     {
@@ -178,12 +178,12 @@ class G510Page : DevicePage
     }
 
     // Breathe and Cycle are sent by Animate, frame by frame.
-    void Send(G510Set want)
+    void Send(G510Settings want)
     {
         int startedAt = ++sequence;
         framed = -1;
         pausedUntil = DateTime.MinValue;
-        if (want.On && want.Effect != G510Set.Static)
+        if (want.On && want.Effect != G510Settings.Static)
         {
             RunOnDevice(hidpp => sent = null, () => { if (startedAt == sequence) ClearStatus(); });
             return;
@@ -208,7 +208,7 @@ class G510Page : DevicePage
             framed = -1;
             try { color = G510Lighting.Read(hidpp); }
             catch (System.IO.IOException) { color = -1; }
-            if (want != null && color >= 0 && (!want.On || want.Effect == G510Set.Static))
+            if (want != null && color >= 0 && (!want.On || want.Effect == G510Settings.Static))
             {
                 G510Lighting.Set(hidpp, G510Lighting.Frame(want, 0));
                 sent = want;
@@ -216,7 +216,7 @@ class G510Page : DevicePage
         }, () =>
         {
             ready = true;
-            read = color < 0 ? null : new G510Set { On = color != 0, Color = color == 0 ? 0xFFFFFF : color, Bright = 100 };
+            read = color < 0 ? null : new G510Settings { On = color != 0, Color = color == 0 ? 0xFFFFFF : color, Bright = 100 };
             RefreshControls();
             Loaded();
         });

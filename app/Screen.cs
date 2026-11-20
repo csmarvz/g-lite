@@ -16,7 +16,7 @@ class Zone
     public RectangleF Area;
 }
 
-class ScreenSetup
+class ScreenSettings
 {
     public static readonly int[] MarkColors = { 0x3B82F6, 0x8B6CF0, 0xE5533D, 0xF29D38, 0x2FB57D, 0x22B8C8, 0xE0559A };
     public const int MaxZones = 5;
@@ -86,9 +86,9 @@ class ScreenSetup
             "keys:" + string.Join(",", Keys.OrderBy(pair => pair.Key).Select(pair => pair.Key.ToString("X2") + "." + pair.Value)));
     }
 
-    public static ScreenSetup FromText(string text)
+    public static ScreenSettings FromText(string text)
     {
-        var setup = new ScreenSetup();
+        var setup = new ScreenSettings();
         if (string.IsNullOrEmpty(text)) return setup;
         try
         {
@@ -132,7 +132,7 @@ class ScreenSetup
                 }
             }
         }
-        catch (Exception) { return new ScreenSetup(); }
+        catch (Exception) { return new ScreenSettings(); }
         return setup;
     }
 

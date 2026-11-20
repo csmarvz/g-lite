@@ -113,7 +113,7 @@ class MousePicture : DrawnControl
 
 class MousePage : DevicePage
 {
-    MouseSet current = new MouseSet(), stored, sent;
+    MouseSettings current = new MouseSettings(), stored, sent;
     MouseProtocol.State state;
     bool loading, dirty, lightSet;
     int sequence;
@@ -270,7 +270,7 @@ class MousePage : DevicePage
 
     protected override void ApplyPreset(string text)
     {
-        var settings = MouseSet.FromText(text);
+        var settings = MouseSettings.FromText(text);
         var saved = stored != null && stored.Buttons != null ? stored.Buttons : current.Buttons;
         if (current.Buttons == null) settings.Buttons = null;
         else if (settings.Buttons == null) settings.Buttons = Bindings.Copy(saved);
@@ -805,7 +805,7 @@ class MousePage : DevicePage
             int start = read.Stage >= 0 ? read.Stage
                 : read.Profile != null && read.Stages.Length > 0 ? Math.Min(mouse.DefaultStage(read.Profile), read.Stages.Length - 1)
                 : -1;
-            stored = new MouseSet
+            stored = new MouseSettings
             {
                 Dpi = read.Dpi, Rate = read.Rate, Light = read.Light, Stage = start,
                 Buttons = Bindings.Copy(read.Buttons)
@@ -825,7 +825,7 @@ class MousePage : DevicePage
                     current.Light = kept;
                     stored.Light = kept.Clone();
                 }
-                sent = new MouseSet
+                sent = new MouseSettings
                 {
                     Dpi = read.Dpi, Stage = start,
                     Light = lightSet && current.Light != null ? current.Light.Clone() : read.Light

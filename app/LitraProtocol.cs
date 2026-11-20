@@ -224,15 +224,15 @@ static class LitraProtocol
             .Select(i => new Zone
             {
                 Name = (i + 1).ToString(),
-                MarkColor = ScreenSetup.MarkColors[i],
+                MarkColor = ScreenSettings.MarkColors[i],
                 Area = new RectangleF((float)Math.Round(i / 7.0 + 0.01, 3), 0.1f, (float)Math.Round(1 / 7.0 - 0.02, 3), 0.8f)
             })
             .ToList();
     }
 
-    public static ScreenSetup Screen(string text)
+    public static ScreenSettings Screen(string text)
     {
-        var setup = ScreenSetup.FromText(text);
+        var setup = ScreenSettings.FromText(text);
         if (string.IsNullOrEmpty(text) || setup.Zones.Count != LightState.Zones) setup.Zones = ScreenZones();
         return setup;
     }

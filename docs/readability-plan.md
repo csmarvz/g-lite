@@ -249,6 +249,16 @@ Done, one commit per file: `app\sources.rsp` now lists the sources once, in comp
 
 Each commit, and the whole step against the tree before it: the traces pass unchanged, every line and every type's text (with its comments) is the same and appears once, every method's IL is the same (tokens resolved to names), and the exe is the same size. `Page515.cs` (1242 lines) and `Program.cs` (1036) stay big: each is one class (`Page515`, `MainWindow`), and splitting a class with `partial` wouldn't give one subject per file. That would be a redesign of those classes, not a move.
 
+## Step 5: names that say the kind last (done)
+
+A file is named after its main class, and a class name ends with its kind, the way .NET names things (`MainWindow`, `TextField`, `DeviceWatcher`), and as `DevicePage`, `InfoPage` and `LogsPage` already did.
+
+- Files (same IL): `Keyboard.cs` to `KeyboardLighting.cs`, `Backup.cs` to `Backups.cs`, `Update.cs` to `Updater.cs`, `Win.cs` to `WindowHelpers.cs`, `Headset.cs` to `HeadsetProtocol.cs`, `Litra.cs` to `LitraProtocol.cs`.
+- The screens, class and file: `Page515` to `KeyboardPage` (it serves every RGB keyboard, not only the G515), `PageMouse` to `MousePage`, `PageHeadset` to `HeadsetPage`, `PageSpeaker` to `ZonesPage` (the G560 and the 0x8070 zone keyboards), `PageG510` to `G510Page`, `PageLight` to `LightPage`, `PageOtherDevice` to `OtherDevicePage`, `PageUpdate` to `UpdatePage`.
+- The settings classes, one word for one kind: `MouseSet` to `MouseSettings`, `G510Set` to `G510Settings`, `ScreenSetup` to `ScreenSettings`, beside `HeadsetSettings` and `OtherSettings`.
+
+Kept: `Fake…` (an adjective, "a fake mouse"), the device classes that already end with their kind (`MouseProtocol`, `G9xRegisters`, `G515Profile`, `G915Lighting`, `ZoneLighting`), and `Program.cs`, where the release workflow reads the version. Checked like step 4, with the new names mapped back to the old ones: the same IL and the same lines. A report's Screen line now shows the new screen name; the saved reports in `docs/reports/` keep the old ones, as sent. The step 1 tables above keep the names of their time.
+
 ## Progress
 
 - [x] 1a. Classes
@@ -259,3 +269,4 @@ Each commit, and the whole step against the tree before it: the traces pass unch
 - [x] 2b. Long lines: rewrites (ternaries, brackets, named locals)
 - [x] 3. Profile offsets
 - [x] 4. Split files
+- [x] 5. Kind last in names

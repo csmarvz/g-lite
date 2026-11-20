@@ -119,7 +119,7 @@ class LightPage : DevicePage
     int[] shown;
     volatile int[] framed;
     DateTime nextRefresh;
-    ScreenSetup setup;
+    ScreenSettings setup;
     readonly bool back;
     readonly Timer debounce = new Timer { Interval = 120 }, screenTimer = new Timer { Interval = 100 },
         animationTimer = new Timer { Interval = 50 }, snapTimer = new Timer { Interval = 1000 };

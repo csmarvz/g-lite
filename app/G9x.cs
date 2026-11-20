@@ -42,7 +42,7 @@ class G9xMouse : IMouse
     public bool HasFactory { get { return false; } }
     public MouseProtocol.State Read(Hidpp hidpp) { return G9xRegisters.Read(hidpp, model); }
 
-    public void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSet want, MouseSet sent)
+    public void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSettings want, MouseSettings sent)
     {
         if (sent == null || want.Dpi != sent.Dpi) G9xRegisters.SetDpi(hidpp, want.Dpi, model);
     }
@@ -56,11 +56,11 @@ class G9xMouse : IMouse
     public void SetRate(Hidpp hidpp, int hz) { G9xRegisters.SetRate(hidpp, hz); }
     public void SetInvert(Hidpp hidpp, bool on) { throw new RefusedException("This mouse can't invert its wheel"); }
     public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state) { return G9xRegisters.ReadPage(hidpp, state.Sector); }
-    public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSet want)
+    public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSettings want)
     {
         throw new RefusedException("Saving isn't supported on this mouse");
     }
-    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSet want)
+    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSettings want)
     {
         G9xRegisters.Store(hidpp, state, G9xRegisters.Build(now, want, state.Rate, model), now);
     }
@@ -114,7 +114,7 @@ class G5Mouse : IMouse
         return state;
     }
 
-    public void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSet want, MouseSet sent)
+    public void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSettings want, MouseSettings sent)
     {
         if (sent == null || want.Dpi != sent.Dpi) hidpp.Register(0x80, 0x63, (byte)DpiToRaw(want.Dpi));
     }
@@ -126,11 +126,11 @@ class G5Mouse : IMouse
     public void SetRate(Hidpp hidpp, int hz) { G9xRegisters.SetRate(hidpp, hz); }
     public void SetInvert(Hidpp hidpp, bool on) { throw new RefusedException("This mouse can't invert its wheel"); }
     public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state) { return null; }
-    public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSet want)
+    public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSettings want)
     {
         throw new RefusedException("Saving isn't supported on this mouse");
     }
-    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSet want)
+    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSettings want)
     {
         throw new RefusedException("Saving isn't supported on this mouse");
     }
@@ -248,7 +248,7 @@ static class G9xRegisters
         return interval > 0 ? dpi + ", " + 1000 / interval + " Hz" : dpi;
     }
 
-    public static byte[] Build(byte[] old, MouseSet want, int hz, G9xModel model)
+    public static byte[] Build(byte[] old, MouseSettings want, int hz, G9xModel model)
     {
         var page = (byte[])old.Clone();
         var stages = StagesOf(page, model);

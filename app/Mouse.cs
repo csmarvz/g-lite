@@ -27,15 +27,15 @@ class MouseLight
     }
 }
 
-class MouseSet
+class MouseSettings
 {
     public int Dpi = 800, Rate, Stage = -1;
     public MouseLight Light;
     public byte[][] Buttons;
 
-    public MouseSet Clone()
+    public MouseSettings Clone()
     {
-        return new MouseSet
+        return new MouseSettings
         {
             Dpi = Dpi, Rate = Rate, Stage = Stage,
             Light = Light == null ? null : Light.Clone(),
@@ -51,10 +51,10 @@ class MouseSet
         return text;
     }
 
-    public static MouseSet FromText(string text)
+    public static MouseSettings FromText(string text)
     {
         var parts = text.Split(',');
-        return new MouseSet
+        return new MouseSettings
         {
             Dpi = int.Parse(parts[0]),
             Light = new MouseLight
@@ -79,13 +79,13 @@ interface IMouse
     EffectInfo[] Effects { get; }
     bool HasFactory { get; }
     MouseProtocol.State Read(Hidpp hidpp);
-    void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSet want, MouseSet sent);
+    void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSettings want, MouseSettings sent);
     void SetLight(Hidpp hidpp, MouseProtocol.State state, MouseLight light);
     void SetRate(Hidpp hidpp, int hz);
     void SetInvert(Hidpp hidpp, bool on);
     byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state);
-    void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSet want);
-    void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSet want);
+    void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSettings want);
+    void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSettings want);
     void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data);
     string Describe(byte[] profile);
     int DefaultStage(byte[] profile);
@@ -97,7 +97,7 @@ class HidppMouse : IMouse
     public bool HasFactory { get { return true; } }
     public MouseProtocol.State Read(Hidpp hidpp) { return MouseProtocol.Read(hidpp); }
 
-    public void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSet want, MouseSet sent)
+    public void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSettings want, MouseSettings sent)
     {
         if (sent != null && want.Dpi == sent.Dpi && want.Stage == sent.Stage) return;
         bool saved = state.Onboard && want.Stage >= 0 && want.Stage < state.Stages.Length && state.Stages[want.Stage] == want.Dpi;
@@ -111,12 +111,12 @@ class HidppMouse : IMouse
     {
         return MouseProtocol.ReadSector(hidpp, state.Sector, state.SectorSize);
     }
-    public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSet want)
+    public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSettings want)
     {
         MouseProtocol.Setup(hidpp, state,
             MouseProtocol.Build(MouseProtocol.ReadSector(hidpp, state.Sector, state.SectorSize), want, state.Zones.Count));
     }
-    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSet want)
+    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSettings want)
     {
         MouseProtocol.Store(hidpp, state, MouseProtocol.Build(now, want, state.Zones.Count));
     }
