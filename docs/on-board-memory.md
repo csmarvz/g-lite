@@ -13,17 +13,16 @@ Mockups: the G-Lite design canvas "G915 Onboard Profiles", design E (private to 
 
 ## Screen
 
-Everything happens in the footer, on the right, left to right:
+The slots are a segmented picker in the header, right of the device name, in the Effect picker's style: M1, M2, M3, the one the keyboard runs picked ([G815-plan.md](G815-plan.md), replacing a footer dropdown). The footer, on the right, left to right:
 
-1. **The slot dropdown.** The chip icon, then two lines: "On-board memory slot" in small grey text, and the slot below it, like `M1`. 40 px tall, so the footer line stays at 673 like every other screen. Opened, it lists M1, M2 and M3, with "current" next to the slot the keyboard runs.
-2. **Reload**, which is Revert renamed. Same behaviour as Revert today: it reads the keyboard again (with None: releases the live lighting and shows what's saved).
-3. **Save to M1**: the primary button, named after the slot shown.
+1. **Reload**, which is Revert renamed. Same behaviour as Revert today: it reads the keyboard again (with None: releases the live lighting and shows what's saved).
+2. **Save to M1**: the primary button, named after the slot shown.
 
-The status line stays on the left. The preset row's label becomes **G-Lite preset**, so it isn't mistaken for the keyboard's slots. The key picture box shrinks a little (190 px tall instead of 209) to leave room.
+The status line stays on the left. The preset row's label becomes **G-Lite preset**, so it isn't mistaken for the keyboard's slots.
 
 ## Behaviour
 
-- **The dropdown always shows the slot the keyboard runs.** G-Lite reads it at load (0x8100 fn 4). Nothing is kept in `settings.txt`: if someone presses M2 on the keyboard, the screen shows M2 at its next load.
+- **The picker always shows the slot the keyboard runs.** G-Lite reads it at load (0x8100 fn 4). Nothing is kept in `settings.txt`: if someone presses M2 on the keyboard, the screen shows M2 at its next load.
 - **Picking a slot switches the keyboard to it**, like pressing its M key (fn 3), and loads that slot's lighting and idle settings into the screen. With unsaved changes (a live lighting not saved), G-Lite asks first, since switching replaces them.
 - **Save to Mn** writes the slot shown, which is the one running: the same as Save to keyboard today (backup, write, read back, load with fn 3, give the lighting back).
 - **Reload** doesn't change slots.
@@ -31,5 +30,5 @@ The status line stays on the left. The preset row's label becomes **G-Lite prese
 
 ## Open questions
 
-- Whether the G915 sends an event when an M key switches the profile, so the screen could follow without a reload. Not seen yet.
+- Whether the G915 sends an event when an M key switches the profile, so the screen could follow without a reload. Not seen yet. [G815-plan.md](G815-plan.md) step 2: listen for the 0x8100 event as the mice do, else read fn 4 when the window gets the focus; a switch releases a live lighting that isn't saved.
 - Devices with more or fewer profiles: list as many slots as the directory has enabled. A device whose profiles have no M keys (mice) would need another name than Mn.
