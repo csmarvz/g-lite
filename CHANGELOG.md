@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.0.33-alpha] - 2026-11-20
+
 ### Added
 
 - Mice: the screen follows the mouse's own DPI button: the stage and DPI change as you press it, and a profile picked with the profile button is read again. The mouse tells G-Lite through its onboard profiles feature (0x8100).
