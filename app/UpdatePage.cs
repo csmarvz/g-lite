@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-class PageUpdate : Control
+class UpdatePage : Control
 {
     [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
     static extern int SetWindowTheme(IntPtr window, string subAppName, string subIdList);
@@ -28,7 +28,7 @@ class PageUpdate : Control
     public Action<string> InstallClicked;
     public Func<string, string> Fetch = Updater.Changelog;
 
-    public PageUpdate(MouseEventHandler drag)
+    public UpdatePage(MouseEventHandler drag)
     {
         Visible = false;
         Ui.Style(this, () => BackColor = Theme.Background);

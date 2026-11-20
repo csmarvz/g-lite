@@ -106,7 +106,7 @@ class LightPicture : DrawnControl
     }
 }
 
-class PageLight : DevicePage
+class LightPage : DevicePage
 {
     LightState current;
     volatile LightState sent;
@@ -142,7 +142,7 @@ class PageLight : DevicePage
     string Saved { get { return "screen." + found.SettingsKey; } }
     string Active { get { return "screen.on." + found.SettingsKey; } }
 
-    public PageLight(FoundDevice found, Hidpp fake, MouseEventHandler drag)
+    public LightPage(FoundDevice found, Hidpp fake, MouseEventHandler drag)
         : base(found, fake, drag, found.ShortName, "light", "profile." + found.SettingsKey + ".")
     {
         back = found.Has(0x8081);

@@ -68,7 +68,7 @@ class HeadsetPicture : DrawnControl
     }
 }
 
-class PageHeadset : DevicePage
+class HeadsetPage : DevicePage
 {
     HeadsetSettings current = new HeadsetSettings(), stored, sent;
     HeadsetProtocol.State state;
@@ -87,7 +87,7 @@ class PageHeadset : DevicePage
     readonly Dropdown offBox;
     readonly HeadsetPicture picture;
 
-    public PageHeadset(FoundDevice found, Hidpp fake, MouseEventHandler drag)
+    public HeadsetPage(FoundDevice found, Hidpp fake, MouseEventHandler drag)
         : base(found, fake, drag, found.ShortName, "headset", "profile." + found.SettingsKey + ".")
     {
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };

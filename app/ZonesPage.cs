@@ -6,7 +6,7 @@ using System.Threading;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
 
-class PageSpeaker : DevicePage
+class ZonesPage : DevicePage
 {
     readonly int Count;
     readonly bool keyboard;
@@ -47,7 +47,7 @@ class PageSpeaker : DevicePage
     string Saved { get { return "screen." + found.SettingsKey; } }
     string Active { get { return "screen.on." + found.SettingsKey; } }
 
-    public PageSpeaker(FoundDevice found, Hidpp fake, MouseEventHandler drag)
+    public ZonesPage(FoundDevice found, Hidpp fake, MouseEventHandler drag)
         : base(found, fake, drag, found.ShortName, found.Kind == "keyboard" ? "keyboard" : "device",
             "profile." + found.SettingsKey + ".")
     {

@@ -9,7 +9,7 @@ using Timer = System.Windows.Forms.Timer;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
-class Page515 : DevicePage
+class KeyboardPage : DevicePage
 {
     static readonly int[] IdleSecs = { 0, 15, 30, 60, 120, 300, 600 };
     static readonly string[] IdleText = { "Never", "15 s", "30 s", "1 min", "2 min", "5 min", "10 min" };
@@ -78,7 +78,7 @@ class Page515 : DevicePage
     readonly KeyPicture picture;
     Backups.Entry fix;
 
-    public Page515(FoundDevice found, Hidpp fake, MouseEventHandler drag, KeyboardKinds kind)
+    public KeyboardPage(FoundDevice found, Hidpp fake, MouseEventHandler drag, KeyboardKinds kind)
         : base(found, fake, drag, kind.Keys.Name, "keyboard", kind.Prefix)
     {
         this.kind = kind;

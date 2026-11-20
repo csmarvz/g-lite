@@ -24,7 +24,7 @@ What works, learned while adding the G305, G502 LIGHTSPEED, G510 and G512 X. Fol
 
 - Make a fake from the real report's bytes (`FakeMouse.G305()` is the pattern), and add a trace in `app/Traces.cs` that drives the screen through the new feature.
 - Existing traces must not change, except state lines the feature adds. Check with `diff` against `git show HEAD:app/tests/<device>.txt`, ignoring the new state, and say what changed.
-- A device that works like one already supported is one `DeviceTable` entry. A new protocol is a driver (like `IMouse`) and an entry. A keyboard is a `KeyboardKinds` entry (key map, preset prefix, saves or not) passed to `Page515`.
+- A device that works like one already supported is one `DeviceTable` entry. A new protocol is a driver (like `IMouse`) and an entry. A keyboard is a `KeyboardKinds` entry (key map, preset prefix, saves or not) passed to `KeyboardPage`.
 - A fake can often be an existing one with the report's lists: `FakeG915.G512X()` is the G915 fake with the G512 X's effect ids.
 
 ## 4. Build, then check it's really running

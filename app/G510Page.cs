@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
 
-class PageG510 : DevicePage
+class G510Page : DevicePage
 {
     G510Set current, read, sent;
     bool loading, ready, framing;
@@ -22,7 +22,7 @@ class PageG510 : DevicePage
 
     string Remembered { get { return "lighting." + found.SettingsKey; } }
 
-    public PageG510(FoundDevice found, Hidpp fake, MouseEventHandler drag)
+    public G510Page(FoundDevice found, Hidpp fake, MouseEventHandler drag)
         : base(found, fake, drag, found.ShortName, "keyboard", "profile." + found.SettingsKey + ".")
     {
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };

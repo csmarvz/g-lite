@@ -358,7 +358,7 @@ static class SelfTest
             && new FoundDevice { Link = "USB", Kind = "headset", PlainHid = true }.Level == -1
             && new FoundDevice { Link = "USB", Asleep = true }.Level == Ui.Asleep,
             "a wired device without a battery shows the USB mark, a wireless one without a level shows nothing");
-        Check(g213.IsG && g213.ShortName == "G213" && DeviceTable.For(g213).Screen == typeof(PageSpeaker)
+        Check(g213.IsG && g213.ShortName == "G213" && DeviceTable.For(g213).Screen == typeof(ZonesPage)
             && !FoundDevice.LooksG("Gaming Keyboard") && !FoundDevice.LooksG("Wireless Keyboard K270")
             && ZoneLighting.ZoneName(1, 0) == "Keys" && ZoneLighting.ZoneName(8, 3) == "Zone 3" && ZoneLighting.ZoneName(0, 1) == "Zone 2",
             "the G213 counts as a G device with its model last, and its zones are named from their location");
@@ -376,7 +376,7 @@ static class SelfTest
             && Bindings.Describe(Hex("900AFFFF")) == "Cycle profile" && Bindings.Describe(Hex("900D0003")) == "Profile 3"
             && Bindings.Names(new FoundDevice { Models = "USB C08B" }, 11)[5] == "Sniper",
             "factory special bindings (90 xx FF FF) are named, and the G502 HERO gets the G502's button names");
-        Check(g512.IsLedKeyboard && g512.ShortName == "G512" && DeviceTable.For(g512).Screen == typeof(PageSpeaker)
+        Check(g512.IsLedKeyboard && g512.ShortName == "G512" && DeviceTable.For(g512).Screen == typeof(ZonesPage)
             && !new FoundDevice { Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Features = new[] { 0x8070, 0x8071 } }.IsLedKeyboard
             && !new FoundDevice { Name = "G502 HERO Gaming Mouse", Kind = "mouse", Features = new[] { 0x8070 } }.IsLedKeyboard,
             "a keyboard with 0x8070 and no 0x8071 gets the zone lighting screen");
@@ -387,7 +387,7 @@ static class SelfTest
             "the G815 is taken as a wired G915");
         var rapid = new FoundDevice { Name = "G515 RAPID TKL", Kind = "keyboard", Features = new[] { 0x8071, 0x8040, 0x8101 } };
         var bigBoard = KeyboardKinds.For(new FoundDevice { Name = "G316 X 75", Kind = "keyboard" });
-        Check(!rapid.IsG515 && rapid.IsRgbKeyboard && DeviceTable.For(rapid).Screen == typeof(Page515)
+        Check(!rapid.IsG515 && rapid.IsRgbKeyboard && DeviceTable.For(rapid).Screen == typeof(KeyboardPage)
             && KeyboardKinds.For(rapid).Guessed && !KeyboardKinds.For(rapid).Saves && KeyboardKinds.For(rapid).Keys.Name == "G515 RAPID TKL"
             && KeyboardKinds.File("PRO X 60") == "g-60.json" && KeyboardKinds.File("G512 X 98") == "g-full.json"
             && KeyboardKinds.File("G915 X LIGHTSPEED TKL") == "g915-tkl.json" && KeyboardKinds.File("G915 X") == "g915.json"
@@ -425,7 +425,7 @@ static class SelfTest
         Check(DeviceTable.For(new FoundDevice { Name = "MX Master 3", Kind = "mouse", Features = new[] { 0x2201, 0x8100 } })
                 == DeviceTable.Other
             && DeviceTable.For(new FoundDevice { Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Features = new[] { 0x2201 } }).Screen
-                == typeof(PageMouse)
+                == typeof(MousePage)
             && DeviceTable.For(new FoundDevice { Name = "M720 Triathlon", Kind = "mouse", Features = new[] { 0x8100, 0x1B04 } }) == null
             && DeviceTable.For(new FoundDevice
                 {
@@ -572,7 +572,7 @@ static class SelfTest
             Name = "G510s Gaming Keyboard", Kind = "keyboard", Link = "USB",
             PlainHid = true, HasVendorCollection = true, Path = @"\\?\hid#vid_046d&pid_c22d&mi_01&col02"
         };
-        Check(g510.IsG510 && DeviceTable.For(g510).Screen == typeof(PageG510)
+        Check(g510.IsG510 && DeviceTable.For(g510).Screen == typeof(G510Page)
             && !new FoundDevice { Name = "G510s Gaming Keyboard", PlainHid = true, Path = g510.Path }.IsG510
             && G510Lighting.Frame(new G510Set { Color = 0xFF2020, Bright = 50 }, 0) == 0x7F1010
             && G510Lighting.Frame(new G510Set { On = false }, 0) == 0
@@ -627,7 +627,7 @@ static class SelfTest
             && !new FoundDevice { Hidpp10 = true, Index = 1, Path = @"\\?\hid#vid_046d&pid_c531&mi_01" }.IsG500,
             "the G700 and G700s on a cable read their DPI with the G500's and G500s's units, and never read or write a profile page");
         var g9xReport = Report.Registers(new FakeG9x(),
-            new FoundDevice { Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Hidpp10 = true }, "PageMouse");
+            new FoundDevice { Name = "G9x Laser Mouse", Kind = "mouse", Link = "USB", Hidpp10 = true }, "MousePage");
         Check(g9xReport.Contains("long 63=22 00 22 00 80 01") && g9xReport.Contains("page 02, current") && g9xReport.Contains("page 04"),
             "the G9x report has its registers and profile pages");
         Check(new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json" }.All(x => KeyLayout.Load(x).Rows.Length > 5),
@@ -735,7 +735,7 @@ static class SelfTest
             {
                 Name = "G Pro Wireless Gaming Mouse", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x4079,
                 Path = @"\\?\hid#vid_046d&pid_c547&mi_02&col02#7&abc&0&0001#{x}", Features = new[] { 0x2201, 0x8060, 0x8070, 0x8100 }
-            }, "PageMouse");
+            }, "MousePage");
         Check(mouseReport.Contains("ID 4079, USB 046D:C547") && mouseReport.Contains("0000=0001")
             && mouseReport.Contains("0001=" + BitConverter.ToString(mouseSpy.Inner.Sectors[1]).Replace("-", ""))
             && mouseReport.Contains("0101=") && mouseReport.Contains("dpi list=")
@@ -749,7 +749,7 @@ static class SelfTest
             {
                 Name = "G515 LS TKL", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40B4,
                 Features = new[] { 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 }
-            }, "Page515");
+            }, "KeyboardPage");
         Check(keyboardReport.Contains("lit ids=01 02 03") && keyboardReport.Contains(" 4F 61 62") && keyboardReport.Contains("layout=0D")
             && keyboardReport.Contains("0008=") && keyboardReport.Contains("0101=") && keyboardReport.Contains("cluster 0 effect 1=")
             && keyboardSpy.Calls.All(call => Report.Reads.ContainsKey(call.Item1) && Report.Reads[call.Item1].Contains(call.Item2)),
@@ -758,7 +758,7 @@ static class SelfTest
             {
                 Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1,
                 Features = new[] { 0x4540, 0x8040, 0x8071, 0x8100 }
-            }, "Page515");
+            }, "KeyboardPage");
         Check(g915Report.Contains("0000=000101FF000201FF000301FF") && g915Report.Contains("0001=0100")
             && g915Report.Contains("0002=error 02") && g915Report.Contains("0101=0100"),
             "the G915 report reads the profiles its directory lists, and goes on past one it can't read");
@@ -768,7 +768,7 @@ static class SelfTest
                 Name = "PRO X Wireless Gaming Headset", Kind = "headset", Link = "LIGHTSPEED", Index = 0xFF,
                 Features = new[] { 0x8300, 0x1F20 }
             },
-            "PageHeadset");
+            "HeadsetPage");
         Check(headsetReport.Contains("sidetone=1E") && headsetReport.Contains("auto-off=1E") && headsetReport.Contains("%, 3926 mV"),
             "the headset report reads sidetone, auto-off and the battery");
         Check(!Report.Reads[0x8100].Intersect(new[] { 1, 3, 6, 7, 8, 0xC }).Any()

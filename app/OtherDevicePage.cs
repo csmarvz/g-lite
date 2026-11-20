@@ -5,7 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 
-class PageOtherDevice : DevicePage
+class OtherDevicePage : DevicePage
 {
     class SettingBox { public string Title; public bool Half; public Func<RoundedBox, int, int> Fill; }
 
@@ -32,7 +32,7 @@ class PageOtherDevice : DevicePage
 
     string Noun { get { return found.Kind == "mouse" || found.Kind == "keyboard" ? found.Kind : "device"; } }
 
-    public PageOtherDevice(FoundDevice found, Hidpp fake, MouseEventHandler drag)
+    public OtherDevicePage(FoundDevice found, Hidpp fake, MouseEventHandler drag)
         : base(found, fake, drag, found.ShortName, "device", "profile." + found.SettingsKey + ".")
     {
         debounce.Tick += (sender, e) => { debounce.Stop(); Send(); };

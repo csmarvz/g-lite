@@ -2,7 +2,7 @@
 
 The G512 and similar G keyboards light up through 0x8070, the feature `MouseProtocol` already uses, not through 0x8071 like the G515 and G915. Supporting them is mostly a new screen around code G-Lite has. From OpenLogi's G512 recording (see [openlogi.md](openlogi.md)) and [lighting-control.md](lighting-control.md).
 
-Status: built on the G560's screen (`PageSpeaker`, for `FoundDevice.IsLedKeyboard`: kind keyboard, 0x8070, no 0x8071). It sets Off, Static, Breathe, Cycle and Wave live on all zones or each one, greys out the effects a zone doesn't list, names zones from their location (`ZoneLighting.ZoneName`: 1 Keys, 2 Logo, 6–11 Zone 1–6, else Zone n), keeps the lighting as `lighting.<device>` and sets it again on load. A keyboard with a zone key map (`ZoneLighting.Picture`, only the G213 so far) gets a live key picture. No per-key colours, no Save.
+Status: built on the G560's screen (`ZonesPage`, for `FoundDevice.IsLedKeyboard`: kind keyboard, 0x8070, no 0x8071). It sets Off, Static, Breathe, Cycle and Wave live on all zones or each one, greys out the effects a zone doesn't list, names zones from their location (`ZoneLighting.ZoneName`: 1 Keys, 2 Logo, 6–11 Zone 1–6, else Zone n), keeps the lighting as `lighting.<device>` and sets it again on load. A keyboard with a zone key map (`ZoneLighting.Picture`, only the G213 so far) gets a live key picture. No per-key colours, no Save.
 
 Tested on a real G213 (see [G213.md](G213.md)): fn 3 without a persistence byte lights it, Wave works with OpenRGB's layout, and the persistence byte stores nothing. The G512 and the others are still untested. The plan below (its own page, a shared `Led` class) is kept for when one of them reports.
 
@@ -59,9 +59,9 @@ What was built (the first plan had its own page, `PageKeyboard`, and a shared `L
 | File | What |
 |---|---|
 | `app/FoundDevice.cs` | `FoundDevice.IsLedKeyboard`: kind keyboard, has 0x8070, no 0x8071. |
-| `app/DeviceTable.cs` | `IsLedKeyboard` opens `PageSpeaker`, with `FakeSpeaker { Count = 2 }` in the demo. |
+| `app/DeviceTable.cs` | `IsLedKeyboard` opens `ZonesPage`, with `FakeSpeaker { Count = 2 }` in the demo. |
 | `app/ZoneLighting.cs` | `ZoneLighting`: the zones and their effects (`Encode`, with Wave), `ZoneName` from the location, `Picture` for a keyboard with a zone key map. |
-| `app/PageSpeaker.cs` | The screen: effect, colour, speed and brightness on all zones or one, effects a zone doesn't list greyed out, the key picture when there is one. Live only, kept as `lighting.<device>`. |
+| `app/ZonesPage.cs` | The screen: effect, colour, speed and brightness on all zones or one, effects a zone doesn't list greyed out, the key picture when there is one. Live only, kept as `lighting.<device>`. |
 | `app/models/g213.json` | The G213's picture, its `ids` are zones (`"kind": "zones"`). |
 
 ## Reading the lighting

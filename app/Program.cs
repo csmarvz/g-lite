@@ -46,7 +46,7 @@ class MainWindow : Form
         sleepers = new System.Windows.Forms.Timer { Interval = 15000 },
         batteries = new System.Windows.Forms.Timer { Interval = 60000 };
     readonly FlatButton updateButton;
-    readonly PageUpdate updatePage;
+    readonly UpdatePage updatePage;
     readonly Label checkText, themeHint;
     readonly SegmentedPicker themePicker;
     readonly Toggle runToggle, checkToggle, autoToggle;
@@ -153,7 +153,7 @@ class MainWindow : Form
         settingsPage.MouseDown += Drag;
         var settings = settingsPage;
         logsPage = Ui.Add(this, new LogsPage(Drag), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
-        updatePage = Ui.Add(this, new PageUpdate(Drag), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
+        updatePage = Ui.Add(this, new UpdatePage(Drag), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         if (demo) updatePage.Fetch = DemoChangelog;
         updatePage.BackClicked = ShowSettings;
         updatePage.CheckClicked = () => CheckUpdates(true);
@@ -419,8 +419,8 @@ class MainWindow : Form
             {
                 var sender = found.FirstOrDefault(candidate => candidate.Path == path && candidate.Index == report[1] && !candidate.Asleep);
                 Control page;
-                if (sender != null && pages.TryGetValue(sender.Key, out page) && page is PageMouse)
-                    ((PageMouse)page).Heard(report[2], report[3] >> 4);
+                if (sender != null && pages.TryGetValue(sender.Key, out page) && page is MousePage)
+                    ((MousePage)page).Heard(report[2], report[3] >> 4);
                 return;
             }
             var now = new FoundDevice { Name = device.Name, BatteryId = device.BatteryId };
@@ -475,7 +475,7 @@ class MainWindow : Form
                 Place(this, page, SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
                 page.Visible = false;
                 pages[device.Key] = page;
-                if (page is Page515 && note != null) { ((Page515)page).Note = note; note = null; }
+                if (page is KeyboardPage && note != null) { ((KeyboardPage)page).Note = note; note = null; }
                 if (page is DevicePage) made.Add((DevicePage)page);
             }
             else if (page is DevicePage) ((DevicePage)page).SetFound(device);

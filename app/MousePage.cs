@@ -111,7 +111,7 @@ class MousePicture : DrawnControl
     }
 }
 
-class PageMouse : DevicePage
+class MousePage : DevicePage
 {
     MouseSet current = new MouseSet(), stored, sent;
     MouseProtocol.State state;
@@ -143,7 +143,7 @@ class PageMouse : DevicePage
     Backups.Entry fix;
     readonly IMouse mouse;
 
-    public PageMouse(FoundDevice found, Hidpp fake, MouseEventHandler drag, IMouse mouse)
+    public MousePage(FoundDevice found, Hidpp fake, MouseEventHandler drag, IMouse mouse)
         : base(found, fake, drag, found.ShortName, "mouse", "profile." + found.SettingsKey + ".")
     {
         this.mouse = mouse;

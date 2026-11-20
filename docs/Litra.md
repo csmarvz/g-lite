@@ -77,7 +77,7 @@ The parameters are the keyboards' (`G915Lighting.Encode`):
 - Two colours: `R G B R2 G2 B2 00 32 64 00` (zone 1's colour and zone 7's, 50 ms as G HUB sends it, 100%)
 - Others: `R G B`, the rest zeros
 
-The colour is zone 1's and the period is the Speed slider's. The status line asks what lit up, and each pick is logged. Back to G-Lite's colours, any change on the screen, a preset, the Screen effect or reading the light again gives back control (`PageLight.EndTrying`), sends G-Lite's own colours again and restarts its animation.
+The colour is zone 1's and the period is the Speed slider's. The status line asks what lit up, and each pick is logged. Back to G-Lite's colours, any change on the screen, a preset, the Screen effect or reading the light again gives back control (`LightPage.EndTrying`), sends G-Lite's own colours again and restarts its animation.
 
 The last byte is the persist flag G-Lite sends to the G915. Whether the light keeps the effect after a power cycle isn't known; G-Lite sets its own colours again when the screen loads anyway. Reports read each cluster's location (fn 0 `<cluster> FF 00`, bytes 2–3).
 

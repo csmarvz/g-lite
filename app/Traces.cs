@@ -236,7 +236,7 @@ static class Traces
     static void Fresh()
     {
         last = null;
-        Page515.TestDynamicLighting = 0;
+        KeyboardPage.TestDynamicLighting = 0;
         Settings.Location = Path.GetTempFileName();
         Settings.Init();
         Backups.Root = Path.Combine(Path.GetTempPath(), "glite-traces-" + Guid.NewGuid().ToString("N"));
@@ -256,8 +256,8 @@ static class Traces
             Key = "trace|g515", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard",
             Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40B4, Features = Keyboard
         };
-        Page515 page = null;
-        using (var script = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, device, null)))
+        KeyboardPage page = null;
+        using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, device, null)))
         {
             script.Pick("Effect", "Static");
             script.Press("Color FF2020");
@@ -298,8 +298,8 @@ static class Traces
             Link = "LIGHTSPEED", Index = 1, WirelessId = 0x408E,
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 }
         };
-        Page515 page = null;
-        using (var script = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, new FakeG915(), null)))
+        KeyboardPage page = null;
+        using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, new FakeG915(), null)))
         {
             script.Pick("Effect", "Static");
             script.Press("Color 30D050");
@@ -328,8 +328,8 @@ static class Traces
             Key = "trace|g512x", Name = "G512 X 75", Kind = "keyboard", Link = "USB", Index = 0xFF,
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x8071, 0x8081, 0x8040, 0x8101, 0x4540 }
         };
-        Page515 page = null;
-        using (var script = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, FakeG915.G512X(), null)))
+        KeyboardPage page = null;
+        using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, FakeG915.G512X(), null)))
         {
             script.Pick("Effect", "Static");
             script.Press("Color 30D050");
@@ -361,8 +361,8 @@ static class Traces
             Key = "trace|prox60", Name = "PRO X 60", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1,
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 }
         };
-        Page515 page = null;
-        using (var script = Begin(() => page = (Page515)DeviceTable.For(found).Make(found, FakeG915.G512X(), null)))
+        KeyboardPage page = null;
+        using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, FakeG915.G512X(), null)))
         {
             script.Pick("Effect", "Static");
             script.Press("Color 30D050");
@@ -653,7 +653,7 @@ static class Traces
             script.Do("the mouse's DPI button", () =>
             {
                 device.PressDpiButton();
-                ((PageMouse)script.Page).Heard(device.FeatureIndex(0x8100), 1);
+                ((MousePage)script.Page).Heard(device.FeatureIndex(0x8100), 1);
             });
             return script.Text;
         }
@@ -678,9 +678,9 @@ static class Traces
             script.Press("Color FFD000");
             script.Pick("DPI stage", "400");
             script.Press("Save to mouse");
-            script.Do("the mouse reconnects, switched off and on", () => ((PageMouse)script.Page).Heard(device.FeatureIndex(0x1D4B), 0));
-            script.Do("the screen loads again", () => ((PageMouse)script.Page).Load());
-            script.Do("the mouse's DPI button", () => { device.PressDpiButton(); ((PageMouse)script.Page).Heard(device.FeatureIndex(0x8100), 1); });
+            script.Do("the mouse reconnects, switched off and on", () => ((MousePage)script.Page).Heard(device.FeatureIndex(0x1D4B), 0));
+            script.Do("the screen loads again", () => ((MousePage)script.Page).Load());
+            script.Do("the mouse's DPI button", () => { device.PressDpiButton(); ((MousePage)script.Page).Heard(device.FeatureIndex(0x8100), 1); });
             var savedLight = device.Sectors[1].Skip(MouseProtocol.LightRecordsAt).Take(MouseProtocol.LightRecordLength).ToArray();
             return script.Text
                 + "lighting record after the save: " + (savedLight.SequenceEqual(factoryLight) ? "unchanged" : "changed") + "\n";
@@ -712,8 +712,8 @@ static class Traces
             Link = "LIGHTSPEED", Index = 1, WirelessId = 0x407F,
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2121, 0x2201, 0x8060, 0x8070, 0x8100 }
         };
-        PageMouse page = null;
-        using (var script = Begin(() => page = (PageMouse)DeviceTable.For(found).Make(found, device, null)))
+        MousePage page = null;
+        using (var script = Begin(() => page = (MousePage)DeviceTable.For(found).Make(found, device, null)))
         {
             script.Do("watch, off", () => page.Watch());
             script.Press("Invert scrolling");
@@ -734,8 +734,8 @@ static class Traces
             Link = "LIGHTSPEED", Index = 1, WirelessId = 0x407F,
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2121, 0x2201, 0x8060, 0x8070, 0x8100, 0x8110 }
         };
-        PageMouse page = null;
-        using (var script = Begin(() => page = (PageMouse)DeviceTable.For(found).Make(found, device, null)))
+        MousePage page = null;
+        using (var script = Begin(() => page = (MousePage)DeviceTable.For(found).Make(found, device, null)))
         {
             script.Pick("View", "Buttons");
             script.Do("G7 pressed on the mouse", () => page.Pressed(0x0040));
