@@ -528,6 +528,25 @@ static class G915Lighting
         return parameters;
     }
 
+    // The G keys are the profile's first buttons, 4 bytes each from 0x20, in the mice's format (Bindings); M1-M3 follow them
+    // (docs/G815-G915.md).
+    const int ButtonsAt = 0x20;
+
+    public static byte[][] ReadButtons(byte[] profile, int count)
+    {
+        return Enumerable.Range(0, count).Select(i => profile.Skip(ButtonsAt + 4 * i).Take(4).ToArray()).ToArray();
+    }
+
+    // Only the buttons that differ from were (null: all), so a change made elsewhere since the read, to another key, stays.
+    public static byte[] WithButtons(byte[] profile, byte[][] buttons, byte[][] were = null)
+    {
+        var built = (byte[])profile.Clone();
+        for (int i = 0; i < buttons.Length; i++)
+            if (were == null || i >= were.Length || !buttons[i].SequenceEqual(were[i])) buttons[i].CopyTo(built, ButtonsAt + 4 * i);
+        MouseProtocol.WriteChecksum(built);
+        return built;
+    }
+
     public static byte[] Build(byte[] profile, List<byte[]> clusters, Lighting lighting, Lighting others, bool idleTimes)
     {
         if (clusters.Count != 2)
@@ -560,6 +579,16 @@ static class G915Lighting
 
     // The lighting and idle times of the factory copy of the profile at `sector` (0101 for 0001 on the G915 TKL), into a copy of
     // `profile`. Only those: a whole factory profile would drop what else the user changed, like G-shift macros.
+    // The profile with its first count buttons (the G keys) as its factory copy has them; the rest stays.
+    public static byte[] FactoryButtons(Hidpp hidpp, int sector, byte[] profile, int count)
+    {
+        var rom = MouseProtocol.ReadSector(hidpp, 0x100 + sector, profile.Length);
+        var buttons = ReadButtons(rom, count);
+        if (buttons.Any(binding => binding.All(value => value == 0xFF)))
+            throw new RefusedException("Couldn't read the keyboard's factory G keys");
+        return WithButtons(profile, buttons);
+    }
+
     public static byte[] FactoryLighting(Hidpp hidpp, int sector, byte[] profile)
     {
         var rom = MouseProtocol.ReadSector(hidpp, 0x100 + sector, profile.Length);

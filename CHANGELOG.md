@@ -9,12 +9,16 @@
 - Reports read the sectors that onboard profiles point to as macros, so the macro format can be learned, and list the other sectors as unused or unreadable.
 - G915, G915 TKL and G815: M1, M2 and M3, next to Revert, show the onboard profile it runs, and switch it. Pressing an M key on the keyboard is followed: the screen shows that profile's lighting and the G-Lite preset goes back to –. Save to keyboard is now Save to M1 (or M2, M3). A switch drops a lighting set live and not saved, without asking, as the M keys do.
 - A G815 in the demo.
+- G815: a Buttons view for G1–G5, as on the mice: a key with Ctrl, Shift or Alt, a media key, a mouse click, or nothing. They take effect once saved: Save to M1 writes them into that profile. Presets hold the lighting only. Backups give back the G keys with the lighting, and Restore the factory lighting becomes Restore the factory profile, which gives back the factory G keys too.
 - Keyboards: the Brightness slider follows the keyboard's own brightness key.
 - G815: the Brightness slider stops at the five levels the keyboard has (0, 12, 25, 50 and 100%), marked on the track. Other values dropped to the level below while the slider showed them.
 
 ### Changed
 
+- G815: marked as working, after an owner tried lighting, Save and Restore, M1–M3, the brightness key and G1–G5 on a real keyboard.
 - The preset row is labelled G-Lite preset, so it isn't mistaken for a device's onboard profiles, and no preset shows as – instead of None.
+- G815: the Lighting box takes the whole width, since the keyboard has no idle settings to show beside it.
+- The mouse's Buttons view is now shared with the keyboard screen; it works as before.
 
 ### Fixed
 

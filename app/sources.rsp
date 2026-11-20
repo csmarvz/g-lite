@@ -24,7 +24,7 @@ Devices.cs
 Hidpp.cs
 KeyboardLighting.cs
 Backups.cs
-MouseButtons.cs
+Buttons.cs
 Mouse.cs
 MouseProtocol.cs
 G9x.cs

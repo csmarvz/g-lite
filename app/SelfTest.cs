@@ -374,10 +374,11 @@ static class SelfTest
             && KeyLayout.Load("g213.json").KeyIds().All(zone => zone >= 1 && zone <= 5)
             && KeyLayout.Load("g213.json").Iso().KeyIds().All(zone => zone >= 1 && zone <= 5),
             "0x8070 Wave is encoded with its direction and kept in text, and every G213 key has a zone");
-        int dpiShift = Array.FindIndex(Bindings.Actions, action => action.Name == "DPI shift"),
-            disabled =Array.FindIndex(Bindings.Actions, action => action.Name == "Disabled");
-        Check(Bindings.Find(Hex("9007FFFF")) == dpiShift && Bindings.Find(Hex("9007FF00")) == dpiShift
-            && Bindings.Find(Hex("8000FFFF")) == disabled && Bindings.Find(Hex("80010005")) < 0
+        int dpiShift = Array.FindIndex(Bindings.MouseActions, action => action.Name == "DPI shift"),
+            disabled =Array.FindIndex(Bindings.MouseActions, action => action.Name == "Disabled");
+        var mouseActions = Bindings.MouseActions;
+        Check(Bindings.Find(mouseActions, Hex("9007FFFF")) == dpiShift && Bindings.Find(mouseActions, Hex("9007FF00")) == dpiShift
+            && Bindings.Find(mouseActions, Hex("8000FFFF")) == disabled && Bindings.Find(mouseActions, Hex("80010005")) < 0
             && Bindings.Describe(Hex("900AFFFF")) == "Cycle profile" && Bindings.Describe(Hex("900D0003")) == "Profile 3"
             && Bindings.Names(new FoundDevice { Models = "USB C08B" }, 11)[5] == "Sniper",
             "factory special bindings (90 xx FF FF) are named, and the G502 HERO gets the G502's button names");

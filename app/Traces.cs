@@ -328,6 +328,46 @@ static class Traces
         }
     }
 
+    // The G815's G keys: edited in the Buttons view, saved with Save to M1 (bytes 0x20-0x33 of profile 1), left out of presets.
+    static string G815()
+    {
+        var found = new FoundDevice
+        {
+            Key = "trace|g815", Name = "G815 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Link = "USB", Index = 0xFF,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8040, 0x8071, 0x8100 }
+        };
+        KeyboardPage page = null;
+        var keyboard = new FakeG915();
+        using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, keyboard, null)))
+        {
+            script.Pick("View", "Buttons");
+            script.Pick("G1", "Mute");
+            script.Pick("G2", "Keystroke…");
+            script.Do("keys Ctrl + C", () => page.RecordedKeys(Keys.Control | Keys.C));
+            script.Press("Save to M1");
+            script.Do("check G1 and G2 in profile 1", () =>
+            {
+                var saved = keyboard.Sectors[1].Skip(0x20).Take(8).ToArray();
+                if (!saved.SequenceEqual(new byte[] { 0x80, 0x03, 0x00, 0xE2, 0x80, 0x02, 0x01, 0x06 }))
+                    throw new InvalidOperationException("profile 1 holds " + BitConverter.ToString(saved));
+            });
+            script.Pick("G3", "Left click");
+            script.Menu("More preset actions", "Save as new preset…");
+            script.Type("Click");
+            script.Press("Save");
+            script.Press("Revert");
+            script.Pick("G-Lite preset", "–");
+            script.Pick("G-Lite preset", "Click");
+            script.Pick("G-Lite preset", "–");
+            script.Menu("Backups", "Restore the factory profile");
+            script.Pick("G1", "Disabled");
+            script.Do("M2 pressed on the keyboard", () => { keyboard.Running = 2; page.Heard(21, 0); });
+            script.Pick("View", "Settings");
+            script.Do("quit", () => page.Exiting());
+            return script.Text;
+        }
+    }
+
     static string G512X()
     {
         var found = new FoundDevice
@@ -821,6 +861,7 @@ static class Traces
     {
         yield return new KeyValuePair<string, Func<string>>("g515", G515);
         yield return new KeyValuePair<string, Func<string>>("g915", G915);
+        yield return new KeyValuePair<string, Func<string>>("g815", G815);
         yield return new KeyValuePair<string, Func<string>>("g512x", G512X);
         yield return new KeyValuePair<string, Func<string>>("g560", G560);
         yield return new KeyValuePair<string, Func<string>>("g512", G512);

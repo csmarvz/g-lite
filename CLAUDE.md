@@ -23,7 +23,8 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/Pages.cs`: `DevicePage` (what every device screen shares: presets, work queue, status line, backups menu), `ColorRow`, `InfoPage`, `EmptyPage`
 - Keyboards: `app/KeyboardPage.cs`, `KeyboardKinds.cs`, `KeyboardLighting.cs` (`Lighting`, `G515Profile`, `G915Lighting`), `KeyPicture.cs`, `KeyLayout.cs` and the layouts in `app/models/`
 - Zones (the G560 and the 0x8070 keyboards): `app/ZonesPage.cs`, `ZoneLighting.cs`
-- Mice: `app/MousePage.cs`, `Mouse.cs` (`IMouse`, `MouseSettings`), `MouseProtocol.cs`, `MouseButtons.cs`, `G9x.cs` (HID++ 1.0 mice)
+- Mice: `app/MousePage.cs`, `Mouse.cs` (`IMouse`, `MouseSettings`), `MouseProtocol.cs`, `G9x.cs` (HID++ 1.0 mice)
+- Button bindings, for mice and the G815's G keys: `app/Buttons.cs`
 - Headsets: `app/HeadsetPage.cs`, `HeadsetProtocol.cs`
 - G510: `app/G510Page.cs`, `G510.cs`
 - Litra lights: `app/LightPage.cs`, `LitraProtocol.cs`

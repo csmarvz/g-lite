@@ -172,6 +172,11 @@ abstract class DevicePage : Control, IPage
 
     protected virtual bool Unsaved { get { return false; } }
 
+    // Changes a preset doesn't hold (the G815's G keys): with a preset picked, Revert is on for them too and brings them back.
+    protected virtual bool UnsavedBesidesPreset { get { return false; } }
+
+    protected virtual void RevertBesidesPreset() { }
+
     protected virtual bool Keepable { get { return true; } }
 
     protected void Edited() { touched = true; ShowSets(); }
@@ -388,7 +393,7 @@ abstract class DevicePage : Control, IPage
         updateButton.Enabled = (naming || (picked ? changed : ready)) && Keepable;
         if (picked) profiles.Text = profiles.Items[profiles.Index] + (changed ? " •" : "");
         profiles.Invalidate();
-        undoButton.Enabled = picked ? changed : Unsaved;
+        undoButton.Enabled = picked ? changed || UnsavedBesidesPreset : Unsaved;
         Remember();
         if (!IsHandleCreated || !Visible) return;
         moreButton.Width = (int)((naming ? 76 : 36) * Ui.DpiScale);
@@ -406,8 +411,10 @@ abstract class DevicePage : Control, IPage
         if (profiles.Index <= 0 || baseline == null) Revert();
         else
         {
-            try { ApplyPreset(baseline); }
-            catch (Exception) { ShowStatus("This preset couldn't be read from settings.txt", true); }
+            if (Changed())
+                try { ApplyPreset(baseline); }
+                catch (Exception) { ShowStatus("This preset couldn't be read from settings.txt", true); }
+            if (UnsavedBesidesPreset) RevertBesidesPreset();
         }
         touched = false;
         ShowSets();

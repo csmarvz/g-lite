@@ -5,7 +5,7 @@ The steps to finish the G815: its onboard profiles, following M1–M3, G1–G5 b
 ## What the keyboard gives us
 
 - **Three profiles** at sectors 0001–0003. Every profile maps M1–M3 to `90 0D FF 01`…`03`, so an M key makes the keyboard switch profiles on its own, and the firmware lights the active M key.
-- **G1–G5** are the profile's first 5 buttons, from 0x20: F1–F5 in profile 1 (`80 02 00 3A`…), 1–5 in profile 2, 6–0 in profile 3. The same 4-byte format as the mice (`MouseButtons.cs`).
+- **G1–G5** are the profile's first 5 buttons, from 0x20: F1–F5 in profile 1 (`80 02 00 3A`…), 1–5 in profile 2, 6–0 in profile 3. The same 4-byte format as the mice (`Buttons.cs`).
 - **Macros:** G HUB saved two to the G815 on 2026-11-20, and the report read them: key down `43`, key up `44`, wait `40`, go on in another sector `60`, end `FF`, in sectors of their own with a CRC. G HUB saves System copy, a media key and a mouse click as plain bindings, not macros. See [G815-G915.md](G815-G915.md), "Macros".
 
 ## Steps
@@ -25,9 +25,9 @@ Build the slots of [on-board-memory.md](on-board-memory.md) for the G815 and G91
 - An M key switch releases a live lighting that isn't saved and shows the new slot's saved lighting, as the keyboard itself does. The G-Lite preset goes back to –, which means the keyboard's own lighting (picking – already releases it and reads the profile again). A preset with changes not saved keeps them as a draft, as when another preset is picked.
 - The same for a switch made in G-Lite (step 1).
 
-### 3. G1–G5 bindings
+### 3. G1–G5 bindings (built, tried on the G815 on 2026-11-20)
 
-The mouse's button editor (`MouseButtons.Bindings`) on the keyboard screen: a key, a key with modifiers, a media key, nothing, or a macro (shown, not editable, until step 4). Saving writes the slot's buttons. M1–M3 and the G-shift layer at 0x60 stay as they are.
+A Settings | Buttons switch on the G815 screen, as on the mouse, with the mouse's rows (`ButtonRows` in `Buttons.cs`): a mouse click, a media key, Disabled, or Keystroke… (a key with Ctrl, Shift or Alt). A macro from G HUB shows as Macro and stays unless changed. Changes take effect on Save to M1, which writes the running slot's G keys with its lighting (only the G keys when the lighting wasn't changed). Presets leave the G keys out: they belong to the onboard profile (tried with presets keeping them, then left out on 2026-11-20). An unsaved change says "G keys not saved to M1". No live preview: that would need G-Lite to take over the G keys (0x8010), which the project avoids. M1–M3 and the G-shift layer at 0x60 stay as they are.
 
 ### 4. Macros
 
@@ -44,7 +44,7 @@ Left alone. The manual's MR steps (MR, a G key, the keys, MR) record nothing on 
 
 - **A G815 in `--demo`:** done, on `FakeG915` with three profiles (its sectors are 255 bytes, not 256). The G915 trace covers steps 1 and 2.
 - **Game mode (0x4522, in the report):** which keys the Game mode key turns off. G HUB turns off the Win key by default and lets you pick others. Check the format first.
-- **Restore a whole factory profile**, bindings included, once G-Lite changes them. Today it restores the lighting only.
+- **Restore the factory profile:** done on 2026-11-20. On the G815 it brings back the factory lighting and G1–G5 (M1–M3 and the G-shift layer are left as they are); a backup restores the whole profile.
 - **Report rate (0x8060):** the mouse code has it. Cheap, of little use on a keyboard.
 - Not in this plan: per-key colours (0x8081).
 

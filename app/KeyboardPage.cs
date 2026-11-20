@@ -80,6 +80,16 @@ class KeyboardPage : DevicePage
     readonly SegmentedPicker slotPicker;
     readonly Control pictureBox, lightBox;
     bool wide;
+    readonly SegmentedPicker viewPick;
+    readonly RoundedBox buttonsBox;
+    readonly ButtonRows buttonRows;
+    bool showingButtons;
+    // The G keys' bindings as edited, and as the running profile has them. They reach the keyboard on Save only.
+    byte[][] gKeys, storedGKeys;
+    // The sector gKeys were read from, so Save never writes one slot's G keys into another; and the G keys' own edit count, apart
+    // from the lighting's edits.
+    int gKeysSector, gKeyEdits;
+    bool GKeysChanged { get { return gKeys != null && storedGKeys != null && !Bindings.Same(gKeys, storedGKeys); } }
     List<int> slots = new List<int>();
     int running;
     volatile byte profilesFeature, brightnessFeature;
@@ -288,6 +298,25 @@ class KeyboardPage : DevicePage
         dimBox = Choice(idle, "Dim to", DimText, 98, i => current.Dim = DimPcts[i]);
         sleepBox = Choice(idle, "Turn off after", SleepText.Skip(never).ToArray(), 156, i => current.Sleep = SleepSecs[i + never]);
         if (note) foreach (Control control in idle.Controls) if (control != noteText && control.Top > 30) control.Visible = false;
+
+        if (kind.GKeys != null)
+        {
+            viewPick = Ui.Add(this, new SegmentedPicker { Items = new[] { "Settings", "Buttons" }, AccessibleName = "View", Visible = false },
+                440, 72, 196, 32);
+            viewPick.Picked += index => ShowView(index == 1);
+            buttonsBox = Ui.Add(this, new RoundedBox { Visible = false }, 20, 118, 616, 543);
+            Ui.Text(buttonsBox, "G keys", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
+            buttonRows = new ButtonRows(buttonsBox, Bindings.KeyboardActions, Value(buttonsBox, 200, 12, 402));
+            buttonRows.Assigned += (row, binding) =>
+            {
+                if (gKeys == null || Screening) return;
+                gKeys[row] = binding;
+                gKeyEdits++;
+                Edited();
+                RefreshControls();
+                ClearStatus();
+            };
+        }
 
         saveButton = Ui.Add(this, new FlatButton { Style = ButtonStyle.Primary, Text = "Save to keyboard", Visible = !note },
             496, 685, 140, 32);
@@ -697,7 +726,7 @@ class KeyboardPage : DevicePage
         get
         {
             if (current == null) return false;
-            if (live && kind.Profile) return dirty || Screening;
+            if (live && kind.Profile) return dirty || Screening || GKeysChanged;
             if (live) return Known();
             return stored != null && (dirty || Screening);
         }
@@ -708,8 +737,11 @@ class KeyboardPage : DevicePage
         return current.ToText(brightness) + BarText(brightness) + (Screening ? "|" + setup.ToText() : "");
     }
 
+    // Presets hold the lighting only: the G keys belong to an onboard profile. A ~ and G keys after it, from a preset saved while
+    // presets held them (2026-11-20), are left out.
     protected override void ApplyPreset(string text)
     {
+        text = text.Split('~')[0];
         int level;
         var parts = text.Split('|');
         var pieces = parts[0].Split('#');
@@ -748,11 +780,13 @@ class KeyboardPage : DevicePage
     void RefreshControls()
     {
         loading = true;
+        if (gKeys == null) showingButtons = false;
         bool screening = Screening;
         foreach (var control in plainLight) control.Visible = !screening;
         foreach (var control in screenLight) control.Visible = screening;
-        screenBox.Visible = screening;
-        idleArea.Visible = !screening && !kind.NoIdleTimes;
+        screenBox.Visible = screening && !showingButtons;
+        idleArea.Visible = !screening && !kind.NoIdleTimes && !showingButtons;
+        pictureBox.Visible = lightBox.Visible = !showingButtons;
         Widen(!screening && kind.NoIdleTimes && !Parts);
         if (picture.Live != screening) picture.Live = screening;
         var view = Viewed;
@@ -793,8 +827,9 @@ class KeyboardPage : DevicePage
         dimBox.Index = Nearest(DimPcts, current.Dim);
         sleepBox.Index = Nearest(SleepSecs.Skip(never).ToArray(), current.Sleep);
         dimBox.Enabled = current.Idle > 0;
-        saveButton.Enabled = dirty && !broken;
+        saveButton.Enabled = (dirty || GKeysChanged) && !broken;
         ShowSlots();
+        ShowGKeys();
         picture.Display(known ? current : null, known ? bar : null, brightness);
         if (screening)
         {
@@ -825,6 +860,40 @@ class KeyboardPage : DevicePage
         speed.Width += half;
         speedValue.Width += half;
     }
+
+    void ShowView(bool buttons)
+    {
+        showingButtons = buttons;
+        buttonRows.Recording = -1;
+        RefreshControls();
+    }
+
+    void ShowGKeys()
+    {
+        if (viewPick == null) return;
+        viewPick.Visible = gKeys != null;
+        viewPick.Index = showingButtons ? 1 : 0;
+        viewPick.Invalidate();
+        buttonsBox.Visible = showingButtons;
+        // The Screen effect stops Save, and its box is hidden here: the G keys wait until it's off.
+        bool screening = Screening;
+        buttonRows.Show(kind.GKeys, gKeys, !broken && !screening,
+            screening ? "Turn off the Screen effect to change the G keys." : "Changes take effect once saved to the keyboard.");
+    }
+
+    // The G keys aren't in presets, so Revert with a preset picked brings them back too.
+    protected override bool UnsavedBesidesPreset { get { return GKeysChanged; } }
+
+    protected override void RevertBesidesPreset() { DropGKeyEdits(); RefreshControls(); ClearStatus(); }
+
+    void DropGKeyEdits()
+    {
+        if (buttonRows != null) buttonRows.Recording = -1;
+        gKeys = Bindings.Copy(storedGKeys);
+        gKeyEdits++;
+    }
+
+    internal void RecordedKeys(Keys keys) { if (buttonRows != null) buttonRows.Recorded(keys); }
 
     void ShowSlots()
     {
@@ -905,6 +974,7 @@ class KeyboardPage : DevicePage
         if (!screening) { Settings.Remove(Remembered); bar = null; part = 0; }
         dirty = false;
         edits++;
+        DropGKeyEdits();
         previewSequence++;
         debounce.Stop();
         RefreshControls();
@@ -940,10 +1010,12 @@ class KeyboardPage : DevicePage
             var why = Paused();
             if (why != null) ShowStatus(why, true);
             else if (ScreenCapture.Missing(setup.Monitor)) ShowStatus("The chosen monitor isn't connected. Using the main monitor.", true);
-            else ShowStatus("Live only.");
+            else ShowStatus(GKeysChanged ? "Live only. G keys not saved: turn off the Screen effect to save them." : "Live only.");
         }
         else if (live && kind.Profile)
-            ShowStatus(dirty ? "Set by G-Lite, not saved to the keyboard" : Known() ? "Matches the keyboard" : "");
+            ShowStatus(dirty ? "Set by G-Lite, not saved to the keyboard"
+                : GKeysChanged ? "G keys not saved to " + (slots.Contains(running) && slots.Count > 1 ? "M" + running : "the keyboard")
+                : Known() ? "Matches the keyboard" : "");
         else if (live) ShowStatus(Known() ? "Set by G-Lite, not saved to the keyboard" : "");
         else ShowStatus(dirty ? "Not saved to the keyboard" : stored == null ? "" : "Matches the keyboard");
     }
@@ -1076,7 +1148,11 @@ class KeyboardPage : DevicePage
     {
         var lighting = current.Clone();
         var others = bar == null ? null : bar.Clone();
-        int editsAtStart = edits;
+        // Only G keys changed: the lighting stays as saved, which also covers one G-Lite can't read.
+        bool lightingToo = dirty;
+        var keys = GKeysChanged ? Bindings.Copy(gKeys) : null;
+        var keysWere = Bindings.Copy(storedGKeys);
+        int keysSector = gKeysSector, editsAtStart = edits, keyEditsAtStart = gKeyEdits;
         debounce.Stop();
         previewSequence++;
         saveButton.Enabled = false;
@@ -1087,15 +1163,23 @@ class KeyboardPage : DevicePage
             if (clusters == null) clusters = G915Lighting.Clusters(hidpp);
             int sector;
             var profile = G915Lighting.ReadProfile(hidpp, out sector);
-            var built = G915Lighting.Build(profile, clusters, lighting, others, !kind.NoIdleTimes);
+            var built = lightingToo ? G915Lighting.Build(profile, clusters, lighting, others, !kind.NoIdleTimes) : profile;
+            if (keys != null && sector != keysSector)
+                throw new RefusedException("The keyboard switched profiles: read it again before saving the G keys");
+            if (keys != null) built = G915Lighting.WithButtons(built, keys, keysWere);
             Backups.Save(ProfileBackups, new Dictionary<string, byte[]> { { sector.ToString("X4"), profile } }, DeviceLabel);
             G915Lighting.Store(hidpp, sector, built, kind.ReloadThroughHostMode);
             claimed = false;
         }, () =>
         {
-            Settings.Remove(Remembered);
-            stored = lighting;
-            unknownStored = false;
+            if (lightingToo)
+            {
+                Settings.Remove(Remembered);
+                stored = lighting;
+                unknownStored = false;
+            }
+            if (keys != null) storedGKeys = keys;
+            if (keys != null && keyEditsAtStart == gKeyEdits) gKeys = Bindings.Copy(keys);
             if (editsAtStart == edits) dirty = false;
             RefreshControls();
             ShowStatus("Saved to the keyboard");
@@ -1113,7 +1197,8 @@ class KeyboardPage : DevicePage
 
     void ShowProfileBackups()
     {
-        BackupMenu(backupsButton, ProfileBackups, "Restore the factory lighting", () => RestoreProfile(null),
+        BackupMenu(backupsButton, ProfileBackups, kind.GKeys != null ? "Restore the factory profile" : "Restore the factory lighting",
+            () => RestoreProfile(null),
             entry =>
             {
                 if (BackupSector(entry) < 0) return "damaged, can't be restored";
@@ -1123,12 +1208,14 @@ class KeyboardPage : DevicePage
             entry => BackupSector(entry) > 0, RestoreProfile);
     }
 
-    // A null backup restores the factory lighting.
+    // A backup holds the whole profile, so it brings back its G keys with its lighting. A null backup restores the factory lighting,
+    // and the factory G keys on a keyboard whose G keys G-Lite edits; the rest of the profile (M1-M3, G-shift) stays.
     void RestoreProfile(Backups.Entry entry)
     {
         int sector = entry == null ? -1 : BackupSector(entry);
         var backup = entry == null ? null : entry.Data.Values.First();
-        string what = entry == null ? "the factory lighting" : "the backup from " + When(entry);
+        int keyCount = kind.GKeys == null ? 0 : kind.GKeys.Length;
+        string what = entry != null ? "the backup from " + When(entry) : keyCount > 0 ? "the factory profile" : "the factory lighting";
         debounce.Stop();
         previewSequence++;
         saveButton.Enabled = false;
@@ -1141,6 +1228,7 @@ class KeyboardPage : DevicePage
             if (backup != null && now != sector)
                 throw new RefusedException("The keyboard runs another profile than the one in this backup");
             var profile = backup ?? G915Lighting.FactoryLighting(hidpp, now, current);
+            if (backup == null && keyCount > 0) profile = G915Lighting.FactoryButtons(hidpp, now, profile, keyCount);
             Backups.Save(ProfileBackups, new Dictionary<string, byte[]> { { now.ToString("X4"), current } }, DeviceLabel);
             G915Lighting.Store(hidpp, now, profile, kind.ReloadThroughHostMode);
             claimed = false;
@@ -1175,6 +1263,7 @@ class KeyboardPage : DevicePage
 
     void Forget()
     {
+        DropGKeyEdits();
         Settings.Remove(Remembered);
         bar = null;
         part = 0;
@@ -1212,7 +1301,8 @@ class KeyboardPage : DevicePage
         bool screening = Screening, readLayout = layoutCode < 0 && found.Has(0x4540);
         Lighting saved = null;
         var slotsRead = new List<int>();
-        int runningRead = 0;
+        int runningRead = 0, keyEditsAtStart = gKeyEdits;
+        byte[][] keysRead = null;
         RunOnDevice(hidpp =>
         {
             if (readLayout) layoutCode = hidpp.Call(hidpp.FeatureIndex(0x4540), 0)[0];
@@ -1221,10 +1311,16 @@ class KeyboardPage : DevicePage
                 try { slotsRead = G915Lighting.Slots(hidpp, out runningRead); profilesFeature = hidpp.FeatureIndex(0x8100); }
                 catch (Exception) { slotsRead = new List<int>(); }
             brightnessFeature = hidpp.FeatureIndex(0x8040);
-            // Only when nothing is remembered: a remembered lighting replaces what's saved. Optional, so any failure leaves the
-            // screen on live lighting as before.
-            if (kind.Profile && lighting == null)
-                try { int sector; saved = G915Lighting.Decode(G915Lighting.ReadProfile(hidpp, out sector), G915Lighting.Keys(clusters)); }
+            // The saved lighting only when nothing is remembered, since a remembered lighting replaces it; the G keys always. Optional,
+            // so any failure leaves the screen on live lighting as before.
+            if (kind.Profile && (lighting == null || kind.GKeys != null))
+                try
+                {
+                    int sector;
+                    var profile = G915Lighting.ReadProfile(hidpp, out sector);
+                    if (lighting == null) saved = G915Lighting.Decode(profile, G915Lighting.Keys(clusters));
+                    if (kind.GKeys != null) keysRead = G915Lighting.ReadButtons(profile, kind.GKeys.Length);
+                }
                 catch (Exception) { }
             if (lighting != null && startedAt == previewSequence && !screening)
             {
@@ -1240,6 +1336,15 @@ class KeyboardPage : DevicePage
             if (dropped) { Settings.Remove(Remembered); lighting = null; }
             slots = slotsRead;
             running = runningRead;
+            // Edits made during the read are kept, unless the keys are another slot's now.
+            bool sameSlot = keysRead != null && runningRead == gKeysSector;
+            storedGKeys = keysRead;
+            if (keyEditsAtStart == gKeyEdits || gKeys == null || !sameSlot)
+            {
+                if (buttonRows != null) buttonRows.Recording = -1;
+                gKeys = Bindings.Copy(keysRead);
+            }
+            gKeysSector = runningRead;
             storedBrightness = level;
             if (editsAtStart == edits)
             {
