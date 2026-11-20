@@ -30,5 +30,5 @@ The status line stays on the left. The preset row's label is **G-Lite preset** (
 
 ## Open questions
 
-- Whether the G815 and G915 send an 0x8100 event when an M key switches the profile. Not seen yet. G-Lite listens for it as for the mice, and reads fn 4 when the window is activated, so the screen follows either way ([G815-plan.md](G815-plan.md) step 2).
+- The G815 sends an 0x8100 event when an M key switches the profile: the screen follows at once (tried by its owner on 2026-11-20). The G915 and G915 TKL haven't been tried; G-Lite also reads fn 4 when the window is activated, so the screen follows either way ([G815-plan.md](G815-plan.md) step 2).
 - Devices with more or fewer profiles: list as many slots as the directory has enabled. A device whose profiles have no M keys (mice) would need another name than Mn.

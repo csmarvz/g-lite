@@ -839,7 +839,8 @@ class KeyboardPage : DevicePage
     }
 
     // 0x8100 event fn 0 is a new running profile on the mice (MousePage.Heard); 0x8040 event fn 0 a new brightness, from the
-    // keyboard's brightness key. Neither is seen from a G815 yet, so the window's activation checks too (MainWindow).
+    // keyboard's brightness key. The G815 sends both (2026-11-20); the window's activation checks too (MainWindow), for an event missed
+    // while G-Lite was closed or a keyboard that sends none.
     public void Heard(byte feature, int fn)
     {
         if (fn != 0) return;

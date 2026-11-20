@@ -10,7 +10,7 @@ The steps to finish the G815: its onboard profiles, following M1–M3, G1–G5 b
 
 ## Steps
 
-### 1. Onboard profiles (built, to test on the G815)
+### 1. Onboard profiles (built, tried on the G815)
 
 Build the slots of [on-board-memory.md](on-board-memory.md) for the G815 and G915, with one change to its screen:
 
@@ -18,7 +18,7 @@ Build the slots of [on-board-memory.md](on-board-memory.md) for the G815 and G91
 - It shows the profile the keyboard runs (0x8100 fn 4). Picking one switches the keyboard to it (fn 3), like pressing the M key, and loads its lighting.
 - Save to Mn writes the slot shown, the running one: Save to keyboard renamed.
 
-### 2. Follow M1–M3 (built, to test on the G815)
+### 2. Follow M1–M3 (built, tried on the G815)
 
 - Mice send a 0x8100 event (fn 0) when their buttons switch profiles, and `MousePage.Heard` loads again. The keyboard screen gets the same.
 - Built both ways: the event, and fn 4 read when the window is activated, which costs one call and catches a missed event.
@@ -52,7 +52,7 @@ Left alone. The manual's MR steps (MR, a G key, the keys, MR) record nothing on 
 
 One session, before any screen is built:
 
-- Press M1–M3 with G-Lite in front: does the screen follow at once (the 0x8100 event comes) or only when the window comes back to the front? `log.txt` says "M2 picked on the keyboard" either way. The brightness key's 0x8040 event does come (2026-11-20).
+- Done on 2026-11-20: an M key pressed with G-Lite in front, and the screen follows at once, so the G815 sends the 0x8100 event. The brightness key's 0x8040 event comes too.
 - Done on 2026-11-20: a macro made in G HUB's editor and saved to G1 in onboard memory mode, then a report ([G815-G915.md](G815-G915.md), "Macros"). MR records nothing onboard. Next: macros with modifiers (Ctrl+C), a media key and a long text, to learn the other step codes.
 - Change the lighting with brightness + a number key, then send a report: does it land in the running profile?
 - Does 0x8071 fn 8 (power modes) answer? (already a "To check" in [G815-G915.md](G815-G915.md))
