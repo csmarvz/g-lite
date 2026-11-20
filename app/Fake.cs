@@ -302,7 +302,7 @@ class FakeG915 : Hidpp
     public int Brightness = 80, Claimed;
     public byte Layout = 1;
 
-    // The owner's directory lists profiles 1 to 3 (docs/G915.md); this fake has only profile 1.
+    // The owner's directory lists profiles 1 to 3 (docs/G815-G915.md); this fake has only profile 1.
     public FakeG915() : base(false)
     {
         var directory = Enumerable.Repeat((byte)0xFF, 255).ToArray();

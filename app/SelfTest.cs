@@ -5,7 +5,7 @@ using System.Collections.Generic;
 static class SelfTest
 {
     static readonly string[] LayoutFiles =
-        { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json" };
+        { "g515-tkl.json", "g915-tkl.json", "g915.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json" };
 
     static byte[] Hex(string hex)
     {
@@ -780,7 +780,7 @@ static class SelfTest
             && !Report.Reads[0x8101].Intersect(new[] { 2, 3, 6, 7 }).Any()
             && !Report.Reads[0x8071].Contains(1) && !Report.Reads[0x8070].Contains(3), "the report never calls a write function");
 
-        foreach (var file in new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g512-x-75.json", "g-full.json", "g-60.json" })
+        foreach (var file in new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json" })
         {
             var board = KeyLayout.Load(file);
             int keys = board.Rows.Sum(row => row.Split('|').Count(cell => !cell.StartsWith("_")));

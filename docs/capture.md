@@ -25,7 +25,7 @@ A console tool in `tools/`, separate from GLite.exe so the app stays small. C# 5
 |---|---|
 | LGS remapping one G9x button, then saving | Issue #16, button encoding on the G9x |
 | LGS switching the G9x profile | Issue #17 |
-| G HUB saving lighting on a G915 | Saving on the G915 (see [G915.md](G915.md)) |
+| G HUB saving lighting on a G915 | Saving on the G915 (see [G815-G915.md](G815-G915.md)) |
 | G HUB changing the EQ on the PRO X Wireless | Whether G HUB ever writes the headset's EQ |
 
 One action per capture, and note what was clicked, so the bytes map to one change.

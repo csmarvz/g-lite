@@ -27,7 +27,7 @@ static class ZoneLighting
         return found.Kind == "keyboard" && found.ShortName.ToUpper() == "G213" ? "g213.json" : null;
     }
 
-    // Wave 0x04: OpenRGB's layout for the G915 (docs/G915.md): period low at 6, direction 7, intensity 8, period high 9.
+    // Wave 0x04: OpenRGB's layout for the G915 (docs/G815-G915.md): period low at 6, direction 7, intensity 8, period high 9.
     public static byte[] Encode(MouseLight light)
     {
         if (light.Effect != 0x04) return MouseProtocol.Encode(light);

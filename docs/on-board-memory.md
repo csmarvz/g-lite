@@ -1,6 +1,6 @@
 # On-board memory slots
 
-A spec for picking which on-board profile a keyboard runs and saves into, from G-Lite. Not built yet. First target: the G915 TKL, whose report and tests are in [G915.md](G915.md). It applies to any device whose on-board profiles G-Lite can already save (0x8100, format 4 on the G915).
+A spec for picking which on-board profile a keyboard runs and saves into, from G-Lite. Not built yet. First target: the G915 TKL, whose report and tests are in [G815-G915.md](G815-G915.md). It applies to any device whose on-board profiles G-Lite can already save (0x8100, format 4 on the G915).
 
 Mockups: the G-Lite design canvas "G915 Onboard Profiles", design E (private to the owner).
 

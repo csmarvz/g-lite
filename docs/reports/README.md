@@ -5,8 +5,8 @@ Reports from G-Lite's Report button, kept as they were sent, so the facts in the
 | File | Device | Firmware | Date | From | Used in |
 |---|---|---|---|---|---|
 | [g515-40b4.txt](g515-40b4.txt) | G515 LIGHTSPEED TKL (40B4, USB C355), Swiss layout, through its receiver | MPK 25.02, build 0013 | 2026-11-18 | The maintainer's keyboard | `G515Profile` in `app/KeyboardLighting.cs` |
-| [g915tkl-408e.txt](g915tkl-408e.txt) | G915 TKL (408E, USB C343), Swiss layout, through its receiver | MPK 14.02, build 0022 | 2026-11-17 | An owner | [G915.md](../G915.md) |
-| [g815-c33f.txt](g815-c33f.txt) | G815 (USB C33F), Swiss layout | U1 31.02, build 0018 | 2026-11-18 | An owner | [G915.md](../G915.md) |
+| [g915tkl-408e.txt](g915tkl-408e.txt) | G915 TKL (408E, USB C343), Swiss layout, through its receiver | MPK 14.02, build 0022 | 2026-11-17 | An owner | [G815-G915.md](../G815-G915.md) |
+| [g815-c33f.txt](g815-c33f.txt) | G815 (USB C33F), Swiss layout | U1 31.02, build 0018 | 2026-11-18 | An owner | [G815-G915.md](../G815-G915.md) |
 | [g512x75-c35f.txt](g512x75-c35f.txt) | G512 X 75 (USB C35F) | U1 81.05, build 0020 | 2026-11-11 | An owner | [G512X.md](../G512X.md) |
 | [g213-c336.txt](g213-c336.txt) | G213 (USB C336) | U1 09.00, build 0006 | 2026-11-15 | The maintainer's keyboard | [G213.md](../G213.md) |
 | [g510s-c22d.txt](g510s-c22d.txt) | G510s (USB C22D), no HID++ | | 2026-11-14 | An owner | [G510.md](../G510.md) |

@@ -254,6 +254,7 @@ class KeyPicture : DrawnControl
                 fill = Ui.Mix(Theme.KeyOff, full, max / 255.0 * bright / 100.0);
             }
             if (Part != 0 && Part != (onBar ? 2 : 1)) fill = Ui.Mix(Theme.KeyOff, fill, 0.3);
+            if (ids[key] < 0) fill = Theme.KeyOff;
             FillKey(graphics, key, fill);
         }
     }
@@ -263,7 +264,8 @@ class KeyPicture : DrawnControl
         var touched = dragging ? new HashSet<int>(Touched()) : new HashSet<int>();
         for (int key = 0; key < keys.Count; key++)
         {
-            var fill = liveColors != null && key < liveColors.Length ? Ui.Mix(Theme.KeyOff, liveColors[key], bright / 100.0) : Theme.KeyOff;
+            var fill = liveColors != null && key < liveColors.Length && ids[key] >= 0
+                ? Ui.Mix(Theme.KeyOff, liveColors[key], bright / 100.0) : Theme.KeyOff;
             FillKey(graphics, key, fill);
             if (touched.Contains(key) || (marked != null && key < marked.Length && marked[key]))
                 using (var pen = new Pen(Theme.Accent, 2 * DpiScale)) Outline(graphics, key, pen);

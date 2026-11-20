@@ -14,7 +14,7 @@ What G-Lite can take from [OpenLogi](https://github.com/aprilnea/openlogi), and 
 | [lighting-control.md](lighting-control.md) | G515, G915, mice | The persistence byte of 0x8070 and 0x8071, software control, power modes |
 | [report-rate-8061.md](report-rate-8061.md) | Newer G mice | Report rates up to 8000 Hz |
 | [keyboards-8070.md](keyboards-8070.md) | G512, G513, G413, G815 | Older G keyboards that light up through 0x8070 |
-| [G915.md](G915.md) | G915, G915 TKL | Updated with the facts above |
+| [G815-G915.md](G815-G915.md) | G915, G915 TKL | Updated with the facts above |
 
 ## Where to look in OpenLogi
 

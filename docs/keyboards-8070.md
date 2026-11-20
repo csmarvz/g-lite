@@ -34,7 +34,7 @@ From what's known about these models, not checked:
 
 - G513, G413 (single colour), G910 and G810 may also use 0x8070 and 0x8080. Only a report tells.
 - The G213 uses 0x8070 with six zones: the whole keyboard and five areas that take Static only. See [G213.md](G213.md).
-- The G815 is the wired G915: its report shows 0x8071, 0x8040 and 0x8100 like the G915 TKL, and it gets the G915 screen. See [G915.md](G915.md).
+- The G815 is the wired G915: its report shows 0x8071, 0x8040 and 0x8100 like the G915 TKL, and it gets the G915 screen. See [G815-G915.md](G815-G915.md).
 
 ## Effects
 
@@ -46,7 +46,7 @@ From what's known about these models, not checked:
 | 0x0A | Breathe | Colour 0–2, period 3–4, intensity 6 |
 | 0x03 | Cycle | Period 5–6, intensity 7 |
 
-Wave (0x04), Starlight (0x05) and Ripple (0x0B) on 0x8070 aren't in OpenLogi. Start with the three above. Wave and Ripple may follow the G915's 0x8071 layouts in [G915.md](G915.md), to check on a real keyboard.
+Wave (0x04), Starlight (0x05) and Ripple (0x0B) on 0x8070 aren't in OpenLogi. Start with the three above. Wave and Ripple may follow the G915's 0x8071 layouts in [G815-G915.md](G815-G915.md), to check on a real keyboard.
 
 ## Zones
 

@@ -1,6 +1,6 @@
 # Keyboard protocol research
 
-Research date 2026-11-08. [Existing keyboard notes](../device-research.md), [G915](../G915.md) and [older effects](../keyboards-8070.md) remain useful. This file adds broader model coverage and distinguishes confirmed feature reports from family assumptions.
+Research date 2026-11-08. [Existing keyboard notes](../device-research.md), [G915](../G815-G915.md) and [older effects](../keyboards-8070.md) remain useful. This file adds broader model coverage and distinguishes confirmed feature reports from family assumptions.
 
 ## Older RGB keyboards: exact product table
 

@@ -64,7 +64,7 @@ All two-byte fields are big endian.
 Two ways, to try in this order on a real keyboard:
 
 1. Send the effect with flags 0x03 (apply and store) after checking cluster byte 6. If the keyboard shows it after a power cycle, without G-Lite running, that's saving with no profile layout to work out.
-2. Write the 0x8100 profile, as planned in [G915.md](G915.md).
+2. Write the 0x8100 profile, as planned in [G815-G915.md](G815-G915.md).
 
 What could go wrong with 1: in onboard mode, the active profile's lighting may win over the stored effect. And EEPROM wears, so store only on Save, never on each preview.
 
