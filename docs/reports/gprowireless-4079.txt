@@ -1,14 +1,14 @@
 G-Lite device report
 G-Lite 0.0.32-alpha, Windows 11 build 26200
-2026-11-18 21:49 UTC
+2026-11-20 10:01 UTC
 
 Device    G Pro Wireless Gaming Mouse
 Kind      mouse
 Link      LIGHTSPEED, slot 1, ID 4079, USB 046D:C539
 Model     USB C088, LIGHTSPEED 4079
 Firmware  MPM 15.02, build 0026
-Battery   66%, 3897 mV
-Screen    PageMouse
+Battery   63%, 3880 mV
+Screen    MousePage
 
 Features
 01 0001 v1  feature set

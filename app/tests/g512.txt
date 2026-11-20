@@ -12,34 +12,34 @@ open
   8070 fn2  01 02 FF
   8070 fn2  01 03 FF
   8070 fn2  01 04 FF
-  = status "" [Report] Preset=None [New…] […] Zone=All Effect=- (no Wave) Brightness=100 (off) Speed=0 (off) [Revert (off)]
+  = status "" [Report] G-Lite preset=None [New…] […] Zone=All Effect=- (no Wave) Brightness=100 (off) Speed=0 (off) [Revert (off)]
 pick Effect Static
   8070 fn3  00 01 FF FF FF
   8070 fn3  01 01 FF FF FF
-  = status "Set by G-Lite, not saved to the keyboard" [Report] Preset=None [New…] […] Zone=All Effect=Static (no Wave) <Color FFFFFF> Brightness=100 Speed=0 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=None [New…] […] Zone=All Effect=Static (no Wave) <Color FFFFFF> Brightness=100 Speed=0 (off) [Revert (off)]
 press Color 30D050
   8070 fn3  00 01 30 D0 50
   8070 fn3  01 01 30 D0 50
-  = status "Set by G-Lite, not saved to the keyboard" [Report] Preset=None [New…] […] Zone=All Effect=Static (no Wave) <Color 30D050> Brightness=100 Speed=0 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=None [New…] […] Zone=All Effect=Static (no Wave) <Color 30D050> Brightness=100 Speed=0 (off) [Revert (off)]
 slide Brightness 50
   8070 fn3  00 01 18 68 28
   8070 fn3  01 01 18 68 28
-  = status "Set by G-Lite, not saved to the keyboard" [Report] Preset=None [New…] […] Zone=All Effect=Static (no Wave) <Color 30D050> Brightness=50 Speed=0 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=None [New…] […] Zone=All Effect=Static (no Wave) <Color 30D050> Brightness=50 Speed=0 (off) [Revert (off)]
 pick Zone Logo
-  = status "Set by G-Lite, not saved to the keyboard" [Report] Preset=None [New…] […] Zone=Logo Effect=Static (no Wave) <Color 30D050> Brightness=50 Speed=0 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=None [New…] […] Zone=Logo Effect=Static (no Wave) <Color 30D050> Brightness=50 Speed=0 (off) [Revert (off)]
 pick Effect Breathe
   8070 fn3  01 04 30 D0 50 13 88 00 32
-  = status "Set by G-Lite, not saved to the keyboard" [Report] Preset=None [New…] […] Zone=Logo Effect=Breathe (no Wave) <Color 30D050> Brightness=50 Speed=78 [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=None [New…] […] Zone=Logo Effect=Breathe (no Wave) <Color 30D050> Brightness=50 Speed=78 [Revert (off)]
 slide Speed 80
   8070 fn3  01 04 30 D0 50 12 C0 00 32
-  = status "Set by G-Lite, not saved to the keyboard" [Report] Preset=None [New…] […] Zone=Logo Effect=Breathe (no Wave) <Color 30D050> Brightness=50 Speed=80 [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=None [New…] […] Zone=Logo Effect=Breathe (no Wave) <Color 30D050> Brightness=50 Speed=80 [Revert (off)]
 pick Zone All
-  = status "Set by G-Lite, not saved to the keyboard" [Report] Preset=None [New…] […] Zone=All Effect=Static (no Wave) <Color 30D050> Brightness=50 Speed=80 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=None [New…] […] Zone=All Effect=Static (no Wave) <Color 30D050> Brightness=50 Speed=80 (off) [Revert (off)]
 pick Effect Cycle
   8070 fn3  00 02 00 00 00 00 00 13 88 32
   8070 fn3  01 02 00 00 00 00 00 13 88 32
-  = status "Set by G-Lite, not saved to the keyboard" [Report] Preset=None [New…] […] Zone=All Effect=Cycle (no Wave) Brightness=50 Speed=78 [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=None [New…] […] Zone=All Effect=Cycle (no Wave) Brightness=50 Speed=78 [Revert (off)]
 pick Effect Off
   8070 fn3
   8070 fn3  01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] Preset=None [New…] […] Zone=All Effect=Off (no Wave) Brightness=50 (off) Speed=78 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=None [New…] […] Zone=All Effect=Off (no Wave) Brightness=50 (off) Speed=78 (off) [Revert (off)]

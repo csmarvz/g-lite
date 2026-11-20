@@ -18,13 +18,13 @@ The slots are a segmented picker in the header, right of the device name, in the
 1. **Reload**, which is Revert renamed. Same behaviour as Revert today: it reads the keyboard again (with None: releases the live lighting and shows what's saved).
 2. **Save to M1**: the primary button, named after the slot shown.
 
-The status line stays on the left. The preset row's label becomes **G-Lite preset**, so it isn't mistaken for the keyboard's slots.
+The status line stays on the left. The preset row's label is **G-Lite preset** (done on every screen), so it isn't mistaken for the keyboard's slots.
 
 ## Behaviour
 
 - **The picker always shows the slot the keyboard runs.** G-Lite reads it at load (0x8100 fn 4). Nothing is kept in `settings.txt`: if someone presses M2 on the keyboard, the screen shows M2 at its next load.
 - **Picking a slot switches the keyboard to it**, like pressing its M key (fn 3), and loads that slot's lighting and idle settings into the screen. With unsaved changes (a live lighting not saved), G-Lite asks first, since switching replaces them.
-- **Save to Mn** writes the slot shown, which is the one running: the same as Save to keyboard today (backup, write, read back, load with fn 3, give the lighting back).
+- **Save to Mn** writes the slot shown, which is the one running: the same as Save to keyboard today (backup, write, read back, load with fn 3, give the lighting back; on the G815, then leave onboard mode and come back, since it doesn't reload the profile it runs: see [G815-G915.md](G815-G915.md)).
 - **Reload** doesn't change slots.
 - Backups stay per device. A backup restores into its own sector, and only while the keyboard runs that slot (as today).
 

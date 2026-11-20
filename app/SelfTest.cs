@@ -697,6 +697,11 @@ static class SelfTest
         G915Lighting.Store(g915, g9Sector, g9Built);
         Check(g915.Sectors[1].SequenceEqual(g9Built) && g915.Reloads == 1 && g915.Claimed == 0,
             "the G915's profile is written, loaded again, and the lighting given back");
+        Check(g915.Modes.Count == 1, "the G915 stays in onboard mode while saving");
+        var g815 = new FakeG915();
+        G915Lighting.Store(g815, g9Sector, g9Built, KeyboardKinds.G815.ReloadThroughHostMode);
+        Check(g815.Reloads == 1 && g815.Modes.SequenceEqual(new byte[] { 1, 2, 1 }),
+            "the G815's profile is loaded again by leaving onboard mode and coming back, which ends in onboard mode");
         Check(Settings.Get("theme") == "system" && Theme.Mode == "system", "theme starts on system");
         Theme.Mode = "light";
         Check(Theme.Light && Settings.Get("theme") == "light", "light theme is saved and applied");
@@ -759,7 +764,9 @@ static class SelfTest
             && keyboardReport.Contains("0008=") && keyboardReport.Contains("0101=") && keyboardReport.Contains("cluster 0 effect 1=")
             && keyboardSpy.Calls.All(call => Report.Reads.ContainsKey(call.Item1) && Report.Reads[call.Item1].Contains(call.Item2)),
             "the keyboard report reads its files and effects only");
-        var g915Report = Report.Build(new FakeG915(), new FoundDevice
+        var g915WithMacros = new FakeG915();
+        g915WithMacros.Sectors[4] = Enumerable.Repeat((byte)0xAB, 255).ToArray();
+        var g915Report = Report.Build(g915WithMacros, new FoundDevice
             {
                 Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1,
                 Features = new[] { 0x4540, 0x8040, 0x8071, 0x8100 }
@@ -767,6 +774,8 @@ static class SelfTest
         Check(g915Report.Contains("0000=000101FF000201FF000301FF") && g915Report.Contains("0001=0100")
             && g915Report.Contains("0002=error 02") && g915Report.Contains("0101=0100"),
             "the G915 report reads the profiles its directory lists, and goes on past one it can't read");
+        Check(g915Report.Contains("macro 0004=ABAB") && g915Report.Split('\n').Count(line => line.StartsWith("macro ")) == 1,
+            "the G915 report reads once the sector its G-shift macros point to");
         var headsetReport = Report.Build(new FakeHeadset(),
             new FoundDevice
             {

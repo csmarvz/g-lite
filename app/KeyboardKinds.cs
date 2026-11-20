@@ -10,6 +10,8 @@ class KeyboardKinds
     public bool Saves, Profile, Guessed;
     // The G815 is wired: its profiles hold 0 for both idle times, and G HUB writes the power-save records as copies of the others.
     public bool NoIdleTimes;
+    // The G815 runs a profile written again only after leaving onboard mode and coming back (G915Lighting.Store).
+    public bool ReloadThroughHostMode;
     public int[] Bar;
 
     public static string File(string name)
@@ -46,7 +48,8 @@ class KeyboardKinds
         G515 = new KeyboardKinds { Keys = KeyLayout.Load("g515-tkl.json"), Prefix = "profile.g515.", Saves = true },
         G915Tkl = new KeyboardKinds { Keys = KeyLayout.Load("g915-tkl.json"), Prefix = "profile.g915.", Profile = true },
         G915 = new KeyboardKinds { Keys = KeyLayout.Load("g915.json"), Prefix = "profile.g915.", Profile = true },
-        G815 = new KeyboardKinds { Keys = KeyLayout.Load("g815.json"), Prefix = "profile.g815.", Profile = true, NoIdleTimes = true },
+        G815 = new KeyboardKinds { Keys = KeyLayout.Load("g815.json"), Prefix = "profile.g815.", Profile = true, NoIdleTimes = true,
+            ReloadThroughHostMode = true },
         G512X = new KeyboardKinds
         {
             Keys = KeyLayout.Load("g512-x-75.json"), Prefix = "profile.g512x.", Bar = Enumerable.Range(0xA0, 33).ToArray()

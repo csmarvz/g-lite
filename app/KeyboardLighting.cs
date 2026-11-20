@@ -551,12 +551,19 @@ static class G915Lighting
 
     // Writes the profile (MouseProtocol.WriteSector refuses 0000 and the factory sectors, and reads it back), loads it again and gives
     // the lighting back, so the keyboard runs it, its power save included.
-    public static void Store(Hidpp hidpp, int sector, byte[] profile)
+    // The G815 acks fn 3 for the profile it runs but keeps running its old copy, until an M key is pressed. Leaving onboard mode and
+    // coming back (fn 1 02, then 01) makes it read the profile again, with a barely visible flash of the M key (tested on an owner's
+    // G815). Loading another profile and coming back also works, but flashes the other profile's M key.
+    public static void Store(Hidpp hidpp, int sector, byte[] profile, bool reloadThroughHostMode = false)
     {
         MouseProtocol.WriteSector(hidpp, sector, profile);
-        try { hidpp.Call(hidpp.FeatureIndex(0x8100), 3, (byte)(sector >> 8), (byte)sector); }
+        byte feature = hidpp.FeatureIndex(0x8100);
+        try { hidpp.Call(feature, 3, (byte)(sector >> 8), (byte)sector); }
         catch (HidppError) { }
         Release(hidpp);
+        if (!reloadThroughHostMode) return;
+        try { hidpp.Call(feature, 1, 0x02); }
+        finally { hidpp.Call(feature, 1, 0x01); }
     }
 
     public static void Preview(Hidpp hidpp, List<byte[]> clusters, Lighting lighting, Lighting others = null)

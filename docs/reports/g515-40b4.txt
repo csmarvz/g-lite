@@ -1,14 +1,14 @@
 G-Lite device report
 G-Lite 0.0.32-alpha, Windows 11 build 26200
-2026-11-18 21:48 UTC
+2026-11-20 10:06 UTC
 
 Device    G515 LS TKL
 Kind      keyboard
 Link      LIGHTSPEED, slot 1, ID 40B4, USB 046D:C547
 Model     USB C355, LIGHTSPEED 40B4, Bluetooth B389
 Firmware  MPK 25.02, build 0013
-Battery   68%
-Screen    Page515
+Battery   66%
+Screen    KeyboardPage
 
 Features
 01 0001 v2  feature set

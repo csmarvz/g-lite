@@ -67,21 +67,21 @@ open
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8040 fn1
-  = status "Matches the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 [Revert (off)] [Save to keyboard (off)]
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=None [New…] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 [Revert (off)] [Save to keyboard (off)]
 pick Effect Static
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 01 FF FF FF 02 00 00 00 00 00 00 01
   8071 fn1  01 01 FF FF FF 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Static Dim after=1 min <Color FFFFFF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 (off) [Revert] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=None [New…] […] Effect=Static Dim after=1 min <Color FFFFFF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 (off) [Revert] [Save to keyboard]
 press Color 30D050
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 01 30 D0 50 02 00 00 00 00 00 00 01
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 (off) [Revert] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=None [New…] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=52 (off) [Revert] [Save to keyboard]
 slide Brightness 50
   8040 fn1
   8040 fn2  00 32
@@ -89,22 +89,22 @@ slide Brightness 50
   8071 fn8  01 01
   8071 fn1  00 01 30 D0 50 02 00 00 00 00 00 00 01
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=None [New…] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert] [Save to keyboard]
 menu More preset actions > Save as new preset…
   menu: Save as new preset… | Rename… (off) | Delete (off)
   = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] [Save] [Cancel] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert] [Save to keyboard]
 type Green
   = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] [Save] [Cancel] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert] [Save to keyboard]
 press Save
-  = status "Saved the preset Green" [Report] [Backups] Preset=Green [Update (off)] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert (off)] [Save to keyboard]
+  = status "Saved the preset Green" [Report] [Backups] G-Lite preset=Green [Update (off)] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert (off)] [Save to keyboard]
 pick Effect Breathe
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 03 30 D0 50 27 10 00 64 00 00 00 01
   8071 fn1  01 02 30 D0 50 27 10 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=Green • [Update] […] Effect=Breathe Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
-pick Preset None
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Breathe Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
+pick G-Lite preset None
   8071 fn5  01
   8040 fn1
   8071 fn0
@@ -141,28 +141,28 @@ pick Preset None
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8040 fn1
-  = status "Matches the keyboard" [Report] [Backups] Preset=None [New…] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert (off)] [Save to keyboard (off)]
-pick Preset Green
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=None [New…] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert (off)] [Save to keyboard (off)]
+pick G-Lite preset Green
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 03 30 D0 50 27 10 00 64 00 00 00 01
   8071 fn1  01 02 30 D0 50 27 10 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=Green • [Update] […] Effect=Breathe Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Breathe Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
 pick Dim after 15 s
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 03 30 D0 50 27 10 00 64 00 00 00 01
   8071 fn1  01 02 30 D0 50 27 10 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=Green • [Update] […] Effect=Breathe Dim after=15 s <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Breathe Dim after=15 s <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
 pick Turn off after 10 min
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 03 30 D0 50 27 10 00 64 00 00 00 01
   8071 fn1  01 02 30 D0 50 27 10 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=Green • [Update] […] Effect=Breathe Dim after=15 s <Color 30D050> Dim to=50% Direction=- (off) Turn off after=10 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Breathe Dim after=15 s <Color 30D050> Dim to=50% Direction=- (off) Turn off after=10 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
 press Save to keyboard
   8100 fn2
   8100 fn0
@@ -219,21 +219,21 @@ press Save to keyboard
   8100 fn5  00 01 00 EF
   8100 fn3  00 01
   8071 fn5  01
-  = status "Saved to the keyboard" [Report] [Backups] Preset=Green • [Update] […] Effect=Breathe Dim after=15 s <Color 30D050> Dim to=50% Direction=- (off) Turn off after=10 min Brightness=50 Speed=52 [Revert] [Save to keyboard (off)]
+  = status "Saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Breathe Dim after=15 s <Color 30D050> Dim to=50% Direction=- (off) Turn off after=10 min Brightness=50 Speed=52 [Revert] [Save to keyboard (off)]
 pick Effect Wave
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 02 00 00 00 00 00 27 10 64 00 00 01
   8071 fn1  01 04 00 00 00 00 00 00 10 01 64 27 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=Green • [Update] […] Effect=Wave Dim after=15 s Dim to=50% Direction=Right Turn off after=10 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green • [Update] […] Effect=Wave Dim after=15 s Dim to=50% Direction=Right Turn off after=10 min Brightness=50 Speed=52 [Revert] [Save to keyboard]
 press Revert
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 01 30 D0 50 02 00 00 00 00 00 00 01
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] Preset=Green [Update (off)] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert (off)] [Save to keyboard]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Green [Update (off)] […] Effect=Static Dim after=1 min <Color 30D050> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=52 (off) [Revert (off)] [Save to keyboard]
 menu Backups > Restore the factory lighting
   menu: Restore the factory lighting | Restore a backup (off) | <when>, Cycle, first backup | Open the backups folder
   8100 fn2
@@ -341,6 +341,6 @@ menu Backups > Restore the factory lighting
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8040 fn1
-  = status "Restored the factory lighting" [Report] [Backups] Preset=Green [Update (off)] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=78 [Revert (off)] [Save to keyboard (off)]
+  = status "Restored the factory lighting" [Report] [Backups] G-Lite preset=Green [Update (off)] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=78 [Revert (off)] [Save to keyboard (off)]
 quit
-  = status "Restored the factory lighting" [Report] [Backups] Preset=Green [Update (off)] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=78 [Revert (off)] [Save to keyboard (off)]
+  = status "Restored the factory lighting" [Report] [Backups] G-Lite preset=Green [Update (off)] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=50 Speed=78 [Revert (off)] [Save to keyboard (off)]

@@ -22,7 +22,8 @@ Build the slots of [on-board-memory.md](on-board-memory.md) for the G815 and G91
 
 - Mice send a 0x8100 event (fn 0) when their buttons switch profiles, and `MousePage.Heard` loads again. The keyboard screen gets the same.
 - If the G815 sends no event, read fn 4 when the window opens or gets the focus.
-- An M key switch releases a live lighting that isn't saved and shows the new slot's saved lighting, as the keyboard itself does.
+- An M key switch releases a live lighting that isn't saved and shows the new slot's saved lighting, as the keyboard itself does. The G-Lite preset goes back to None, which means the keyboard's own lighting (picking None already releases it and reads the profile again). A preset with changes not saved keeps them as a draft, as when another preset is picked.
+- The same for a switch made in G-Lite (step 1).
 
 ### 3. G1–G5 bindings
 
@@ -30,7 +31,7 @@ The mouse's button editor (`MouseButtons.Bindings`) on the keyboard screen: a ke
 
 ### 4. Macros
 
-- The report reads the macro sectors (fn 5 only, so it fits `Report.Reads`). Ask the G915 TKL owner, who has macros, and the G815 owner for new reports, after recording a macro in G HUB.
+- Done: the report reads the sectors the profiles' macros point to (`macro 0004=…`, fn 5 only). Ask the G915 TKL owner, who has macros, and the G815 owner for new reports, after recording a macro in G HUB.
 - Decode the format. libratbag (MIT) describes the onboard macro format: use it to check.
 - An editor: a list of key down, key up and delay steps, and Record, which takes the keystrokes typed while the G-Lite window has the focus.
 - Writing picks a free sector and keeps the directory and the other profiles right. New ground: backups, read back, a fake and traces before a real keyboard.

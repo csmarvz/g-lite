@@ -471,22 +471,38 @@ static class Report
             if (at == 0xFFFF) break;
             if (at > 0 && at < 0x100 && !sectors.Contains(at)) sectors.Add(at);
         }
-        foreach (var at in sectors) Sector(reader, at, size);
+        var profiles = new List<byte[]>();
+        foreach (var at in sectors) profiles.Add(Sector(reader, at, size));
         Sector(reader, 0x0100, size);
-        for (int profile = 1; profile <= Math.Min((int)info[4], 8); profile++) Sector(reader, 0x0100 + profile, size);
+        for (int profile = 1; profile <= Math.Min((int)info[4], 8); profile++) profiles.Add(Sector(reader, 0x0100 + profile, size));
+        foreach (var at in MacroSectors(profiles, sectors)) Sector(reader, at, size, "macro ");
     }
 
-    static byte[] Sector(Reader reader, int sector, int size)
+    // A button from 0x20 and its G-shift layer from 0x60, 4 bytes each, starting 00 is a macro: 00, its sector, then the offset
+    // (the G915 TKL's G-shift layer has 00 04 00 00, 00 04 00 02...; libratbag's layout). Read only to learn their format.
+    static List<int> MacroSectors(List<byte[]> profiles, List<int> read)
+    {
+        var macros = new List<int>();
+        foreach (var profile in profiles.Where(data => data != null))
+            for (int at = 0x20; at + 3 < Math.Min(0xA0, profile.Length) && macros.Count < 8; at += 4)
+            {
+                int sector = profile[at + 1];
+                if (profile[at] == 0x00 && sector > 0 && !read.Contains(sector) && !macros.Contains(sector)) macros.Add(sector);
+            }
+        return macros;
+    }
+
+    static byte[] Sector(Reader reader, int sector, int size, string label = "")
     {
         var data = new byte[size];
         for (int offset = 0; offset < size; offset += 16)
         {
             int at = Math.Min(offset, size - 16);
             var chunk = reader.ReadOnlyCall(0x8100, 5, (byte)(sector >> 8), (byte)sector, (byte)(at >> 8), (byte)at);
-            if (chunk == null) { reader.Output.AppendLine(sector.ToString("X4") + "=" + reader.Error); return null; }
+            if (chunk == null) { reader.Output.AppendLine(label + sector.ToString("X4") + "=" + reader.Error); return null; }
             Array.Copy(chunk, offset - at, data, offset, Math.Min(16, size - offset));
         }
-        reader.Output.AppendLine(sector.ToString("X4") + "=" + Hex(data, ""));
+        reader.Output.AppendLine(label + sector.ToString("X4") + "=" + Hex(data, ""));
         return data;
     }
 

@@ -956,7 +956,7 @@ class KeyboardPage : DevicePage
             var profile = G915Lighting.ReadProfile(hidpp, out sector);
             var built = G915Lighting.Build(profile, clusters, lighting, others, !kind.NoIdleTimes);
             Backups.Save(ProfileBackups, new Dictionary<string, byte[]> { { sector.ToString("X4"), profile } }, DeviceLabel);
-            G915Lighting.Store(hidpp, sector, built);
+            G915Lighting.Store(hidpp, sector, built, kind.ReloadThroughHostMode);
             claimed = false;
         }, () =>
         {
@@ -1009,7 +1009,7 @@ class KeyboardPage : DevicePage
                 throw new RefusedException("The keyboard runs another profile than the one in this backup");
             var profile = backup ?? G915Lighting.FactoryLighting(hidpp, now, current);
             Backups.Save(ProfileBackups, new Dictionary<string, byte[]> { { now.ToString("X4"), current } }, DeviceLabel);
-            G915Lighting.Store(hidpp, now, profile);
+            G915Lighting.Store(hidpp, now, profile, kind.ReloadThroughHostMode);
             claimed = false;
         }, () =>
         {

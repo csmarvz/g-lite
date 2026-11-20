@@ -5,9 +5,16 @@
 ### Added
 
 - Mice: the screen follows the mouse's own DPI button: the stage and DPI change as you press it, and a profile picked with the profile button is read again. The mouse tells G-Lite through its onboard profiles feature (0x8100).
+- G815: its own key picture, from Logitech's drawing: the logo above the G keys, M1–M3, MR and Game mode (which don't light and stay dark), the brightness and media keys where they sit, a right Win key in place of the G915's Fn, and a two-row numpad + and Enter.
+- Reports read the sectors that onboard profiles point to as macros, so the macro format can be learned.
+
+### Changed
+
+- The preset row is labelled G-Lite preset, so it isn't mistaken for a device's onboard profiles.
 
 ### Fixed
 
+- G815: after Save to keyboard or Restore the factory lighting, the keys run the new lighting at once. The keyboard kept running its old copy of the profile until an M key was pressed; G-Lite now makes it read the profile again by leaving onboard mode and coming back, which shows as a faint flash of the M key.
 - G915, G915 TKL and G815: Dim after and Turn off after no longer offer Never. Saved as never, the G915 TKL dimmed and turned off at once.
 - G815: Save to keyboard works without idle times. The G815 is wired and has none, so Save used to refuse; its screen no longer shows Dim after, Dim to and Turn off after.
 - G305 (and G304): the lighting is set live and kept by G-Lite, not saved in the mouse's profile, which the mouse ignores (saved, the light went off). G-Lite sets it again when the screen loads and when the mouse is switched off and on, with G-Lite in the tray too.

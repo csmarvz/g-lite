@@ -49,24 +49,24 @@ abstract class DevicePage : Control, IPage
         reportButton = Ui.Add(this, new FlatButton { Style = ButtonStyle.Ghost, Text = "Report", AccessibleName = "Report of the " + noun },
             572 - 80, 10, 80, 28);
 
-        Ui.Text(this, "Preset", 20, 79, () => Theme.Dim, 9.75f);
-        profiles = Ui.Add(this, new Dropdown { AccessibleName = "Preset" }, 74, 72, 180, 32);
+        Ui.Text(this, "G-Lite preset", 20, 79, () => Theme.Dim, 9.75f);
+        profiles = Ui.Add(this, new Dropdown { AccessibleName = "G-Lite preset" }, 108, 72, 160, 32);
         profiles.Picked += PickSet;
         profiles.Label = name => name + (drafts.ContainsKey(name) || (name == loaded && Changed()) ? " •" : "");
-        nameField = Ui.Add(this, new TextField { Visible = false }, 74, 72, 180, 32);
+        nameField = Ui.Add(this, new TextField { Visible = false }, 108, 72, 160, 32);
         nameField.Box.KeyDown += (s, e) =>
         {
             if (e.KeyCode == Keys.Enter) { SaveSet(nameField.Box.Text.Trim()); e.SuppressKeyPress = true; }
             if (e.KeyCode == Keys.Escape) { EndName(); e.SuppressKeyPress = true; }
         };
-        updateButton = Ui.Add(this, new FlatButton { Text = "Update" }, 262, 72, 76, 32);
+        updateButton = Ui.Add(this, new FlatButton { Text = "Update" }, 276, 72, 76, 32);
         updateButton.Click += (s, e) =>
         {
             if (naming) SaveSet(nameField.Box.Text.Trim());
             else if (profiles.Index <= 0) StartName(null);
             else UpdateSet();
         };
-        moreButton = Ui.Add(this, new FlatButton { Text = "…", AccessibleName = "More preset actions" }, 346, 72, 36, 32);
+        moreButton = Ui.Add(this, new FlatButton { Text = "…", AccessibleName = "More preset actions" }, 360, 72, 36, 32);
         moreButton.Click += (s, e) => { if (naming) EndName(); else PresetMenu(); };
 
         var line = Ui.Add(this, new Control(), 0, 673, 656, 1);

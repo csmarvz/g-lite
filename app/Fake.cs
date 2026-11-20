@@ -296,6 +296,7 @@ class FakeG915 : Hidpp
         { 0x101, FakeHidpp.Hex("010000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFF3C002C018002003A8002003B8002003C8002003D8002003E8002003F800200408002004180020042800200438002004480020045900DFF01900DFF02900D0001900D0002900D0003FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0300000000001388640000030000000000138864000003000000000013883200000300000000001388320000FFFFFF") }
     };
     public int Reloads, Power = 1;
+    public readonly List<byte> Modes = new List<byte> { 1 };
     List<byte> pending = new List<byte>();
     int writeTo, writeLength;
     public readonly byte[][] Live = { new byte[13], new byte[13] };
@@ -331,7 +332,8 @@ class FakeG915 : Hidpp
         else if (Index.ContainsKey(0x8100) && featureIndex == Index[0x8100])
         {
             if (fn == 0) FakeHidpp.Hex("01040103030F1000FF3604").CopyTo(reply, 0);
-            if (fn == 2) reply[0] = 1;
+            if (fn == 1) Modes.Add(parameters[0]);
+            if (fn == 2) reply[0] = Modes.Last();
             if (fn == 3) Reloads++;
             if (fn == 4) reply[1] = 1;
             if (fn == 5 && !Sectors.ContainsKey(parameters[0] << 8 | parameters[1])) throw new HidppError(2, "invalid argument");

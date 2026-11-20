@@ -273,8 +273,8 @@ static class Traces
             script.Type("Night");
             script.Press("Save");
             script.Press("Color FFD000");
-            script.Pick("Preset", "None");
-            script.Pick("Preset", "Night");
+            script.Pick("G-Lite preset", "None");
+            script.Pick("G-Lite preset", "Night");
             script.Press("Update");
             script.Pick("Effect", "Wave");
             script.Do("idle 70 s", () => { WindowHelpers.TestIdle = 70; page.Watch(); });
@@ -308,8 +308,8 @@ static class Traces
             script.Type("Green");
             script.Press("Save");
             script.Pick("Effect", "Breathe");
-            script.Pick("Preset", "None");
-            script.Pick("Preset", "Green");
+            script.Pick("G-Lite preset", "None");
+            script.Pick("G-Lite preset", "Green");
             script.Pick("Dim after", "15 s");
             script.Pick("Turn off after", "10 min");
             script.Press("Save to keyboard");
@@ -457,7 +457,7 @@ static class Traces
             script.Slide("Speed", 50);
             script.Pick("Effect", "Cycle");
             script.Pick("Effect", "Static");
-            script.Pick("Preset", "None");
+            script.Pick("G-Lite preset", "None");
             return script.Text;
         }
     }
@@ -486,14 +486,14 @@ static class Traces
             script.Pick("Zone", "All");
             script.Pick("Effect", "Cycle");
             script.Pick("Effect", "Off");
-            script.Pick("Preset", "None");
-            script.Pick("Preset", "Green");
+            script.Pick("G-Lite preset", "None");
+            script.Pick("G-Lite preset", "Green");
             script.Pick("Effect", "Screen");
             script.Press("Update");
             script.Slide("Color boost", 80);
             script.Press("Revert changes");
-            script.Pick("Preset", "None");
-            script.Pick("Preset", "Green");
+            script.Pick("G-Lite preset", "None");
+            script.Pick("G-Lite preset", "Green");
             script.Pick("Effect", "Static");
             script.Press("Revert changes");
             text = script.Text;
@@ -551,8 +551,8 @@ static class Traces
             script.Press("Update");
             script.Slide("Color boost", 80);
             script.Press("Revert changes");
-            script.Pick("Preset", "None");
-            script.Pick("Preset", "Desk");
+            script.Pick("G-Lite preset", "None");
+            script.Pick("G-Lite preset", "Desk");
             script.Pick("Effect", "Static");
             script.Press("Revert changes");
             text = script.Text;
@@ -648,7 +648,7 @@ static class Traces
             script.Press("Save");
             script.Pick("DPI stage", "3200");
             script.Press("Update");
-            script.Pick("Preset", "None");
+            script.Pick("G-Lite preset", "None");
             script.Menu("Backups", "Restore the factory profile");
             script.Do("the mouse's DPI button", () =>
             {
@@ -756,10 +756,10 @@ static class Traces
             script.Pick("View", "Settings");
             script.Pick("Report rate", "250");
             script.Press("Revert changes");
-            script.Pick("Preset", "None");
+            script.Pick("G-Lite preset", "None");
             script.Pick("Report rate", "500");
             script.Press("Save to mouse");
-            script.Pick("Preset", "Keys");
+            script.Pick("G-Lite preset", "Keys");
             script.Pick("View", "Buttons");
             script.Pick("Left button", "Back");
             script.Pick("Thumb, back", "Left click");
@@ -805,7 +805,7 @@ static class Traces
             script.Press("Save");
             script.Slide("Sidetone", 10);
             script.Press("Revert changes");
-            script.Pick("Preset", "None");
+            script.Pick("G-Lite preset", "None");
             return script.Text;
         }
     }
