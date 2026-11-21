@@ -20,6 +20,8 @@ abstract class DevicePage : Control, IPage
     protected FoundDevice found;
     readonly Hidpp fake;
     Hidpp connection;
+    // Set when a call failed and the connection was dropped, until a scan finds the device again (SetFound).
+    volatile bool lost;
     Task queue = Task.FromResult(0);
     const string NoPreset = "–";
     readonly string prefix;
@@ -183,10 +185,16 @@ abstract class DevicePage : Control, IPage
 
     protected virtual void Lost() { }
 
+    // Runs on the device's queue each time a connection is opened, the first one and after one was lost: for what the device forgets
+    // when it's unplugged. ReopensWhenFound makes a scan that finds the device again open one at once, not at the next call.
+    protected virtual void Opened(Hidpp hidpp) { }
+    protected virtual bool ReopensWhenFound { get { return false; } }
+
     public void SetFound(FoundDevice device)
     {
         found = device;
         ShowSub();
+        if (lost && ReopensWhenFound) RunOnDevice(hidpp => { });
     }
 
     void ShowSub()
@@ -290,6 +298,8 @@ abstract class DevicePage : Control, IPage
                 {
                     connection = fake ?? new Hidpp(found.Path, found.Index, found.ShortPath);
                     connection.DeviceLabel = DeviceLabel;
+                    lost = false;
+                    Opened(connection);
                 }
                 work(connection);
                 if (done != null && IsHandleCreated) BeginInvoke(done);
@@ -301,6 +311,7 @@ abstract class DevicePage : Control, IPage
                 {
                     connection.Dispose();
                     connection = null;
+                    lost = true;
                     Lost();
                 }
                 if (failed != null && IsHandleCreated) BeginInvoke((Action)(() => failed(ex.Message)));

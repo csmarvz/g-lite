@@ -188,7 +188,7 @@ static class Bindings
     }
 }
 
-// A Buttons view's rows, one per button: its name and a dropdown of actions, and Keystroke…, which records the keys pressed next.
+// A Bindings view's rows, one per button: its name and a dropdown of actions, and Keystroke…, which records the keys pressed next.
 // The mouse and keyboard screens share it; the screen keeps the bindings and gets each change through Assigned.
 class ButtonRows
 {

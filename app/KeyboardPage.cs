@@ -88,10 +88,10 @@ class KeyboardPage : DevicePage
     readonly List<int> views = new List<int> { SettingsView };
     int openView;
     // The keys the Game mode key turns off besides Windows and Menu, as USB usages (GameModeKeys). They're live, like a lighting not
-    // saved: kept in settings and presets, and sent again at the first load after connecting (gameSent).
+    // saved: kept in settings and presets, and sent again whenever a connection opens (Opened), since the keyboard forgets them when
+    // it loses power, and when G HUB lets go of the keyboard. Replaced, never changed in place, since Opened reads it on the queue.
     readonly bool gameMode;
-    List<int> gameKeys = new List<int>();
-    volatile bool gameSent;
+    volatile List<int> gameKeys = new List<int>();
     readonly KeyPicture gamePicture;
     readonly FlatButton clearGame;
     string GameKeysSetting { get { return "gamemode." + found.SettingsKey; } }
@@ -767,7 +767,19 @@ class KeyboardPage : DevicePage
 
     public override void Restyle() { RefreshControls(); }
 
-    protected override void Lost() { claimed = false; clusters = null; present = null; gameSent = false; }
+    protected override void Lost() { claimed = false; clusters = null; present = null; }
+
+    protected override void Opened(Hidpp hidpp) { SendGameKeys(hidpp); }
+
+    protected override bool ReopensWhenFound { get { return gameMode && gameKeys.Count > 0; } }
+
+    void SendGameKeys(Hidpp hidpp)
+    {
+        var keys = gameKeys;
+        if (!gameMode || keys.Count == 0) return;
+        try { GameModeKeys.Send(hidpp, keys); }
+        catch (HidppError ex) { Log.Add(DeviceLabel, "error", "Game mode keys: " + ex.Message); }
+    }
 
     protected override bool Damaged { get { return broken; } }
 
@@ -782,28 +794,29 @@ class KeyboardPage : DevicePage
         }
     }
 
-    protected override string Current()
-    {
-        return current.ToText(brightness) + BarText(brightness) + (Screening ? "|" + setup.ToText() : "")
-            + (gameMode ? "!" + GameModeKeys.ToText(gameKeys) : "");
-    }
+    string LightingText() { return current.ToText(brightness) + BarText(brightness) + (Screening ? "|" + setup.ToText() : ""); }
+
+    protected override string Current() { return LightingText() + (gameMode ? "!" + GameModeKeys.ToText(gameKeys) : ""); }
 
     // Presets hold the lighting and the Game mode keys, not the G keys: those belong to an onboard profile. A ~ and G keys after it,
-    // from a preset saved while presets held them (2026-11-20), are left out.
+    // from a preset saved while presets held them (2026-11-20), are left out. A lighting that's already the one shown isn't sent again,
+    // so Revert after a Game mode key change, or a preset saved before presets held them, leaves the keyboard's lighting alone.
     protected override void ApplyPreset(string text)
     {
         string game;
         text = GameModeKeys.Split(text, out game).Split('~')[0];
-        if (game != null) SetGameKeys(GameModeKeys.FromText(game));
         int level;
         var parts = text.Split('|');
         var pieces = parts[0].Split('#');
         var lighting = Lighting.FromText(pieces[0], out level);
+        var newSetup = parts.Length > 1 ? ScreenSettings.FromText(parts[1]) : setup;
+        if (game != null) SetGameKeys(GameModeKeys.FromText(game));
+        if (text == LightingText()) { RefreshControls(); ClearStatus(); return; }
         if (lighting.Effect == ScreenEffect && !canScreen) lighting.Effect = 0x01;
         bar = lighting.Effect == ScreenEffect ? null : BarFrom(pieces);
         part = bar == null ? 0 : 1;
         bool was = Screening;
-        if (parts.Length > 1) setup = ScreenSettings.FromText(parts[1]);
+        setup = newSetup;
         current = lighting;
         brightness = Allowed(Math.Max(0, Math.Min(100, level)));
         if (was && !Screening) ScreenOff();
@@ -950,7 +963,6 @@ class KeyboardPage : DevicePage
         clearGame.Enabled = gameKeys.Count > 0;
     }
 
-    // Sends the whole list (fn 3, then fn 1) when it changes; a preset or Revert sets it too.
     void SetGameKeys(IEnumerable<int> keys)
     {
         var list = GameModeKeys.Clean(keys);
@@ -959,7 +971,7 @@ class KeyboardPage : DevicePage
         var text = GameModeKeys.ToText(list);
         if (text == "") Settings.Remove(GameKeysSetting); else Settings.Set(GameKeysSetting, text);
         LogUserAction(text == "" ? "Game mode keys cleared" : "Game mode keys " + string.Join(" ", list.Select(usage => usage.ToString("X2"))));
-        RunOnDevice(hidpp => { GameModeKeys.Send(hidpp, list); gameSent = true; });
+        RunOnDevice(hidpp => GameModeKeys.Send(hidpp, list));
         Edited();
         ShowGameKeys();
     }
@@ -1054,7 +1066,9 @@ class KeyboardPage : DevicePage
             {
                 Log.Add(DeviceLabel, "found", "the keyboard runs its onboard profiles again");
                 takenOver = false;
-                Load();
+                RunOnDevice(SendGameKeys);
+                // Back on another profile than before is an M-key switch: the live lighting and the preset go.
+                if (running != 0 && now != running) SlotSwitched(now, false); else Load();
                 return;
             }
             if (now == 0 || now == running) return;
@@ -1410,20 +1424,17 @@ class KeyboardPage : DevicePage
         int runningRead = 0, keyEditsAtStart = gKeyEdits;
         bool hostRead = false;
         byte[][] keysRead = null;
-        var game = gameKeys.ToList();
         RunOnDevice(hidpp =>
         {
             if (readLayout) layoutCode = hidpp.Call(hidpp.FeatureIndex(0x4540), 0)[0];
-            if (gameMode && !gameSent && game.Count > 0)
-                try { GameModeKeys.Send(hidpp, game); gameSent = true; }
-                catch (HidppError ex) { Log.Add(DeviceLabel, "error", "Game mode keys: " + ex.Message); }
             clusters = G915Lighting.Clusters(hidpp);
             if (slotPicker != null)
                 try
                 {
-                    slotsRead = G915Lighting.Slots(hidpp, out runningRead);
+                    bool onboard;
+                    slotsRead = G915Lighting.Slots(hidpp, out runningRead, out onboard);
                     profilesFeature = hidpp.FeatureIndex(0x8100);
-                    hostRead = slotsRead.Count == 0 && hidpp.Call(profilesFeature, 2)[0] != 1;
+                    hostRead = !onboard;
                 }
                 catch (Exception) { slotsRead = new List<int>(); }
             brightnessFeature = hidpp.FeatureIndex(0x8040);

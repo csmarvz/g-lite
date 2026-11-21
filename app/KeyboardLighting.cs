@@ -440,12 +440,13 @@ static class G915Lighting
 
     // The enabled profiles' sectors, from the directory (sector 0000: `00 <sector> <enabled> FF` each, then FF FF), and the one
     // running (fn 4). Sector N is the key MN (docs/on-board-memory.md). Empty when the keyboard isn't in onboard mode.
-    public static List<int> Slots(Hidpp hidpp, out int running)
+    public static List<int> Slots(Hidpp hidpp, out int running, out bool onboard)
     {
         byte feature = hidpp.FeatureIndex(0x8100);
         running = 0;
         var slots = new List<int>();
-        if (hidpp.Call(feature, 2)[0] != 1) return slots;
+        onboard = hidpp.Call(feature, 2)[0] == 1;
+        if (!onboard) return slots;
         var current = hidpp.Call(feature, 4);
         running = current[0] << 8 | current[1];
         for (int offset = 0; offset < 64; offset += 16)
