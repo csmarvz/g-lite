@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.0.34-alpha] - 2026-11-21
+
 ### Added
 
 - G815: a Game view to pick the keys the Game mode key turns off, on top of the Windows and Menu keys, which are always off. Click a key on the picture to add it or take it off (keys you can pick light up under the pointer); the change reaches the keyboard at once. The Game mode key is outlined on the picture, with its joystick icon. The keyboard forgets the list when it loses power, so G-Lite sends it again whenever the keyboard connects. Presets keep it, and – clears it. The keys show what they type with your Windows keyboard layout.
