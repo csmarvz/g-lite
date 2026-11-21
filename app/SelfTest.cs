@@ -800,6 +800,26 @@ static class SelfTest
             && Report.IsRead(0x8071, 8, new byte[] { 0, 0, 0 }) && !Report.IsRead(0x8071, 8, new byte[] { 1, 1, 0 })
             && !Report.IsRead(0x8071, 5, new byte[] { 1, 0, 0 }), "the report never calls a write function");
 
+        Check(GameModeKeys.Usage(0x01) == 0x04 && GameModeKeys.Usage(0x17) == 0x1A && GameModeKeys.Usage(0x62) == 0x65
+            && GameModeKeys.Usage(0x68) == 0xE0 && GameModeKeys.Usage(0x6F) == 0xE7 && GameModeKeys.Usage(0xB4) == -1
+            && GameModeKeys.Usage(0x99) == -1 && GameModeKeys.LightingId(0x1A) == 0x17 && GameModeKeys.LightingId(0xE3) == 0x6B,
+            "Game mode keys: lighting ids are USB usages minus 3, the modifiers 0x68-0x6F, and G, media and brightness keys have none");
+        Check(!GameModeKeys.CanPick(0xE3) && !GameModeKeys.CanPick(0xE7) && !GameModeKeys.CanPick(0x65) && GameModeKeys.CanPick(0x2B)
+            && GameModeKeys.Clean(new[] { 0x1A, 0xE3, 0x0E, 0x1A, 0xC0 }).SequenceEqual(new[] { 0x0E, 0x1A }),
+            "Game mode keys: Windows and Menu are always off and can't be picked, and the list is sorted without repeats");
+        var gamePackets = GameModeKeys.Packets(Enumerable.Range(4, 18).ToList());
+        Check(gamePackets.Count == 2 && gamePackets[0].SequenceEqual(Enumerable.Range(4, 16).Select(usage => (byte)usage))
+            && gamePackets[1][0] == 20 && gamePackets[1][1] == 21 && gamePackets[1].Skip(2).All(value => value == 0)
+            && GameModeKeys.Packets(new int[0]).Count == 0,
+            "Game mode keys: 16 usages per fn 1 call, the last one ended by zeros");
+        string gameText, oldPreset = GameModeKeys.Split("1,FF0000,0,0,0,0,0,100", out gameText);
+        string noKeys, emptyPreset = GameModeKeys.Split("1,FF0000,0,0,0,0,0,100!", out noKeys);
+        string zoneKeys, zonePreset = GameModeKeys.Split("254,FF0000,0,0,0,0,0,100|zones:Hey!,FF0000!0E1A", out zoneKeys);
+        Check(gameText == null && oldPreset == "1,FF0000,0,0,0,0,0,100" && noKeys == "" && emptyPreset == oldPreset
+            && zoneKeys == "0E1A" && zonePreset.EndsWith("Hey!,FF0000")
+            && GameModeKeys.FromText("1A0EE3zz").SequenceEqual(new[] { 0x0E, 0x1A }) && GameModeKeys.ToText(new[] { 0x0E, 0x1A }) == "0E1A",
+            "Game mode keys in a preset: after the last !, none in an older preset, read back without what can't be picked");
+
         foreach (var file in new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json" })
         {
             var board = KeyLayout.Load(file);

@@ -98,6 +98,11 @@ class Script : IDisposable
         });
     }
 
+    public void Click(string key)
+    {
+        Do("click " + key, () => All<KeyPicture>().Single(picture => picture.Visible && picture.Picking).PressKey(key));
+    }
+
     public void Type(string text) { Do("type " + text, () => All<TextField>().First(field => field.Visible).Box.Text = text); }
 
     public void Menu(string button, string item)
@@ -178,7 +183,7 @@ class Script : IDisposable
     {
         var parts = new List<string>();
         var status = All<StatusLine>().FirstOrDefault(line => line.Visible);
-        parts.Add("status " + (status == null ? "-" : "\"" + status.Shown + "\"" + (status.Cut ? " (cut)" : "")));
+        parts.Add("status " + (status == null ? "-" : "\"" + status.Shown + "\"" + (status.Cut ? " (cut)" : "") + (status.Error ? " (red)" : "")));
         var visibleControls = All<Control>()
             .Where(control => control.Visible)
             .OrderBy(control => Where(control).Y)
@@ -204,6 +209,8 @@ class Script : IDisposable
             else if (control is Slider) parts.Add(control.AccessibleName + "=" + ((Slider)control).Value + disabled);
             else if (control is Toggle) parts.Add(control.AccessibleName + "=" + (((Toggle)control).Checked ? "on" : "off") + disabled);
             else if (control is Swatch && ((Swatch)control).On) parts.Add("<" + control.AccessibleName + ">");
+            else if (control is KeyPicture && ((KeyPicture)control).Picking)
+                parts.Add(control.AccessibleName + "=" + (((KeyPicture)control).PickedText == "" ? "-" : ((KeyPicture)control).PickedText));
         }
         return NormalizeForTrace(string.Join(" ", parts));
     }
@@ -328,19 +335,22 @@ static class Traces
         }
     }
 
-    // The G815's G keys: edited in the Buttons view, saved with Save to M1 (bytes 0x20-0x33 of profile 1), left out of presets.
+    // The G815's G keys: edited in the Bindings view, saved with Save to M1 (bytes 0x20-0x33 of profile 1), left out of presets.
+    // Its Game mode keys: sent at once (0x4522 fn 3, then fn 1), kept in presets, cleared by –, and sent again by a new page, as after
+    // the keyboard is plugged in again. Off its onboard profiles (G HUB), Save is off and the status line red, until it runs them again.
     static string G815()
     {
         var found = new FoundDevice
         {
             Key = "trace|g815", Name = "G815 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Link = "USB", Index = 0xFF,
-            Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8040, 0x8071, 0x8100 }
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x4522, 0x4540, 0x8040, 0x8071, 0x8100 }
         };
         KeyboardPage page = null;
         var keyboard = new FakeG915();
+        string text;
         using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, keyboard, null)))
         {
-            script.Pick("View", "Buttons");
+            script.Pick("View", "Bindings");
             script.Pick("G1", "Mute");
             script.Pick("G2", "Keystroke…");
             script.Do("keys Ctrl + C", () => page.RecordedKeys(Keys.Control | Keys.C));
@@ -362,10 +372,39 @@ static class Traces
             script.Menu("Backups", "Restore the factory profile");
             script.Pick("G1", "Disabled");
             script.Do("M2 pressed on the keyboard", () => { keyboard.Running = 2; page.Heard(21, 0); });
+            script.Pick("View", "Game");
+            script.Click("K");
+            script.Click("W");
+            script.Do("check the keyboard's Game mode list", () => CheckGameKeys(keyboard, 0x0E, 0x1A));
+            script.Menu("More preset actions", "Save as new preset…");
+            script.Type("Shooter");
+            script.Press("Save");
+            script.Click("K");
+            script.Press("Revert");
+            script.Pick("G-Lite preset", "–");
+            script.Do("check the list is cleared", () => CheckGameKeys(keyboard));
+            script.Pick("G-Lite preset", "Shooter");
+            script.Press("Clear");
+            script.Click("K");
             script.Pick("View", "Settings");
+            script.Do("G HUB takes the keyboard off its onboard profiles", () => { keyboard.Modes.Add(2); page.CheckKeyboard(); });
+            script.Pick("Effect", "Breathe");
+            script.Do("G HUB closes", () => { keyboard.Modes.Add(1); page.CheckKeyboard(); });
             script.Do("quit", () => page.Exiting());
-            return script.Text;
+            text = script.Text;
         }
+        var pluggedAgain = new FakeG915();
+        using (var script = Begin(() => (KeyboardPage)DeviceTable.For(found).Make(found, pluggedAgain, null)))
+        {
+            script.Do("check the Game mode list is sent again", () => CheckGameKeys(pluggedAgain, 0x0E));
+            return text + script.Text;
+        }
+    }
+
+    static void CheckGameKeys(FakeG915 keyboard, params int[] usages)
+    {
+        if (!keyboard.GameKeys.SequenceEqual(usages))
+            throw new InvalidOperationException("the Game mode list holds " + string.Join(" ", keyboard.GameKeys.Select(usage => usage.ToString("X2"))));
     }
 
     static string G512X()
@@ -788,7 +827,7 @@ static class Traces
         MousePage page = null;
         using (var script = Begin(() => page = (MousePage)DeviceTable.For(found).Make(found, device, null)))
         {
-            script.Pick("View", "Buttons");
+            script.Pick("View", "Bindings");
             script.Do("G7 pressed on the mouse", () => page.Pressed(0x0040));
             script.Pick("G7", "Next profile");
             script.Pick("Thumb, front", "Keystroke…");
@@ -807,7 +846,7 @@ static class Traces
             script.Pick("Report rate", "500");
             script.Press("Save to mouse");
             script.Pick("G-Lite preset", "Keys");
-            script.Pick("View", "Buttons");
+            script.Pick("View", "Bindings");
             script.Pick("Left button", "Back");
             script.Pick("Thumb, back", "Left click");
             script.Press("Save to mouse");

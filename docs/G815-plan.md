@@ -27,7 +27,7 @@ Build the slots of [on-board-memory.md](on-board-memory.md) for the G815 and G91
 
 ### 3. G1–G5 bindings (built, tried on the G815 on 2026-11-20)
 
-A Settings | Buttons switch on the G815 screen, as on the mouse, with the mouse's rows (`ButtonRows` in `Buttons.cs`): a mouse click, a media key, Disabled, or Keystroke… (a key with Ctrl, Shift or Alt). A macro from G HUB shows as Macro and stays unless changed. Changes take effect on Save to M1, which writes the running slot's G keys with its lighting (only the G keys when the lighting wasn't changed). Presets leave the G keys out: they belong to the onboard profile (tried with presets keeping them, then left out on 2026-11-20). An unsaved change says "G keys not saved to M1". No live preview: that would need G-Lite to take over the G keys (0x8010), which the project avoids. M1–M3 and the G-shift layer at 0x60 stay as they are.
+A Settings | Bindings switch on the G815 screen, as on the mouse, with the mouse's rows (`ButtonRows` in `Buttons.cs`): a mouse click, a media key, Disabled, or Keystroke… (a key with Ctrl, Shift or Alt). A macro from G HUB shows as Macro and stays unless changed. Changes take effect on Save to M1, which writes the running slot's G keys with its lighting (only the G keys when the lighting wasn't changed). Presets leave the G keys out: they belong to the onboard profile (tried with presets keeping them, then left out on 2026-11-20). An unsaved change says "G keys not saved to M1". No live preview: that would need G-Lite to take over the G keys (0x8010), which the project avoids. M1–M3 and the G-shift layer at 0x60 stay as they are.
 
 ### 4. Macros
 
@@ -43,7 +43,7 @@ Left alone. The manual's MR steps (MR, a G key, the keys, MR) record nothing on 
 ## Also
 
 - **A G815 in `--demo`:** done, on `FakeG915` with three profiles (its sectors are 255 bytes, not 256). The G915 trace covers steps 1 and 2.
-- **Game mode (0x4522, in the report):** which keys the Game mode key turns off. G HUB turns off the Win key by default and lets you pick others. Check the format first.
+- **Game mode (0x4522, in the report):** which keys the Game mode key turns off. G HUB turns off the Windows and Menu keys always and lets you add keys with a standard usage. The list is lost when the keyboard loses power (tried on 2026-11-21), so G-Lite would send it each time the keyboard connects. The format is OpenLogi's, and fn 0, 1, 2 and 3 work on the G815 (tried on 2026-11-21, [G815-G915.md](G815-G915.md)). Built on 2026-11-21: a Game view on the G815 screen, where clicking a key on the picture adds it to the list or takes it off. Each change goes to the keyboard at once, and the list is kept in `settings.txt` and in presets, and sent again when the keyboard connects. "–" clears it. To try on the keyboard. The G915 and G915 TKL wait for an owner, since OpenGHub couldn't make it work on a G915.
 - **Restore the factory profile:** done on 2026-11-20. On the G815 it brings back the factory lighting and G1–G5 (M1–M3 and the G-shift layer are left as they are); a backup restores the whole profile.
 - **Report rate (0x8060):** the mouse code has it. Cheap, of little use on a keyboard.
 - Not in this plan: per-key colours (0x8081).

@@ -16,6 +16,8 @@ class KeyboardKinds
     public int[] BrightnessLevels;
     // The names of the keys whose bindings the profile holds first (G1-G5); null when G-Lite doesn't edit them.
     public string[] GKeys;
+    // The Game mode key's list of keys can be set (0x4522, tried on the G815; OpenGHub couldn't on a G915, so only the G815 for now).
+    public bool GameMode;
     public int[] Bar;
 
     public static string File(string name)
@@ -54,7 +56,7 @@ class KeyboardKinds
         G915 = new KeyboardKinds { Keys = KeyLayout.Load("g915.json"), Prefix = "profile.g915.", Profile = true },
         G815 = new KeyboardKinds { Keys = KeyLayout.Load("g815.json"), Prefix = "profile.g815.", Profile = true, NoIdleTimes = true,
             ReloadThroughHostMode = true, BrightnessLevels = new[] { 0, 12, 25, 50, 100 },
-            GKeys = new[] { "G1", "G2", "G3", "G4", "G5" } },
+            GKeys = new[] { "G1", "G2", "G3", "G4", "G5" }, GameMode = true },
         G512X = new KeyboardKinds
         {
             Keys = KeyLayout.Load("g512-x-75.json"), Prefix = "profile.g512x.", Bar = Enumerable.Range(0xA0, 33).ToArray()

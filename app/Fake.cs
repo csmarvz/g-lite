@@ -286,7 +286,9 @@ class FakeLight : Hidpp
 
 class FakeG915 : Hidpp
 {
-    Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8071, 10 }, { 0x8040, 20 }, { 0x8100, 21 }, { 0x4540, 16 } };
+    Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8071, 10 }, { 0x8040, 20 }, { 0x8100, 21 }, { 0x4540, 16 }, { 0x4522, 8 } };
+    // The Game mode list (0x4522): usages added with fn 1 and taken off with fn 2, all cleared with fn 3.
+    public readonly SortedSet<int> GameKeys = new SortedSet<int>();
     public byte[][] Ids = { new byte[] { 0x00, 0x01, 0x03, 0x0A }, new byte[] { 0x00, 0x01, 0x0A, 0x03, 0x04, 0x0B, 0x0C } };
     // Profile 1 of an owner's G915 TKL (Cycle at 10 s on both clusters, power save after 60 s, off after 300 s),
     // and its factory copy (Cycle at 5 s).
@@ -343,13 +345,21 @@ class FakeG915 : Hidpp
         var reply = new byte[16];
         if (featureIndex == 0) { byte i; reply[0] = Index.TryGetValue(parameters[0] << 8 | parameters[1], out i) ? i : (byte)0; }
         else if (featureIndex == Index[0x4540]) reply[0] = Layout;
+        else if (Index.ContainsKey(0x4522) && featureIndex == Index[0x4522])
+        {
+            if (fn == 0) reply[0] = 0xFF;
+            if (fn == 1) foreach (var usage in parameters.TakeWhile(usage => usage != 0)) GameKeys.Add(usage);
+            if (fn == 2) foreach (var usage in parameters.TakeWhile(usage => usage != 0)) GameKeys.Remove(usage);
+            if (fn == 3) GameKeys.Clear();
+        }
         else if (Index.ContainsKey(0x8100) && featureIndex == Index[0x8100])
         {
             if (fn == 0) FakeHidpp.Hex("01040103030F1000FF3604").CopyTo(reply, 0);
             if (fn == 1) Modes.Add(parameters[0]);
             if (fn == 2) reply[0] = Modes.Last();
             if (fn == 3) { Reloads++; Running = parameters[0] << 8 | parameters[1]; }
-            if (fn == 4) reply[1] = (byte)Running;
+            // Off its onboard profiles (G HUB running), the G815 answers 0 (2026-11-21).
+            if (fn == 4) reply[1] = Modes.Last() == 1 ? (byte)Running : (byte)0;
             if (fn == 5 && !Sectors.ContainsKey(parameters[0] << 8 | parameters[1])) throw new HidppError(2, "invalid argument");
             if (fn == 5)
                 Sectors[parameters[0] << 8 | parameters[1]].Skip(parameters[2] << 8 | parameters[3]).Take(16).ToArray().CopyTo(reply, 0);

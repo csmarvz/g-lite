@@ -21,7 +21,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/Devices.cs`, `app/FoundDevice.cs`: the scan, what it learned about each device, `DeviceWatcher` (events, battery)
 - `app/Hidpp.cs`: HID++ 2.0 and 1.0 calls and their errors
 - `app/Pages.cs`: `DevicePage` (what every device screen shares: presets, work queue, status line, backups menu), `ColorRow`, `InfoPage`, `EmptyPage`
-- Keyboards: `app/KeyboardPage.cs`, `KeyboardKinds.cs`, `KeyboardLighting.cs` (`Lighting`, `G515Profile`, `G915Lighting`), `KeyPicture.cs`, `KeyLayout.cs` and the layouts in `app/models/`
+- Keyboards: `app/KeyboardPage.cs`, `KeyboardKinds.cs`, `KeyboardLighting.cs` (`Lighting`, `G515Profile`, `G915Lighting`), `GameMode.cs` (the Game mode key's list), `KeyPicture.cs`, `KeyLayout.cs` and the layouts in `app/models/`
 - Zones (the G560 and the 0x8070 keyboards): `app/ZonesPage.cs`, `ZoneLighting.cs`
 - Mice: `app/MousePage.cs`, `Mouse.cs` (`IMouse`, `MouseSettings`), `MouseProtocol.cs`, `G9x.cs` (HID++ 1.0 mice)
 - Button bindings, for mice and the G815's G keys: `app/Buttons.cs`

@@ -222,6 +222,12 @@ abstract class DevicePage : Control, IPage
         status.Width = actionButton.Left - status.Left - (int)(12 * Ui.DpiScale);
     }
 
+    protected void ShowError(string text)
+    {
+        ShowStatus(text, true);
+        status.Error = true;
+    }
+
     protected void ShowStatusLater(string text, bool warn) { if (IsHandleCreated) BeginInvoke((Action)(() => ShowStatus(text, warn))); }
 
     protected static void SetDimmed(Label label, bool on) { label.ForeColor = on ? Theme.Dim : Ui.Off; }

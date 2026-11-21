@@ -5,7 +5,7 @@ using Microsoft.Win32;
 static class Theme
 {
     public static Color Background, Sidebar, Card, Button, ButtonHover, ButtonPressed, Border, Text, Dim,
-        Accent, AccentBackground, OnAccent, Warn, KeyOff, PictureBackground, Track;
+        Accent, AccentBackground, OnAccent, Warn, Error, KeyOff, PictureBackground, Track;
     public static bool Light;
     public static event Action Changed;
     public static readonly string[] Modes = { "system", "dark", "light" };
@@ -52,7 +52,7 @@ static class Theme
             Button = FromHex(0xECECEC); ButtonHover = FromHex(0xE0E0E0); ButtonPressed = FromHex(0xDADADA); Border = FromHex(0xD4D4D4);
             Text = FromHex(0x1A1A1A); Dim = FromHex(0x5A5A5A);
             Accent = FromHex(0x1D7A60); AccentBackground = FromHex(0xD9EDE6); OnAccent = FromHex(0xFFFFFF);
-            Warn = FromHex(0x9A5B00); KeyOff = FromHex(0xD6D6D6); PictureBackground = FromHex(0xBDBDBD); Track = FromHex(0xC8C8C8);
+            Warn = FromHex(0x9A5B00); Error = FromHex(0xC42B1C); KeyOff = FromHex(0xD6D6D6); PictureBackground = FromHex(0xBDBDBD); Track = FromHex(0xC8C8C8);
         }
         else
         {
@@ -60,7 +60,7 @@ static class Theme
             Button = FromHex(0x2B2B2B); ButtonHover = FromHex(0x353535); ButtonPressed = FromHex(0x242424); Border = FromHex(0x3A3A3A);
             Text = FromHex(0xE8E8E8); Dim = FromHex(0xA3A3A3);
             Accent = FromHex(0x3FA98A); AccentBackground = FromHex(0x26302D); OnAccent = FromHex(0x0C1A15);
-            Warn = FromHex(0xE0A458); KeyOff = FromHex(0x2E2E2E); PictureBackground = FromHex(0x151515); Track = FromHex(0x444444);
+            Warn = FromHex(0xE0A458); Error = FromHex(0xE5534B); KeyOff = FromHex(0x2E2E2E); PictureBackground = FromHex(0x151515); Track = FromHex(0x444444);
         }
     }
 }

@@ -81,9 +81,20 @@ class KeyboardPage : DevicePage
     readonly Control pictureBox, lightBox;
     bool wide;
     readonly SegmentedPicker viewPick;
-    readonly RoundedBox buttonsBox;
+    readonly RoundedBox buttonsBox, gameBox;
     readonly ButtonRows buttonRows;
-    bool showingButtons;
+    // Settings, Bindings (the G keys) or Game mode; views holds the ones this keyboard has, in the picker's order.
+    const int SettingsView = 0, ButtonsView = 1, GameView = 2;
+    readonly List<int> views = new List<int> { SettingsView };
+    int openView;
+    // The keys the Game mode key turns off besides Windows and Menu, as USB usages (GameModeKeys). They're live, like a lighting not
+    // saved: kept in settings and presets, and sent again at the first load after connecting (gameSent).
+    readonly bool gameMode;
+    List<int> gameKeys = new List<int>();
+    volatile bool gameSent;
+    readonly KeyPicture gamePicture;
+    readonly FlatButton clearGame;
+    string GameKeysSetting { get { return "gamemode." + found.SettingsKey; } }
     // The G keys' bindings as edited, and as the running profile has them. They reach the keyboard on Save only.
     byte[][] gKeys, storedGKeys;
     // The sector gKeys were read from, so Save never writes one slot's G keys into another; and the G keys' own edit count, apart
@@ -94,6 +105,9 @@ class KeyboardPage : DevicePage
     int running;
     volatile byte profilesFeature, brightnessFeature;
     volatile bool checkingSlot, checkingBrightness;
+    // The keyboard isn't running its onboard profiles (0x8100 fn 2 isn't 1): G HUB switches it off them while it runs (seen on the
+    // G815, 2026-11-21), and then fn 4 answers 0, M1-M3 don't show and Save would be refused. Save is off until it runs them again.
+    bool takenOver;
 
     public KeyboardPage(FoundDevice found, Hidpp fake, MouseEventHandler drag, KeyboardKinds kind)
         : base(found, fake, drag, kind.Keys.Name, "keyboard", kind.Prefix)
@@ -299,11 +313,46 @@ class KeyboardPage : DevicePage
         sleepBox = Choice(idle, "Turn off after", SleepText.Skip(never).ToArray(), 156, i => current.Sleep = SleepSecs[i + never]);
         if (note) foreach (Control control in idle.Controls) if (control != noteText && control.Top > 30) control.Visible = false;
 
+        gameMode = kind.GameMode && found.Has(0x4522);
+        if (kind.GKeys != null) views.Add(ButtonsView);
+        if (gameMode) views.Add(GameView);
+        if (views.Count > 1)
+        {
+            // Right of the preset row, which reaches 436 while a preset is named: three views get 64 px each, so Game mode is "Game".
+            var viewNames = views.Select(shown => shown == SettingsView ? "Settings" : shown == ButtonsView ? "Bindings" : "Game");
+            int pickWidth = views.Count > 2 ? 192 : 196;
+            viewPick = Ui.Add(this, new SegmentedPicker { Items = viewNames.ToArray(), AccessibleName = "View", Visible = false },
+                636 - pickWidth, 72, pickWidth, 32);
+            viewPick.Picked += index => { if (index >= 0 && index < views.Count) ShowView(views[index]); };
+        }
+        if (gameMode)
+        {
+            gameKeys = GameModeKeys.FromText(Settings.Get(GameKeysSetting));
+            gameBox = Ui.Add(this, new RoundedBox { Visible = false }, 20, 118, 616, 543);
+            Ui.Text(gameBox, "Game mode", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
+            var gameNote = Ui.Text(gameBox,
+                "Select the keys you want to disable while gaming. Windows and Menu keys are always disabled in Game mode. Changes apply immediately and can be saved in your G-Lite presets, but not in the keyboard's on-board memory.",
+                14, 36, () => Theme.Dim, 9f);
+            gameNote.AutoSize = false;
+            gameNote.Size = new Size(588, 56);
+            // Tall enough that the width limits the keys, so the picture spans the box like the Clear button's column below.
+            gamePicture = Ui.Add(gameBox, new KeyPicture(kind.Keys) { Picking = true, GameModeKey = "Game" }, 14, 96, 588, 210);
+            gamePicture.AccessibleName = "Game mode keys";
+            gamePicture.FixedIds = new HashSet<int>(GameModeKeys.AlwaysOff.Select(GameModeKeys.LightingId));
+            gamePicture.CanPick = id => GameModeKeys.CanPick(GameModeKeys.Usage(id));
+            gamePicture.Label = (id, name) => GameModeKeys.Typed(GameModeKeys.Usage(id)) ?? name;
+            gamePicture.IdPicked += id =>
+            {
+                int usage = GameModeKeys.Usage(id);
+                var keys = gameKeys.ToList();
+                if (!keys.Remove(usage)) keys.Add(usage);
+                SetGameKeys(keys);
+            };
+            clearGame = Ui.Add(gameBox, new FlatButton { Text = "Clear", AccessibleName = "Clear the Game mode keys" }, 14, 318, 100, 32);
+            clearGame.Click += (s, e) => SetGameKeys(new int[0]);
+        }
         if (kind.GKeys != null)
         {
-            viewPick = Ui.Add(this, new SegmentedPicker { Items = new[] { "Settings", "Buttons" }, AccessibleName = "View", Visible = false },
-                440, 72, 196, 32);
-            viewPick.Picked += index => ShowView(index == 1);
             buttonsBox = Ui.Add(this, new RoundedBox { Visible = false }, 20, 118, 616, 543);
             Ui.Text(buttonsBox, "G keys", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
             buttonRows = new ButtonRows(buttonsBox, Bindings.KeyboardActions, Value(buttonsBox, 200, 12, 402));
@@ -390,7 +439,7 @@ class KeyboardPage : DevicePage
         dirty = true;
         edits++;
         Edited();
-        saveButton.Enabled = !broken && !Screening;
+        saveButton.Enabled = !broken && !Screening && !takenOver;
         picture.Display(Known() ? current : null, Known() ? bar : null, brightness);
         ClearStatus();
         debounce.Stop();
@@ -615,6 +664,7 @@ class KeyboardPage : DevicePage
         if (model == null) return;
         iso = true;
         picture.SetModel(model);
+        if (gamePicture != null) gamePicture.SetModel(model);
         force = true;
         if (Screening) SyncScreen();
     }
@@ -717,7 +767,7 @@ class KeyboardPage : DevicePage
 
     public override void Restyle() { RefreshControls(); }
 
-    protected override void Lost() { claimed = false; clusters = null; present = null; }
+    protected override void Lost() { claimed = false; clusters = null; present = null; gameSent = false; }
 
     protected override bool Damaged { get { return broken; } }
 
@@ -726,7 +776,7 @@ class KeyboardPage : DevicePage
         get
         {
             if (current == null) return false;
-            if (live && kind.Profile) return dirty || Screening || GKeysChanged;
+            if (live && kind.Profile) return dirty || Screening || GKeysChanged || gameKeys.Count > 0;
             if (live) return Known();
             return stored != null && (dirty || Screening);
         }
@@ -734,14 +784,17 @@ class KeyboardPage : DevicePage
 
     protected override string Current()
     {
-        return current.ToText(brightness) + BarText(brightness) + (Screening ? "|" + setup.ToText() : "");
+        return current.ToText(brightness) + BarText(brightness) + (Screening ? "|" + setup.ToText() : "")
+            + (gameMode ? "!" + GameModeKeys.ToText(gameKeys) : "");
     }
 
-    // Presets hold the lighting only: the G keys belong to an onboard profile. A ~ and G keys after it, from a preset saved while
-    // presets held them (2026-11-20), are left out.
+    // Presets hold the lighting and the Game mode keys, not the G keys: those belong to an onboard profile. A ~ and G keys after it,
+    // from a preset saved while presets held them (2026-11-20), are left out.
     protected override void ApplyPreset(string text)
     {
-        text = text.Split('~')[0];
+        string game;
+        text = GameModeKeys.Split(text, out game).Split('~')[0];
+        if (game != null) SetGameKeys(GameModeKeys.FromText(game));
         int level;
         var parts = text.Split('|');
         var pieces = parts[0].Split('#');
@@ -780,13 +833,13 @@ class KeyboardPage : DevicePage
     void RefreshControls()
     {
         loading = true;
-        if (gKeys == null) showingButtons = false;
-        bool screening = Screening;
+        if (gKeys == null && openView == ButtonsView) openView = SettingsView;
+        bool screening = Screening, settings = openView == SettingsView;
         foreach (var control in plainLight) control.Visible = !screening;
         foreach (var control in screenLight) control.Visible = screening;
-        screenBox.Visible = screening && !showingButtons;
-        idleArea.Visible = !screening && !kind.NoIdleTimes && !showingButtons;
-        pictureBox.Visible = lightBox.Visible = !showingButtons;
+        screenBox.Visible = screening && settings;
+        idleArea.Visible = !screening && !kind.NoIdleTimes && settings;
+        pictureBox.Visible = lightBox.Visible = settings;
         Widen(!screening && kind.NoIdleTimes && !Parts);
         if (picture.Live != screening) picture.Live = screening;
         var view = Viewed;
@@ -827,9 +880,9 @@ class KeyboardPage : DevicePage
         dimBox.Index = Nearest(DimPcts, current.Dim);
         sleepBox.Index = Nearest(SleepSecs.Skip(never).ToArray(), current.Sleep);
         dimBox.Enabled = current.Idle > 0;
-        saveButton.Enabled = (dirty || GKeysChanged) && !broken;
+        saveButton.Enabled = (dirty || GKeysChanged) && !broken && !takenOver;
         ShowSlots();
-        ShowGKeys();
+        ShowViews();
         picture.Display(known ? current : null, known ? bar : null, brightness);
         if (screening)
         {
@@ -861,24 +914,54 @@ class KeyboardPage : DevicePage
         speedValue.Width += half;
     }
 
-    void ShowView(bool buttons)
+    void ShowView(int shown)
     {
-        showingButtons = buttons;
-        buttonRows.Recording = -1;
+        openView = shown;
+        if (buttonRows != null) buttonRows.Recording = -1;
         RefreshControls();
     }
 
-    void ShowGKeys()
+    void ShowViews()
     {
         if (viewPick == null) return;
-        viewPick.Visible = gKeys != null;
-        viewPick.Index = showingButtons ? 1 : 0;
+        viewPick.Visible = gKeys != null || gameMode;
+        viewPick.Index = views.IndexOf(openView);
+        viewPick.Off = gKeys == null && views.Contains(ButtonsView) ? new[] { views.IndexOf(ButtonsView) } : new int[0];
         viewPick.Invalidate();
-        buttonsBox.Visible = showingButtons;
-        // The Screen effect stops Save, and its box is hidden here: the G keys wait until it's off.
-        bool screening = Screening;
-        buttonRows.Show(kind.GKeys, gKeys, !broken && !screening,
-            screening ? "Turn off the Screen effect to change the G keys." : "Changes take effect once saved to the keyboard.");
+        if (buttonsBox != null)
+        {
+            buttonsBox.Visible = openView == ButtonsView;
+            // The Screen effect stops Save, and its box is hidden here: the G keys wait until it's off.
+            bool screening = Screening;
+            buttonRows.Show(kind.GKeys, gKeys, !broken && !screening,
+                screening ? "Turn off the Screen effect to change the G keys." : "Changes take effect once saved to the keyboard.");
+        }
+        if (gameBox != null)
+        {
+            gameBox.Visible = openView == GameView;
+            ShowGameKeys();
+        }
+    }
+
+    void ShowGameKeys()
+    {
+        gamePicture.PickedIds = new HashSet<int>(gameKeys.Select(GameModeKeys.LightingId));
+        gamePicture.Invalidate();
+        clearGame.Enabled = gameKeys.Count > 0;
+    }
+
+    // Sends the whole list (fn 3, then fn 1) when it changes; a preset or Revert sets it too.
+    void SetGameKeys(IEnumerable<int> keys)
+    {
+        var list = GameModeKeys.Clean(keys);
+        if (!gameMode || list.SequenceEqual(gameKeys)) return;
+        gameKeys = list;
+        var text = GameModeKeys.ToText(list);
+        if (text == "") Settings.Remove(GameKeysSetting); else Settings.Set(GameKeysSetting, text);
+        LogUserAction(text == "" ? "Game mode keys cleared" : "Game mode keys " + string.Join(" ", list.Select(usage => usage.ToString("X2"))));
+        RunOnDevice(hidpp => { GameModeKeys.Send(hidpp, list); gameSent = true; });
+        Edited();
+        ShowGameKeys();
     }
 
     // The G keys aren't in presets, so Revert with a preset picked brings them back too.
@@ -945,16 +1028,35 @@ class KeyboardPage : DevicePage
 
     void CheckSlot()
     {
-        if (slotPicker == null || slots.Count < 2 || checkingSlot) return;
+        if (slotPicker == null || (slots.Count < 2 && !takenOver) || checkingSlot) return;
         checkingSlot = true;
         int now = 0;
+        bool host = false;
         RunOnDevice(hidpp =>
         {
-            var reply = hidpp.CallUnlogged(hidpp.FeatureIndex(0x8100), 4);
+            byte feature = hidpp.FeatureIndex(0x8100);
+            var reply = hidpp.CallUnlogged(feature, 4);
             now = reply[0] << 8 | reply[1];
+            if (now == 0) host = hidpp.CallUnlogged(feature, 2)[0] != 1;
         }, () =>
         {
             checkingSlot = false;
+            if (host && !takenOver)
+            {
+                Log.Add(DeviceLabel, "found", "the keyboard left its onboard profiles");
+                takenOver = true;
+                slots = new List<int>();
+                RefreshControls();
+                ClearStatus();
+                return;
+            }
+            if (now != 0 && takenOver)
+            {
+                Log.Add(DeviceLabel, "found", "the keyboard runs its onboard profiles again");
+                takenOver = false;
+                Load();
+                return;
+            }
             if (now == 0 || now == running) return;
             Log.Add(DeviceLabel, "found", "M" + now + " picked on the keyboard");
             SlotSwitched(now, false);
@@ -1002,6 +1104,9 @@ class KeyboardPage : DevicePage
     protected override void ClearStatus()
     {
         if (broken) { ShowBroken(); return; }
+        if (takenOver)
+            ShowError("G HUB or another app has taken over the keyboard. Close it to save.");
+        else
         if (DynamicLightingOn())
             ShowStatus("Windows Dynamic Lighting is on and may override this.", true,
                 () => Process.Start("ms-settings:personalization-lighting"), "Open Windows settings");
@@ -1264,6 +1369,7 @@ class KeyboardPage : DevicePage
     void Forget()
     {
         DropGKeyEdits();
+        SetGameKeys(new int[0]);
         Settings.Remove(Remembered);
         bar = null;
         part = 0;
@@ -1302,13 +1408,23 @@ class KeyboardPage : DevicePage
         Lighting saved = null;
         var slotsRead = new List<int>();
         int runningRead = 0, keyEditsAtStart = gKeyEdits;
+        bool hostRead = false;
         byte[][] keysRead = null;
+        var game = gameKeys.ToList();
         RunOnDevice(hidpp =>
         {
             if (readLayout) layoutCode = hidpp.Call(hidpp.FeatureIndex(0x4540), 0)[0];
+            if (gameMode && !gameSent && game.Count > 0)
+                try { GameModeKeys.Send(hidpp, game); gameSent = true; }
+                catch (HidppError ex) { Log.Add(DeviceLabel, "error", "Game mode keys: " + ex.Message); }
             clusters = G915Lighting.Clusters(hidpp);
             if (slotPicker != null)
-                try { slotsRead = G915Lighting.Slots(hidpp, out runningRead); profilesFeature = hidpp.FeatureIndex(0x8100); }
+                try
+                {
+                    slotsRead = G915Lighting.Slots(hidpp, out runningRead);
+                    profilesFeature = hidpp.FeatureIndex(0x8100);
+                    hostRead = slotsRead.Count == 0 && hidpp.Call(profilesFeature, 2)[0] != 1;
+                }
                 catch (Exception) { slotsRead = new List<int>(); }
             brightnessFeature = hidpp.FeatureIndex(0x8040);
             // The saved lighting only when nothing is remembered, since a remembered lighting replaces it; the G keys always. Optional,
@@ -1336,6 +1452,7 @@ class KeyboardPage : DevicePage
             if (dropped) { Settings.Remove(Remembered); lighting = null; }
             slots = slotsRead;
             running = runningRead;
+            takenOver = hostRead;
             // Edits made during the read are kept, unless the keys are another slot's now.
             bool sameSlot = keysRead != null && runningRead == gKeysSector;
             storedGKeys = keysRead;

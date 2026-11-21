@@ -75,14 +75,14 @@ open
   8100 fn5  00 01 00 EF
   8040 fn1
   = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Cycle Direction=- (off) Brightness=80 Speed=52 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
-pick View Buttons
-  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Buttons G1=F1 G2=F2 G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
+pick View Bindings
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings G1=F1 G2=F2 G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
 pick G1 Mute
-  = status "G keys not saved to M1" [Report] [Backups] G-Lite preset=– [New…] […] View=Buttons G1=Mute G2=F2 G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert] [Save to M1]
+  = status "G keys not saved to M1" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings G1=Mute G2=F2 G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert] [Save to M1]
 pick G2 Keystroke…
-  = status "G keys not saved to M1" [Report] [Backups] G-Lite preset=– [New…] […] View=Buttons G1=Mute (off) G3=F3 (off) G4=F4 (off) G5=F5 (off) Onboard profile=M1 [Revert] [Save to M1]
+  = status "G keys not saved to M1" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings G1=Mute (off) G3=F3 (off) G4=F4 (off) G5=F5 (off) Onboard profile=M1 [Revert] [Save to M1]
 keys Ctrl + C
-  = status "G keys not saved to M1" [Report] [Backups] G-Lite preset=– [New…] […] View=Buttons G1=Mute G2=Ctrl + C G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert] [Save to M1]
+  = status "G keys not saved to M1" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings G1=Mute G2=Ctrl + C G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert] [Save to M1]
 press Save to M1
   8100 fn2
   8100 fn0
@@ -141,20 +141,20 @@ press Save to M1
   8071 fn5  01
   8100 fn1  02
   8100 fn1  01
-  = status "Saved to the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Buttons G1=Mute G2=Ctrl + C G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
+  = status "Saved to the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings G1=Mute G2=Ctrl + C G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
 check G1 and G2 in profile 1
-  = status "Saved to the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Buttons G1=Mute G2=Ctrl + C G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
+  = status "Saved to the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings G1=Mute G2=Ctrl + C G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
 pick G3 Left click
-  = status "G keys not saved to M1" [Report] [Backups] G-Lite preset=– [New…] […] View=Buttons G1=Mute G2=Ctrl + C G3=Left click G4=F4 G5=F5 Onboard profile=M1 [Revert] [Save to M1]
+  = status "G keys not saved to M1" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings G1=Mute G2=Ctrl + C G3=Left click G4=F4 G5=F5 Onboard profile=M1 [Revert] [Save to M1]
 menu More preset actions > Save as new preset…
   menu: Save as new preset… | Rename… (off) | Delete (off)
-  = status "G keys not saved to M1" [Report] [Backups] [Save] [Cancel] View=Buttons G1=Mute G2=Ctrl + C G3=Left click G4=F4 G5=F5 Onboard profile=M1 [Revert] [Save to M1]
+  = status "G keys not saved to M1" [Report] [Backups] [Save] [Cancel] View=Bindings G1=Mute G2=Ctrl + C G3=Left click G4=F4 G5=F5 Onboard profile=M1 [Revert] [Save to M1]
 type Click
-  = status "G keys not saved to M1" [Report] [Backups] [Save] [Cancel] View=Buttons G1=Mute G2=Ctrl + C G3=Left click G4=F4 G5=F5 Onboard profile=M1 [Revert] [Save to M1]
+  = status "G keys not saved to M1" [Report] [Backups] [Save] [Cancel] View=Bindings G1=Mute G2=Ctrl + C G3=Left click G4=F4 G5=F5 Onboard profile=M1 [Revert] [Save to M1]
 press Save
-  = status "Saved the preset Click" [Report] [Backups] G-Lite preset=Click [Update (off)] […] View=Buttons G1=Mute G2=Ctrl + C G3=Left click G4=F4 G5=F5 Onboard profile=M1 [Revert] [Save to M1]
+  = status "Saved the preset Click" [Report] [Backups] G-Lite preset=Click [Update (off)] […] View=Bindings G1=Mute G2=Ctrl + C G3=Left click G4=F4 G5=F5 Onboard profile=M1 [Revert] [Save to M1]
 press Revert
-  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=Click [Update (off)] […] View=Buttons G1=Mute G2=Ctrl + C G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=Click [Update (off)] […] View=Bindings G1=Mute G2=Ctrl + C G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
 pick G-Lite preset –
   8071 fn5  01
   8040 fn1
@@ -195,7 +195,7 @@ pick G-Lite preset –
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8040 fn1
-  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Buttons G1=Mute G2=Ctrl + C G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings G1=Mute G2=Ctrl + C G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
 pick G-Lite preset Click
   8040 fn1
   8040 fn2  00 32
@@ -203,7 +203,7 @@ pick G-Lite preset Click
   8071 fn8  01 01
   8071 fn1  00 02 00 00 00 00 00 27 10 64 00 00 01
   8071 fn1  01 03 00 00 00 00 00 27 10 64 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Click [Update (off)] […] View=Buttons G1=Mute G2=Ctrl + C G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Click [Update (off)] […] View=Bindings G1=Mute G2=Ctrl + C G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1]
 pick G-Lite preset –
   8071 fn5  01
   8040 fn1
@@ -244,7 +244,7 @@ pick G-Lite preset –
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8040 fn1
-  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Buttons G1=Mute G2=Ctrl + C G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings G1=Mute G2=Ctrl + C G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
 menu Backups > Restore the factory profile
   menu: Restore the factory profile | Restore a backup (off) | <when>, Cycle, first backup | Open the backups folder
   8100 fn2
@@ -373,9 +373,9 @@ menu Backups > Restore the factory profile
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8040 fn1
-  = status "Restored the factory profile" [Report] [Backups] G-Lite preset=– [New…] […] View=Buttons G1=F1 G2=F2 G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
+  = status "Restored the factory profile" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings G1=F1 G2=F2 G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
 pick G1 Disabled
-  = status "G keys not saved to M1" [Report] [Backups] G-Lite preset=– [New…] […] View=Buttons G1=Disabled G2=F2 G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert] [Save to M1]
+  = status "G keys not saved to M1" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings G1=Disabled G2=F2 G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert] [Save to M1]
 M2 pressed on the keyboard
   8100 fn4
   8071 fn5  01
@@ -416,8 +416,250 @@ M2 pressed on the keyboard
   8100 fn5  00 02 00 E0
   8100 fn5  00 02 00 EF
   8040 fn1
-  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Buttons G1=F1 G2=F2 G3=F3 G4=F4 G5=F5 Onboard profile=M2 [Revert (off)] [Save to M2 (off)]
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings G1=F1 G2=F2 G3=F3 G4=F4 G5=F5 Onboard profile=M2 [Revert (off)] [Save to M2 (off)]
+pick View Game
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Game Game mode keys=- [Clear (off)] Onboard profile=M2 [Revert (off)] [Save to M2 (off)]
+click K
+  4522 fn3
+  4522 fn1  0E
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Game Game mode keys=K [Clear] Onboard profile=M2 [Revert] [Save to M2 (off)]
+click W
+  4522 fn3
+  4522 fn1  0E 1A
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Game Game mode keys=W K [Clear] Onboard profile=M2 [Revert] [Save to M2 (off)]
+check the keyboard's Game mode list
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Game Game mode keys=W K [Clear] Onboard profile=M2 [Revert] [Save to M2 (off)]
+menu More preset actions > Save as new preset…
+  menu: Save as new preset… | Rename… (off) | Delete (off)
+  = status "Matches the keyboard" [Report] [Backups] [Save] [Cancel] View=Game Game mode keys=W K [Clear] Onboard profile=M2 [Revert] [Save to M2 (off)]
+type Shooter
+  = status "Matches the keyboard" [Report] [Backups] [Save] [Cancel] View=Game Game mode keys=W K [Clear] Onboard profile=M2 [Revert] [Save to M2 (off)]
+press Save
+  = status "Saved the preset Shooter" [Report] [Backups] G-Lite preset=Shooter [Update (off)] […] View=Game Game mode keys=W K [Clear] Onboard profile=M2 [Revert (off)] [Save to M2 (off)]
+click K
+  4522 fn3
+  4522 fn1  1A
+  = status "Saved the preset Shooter" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Game Game mode keys=W [Clear] Onboard profile=M2 [Revert] [Save to M2 (off)]
+press Revert
+  4522 fn3
+  4522 fn1  0E 1A
+  8040 fn1
+  8071 fn5  01 03 04
+  8071 fn8  01 01
+  8071 fn1  00 01 FF 00 00 02 00 00 00 00 00 00 01
+  8071 fn1  01 01 FF 00 00 02 00 00 00 00 00 00 01
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter [Update (off)] […] View=Game Game mode keys=W K [Clear] Onboard profile=M2 [Revert (off)] [Save to M2]
+pick G-Lite preset –
+  4522 fn3
+  8071 fn5  01
+  8040 fn1
+  8071 fn0
+  8071 fn0  00 01
+  8071 fn0  00 02
+  8071 fn0  00 03
+  8071 fn0  00 04
+  8071 fn0  01
+  8071 fn0  01 01
+  8071 fn0  01 02
+  8071 fn0  01 03
+  8071 fn0  01 04
+  8071 fn0  01 05
+  8071 fn0  01 06
+  8071 fn0  01 07
+  8071 fn0  02
+  8100 fn2
+  8100 fn4
+  8100 fn5
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 02
+  8100 fn5  00 02 00 10
+  8100 fn5  00 02 00 20
+  8100 fn5  00 02 00 30
+  8100 fn5  00 02 00 40
+  8100 fn5  00 02 00 50
+  8100 fn5  00 02 00 60
+  8100 fn5  00 02 00 70
+  8100 fn5  00 02 00 80
+  8100 fn5  00 02 00 90
+  8100 fn5  00 02 00 A0
+  8100 fn5  00 02 00 B0
+  8100 fn5  00 02 00 C0
+  8100 fn5  00 02 00 D0
+  8100 fn5  00 02 00 E0
+  8100 fn5  00 02 00 EF
+  8040 fn1
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Game Game mode keys=- [Clear (off)] Onboard profile=M2 [Revert (off)] [Save to M2 (off)]
+check the list is cleared
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Game Game mode keys=- [Clear (off)] Onboard profile=M2 [Revert (off)] [Save to M2 (off)]
+pick G-Lite preset Shooter
+  4522 fn3
+  4522 fn1  0E 1A
+  8040 fn1
+  8071 fn5  01 03 04
+  8071 fn8  01 01
+  8071 fn1  00 01 FF 00 00 02 00 00 00 00 00 00 01
+  8071 fn1  01 01 FF 00 00 02 00 00 00 00 00 00 01
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter [Update (off)] […] View=Game Game mode keys=W K [Clear] Onboard profile=M2 [Revert (off)] [Save to M2]
+press Clear
+  4522 fn3
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Game Game mode keys=- [Clear (off)] Onboard profile=M2 [Revert] [Save to M2]
+click K
+  4522 fn3
+  4522 fn1  0E
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Game Game mode keys=K [Clear] Onboard profile=M2 [Revert] [Save to M2]
 pick View Settings
-  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static <Your color> Direction=- (off) Brightness=50 Speed=78 (off) Onboard profile=M2 [Revert (off)] [Save to M2 (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Static <Your color> Direction=- (off) Brightness=50 Speed=78 (off) Onboard profile=M2 [Revert] [Save to M2]
+G HUB takes the keyboard off its onboard profiles
+  8100 fn4
+  8100 fn2
+  8040 fn1
+  = status "G HUB or another app has taken over the keyboard. Close it to save." (red) [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Static <Your color> Direction=- (off) Brightness=50 Speed=78 (off) [Revert] [Save to keyboard (off)]
+pick Effect Breathe
+  8040 fn1
+  8071 fn5  01 03 04
+  8071 fn8  01 01
+  8071 fn1  00 03 FF 00 00 13 88 00 64 00 00 00 01
+  8071 fn1  01 02 FF 00 00 13 88 00 64 00 00 00 01
+  = status "G HUB or another app has taken over the keyboard. Close it to save." (red) [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Breathe <Your color> Direction=- (off) Brightness=50 Speed=78 [Revert] [Save to keyboard (off)]
+G HUB closes
+  8100 fn4
+  8040 fn1
+  8071 fn0
+  8071 fn0  00 01
+  8071 fn0  00 02
+  8071 fn0  00 03
+  8071 fn0  00 04
+  8071 fn0  01
+  8071 fn0  01 01
+  8071 fn0  01 02
+  8071 fn0  01 03
+  8071 fn0  01 04
+  8071 fn0  01 05
+  8071 fn0  01 06
+  8071 fn0  01 07
+  8071 fn0  02
+  8100 fn2
+  8100 fn4
+  8100 fn5
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 02
+  8100 fn5  00 02 00 10
+  8100 fn5  00 02 00 20
+  8100 fn5  00 02 00 30
+  8100 fn5  00 02 00 40
+  8100 fn5  00 02 00 50
+  8100 fn5  00 02 00 60
+  8100 fn5  00 02 00 70
+  8100 fn5  00 02 00 80
+  8100 fn5  00 02 00 90
+  8100 fn5  00 02 00 A0
+  8100 fn5  00 02 00 B0
+  8100 fn5  00 02 00 C0
+  8100 fn5  00 02 00 D0
+  8100 fn5  00 02 00 E0
+  8100 fn5  00 02 00 EF
+  8040 fn1
+  8071 fn5  01 03 04
+  8071 fn8  01 01
+  8071 fn1  00 03 FF 00 00 13 88 00 64 00 00 00 01
+  8071 fn1  01 02 FF 00 00 13 88 00 64 00 00 00 01
+  8040 fn1
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Breathe <Your color> Direction=- (off) Brightness=50 Speed=78 Onboard profile=M2 [Revert] [Save to M2]
 quit
-  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static <Your color> Direction=- (off) Brightness=50 Speed=78 (off) Onboard profile=M2 [Revert (off)] [Save to M2 (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Breathe <Your color> Direction=- (off) Brightness=50 Speed=78 Onboard profile=M2 [Revert] [Save to M2]
+open
+  4540 fn0
+  4522 fn3
+  4522 fn1  0E
+  8071 fn0
+  8071 fn0  00 01
+  8071 fn0  00 02
+  8071 fn0  00 03
+  8071 fn0  00 04
+  8071 fn0  01
+  8071 fn0  01 01
+  8071 fn0  01 02
+  8071 fn0  01 03
+  8071 fn0  01 04
+  8071 fn0  01 05
+  8071 fn0  01 06
+  8071 fn0  01 07
+  8071 fn0  02
+  8100 fn2
+  8100 fn4
+  8100 fn5
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8040 fn1
+  8040 fn2  00 32
+  8071 fn5  01 03 04
+  8071 fn8  01 01
+  8071 fn1  00 03 FF 00 00 13 88 00 64 00 00 00 01
+  8071 fn1  01 02 FF 00 00 13 88 00 64 00 00 00 01
+  8040 fn1
+  8071 fn0
+  8071 fn0  00 01
+  8071 fn0  00 02
+  8071 fn0  00 03
+  8071 fn0  00 04
+  8071 fn0  01
+  8071 fn0  01 01
+  8071 fn0  01 02
+  8071 fn0  01 03
+  8071 fn0  01 04
+  8071 fn0  01 05
+  8071 fn0  01 06
+  8071 fn0  01 07
+  8071 fn0  02
+  8100 fn2
+  8100 fn4
+  8100 fn5
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8040 fn1
+  8071 fn5  01 03 04
+  8071 fn8  01 01
+  8071 fn1  00 03 FF 00 00 13 88 00 64 00 00 00 01
+  8071 fn1  01 02 FF 00 00 13 88 00 64 00 00 00 01
+  8040 fn1
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Breathe <Your color> Direction=- (off) Brightness=50 Speed=78 Onboard profile=M1 [Revert] [Save to M1]
+check the Game mode list is sent again
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Breathe <Your color> Direction=- (off) Brightness=50 Speed=78 Onboard profile=M1 [Revert] [Save to M1]

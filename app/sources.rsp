@@ -23,6 +23,7 @@ FoundDevice.cs
 Devices.cs
 Hidpp.cs
 KeyboardLighting.cs
+GameMode.cs
 Backups.cs
 Buttons.cs
 Mouse.cs

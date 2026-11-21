@@ -612,7 +612,7 @@ class Slider : DrawnControl
 class StatusLine : DrawnControl
 {
     string text = "";
-    bool warn;
+    bool warn, error;
     Action click;
     readonly ToolTip whole = new ToolTip();
     const TextFormatFlags Flags = TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix
@@ -621,6 +621,13 @@ class StatusLine : DrawnControl
     public StatusLine() { Cursor = Cursors.Default; TabStop = false; }
 
     public string Shown { get { return text; } }
+
+    // A red dot instead of the warning's orange, for what stops the screen from working until something outside G-Lite changes.
+    public bool Error
+    {
+        get { return error; }
+        set { error = value; Invalidate(); }
+    }
 
     // True when the text needs more than the two lines there is room for, and ends in an ellipsis. The traces mark it.
     public bool Cut
@@ -647,6 +654,7 @@ class StatusLine : DrawnControl
     {
         text = message ?? "";
         warn = isWarning;
+        error = false;
         click = action;
         Cursor = action != null ? Cursors.Hand : Cursors.Default;
         AccessibleName = text;
@@ -660,7 +668,7 @@ class StatusLine : DrawnControl
     {
         var graphics = Begin(e);
         if (text == "") return;
-        using (var brush = new SolidBrush(warn ? Theme.Warn : Theme.Accent))
+        using (var brush = new SolidBrush(error ? Theme.Error : warn ? Theme.Warn : Theme.Accent))
             graphics.FillEllipse(brush, 0, Height / 2f - 4 * DpiScale, 8 * DpiScale, 8 * DpiScale);
         var font = Ui.Get(9f, Ui.Regular);
         int width = Width - (int)(16 * DpiScale),

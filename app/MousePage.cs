@@ -215,7 +215,7 @@ class MousePage : DevicePage
 
 
         settingsArea = new Control[] { pictureBox, light, sensitivity };
-        viewPick = Ui.Add(this, new SegmentedPicker { Items = new[] { "Settings", "Buttons" }, AccessibleName = "View", Visible = false },
+        viewPick = Ui.Add(this, new SegmentedPicker { Items = new[] { "Settings", "Bindings" }, AccessibleName = "View", Visible = false },
             440, 72, 196, 32);
         viewPick.Picked += index => ShowView(index == 1);
         buttonsBox = Ui.Add(this, new RoundedBox { Visible = false }, 20, 118, 616, 543);

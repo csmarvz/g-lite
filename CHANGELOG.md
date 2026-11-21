@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- G815: a Game view to pick the keys the Game mode key turns off, on top of the Windows and Menu keys, which are always off. Click a key on the picture to add it or take it off (keys you can pick light up under the pointer); the change reaches the keyboard at once. The Game mode key is outlined on the picture, with its joystick icon. The keyboard forgets the list when it loses power, so G-Lite sends it again whenever the keyboard connects. Presets keep it, and – clears it. The keys show what they type with your Windows keyboard layout.
+- Reports read the lighting's control, power settings and power mode (0x8071).
+
+### Changed
+
+- Mice and the G815: the Buttons view is now called Bindings.
+- G915, G915 TKL and G815: while G HUB or another app has taken the keyboard off its onboard profiles, the status line says so with a red dot and Save is off, since the save would fail. When the app lets go, the screen reads the keyboard again and M1–M3 come back.
+
 ## [0.0.33-alpha] - 2026-11-20
 
 ### Added

@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Globalization;
+using System.Linq;
 using System.Windows.Forms;
 
 class KeyPicture : DrawnControl
@@ -13,6 +15,7 @@ class KeyPicture : DrawnControl
     readonly Timer timer = new Timer { Interval = 33 };
     readonly Random random = new Random();
     List<int> ids = new List<int>();
+    List<string> names = new List<string>();
     float widthInKeys, heightInKeys, keySize, offsetX, offsetY;
     byte id = 0x01, barId = 0x01;
     byte[] parameters = new byte[10], barParameters = new byte[10];
@@ -27,13 +30,24 @@ class KeyPicture : DrawnControl
     Point dragFrom, dragTo;
     public event Action<List<int>> KeysPicked;
 
+    // Picking keys by lighting id (the Game mode keys): no animation, each key with its name, picked keys filled with the accent and
+    // fixed ones hatched. Label gives a key's name from its id and its name in the layout. GameModeKey is the layout's name of the Game
+    // mode key, drawn with its joystick icon and outlined, so the note's "Game mode" can be found on the picture.
+    public bool Picking;
+    public HashSet<int> PickedIds = new HashSet<int>(), FixedIds = new HashSet<int>();
+    public Func<int, bool> CanPick;
+    public Func<int, string, string> Label;
+    public string GameModeKey;
+    public event Action<int> IdPicked;
+    int hovered = -1;
+
     public KeyPicture(KeyLayout layout)
     {
         Cursor = Cursors.Default;
         TabStop = false;
         AccessibleRole = AccessibleRole.Graphic;
         SetModel(layout);
-        timer.Tick += (s, e) => { if (Visible) Invalidate(); };
+        timer.Tick += (s, e) => { if (Visible && !Picking) Invalidate(); };
         VisibleChanged += (s, e) => timer.Enabled = Visible;
     }
 
@@ -41,8 +55,10 @@ class KeyPicture : DrawnControl
     {
         keys.Clear();
         lips.Clear();
+        names.Clear();
+        hovered = -1;
         widthInKeys = heightInKeys = 0;
-        AccessibleName = layout.Name + " lighting";
+        if (!Picking) AccessibleName = layout.Name + " lighting";
         foreach (var row in layout.Rows)
         {
             float x = 0, tall = 0;
@@ -54,6 +70,7 @@ class KeyPicture : DrawnControl
                 float keyHeight = parts.Length > 2 ? float.Parse(parts[2], CultureInfo.InvariantCulture) : 1;
                 if (parts.Length > 3) lips[keys.Count] = float.Parse(parts[3], CultureInfo.InvariantCulture);
                 keys.Add(new RectangleF(x, heightInKeys, keyWidth, keyHeight));
+                names.Add(parts[0]);
                 x += keyWidth;
                 // A key taller than a row (the numpad's + and Enter) hangs into the next one, which leaves a gap for it.
                 tall = Math.Max(tall, Math.Min(keyHeight, 1));
@@ -69,6 +86,26 @@ class KeyPicture : DrawnControl
     public int Count { get { return keys.Count; } }
     public int IdOf(int key) { return ids[key]; }
     public float XOf(int key) { return (keys[key].X + keys[key].Width / 2) / widthInKeys; }
+
+    bool Pickable(int key) { return ids[key] >= 0 && CanPick != null && CanPick(ids[key]); }
+
+    // The layout's names of the picked keys, in the picture's order (for the traces).
+    public string PickedText
+    {
+        get
+        {
+            return string.Join(" ", Enumerable.Range(0, keys.Count)
+                .Where(key => ids[key] >= 0 && PickedIds.Contains(ids[key])).Select(key => names[key]));
+        }
+    }
+
+    // A click on the key with this name in the layout (for the traces).
+    public void PressKey(string name)
+    {
+        int key = names.IndexOf(name);
+        if (key < 0 || !Pickable(key)) throw new InvalidOperationException(name + " can't be picked");
+        if (IdPicked != null) IdPicked(ids[key]);
+    }
 
     public bool Live
     {
@@ -171,6 +208,17 @@ class KeyPicture : DrawnControl
     protected override void OnMouseDown(MouseEventArgs e)
     {
         base.OnMouseDown(e);
+        if (Picking)
+        {
+            if (e.Button != MouseButtons.Left) return;
+            for (int key = 0; key < keys.Count; key++)
+                if (Hit(key, cap => cap.Contains(e.Location)))
+                {
+                    if (Pickable(key) && IdPicked != null) IdPicked(ids[key]);
+                    return;
+                }
+            return;
+        }
         if (live)
         {
             if (e.Button != MouseButtons.Left) return;
@@ -189,6 +237,15 @@ class KeyPicture : DrawnControl
     protected override void OnMouseMove(MouseEventArgs e)
     {
         base.OnMouseMove(e);
+        if (Picking)
+        {
+            int over = -1;
+            for (int key = 0; key < keys.Count; key++)
+                if (Pickable(key) && Hit(key, cap => cap.Contains(e.Location))) { over = key; break; }
+            Cursor = over >= 0 ? Cursors.Hand : Cursors.Default;
+            if (over != hovered) { hovered = over; Invalidate(); }
+            return;
+        }
         if (!dragging) return;
         dragTo = new Point(Math.Max(0, Math.Min(Width, e.X)), Math.Max(0, Math.Min(Height, e.Y)));
         Invalidate();
@@ -203,6 +260,12 @@ class KeyPicture : DrawnControl
         dragging = false;
         Invalidate();
         if (hits.Count > 0 && KeysPicked != null) KeysPicked(hits);
+    }
+
+    protected override void OnMouseLeave(EventArgs e)
+    {
+        base.OnMouseLeave(e);
+        if (hovered >= 0) { hovered = -1; Invalidate(); }
     }
 
     protected override void OnMouseCaptureChanged(EventArgs e)
@@ -220,6 +283,7 @@ class KeyPicture : DrawnControl
         offsetY = (Height - heightInKeys * keySize) / 2;
         Ui.Fill(graphics, new RectangleF(offsetX - pad, offsetY - pad, widthInKeys * keySize + 2 * pad, heightInKeys * keySize + 2 * pad),
             8 * DpiScale, Theme.PictureBackground, Theme.PictureBackground);
+        if (Picking) { PaintPicking(graphics); return; }
         if (live) { PaintLive(graphics); return; }
         double seconds = clock.Elapsed.TotalSeconds, period = KeyboardView.PeriodOf(id, parameters);
         if (id == 0x17 && seconds - lastRipple > 1.8)
@@ -256,6 +320,53 @@ class KeyPicture : DrawnControl
             if (Part != 0 && Part != (onBar ? 2 : 1)) fill = Ui.Mix(Theme.KeyOff, fill, 0.3);
             if (ids[key] < 0) fill = Theme.KeyOff;
             FillKey(graphics, key, fill);
+        }
+    }
+
+    void PaintPicking(Graphics graphics)
+    {
+        using (var format = new StringFormat(StringFormatFlags.NoWrap) { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+            for (int key = 0; key < keys.Count; key++)
+            {
+                int keyId = ids[key];
+                bool fixedOff = keyId >= 0 && FixedIds.Contains(keyId), picked = keyId >= 0 && PickedIds.Contains(keyId),
+                    pickable = Pickable(key), gameModeKey = names[key] == GameModeKey;
+                var fill = picked ? Theme.Accent : pickable || fixedOff || gameModeKey ? Theme.KeyOff
+                    : Ui.Mix(Theme.PictureBackground, Theme.KeyOff, 0.4);
+                if (key == hovered) fill = Ui.Mix(fill, Theme.Text, 0.2);
+                FillKey(graphics, key, fill);
+                var cap = Cap(keys[key]);
+                if (gameModeKey)
+                {
+                    using (var pen = new Pen(Theme.Accent, 2 * DpiScale)) Outline(graphics, key, pen);
+                    DrawJoystick(graphics, cap);
+                    continue;
+                }
+                if (fixedOff)
+                    using (var hatch = new HatchBrush(HatchStyle.WideUpwardDiagonal, Color.FromArgb(120, Theme.Dim), Color.Transparent))
+                    using (var path = Ui.Round(cap, 3 * DpiScale))
+                        graphics.FillPath(hatch, path);
+                var label = Label != null ? Label(keyId, names[key]) : names[key];
+                if (string.IsNullOrEmpty(label)) continue;
+                var color = picked ? Theme.OnAccent : pickable ? Theme.Text : Theme.Dim;
+                var font = Ui.Get(6.5f, Ui.Regular);
+                foreach (var points in new[] { 5.5f, 4.5f })
+                    if (graphics.MeasureString(label, font, PointF.Empty, format).Width > cap.Width) font = Ui.Get(points, Ui.Regular);
+                using (var brush = new SolidBrush(color)) graphics.DrawString(label, font, brush, cap, format);
+            }
+    }
+
+    // The icon printed on the G815's Game mode key: a ball on a stick, standing on a base.
+    void DrawJoystick(Graphics graphics, RectangleF cap)
+    {
+        float size = Math.Min(cap.Width, cap.Height) * 0.62f, left = cap.X + (cap.Width - size) / 2, top = cap.Y + (cap.Height - size) / 2;
+        float middle = left + size / 2, ball = size * 0.3f;
+        using (var pen = new Pen(Theme.Text, 1.2f * DpiScale))
+        {
+            graphics.DrawEllipse(pen, middle - ball / 2, top, ball, ball);
+            graphics.DrawLine(pen, middle, top + ball, middle, top + size * 0.62f);
+            using (var path = Ui.Round(new RectangleF(left + size * 0.1f, top + size * 0.62f, size * 0.8f, size * 0.32f), size * 0.08f))
+                graphics.DrawPath(pen, path);
         }
     }
 
