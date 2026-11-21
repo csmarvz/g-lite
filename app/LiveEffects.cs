@@ -19,18 +19,29 @@ static class LiveEffects
         {
             Id = 0xE1, Name = "Echo", Color = true, Speed = true, Intensity = true, MinPeriod = 200, MaxPeriod = 3000, DefaultPeriod = 1000
         },
-        new EffectInfo { Id = 0xE2, Name = "Audio", Color = true, Intensity = true, OffersSolid = true },
+        new EffectInfo { Id = 0xE2, Name = "Audio", Color = true, Direction = true, Intensity = true, OffersSolid = true },
         new EffectInfo
         {
-            Id = 0xE3, Name = "Rain", Color = true, Speed = true, Intensity = true, MinPeriod = 300, MaxPeriod = 3000, DefaultPeriod = 1200
+            Id = 0xE3, Name = "Rain", Color = true, Speed = true, Direction = true, Intensity = true, MinPeriod = 300, MaxPeriod = 3000,
+            DefaultPeriod = 1200
         },
-        new EffectInfo { Id = 0xE4, Name = "Fire", Speed = true, Intensity = true, MinPeriod = 300, MaxPeriod = 3000, DefaultPeriod = 1200 },
+        new EffectInfo
+        {
+            Id = 0xE4, Name = "Fire", Speed = true, Direction = true, Intensity = true, MinPeriod = 300, MaxPeriod = 3000, DefaultPeriod = 1200
+        },
         new EffectInfo
         {
             Id = 0xE5, Name = "Aurora", Speed = true, Intensity = true, MinPeriod = 5000, MaxPeriod = 60000, DefaultPeriod = 20000
         },
     };
     public const int DefaultIntensity = 50;
+
+    // Directions use Wave's numbers: 7 up, 2 down, 6 left, 1 right, 3 centre out, 8 centre in (both along the rows, mirrored about the
+    // middle, as Wave's). Rain falls, Fire and Audio rise.
+    public static readonly int[] Directions = { 7, 2, 6, 1, 3, 8 };
+    public static readonly string[] DirectionNames = { "Up", "Down", "Left", "Right", "Center out", "Center in" },
+        ShortDirectionNames = { "Up", "Down", "Left", "Right", "Out", "In" };
+    public static int DefaultDirection(byte id) { return id == 0xE3 ? 2 : 7; }
 
     public static EffectInfo Info(byte id) { return All.FirstOrDefault(effect => effect.Id == id); }
 
@@ -96,14 +107,35 @@ class KeyField
         return values.Select(value => (value - low) / range).ToArray();
     }
 
-    // Each key's column, out of about `count` across the keyboard.
-    public int[] Columns(int count) { return X.Select(x => Math.Min(count - 1, (int)(x * count))).ToArray(); }
+    // Each key's place along a direction (LiveEffects.Directions), from the edge the effect starts at (0) to the other (1).
+    public float[] Along(int direction)
+    {
+        switch (direction)
+        {
+            case 7: return Y.Select(y => 1 - y).ToArray();
+            case 2: return Y;
+            case 6: return X.Select(x => 1 - x).ToArray();
+            case 3: return X.Select(x => Math.Abs(x - 0.5f) * 2).ToArray();
+            case 8: return X.Select(x => 1 - Math.Abs(x - 0.5f) * 2).ToArray();
+            default: return X;
+        }
+    }
+
+    // Along the rows: left, right, centre out and centre in.
+    public static bool Sideways(int direction) { return direction == 6 || direction == 1 || direction == 3 || direction == 8; }
+
+    // Each key's lane across the direction, out of `count`: columns going up or down, rows going sideways.
+    public int[] Lanes(int direction, int count)
+    {
+        return (Sideways(direction) ? Y : X).Select(across => Math.Min(count - 1, (int)(across * count))).ToArray();
+    }
 }
 
 abstract class LiveEffect : IDisposable
 {
     public int Color = 0xFFFFFF, Period = 2000, Intensity = LiveEffects.DefaultIntensity;
     public bool Solid;
+    public int Direction = 7;
     protected double Level { get { return Math.Max(0, Math.Min(100, Intensity)) / 100.0; } }
     // Why the effect can't run, for the status line; null while it can.
     public string Problem;
@@ -189,12 +221,13 @@ class Echo : LiveEffect
     public override void Dispose() { presses.Dispose(); }
 }
 
-// Bars rise from the bottom row with the sound playing on the PC: low notes on the left, high on the right. They start in the colour
-// at the bottom row and turn as they rise: a colour's hue by a third (green to red), white (or grey) to red. Solid keeps the colour.
-// Intensity: how loud a sound has to be to reach the top row.
+// Bars grow with the sound playing on the PC, up from the bottom row by default (or down, or across the rows): low notes first. They
+// start in the colour and turn as they grow: a colour's hue by a third (green to red), white (or grey) to red. Solid keeps the colour.
+// Intensity: how loud a sound has to be to reach the far edge.
 class Audio : LiveEffect
 {
-    const int Bands = 20;
+    // Bands across the keyboard's columns, or its rows going sideways.
+    const int Bands = 20, RowBands = 6;
     AudioLoopback audio;
     double[] levels = new double[Bands];
     double retryAt;
@@ -204,18 +237,20 @@ class Audio : LiveEffect
         if (audio == null && seconds >= retryAt)
             try { audio = new AudioLoopback(); Problem = null; }
             catch (Exception) { retryAt = seconds + 3; Problem = "Audio can't hear the PC's sound."; }
+        int bands = KeyField.Sideways(Direction) ? RowBands : Bands;
         double[] heard = null;
         if (audio != null)
         {
-            heard = audio.Bands(Bands);
+            heard = audio.Bands(bands);
             if (heard == null) { audio.Dispose(); audio = null; retryAt = seconds + 1; }
         }
         for (int band = 0; band < Bands; band++)
         {
-            double level = heard != null ? heard[band] : 0;
+            double level = heard != null && band < bands ? heard[band] : 0;
             levels[band] = level > levels[band] ? level : Math.Max(level, levels[band] - elapsed * 1.6);
         }
-        var columns = field.Columns(Bands);
+        var lanes = field.Lanes(Direction, bands);
+        var along = field.Along(Direction);
         double gain = 1.15 * (0.4 + Level * 1.2);
         int red = Color >> 16 & 0xFF, green = Color >> 8 & 0xFF, blue = Color & 0xFF, top = Math.Max(red, Math.Max(green, blue));
         double saturation = top == 0 ? 0 : (top - Math.Min(red, Math.Min(green, blue))) / (double)top;
@@ -223,7 +258,7 @@ class Audio : LiveEffect
         double hue = System.Drawing.Color.FromArgb(red, green, blue).GetHue() / 360, value = top / 255.0;
         for (int i = 0; i < field.Count; i++)
         {
-            double height = 1 - field.Y[i], lit = Math.Max(0, Math.Min(1, (levels[columns[i]] * gain - height) * 6 + 1));
+            double height = along[i], lit = Math.Max(0, Math.Min(1, (levels[lanes[i]] * gain - height) * 6 + 1));
             int color = Solid ? Color
                 : grey ? Blend(Color, Scale(0xFF0000, value), height)
                 : Hsv(hue - 0.33 * height, saturation, value);
@@ -234,29 +269,34 @@ class Audio : LiveEffect
     public override void Dispose() { if (audio != null) audio.Dispose(); }
 }
 
-// Drops fall down the columns with a fading trail, taking the period to cross the keyboard. Intensity: from 0.1 to 1.3 drops per
-// column per fall.
+// Drops fall down the columns with a fading trail (or up, or along the rows), taking the period to cross the keyboard. Intensity:
+// from 0.1 to 1.3 drops per lane per fall.
 class Rain : LiveEffect
 {
-    const int Columns = 22;
+    const int Columns = 22, Rows = 6;
+    // Each drop: its lane, how far it is along the direction, its speed.
     readonly List<double[]> drops = new List<double[]>();
+    int direction;
 
     public override void Frame(KeyField field, double seconds, double elapsed, int[] colors)
     {
+        if (direction != Direction) { drops.Clear(); direction = Direction; }
         double fall = Period / 1000.0;
-        for (int column = 0; column < Columns; column++)
+        int lanes = KeyField.Sideways(Direction) ? Rows : Columns;
+        for (int lane = 0; lane < lanes; lane++)
             if (random.NextDouble() < elapsed * (0.1 + Level * 1.2) / fall)
-                drops.Add(new double[] { column, -0.1, (0.8 + 0.4 * random.NextDouble()) * 1.3 / fall });
+                drops.Add(new double[] { lane, -0.1, (0.8 + 0.4 * random.NextDouble()) * 1.3 / fall });
         foreach (var drop in drops) drop[1] += drop[2] * elapsed;
         drops.RemoveAll(drop => drop[1] > 1.5);
-        var keyColumns = field.Columns(Columns);
+        var keyLanes = field.Lanes(Direction, lanes);
+        var along = field.Along(Direction);
         for (int i = 0; i < field.Count; i++)
         {
             double level = 0;
             foreach (var drop in drops)
             {
-                if ((int)drop[0] != keyColumns[i]) continue;
-                double behind = drop[1] - field.Y[i];
+                if ((int)drop[0] != keyLanes[i]) continue;
+                double behind = drop[1] - along[i];
                 if (behind >= -0.1 && behind < 0) level = Math.Max(level, 1 + behind / 0.1);
                 else if (behind >= 0 && behind < 0.45) level = Math.Max(level, 1 - behind / 0.45);
             }
@@ -265,7 +305,8 @@ class Rain : LiveEffect
     }
 }
 
-// Flames flicker up from the bottom row: black, red, orange, yellow. Intensity: how far up they reach.
+// Flames flicker up from the bottom row (or down from the top, or in from a side): black, red, orange, yellow. Intensity: how far they
+// reach.
 class Fire : LiveEffect
 {
     double[] heat, phases;
@@ -280,10 +321,13 @@ class Fire : LiveEffect
             phases = Enumerable.Range(0, field.Count).Select(i => random.NextDouble() * 6.28).ToArray();
         }
         time += elapsed * 1000 / Period;
+        var along = field.Along(Direction);
+        var across = KeyField.Sideways(Direction) ? field.Y : field.X;
         for (int i = 0; i < field.Count; i++)
         {
-            double x = field.X[i] * 7, flicker = (Math.Sin(x + time * 3.1) + Math.Sin(x * 1.7 - time * 4.3) + Math.Sin(phases[i] + time * 5.9)) / 3;
-            double target = field.Y[i] * 1.3 - 0.4 + (Level - 0.5) * 0.9 + 0.45 * flicker + 0.15 * (random.NextDouble() - 0.5);
+            double wave = across[i] * 7;
+            double flicker = (Math.Sin(wave + time * 3.1) + Math.Sin(wave * 1.7 - time * 4.3) + Math.Sin(phases[i] + time * 5.9)) / 3;
+            double target = (1 - along[i]) * 1.3 - 0.4 + (Level - 0.5) * 0.9 + 0.45 * flicker + 0.15 * (random.NextDouble() - 0.5);
             heat[i] += (target - heat[i]) * Math.Min(1, elapsed * 10);
             colors[i] = FireColor(heat[i]);
         }

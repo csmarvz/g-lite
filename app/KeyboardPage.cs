@@ -24,6 +24,7 @@ class KeyboardPage : DevicePage
     readonly Label intensityHead, intensityValue;
     readonly Slider intensity;
     readonly Toggle livePause, liveBattery, solidToggle;
+    readonly SegmentedPicker liveDirections;
     // The pause row's heading, switches and their labels, shown for a live effect in place of the Direction row.
     readonly List<Control> liveControls = new List<Control>();
     const byte ScreenEffect = 0xFE;
@@ -209,6 +210,7 @@ class KeyboardPage : DevicePage
                 if (liveInfo != null && !LiveEffects.Is(before)) current.Intensity = LiveEffects.DefaultIntensity;
                 if (liveInfo != null) liveSettings = true;
                 if (liveInfo == null || !liveInfo.OffersSolid) current.Solid = false;
+                if (liveInfo != null && liveInfo.Direction && before != id) current.Direction = LiveEffects.DefaultDirection(id);
                 if (!was) ScreenOn();
                 else if (before != id) SoftwareSwitched();
                 Changed(true);
@@ -226,6 +228,7 @@ class KeyboardPage : DevicePage
                 target.Period = effect.DefaultPeriod;
             if (fromLive || !(kind.Intensity && effect.Intensity)) target.Intensity = 100;
             target.Solid = false;
+            if (Array.IndexOf(directionValues, target.Direction) < 0) target.Direction = 1;
             Changed(true);
         };
         colorHead = Ui.Text(light, "Color", 14, 98, () => Theme.Dim, 9f);
@@ -252,8 +255,8 @@ class KeyboardPage : DevicePage
             target.Period = effect.MaxPeriod - (effect.MaxPeriod - effect.MinPeriod) * speed.Value / 100;
             Changed(false);
         };
-        // Also for the live effects; not on the G512 X, whose per-zone row leaves no room above the footer for another.
-        if (kind.Intensity || (canScreen && !Parts))
+        // Also for the live effects.
+        if (kind.Intensity || canScreen)
         {
             intensityHead = Ui.Text(light, "Intensity", 14, 266, () => Theme.Dim, 9f);
             intensityValue = Value(light, 14, 266, 172);
@@ -265,13 +268,20 @@ class KeyboardPage : DevicePage
         foreach (Control control in light.Controls)
             if (control != lightHead && control != effectHead && control != effects) plainLight.Add(control);
 
-        // A live effect has no Screen box: its Direction row holds that box's two pause switches instead, the same settings.
-        var pauseHead = Ui.Text(light, "Pause", 14, 156, () => Theme.Dim, 9f);
-        livePause = SideOption(light, "Screen off or locked", "Pause when screen off or locked", 14, 180, 140,
+        // A live effect has its own directions (Audio, Rain, Fire) in the Direction row, and the Screen box's two pause switches, the
+        // same settings, since it has no box of its own: right of Intensity, the first in line with its slider, the second below it
+        // in the narrow box and beside it in the wide one (Widen).
+        liveDirections = Ui.Add(light,
+            new SegmentedPicker { Items = LiveEffects.ShortDirectionNames, AccessibleName = "Live direction", Visible = false },
+            14, 174, 352, 32);
+        liveDirections.Picked += i => { Target().Direction = LiveEffects.Directions[i]; Changed(true); };
+        var pauseHead = Ui.Text(light, "Pause", 194, 266, () => Theme.Dim, 9f);
+        livePause = SideOption(light, "Screen off or locked", "Pause when screen off or locked", 194, 289, 132,
             on => { setup.PauseWhenLocked = on; ScreenChanged(); });
-        liveBattery = SideOption(light, "Low battery", "Pause on low battery", 200, 180, 120,
+        liveBattery = SideOption(light, "Low battery", "Pause on low battery", 194, 311, 132,
             on => { setup.PauseOnBattery = on; ScreenChanged(); });
         liveControls.Add(pauseHead);
+        if (intensity != null) light.Height += 10;
         // Beside the colours, for Audio: the colour as it is, not turning with height.
         // Placed after the colour row's + in RefreshControls, which moves right once a custom colour is kept.
         solidToggle = SideOption(light, "Solid", "Solid color", 272, 123, 34, on => { Target().Solid = on; Changed(true); });
@@ -318,15 +328,13 @@ class KeyboardPage : DevicePage
         screenLight.AddRange(new Control[] { zoneList, addZone, resetZones });
         if (Parts)
         {
-            const int shift = 44;
-            foreach (Control control in light.Controls) if (control != lightHead) control.Top += shift;
-            light.Height += shift;
-            perZone = Ui.Add(light, new Toggle { AccessibleName = "Lighting per zone" }, 14, 46, 34, 18);
+            // In the title row, so the box keeps the others' rows (Intensity and the pause switches) above the footer.
+            perZone = Ui.Add(light, new Toggle { AccessibleName = "Lighting per zone" }, 96, 13, 34, 18);
             perZone.Changed += () => PerZone(perZone.Checked);
-            var perZoneLabel = Ui.Text(light, "Lighting per zone", 56, 44, () => Theme.Text, 9f);
+            var perZoneLabel = Ui.Text(light, "Per zone", 136, 12, () => Theme.Text, 9f);
             perZone.Follow(perZoneLabel);
             partPicker = Ui.Add(light, new SegmentedPicker { Items = new[] { "Keys", "Light bar" }, AccessibleName = "Part" },
-                190, 38, 176, 30);
+                226, 7, 140, 28);
             partPicker.Picked += i => { part = i + 1; RefreshControls(); };
         }
         foreach (var control in screenLight) control.Visible = false;
@@ -796,6 +804,7 @@ class KeyboardPage : DevicePage
         animation.Period = current.Period;
         animation.Intensity = current.Intensity;
         animation.Solid = current.Solid;
+        animation.Direction = current.Direction;
         double seconds = animationClock.Elapsed.TotalSeconds, elapsed = Math.Min(0.25, seconds - lastFrame);
         lastFrame = seconds;
         var frameColors = new int[keyField.Count];
@@ -1115,16 +1124,22 @@ class KeyboardPage : DevicePage
         ShowViews();
         picture.Display(known ? current : null, known ? bar : null, brightness);
         bool liveEffect = screening && !sampling;
-        if (liveEffect) directionHead.Visible = directions.Visible = false;
+        if (liveEffect) directions.Visible = false;
+        liveDirections.Visible = liveEffect;
+        liveDirections.Enabled = hasDirection;
+        liveDirections.Index = liveEffect && hasDirection ? Array.IndexOf(LiveEffects.Directions, view.Direction) : -1;
+        liveDirections.Invalidate();
         foreach (var control in liveControls) control.Visible = liveEffect;
         ShowOption(livePause, liveEffect);
-        // Paused() reads the battery from 0x1004 only, so a wired keyboard doesn't offer it.
-        ShowOption(liveBattery, liveEffect && found.Has(0x1004));
+        // Paused() reads the battery from 0x1004 only, so it's greyed out on a wired keyboard.
+        ShowOption(liveBattery, liveEffect);
+        liveBattery.Enabled = found.Has(0x1004);
+        ((Label)liveBattery.Tag).ForeColor = found.Has(0x1004) ? Theme.Text : Ui.Off;
         ShowOption(solidToggle, liveEffect && effect != null && effect.OffersSolid);
         solidToggle.Left = colors.Right + (int)Math.Round(12 * Ui.DpiScale);
         ((Control)solidToggle.Tag).Left = solidToggle.Left + (int)Math.Round(40 * Ui.DpiScale);
         livePause.Checked = setup.PauseWhenLocked;
-        liveBattery.Checked = setup.PauseOnBattery;
+        liveBattery.Checked = setup.PauseOnBattery && found.Has(0x1004);
         solidToggle.Checked = view.Solid;
         if (screening)
         {
@@ -1155,7 +1170,18 @@ class KeyboardPage : DevicePage
         bright.Width += half;
         brightValue.Width += half;
         if (intensity != null) { intensity.Width += half; intensityValue.Width += half; }
-        foreach (Control control in new Control[] { speedHead, speedValue, speed }) control.Left += half;
+        liveDirections.Width += change;
+        // "Center out" fits only the wide box's cells; the narrow one says Out and In.
+        liveDirections.Items = on ? LiveEffects.DirectionNames : LiveEffects.ShortDirectionNames;
+        var rightHalf = new List<Control> { speedHead, speedValue, speed, livePause, (Control)livePause.Tag };
+        rightHalf.AddRange(liveControls);
+        foreach (Control control in rightHalf) control.Left += half;
+        // Low battery beside Screen off or locked where there's room, below it in the narrow box.
+        var batteryLabel = (Control)liveBattery.Tag;
+        liveBattery.Left = livePause.Left + (on ? (int)Math.Round(170 * Ui.DpiScale) : 0);
+        liveBattery.Top = livePause.Top + (on ? 0 : (int)Math.Round(22 * Ui.DpiScale));
+        batteryLabel.Left = liveBattery.Left + (int)Math.Round(40 * Ui.DpiScale);
+        batteryLabel.Top = liveBattery.Top - (int)Math.Round(Ui.DpiScale);
         speed.Width += half;
         speedValue.Width += half;
     }
