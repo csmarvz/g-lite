@@ -42,6 +42,17 @@ static class Report
         { 0x8310, new[] { 0, 1, 2 } },
     };
 
+    // Functions that read when their first byte is 0 and write when it's 1: 0x8071 fn 5 (software control), fn 7 (power-mode
+    // settings) and fn 8 (power mode), per docs/lighting-control.md. The report calls them with 0 only.
+    public static readonly Dictionary<int, int[]> GetOrSet = new Dictionary<int, int[]> { { 0x8071, new[] { 5, 7, 8 } } };
+
+    public static bool IsRead(int feature, int fn, byte[] parameters)
+    {
+        int[] functions;
+        if (Reads.TryGetValue(feature, out functions) && functions.Contains(fn)) return true;
+        return GetOrSet.TryGetValue(feature, out functions) && functions.Contains(fn) && parameters.Length > 0 && parameters[0] == 0;
+    }
+
     static readonly Dictionary<int, string> Names = new Dictionary<int, string>
     {
         { 0x0001, "feature set" }, { 0x0003, "firmware" }, { 0x0005, "name" }, { 0x0007, "friendly name" },
@@ -65,8 +76,7 @@ static class Report
 
         public byte[] ReadOnlyCall(int feature, int fn, params byte[] parameters)
         {
-            int[] functions;
-            if (!Reads.TryGetValue(feature, out functions) || !functions.Contains(fn))
+            if (!IsRead(feature, fn, parameters))
                 throw new RefusedException(string.Format("Not a known read: feature {0:X4} fn {1}", feature, fn));
             Error = null;
             if (misses >= 2) { Error = "no answer"; return null; }
@@ -409,6 +419,9 @@ static class Report
                     }
                     if (effects == 0) break;
                 }
+                reader.Show("control", id, 5, 0, 0, 0);
+                reader.Show("power settings", id, 7, 0, 0, 0);
+                reader.Show("power mode", id, 8, 0, 0, 0);
                 break;
             case 0x8081:
                 {

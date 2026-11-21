@@ -753,7 +753,7 @@ static class SelfTest
             && mouseReport.Contains("zone 1 effect 3=") && !mouseReport.Contains("abc"),
             "the mouse report has its features, profiles and no device path");
         Check(mouseSpy.Calls.Count > 20
-            && mouseSpy.Calls.All(call => Report.Reads.ContainsKey(call.Item1) && Report.Reads[call.Item1].Contains(call.Item2)),
+            && mouseSpy.Calls.All(call => Report.IsRead(call.Item1, call.Item2, call.Item3)),
             "the mouse report only reads");
         var keyboardSpy = new Recorder(new FakeHidpp());
         var keyboardReport = Report.Build(keyboardSpy, new FoundDevice
@@ -763,7 +763,8 @@ static class SelfTest
             }, "KeyboardPage");
         Check(keyboardReport.Contains("lit ids=01 02 03") && keyboardReport.Contains(" 4F 61 62") && keyboardReport.Contains("layout=0D")
             && keyboardReport.Contains("0008=") && keyboardReport.Contains("0101=") && keyboardReport.Contains("cluster 0 effect 1=")
-            && keyboardSpy.Calls.All(call => Report.Reads.ContainsKey(call.Item1) && Report.Reads[call.Item1].Contains(call.Item2)),
+            && keyboardReport.Contains("control=") && keyboardReport.Contains("power mode=")
+            && keyboardSpy.Calls.All(call => Report.IsRead(call.Item1, call.Item2, call.Item3)),
             "the keyboard report reads its files and effects only");
         var g915WithMacros = new FakeG915();
         g915WithMacros.Sectors[4] = Enumerable.Repeat((byte)0xAB, 255).ToArray();
@@ -795,7 +796,9 @@ static class SelfTest
             "the headset report reads sidetone, auto-off and the battery");
         Check(!Report.Reads[0x8100].Intersect(new[] { 1, 3, 6, 7, 8, 0xC }).Any()
             && !Report.Reads[0x8101].Intersect(new[] { 2, 3, 6, 7 }).Any()
-            && !Report.Reads[0x8071].Contains(1) && !Report.Reads[0x8070].Contains(3), "the report never calls a write function");
+            && !Report.Reads[0x8071].Contains(1) && !Report.Reads[0x8070].Contains(3)
+            && Report.IsRead(0x8071, 8, new byte[] { 0, 0, 0 }) && !Report.IsRead(0x8071, 8, new byte[] { 1, 1, 0 })
+            && !Report.IsRead(0x8071, 5, new byte[] { 1, 0, 0 }), "the report never calls a write function");
 
         foreach (var file in new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json" })
         {
@@ -915,7 +918,7 @@ class Recorder : Hidpp
     public readonly FakeMouse Inner;
     readonly Hidpp inner;
     readonly Dictionary<byte, int> ids = new Dictionary<byte, int>();
-    public readonly List<Tuple<int, int>> Calls = new List<Tuple<int, int>>();
+    public readonly List<Tuple<int, int, byte[]>> Calls = new List<Tuple<int, int, byte[]>>();
 
     public Recorder(Hidpp inner) : base(false) { this.inner = inner; Inner = inner as FakeMouse; }
 
@@ -925,7 +928,7 @@ class Recorder : Hidpp
     {
         var reply = inner.Call(feature, fn, parameters);
         if (feature == 0) { if (reply[0] != 0) ids[reply[0]] = parameters[0] << 8 | parameters[1]; }
-        else Calls.Add(Tuple.Create(ids.ContainsKey(feature) ? ids[feature] : -1, fn));
+        else Calls.Add(Tuple.Create(ids.ContainsKey(feature) ? ids[feature] : -1, fn, parameters));
         return reply;
     }
 }

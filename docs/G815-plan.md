@@ -54,5 +54,5 @@ One session, before any screen is built:
 
 - Done on 2026-11-20: an M key pressed with G-Lite in front, and the screen follows at once, so the G815 sends the 0x8100 event. The brightness key's 0x8040 event comes too.
 - Done on 2026-11-20: a macro made in G HUB's editor and saved to G1 in onboard memory mode, then a report ([G815-G915.md](G815-G915.md), "Macros"). MR records nothing onboard. Next: macros with modifiers (Ctrl+C), a media key and a long text, to learn the other step codes.
-- Change the lighting with brightness + a number key, then send a report: does it land in the running profile?
-- Does 0x8071 fn 8 (power modes) answer? (already a "To check" in [G815-G915.md](G815-G915.md))
+- Done on 2026-11-21: brightness + a number key changes the lighting live only; the running profile keeps its saved lighting.
+- Done on 2026-11-21: 0x8071 fn 8 (power modes) answers, mode 1, and fn 7 has no timers ([G815-G915.md](G815-G915.md)).

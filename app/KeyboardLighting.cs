@@ -577,8 +577,6 @@ static class G915Lighting
         return built;
     }
 
-    // The lighting and idle times of the factory copy of the profile at `sector` (0101 for 0001 on the G915 TKL), into a copy of
-    // `profile`. Only those: a whole factory profile would drop what else the user changed, like G-shift macros.
     // The profile with its first count buttons (the G keys) as its factory copy has them; the rest stays.
     public static byte[] FactoryButtons(Hidpp hidpp, int sector, byte[] profile, int count)
     {
@@ -589,6 +587,8 @@ static class G915Lighting
         return WithButtons(profile, buttons);
     }
 
+    // The lighting and idle times of the factory copy of the profile at `sector` (0101 for 0001 on the G915 TKL), into a copy of
+    // `profile`. Only those: a whole factory profile would drop what else the user changed, like G-shift macros.
     public static byte[] FactoryLighting(Hidpp hidpp, int sector, byte[] profile)
     {
         var rom = MouseProtocol.ReadSector(hidpp, 0x100 + sector, profile.Length);

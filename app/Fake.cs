@@ -373,8 +373,10 @@ class FakeG915 : Hidpp
                 if (fn == 0) { reply[0] = parameters[0]; reply[1] = parameters[1]; reply[3] = Ids[parameters[0]][parameters[1]]; }
                 else Live[parameters[0]] = parameters.Take(13).ToArray();
             }
-            if (fn == 5) Claimed = parameters[1];
+            if (fn == 5 && parameters[0] == 1) Claimed = parameters[1];
+            if (fn == 5) reply[1] = (byte)Claimed;
             if (fn == 8 && parameters[0] == 1) Power = parameters[1];
+            if (fn == 8) reply[1] = (byte)Power;
         }
         else if (Index.ContainsKey(0x8081) && featureIndex == Index[0x8081] && fn == 0)
         {

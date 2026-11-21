@@ -57,7 +57,7 @@ All two-byte fields are big endian.
 - fn 7 `00 00 00` reads the power-mode configuration: flags at 1–2, seconds of no activity before power save at 3–4, seconds before off at 5–6.
 - fn 7 `01 <flags 2> <save 2> <off 2>` writes it. OpenLogi has the function but doesn't use it.
 - fn 8 `00 00 00` reads the current power mode at byte 1: 1 full, 2 power save, 3 off. fn 8 `01 <mode> 00` sets it, and needs control bit 1.
-- This looks like the G915's idle dim and sleep, which the G515 keeps in its 0x8101 profile instead. The G915 reports 0x8071 version 0, and these functions come from the v4 spec, so they may not be there. A report with fn 7 would tell.
+- This looks like the G915's idle dim and sleep, which the G515 keeps in its 0x8101 profile instead. The G915 reports 0x8071 version 0, and these functions come from the v4 spec, so they may not be there. The report reads fn 5, 7 and 8 with `00 00 00` (control, power settings, power mode). Seen on 2026-11-21: the G515 (v4) answers fn 7 `00 00 00 02 58 03 84`, power save after 600 s and off after 900 s, the same times as its 0x8101 profile (bytes 2–5 of 0008), and fn 5 `00 00 06`, the user activity and no-activity events on with no control. The G815 (v0) answers both too, fn 7 all zeros.
 
 ### Saving on the G915
 
