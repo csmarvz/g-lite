@@ -155,9 +155,9 @@ class ZonesPage : DevicePage
             screenBrightValue.Text = setup.Bright + "%";
             ScreenChanged();
         };
-        Ui.Text(settingsBox, "Color boost", 14, 126, () => Theme.Dim, 9f);
+        Ui.Text(settingsBox, "Intensity", 14, 126, () => Theme.Dim, 9f);
         boostValue = Value(settingsBox, 14, 126, 218);
-        boost = Ui.Add(settingsBox, new Slider { AccessibleName = "Color boost" }, 14, 144, 218, 24);
+        boost = Ui.Add(settingsBox, new Slider { AccessibleName = "Intensity" }, 14, 144, 218, 24);
         boost.Changed += (s, e) => { setup.Boost = boost.Value; boostValue.Text = setup.Boost + "%"; ScreenChanged(); };
         Ui.Text(settingsBox, "Update rate", 14, 174, () => Theme.Dim, 9f);
         rateValue = Value(settingsBox, 14, 174, 218);

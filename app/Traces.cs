@@ -302,6 +302,8 @@ static class Traces
             // A live effect sends nothing until its timer draws a frame; Cycle after it gives the keyboard its lighting back.
             script.Pick("Effect", "Rain");
             script.Pick("Effect", "Aurora");
+            script.Pick("Effect", "Audio");
+            script.Press("Solid color");
             script.Pick("Effect", "Cycle");
             script.Do("quit", () => page.Exiting());
             return script.Text;
@@ -590,7 +592,7 @@ static class Traces
             script.Pick("G-Lite preset", "Green");
             script.Pick("Effect", "Screen");
             script.Press("Update");
-            script.Slide("Color boost", 80);
+            script.Slide("Intensity", 80);
             script.Press("Revert changes");
             script.Pick("G-Lite preset", "–");
             script.Pick("G-Lite preset", "Green");
@@ -649,7 +651,7 @@ static class Traces
             script.Pick("Effect", "Static");
             script.Pick("Effect", "Screen");
             script.Press("Update");
-            script.Slide("Color boost", 80);
+            script.Slide("Intensity", 80);
             script.Press("Revert changes");
             script.Pick("G-Lite preset", "–");
             script.Pick("G-Lite preset", "Desk");

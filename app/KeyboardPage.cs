@@ -23,8 +23,9 @@ class KeyboardPage : DevicePage
     readonly int[] directionValues;
     readonly Label intensityHead, intensityValue;
     readonly Slider intensity;
-    readonly Toggle livePause;
-    readonly Label livePauseLabel;
+    readonly Toggle livePause, liveBattery, solidToggle;
+    // The pause row's heading, switches and their labels, shown for a live effect in place of the Direction row.
+    readonly List<Control> liveControls = new List<Control>();
     const byte ScreenEffect = 0xFE;
     string Remembered { get { return "lighting." + found.SettingsKey; } }
     string Saved { get { return "screen." + found.SettingsKey; } }
@@ -133,6 +134,7 @@ class KeyboardPage : DevicePage
     int running;
     volatile byte profilesFeature, brightnessFeature;
     volatile bool checkingSlot, checkingBrightness;
+    bool pressPending;
     // The keyboard isn't running its onboard profiles (0x8100 fn 2 isn't 1): G HUB switches it off them while it runs (seen on the
     // G815, 2026-11-21), and then fn 4 answers 0, M1-M3 don't show and Save would be refused. Save is off until it runs them again.
     bool takenOver;
@@ -205,6 +207,7 @@ class KeyboardPage : DevicePage
                 // The keyboard's intensity (100) means the most of a live effect's density or height; each starts in the middle.
                 if (liveInfo != null && !LiveEffects.Is(before)) current.Intensity = LiveEffects.DefaultIntensity;
                 if (liveInfo != null) liveSettings = true;
+                if (liveInfo == null || !liveInfo.OffersSolid) current.Solid = false;
                 if (!was) ScreenOn();
                 else if (before != id) SoftwareSwitched();
                 Changed(true);
@@ -221,6 +224,7 @@ class KeyboardPage : DevicePage
             if (effect.Speed && (fromLive || target.Period < effect.MinPeriod || target.Period > effect.MaxPeriod))
                 target.Period = effect.DefaultPeriod;
             if (fromLive || !(kind.Intensity && effect.Intensity)) target.Intensity = 100;
+            target.Solid = false;
             Changed(true);
         };
         colorHead = Ui.Text(light, "Color", 14, 98, () => Theme.Dim, 9f);
@@ -260,14 +264,16 @@ class KeyboardPage : DevicePage
         foreach (Control control in light.Controls)
             if (control != lightHead && control != effectHead && control != effects) plainLight.Add(control);
 
-        // The Screen box's pause switch, beside the effect for the live effects, which have no box of their own; the same setting.
-        livePause = Ui.Add(light, new Toggle { AccessibleName = "Pause when screen off or locked", Visible = false }, 222, 65, 34, 18);
-        livePause.Changed += () => { setup.PauseWhenLocked = livePause.Checked; ScreenChanged(); };
-        livePauseLabel = Ui.Text(light, "Pause when screen off or locked", 262, 58, () => Theme.Text, 9f);
-        livePauseLabel.AutoSize = false;
-        livePauseLabel.Size = new Size(108, 34);
-        livePauseLabel.Visible = false;
-        livePause.Follow(livePauseLabel);
+        // A live effect has no Screen box: its Direction row holds that box's two pause switches instead, the same settings.
+        var pauseHead = Ui.Text(light, "Pause", 14, 156, () => Theme.Dim, 9f);
+        livePause = SideOption(light, "Screen off or locked", "Pause when screen off or locked", 14, 180, 140,
+            on => { setup.PauseWhenLocked = on; ScreenChanged(); });
+        liveBattery = SideOption(light, "Low battery", "Pause on low battery", 200, 180, 120,
+            on => { setup.PauseOnBattery = on; ScreenChanged(); });
+        liveControls.Add(pauseHead);
+        // Beside the colours, for Audio: the colour as it is, not turning with height.
+        // Right of the colour row's last swatch, which reaches 296 once a custom colour is kept.
+        solidToggle = SideOption(light, "Solid", "Solid color", 304, 123, 34, on => { Target().Solid = on; Changed(true); });
 
         screenLight.Add(Ui.Text(light, "Monitor", 14, 98, () => Theme.Dim, 9f));
         monitorDropdown = Ui.Add(light, new Dropdown { AccessibleName = "Monitor" }, 14, 116, 200, 30);
@@ -332,9 +338,9 @@ class KeyboardPage : DevicePage
 
         screenBox = Ui.Add(this, new RoundedBox { Visible = false }, 412, 339, 224, light.Height);
         Ui.Text(screenBox, "Screen", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
-        Ui.Text(screenBox, "Color boost", 14, 36, () => Theme.Dim, 9f);
+        Ui.Text(screenBox, "Intensity", 14, 36, () => Theme.Dim, 9f);
         boostValue = Value(screenBox, 14, 36, 196);
-        boostSlider = Ui.Add(screenBox, new Slider { AccessibleName = "Color boost" }, 14, 54, 196, 20);
+        boostSlider = Ui.Add(screenBox, new Slider { AccessibleName = "Intensity" }, 14, 54, 196, 20);
         boostSlider.Changed += (s, e) =>
         {
             setup.Boost = boostSlider.Value; boostValue.Text = setup.Boost + "%"; force = true;
@@ -485,6 +491,26 @@ class KeyboardPage : DevicePage
         if (lighting.Effect == Ripple || lighting.Effect == ScreenEffect || G515Profile.EffectById(lighting.Effect) == null)
             lighting.Effect = 0x01;
         return lighting;
+    }
+
+    // A switch with its label to the right, hidden until RefreshControls shows it; the label goes with it (Visible on both).
+    Toggle SideOption(Control parent, string text, string name, int x, int y, int width, Action<bool> set)
+    {
+        var toggle = Ui.Add(parent, new Toggle { AccessibleName = name, Visible = false }, x, y, 34, 18);
+        var label = Ui.Text(parent, text, x + 40, y - 1, () => Theme.Text, 9f);
+        label.AutoSize = false;
+        label.Size = new Size(width, 20);
+        label.Visible = false;
+        toggle.Follow(label);
+        toggle.Changed += () => set(toggle.Checked);
+        toggle.Tag = label;
+        return toggle;
+    }
+
+    static void ShowOption(Toggle toggle, bool on)
+    {
+        toggle.Visible = on;
+        ((Control)toggle.Tag).Visible = on;
     }
 
     Toggle Option(Control parent, string text, int y, Action flip, int tall = 20)
@@ -768,6 +794,7 @@ class KeyboardPage : DevicePage
         animation.Color = current.Color;
         animation.Period = current.Period;
         animation.Intensity = current.Intensity;
+        animation.Solid = current.Solid;
         double seconds = animationClock.Elapsed.TotalSeconds, elapsed = Math.Min(0.25, seconds - lastFrame);
         lastFrame = seconds;
         var frameColors = new int[keyField.Count];
@@ -1086,8 +1113,16 @@ class KeyboardPage : DevicePage
         ShowSlots();
         ShowViews();
         picture.Display(known ? current : null, known ? bar : null, brightness);
-        livePause.Visible = livePauseLabel.Visible = screening && !sampling;
+        bool liveEffect = screening && !sampling;
+        if (liveEffect) directionHead.Visible = directions.Visible = false;
+        foreach (var control in liveControls) control.Visible = liveEffect;
+        ShowOption(livePause, liveEffect);
+        // Paused() reads the battery from 0x1004 only, so a wired keyboard doesn't offer it.
+        ShowOption(liveBattery, liveEffect && found.Has(0x1004));
+        ShowOption(solidToggle, liveEffect && effect != null && effect.OffersSolid);
         livePause.Checked = setup.PauseWhenLocked;
+        liveBattery.Checked = setup.PauseOnBattery;
+        solidToggle.Checked = view.Solid;
         if (screening)
         {
             effects.Index = effectIds.IndexOf(current.Effect);
@@ -1203,7 +1238,7 @@ class KeyboardPage : DevicePage
     public void Heard(byte feature, int fn)
     {
         if (fn != 0) return;
-        if (profilesFeature != 0 && feature == profilesFeature) CheckSlot();
+        if (profilesFeature != 0 && feature == profilesFeature) CheckSlot(true);
         if (brightnessFeature != 0 && feature == brightnessFeature) CheckBrightness();
     }
 
@@ -1233,9 +1268,13 @@ class KeyboardPage : DevicePage
         }, message => { checkingBrightness = false; });
     }
 
-    void CheckSlot()
+    // pressed: an M key sent the event. The running profile's own M key only reloads it, which still stops a live effect; a press
+    // during a check already running is kept for its end (pressPending), since no later check could see it.
+    void CheckSlot(bool pressed = false)
     {
-        if (slotPicker == null || (slots.Count < 2 && !takenOver) || checkingSlot) return;
+        if (slotPicker == null || (slots.Count < 2 && !takenOver)) return;
+        if (pressed) pressPending = true;
+        if (checkingSlot) return;
         checkingSlot = true;
         int now = 0;
         bool host = false;
@@ -1248,6 +1287,8 @@ class KeyboardPage : DevicePage
         }, () =>
         {
             checkingSlot = false;
+            bool wasPressed = pressPending;
+            pressPending = false;
             if (host && !takenOver)
             {
                 Log.Add(DeviceLabel, "found", "the keyboard left its onboard profiles");
@@ -1266,18 +1307,19 @@ class KeyboardPage : DevicePage
                 if (running != 0 && now != running) SlotSwitched(now, false); else Load();
                 return;
             }
-            if (now == 0 || now == running) return;
+            bool again = wasPressed && now == running && Screening;
+            if (now == 0 || (now == running && !again)) return;
             Log.Add(DeviceLabel, "found", "M" + now + " picked on the keyboard");
-            SlotSwitched(now, false);
-        }, message => { checkingSlot = false; });
+            SlotSwitched(now, false, again);
+        }, message => { checkingSlot = false; pressPending = false; });
     }
 
     // Another onboard profile runs, picked here or with an M key. The keyboard shows that profile's saved lighting, so a live lighting
     // not saved goes, as it does on the keyboard alone, and the preset goes back to – (docs/G815-plan.md, step 2). Save is off until
     // the new slot is read, or it would write the old slot's lighting into it.
-    void SlotSwitched(int sector, bool picked)
+    void SlotSwitched(int sector, bool picked, bool again = false)
     {
-        if (sector == running) return;
+        if (sector == running && !again) return;
         if (picked) LogUserAction("Switch to M" + sector);
         running = sector;
         // A live effect or the Screen effect stops too: the keyboard shows the new profile's lighting (the owner's choice, 2026-11-21).

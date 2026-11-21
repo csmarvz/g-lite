@@ -433,20 +433,29 @@ class Dropdown : DrawnControl
         if (!Enabled || Items.Count == 0) return;
         var menu = new ContextMenuStrip
         {
-            Renderer = Ui.Menus, Font = Ui.Get(9.75f, Ui.Regular), ShowImageMargin = false, ShowCheckMargin = true
+            Renderer = Ui.Menus, Font = Ui.Get(9.75f, Ui.Regular), ShowImageMargin = false, ShowCheckMargin = false
         };
         menu.BackColor = Theme.Card;
         menu.ForeColor = Theme.Text;
         for (int i = 0; i < Items.Count; i++)
         {
             int picked = i;
-            var item = new ToolStripMenuItem(Label != null ? Label(Items[i]) : Items[i]) { Checked = i == index, Enabled = !Off.Contains(i) };
-            string badge = Badge != null ? Badge(i) : null;
-            if (badge != null) { item.ShortcutKeyDisplayString = badge; item.ShowShortcutKeys = true; }
+            var item = new DropdownItem(Label != null ? Label(Items[i]) : Items[i])
+            {
+                Current = i == index, Enabled = !Off.Contains(i), Badge = Badge != null ? Badge(i) : null
+            };
             item.Click += (s, args) => { Index = picked; if (Picked != null) Picked(picked); };
             menu.Items.Add(item);
         }
         menu.MinimumSize = new Size(Width, 0);
+        // Rows as wide as the menu, so the picked row's fill and the badges reach its right end; they'd stop at the longest name.
+        int rowWidth = Math.Max(Width, menu.Items.Cast<ToolStripItem>().Max(item => item.Width)) - 2;
+        foreach (ToolStripItem item in menu.Items)
+        {
+            int rowHeight = item.Height;
+            item.AutoSize = false;
+            item.Size = new Size(rowWidth, rowHeight);
+        }
         menu.Closed += (s, args) => BeginInvoke((Action)menu.Dispose);
         menu.Show(this, new Point(0, Height + (int)(2 * DpiScale)));
     }
@@ -463,19 +472,37 @@ class Dropdown : DrawnControl
         string badge = Badge != null && index >= 0 && index < Items.Count ? Badge(index) : null;
         if (badge != null)
         {
-            var badgeFont = Ui.Get(7.5f, Ui.Semibold);
-            float badgeWidth = TextRenderer.MeasureText(graphics, badge, badgeFont, Size.Empty, TextFormatFlags.NoPadding).Width + 10 * DpiScale,
-                nameWidth = TextRenderer.MeasureText(graphics, Text, font, Size.Empty, TextFormatFlags.NoPadding).Width,
-                badgeLeft = Math.Min(left + nameWidth + 6 * DpiScale, left + textWidth - badgeWidth);
-            var pill = new RectangleF(badgeLeft, (Height - 16 * DpiScale) / 2, badgeWidth, 16 * DpiScale);
-            Ui.Fill(graphics, pill, 8 * DpiScale, Theme.AccentBackground, Theme.AccentBackground);
-            Ui.Draw(graphics, badge, badgeFont, pill, Enabled ? Theme.Accent : fore,
-                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
-            textWidth = badgeLeft - left - 4 * DpiScale;
+            // Small and dim before the chevron, as the menu's rows draw it (DropdownItem).
+            var badgeFont = Ui.Get(7.5f, Ui.Regular);
+            float badgeWidth = TextRenderer.MeasureText(graphics, badge, badgeFont, Size.Empty, TextFormatFlags.NoPadding).Width;
+            var badgeArea = new RectangleF(left + textWidth - badgeWidth, 0, badgeWidth, Height);
+            Ui.Draw(graphics, badge, badgeFont, badgeArea, Enabled ? Theme.Dim : fore, TextFormatFlags.VerticalCenter);
+            textWidth -= badgeWidth + 6 * DpiScale;
         }
         Ui.Draw(graphics, Text, font, new RectangleF(left, 0, textWidth, Height), fore, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
         Icons.Draw(graphics, "chevron",
             new RectangleF(Width - 26 * DpiScale, (Height - 16 * DpiScale) / 2, 16 * DpiScale, 16 * DpiScale), Enabled ? Theme.Dim : fore);
+    }
+}
+
+// A Dropdown's row: the picked one is filled with the accent instead of a check mark, and its badge (Live) is drawn small and dim
+// at the row's right end (MenuRenderer).
+class DropdownItem : ToolStripMenuItem
+{
+    public bool Current;
+    public string Badge;
+
+    public DropdownItem(string text) : base(text) { }
+
+    public void DrawBadge(Graphics graphics)
+    {
+        if (Badge == null) return;
+        float scale = Owner != null ? Owner.DeviceDpi / 96f : 1;
+        var font = Ui.Get(7.5f, Ui.Regular);
+        var flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix;
+        var size = TextRenderer.MeasureText(graphics, Badge, font, Size.Empty, flags);
+        var color = Current ? Ui.Mix(Theme.Accent, Theme.OnAccent, 0.7) : Theme.Dim;
+        TextRenderer.DrawText(graphics, Badge, font, new Point(Width - size.Width - (int)(10 * scale), (Height - size.Height) / 2), color, flags);
     }
 }
 

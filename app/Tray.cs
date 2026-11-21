@@ -30,8 +30,20 @@ class MenuRenderer : ToolStripProfessionalRenderer
         var row = e.Item as MenuRow;
         if (row != null && e.Text == row.ShortcutKeyDisplayString) { row.Draw(e.Graphics, e.TextRectangle); return; }
         if (row != null) row.TextLeft = e.TextRectangle.Left;
-        e.TextColor = e.Item.Enabled ? Theme.Text : Theme.Dim;
+        var choice = e.Item as DropdownItem;
+        e.TextColor = choice != null && choice.Current ? Theme.OnAccent : e.Item.Enabled ? Theme.Text : Theme.Dim;
         base.OnRenderItemText(e);
+        if (choice != null) choice.DrawBadge(e.Graphics);
+    }
+
+    protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+    {
+        var choice = e.Item as DropdownItem;
+        if (choice == null || !choice.Current) { base.OnRenderMenuItemBackground(e); return; }
+        float scale = e.Item.Owner != null ? e.Item.Owner.DeviceDpi / 96f : 1;
+        int inset = (int)(2 * scale);
+        using (var brush = new SolidBrush(e.Item.Selected ? Ui.Mix(Theme.Accent, Theme.Text, 0.15) : Theme.Accent))
+            e.Graphics.FillRectangle(brush, inset, 0, e.Item.Width - 2 * inset, e.Item.Height);
     }
 
     protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)

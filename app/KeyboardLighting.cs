@@ -8,6 +8,8 @@ class EffectInfo
     public byte Id;
     public string Name;
     public bool Color, Speed, Direction, Intensity;
+    // Offers Solid: the colour as it is, instead of turning with height (Audio).
+    public bool OffersSolid;
     public int MinPeriod, MaxPeriod, DefaultPeriod;
 }
 
@@ -15,13 +17,15 @@ class Lighting
 {
     public byte Effect = 0x01;
     public int Color = 0xFFFFFF, Period = 5000, Direction = 1, Dim = 50, Idle = 60, Sleep = 300, Intensity = 100;
+    // A live effect's colour kept as it is (Audio's Solid).
+    public bool Solid;
     public Lighting Clone() { return (Lighting)MemberwiseClone(); }
 
-    // The intensity only when it isn't 100, so the text of a lighting and of older presets stays the same.
+    // The intensity only when it isn't 100, and Solid only when on, so the text of a lighting and of older presets stays the same.
     public string ToText(int brightness)
     {
         return string.Join(",", Effect, Color.ToString("X6"), Period, Direction, Dim, Idle, Sleep, brightness)
-            + (Intensity != 100 ? "," + Intensity : "");
+            + (Intensity != 100 || Solid ? "," + Intensity : "") + (Solid ? ",1" : "");
     }
 
     public static Lighting FromText(string text, out int brightness)
@@ -33,12 +37,13 @@ class Lighting
             Effect = byte.Parse(parts[0]), Color = int.Parse(parts[1], System.Globalization.NumberStyles.HexNumber),
             Period = int.Parse(parts[2]), Direction = int.Parse(parts[3]), Dim = int.Parse(parts[4]),
             Idle = int.Parse(parts[5]), Sleep = int.Parse(parts[6]), Intensity = parts.Length > 8 ? int.Parse(parts[8]) : 100,
+            Solid = parts.Length > 9 && parts[9] == "1",
         };
     }
     public bool Same(Lighting other)
     {
         return other != null && Effect == other.Effect && Color == other.Color && Period == other.Period && Direction == other.Direction
-            && Dim == other.Dim && Idle == other.Idle && Sleep == other.Sleep && Intensity == other.Intensity;
+            && Dim == other.Dim && Idle == other.Idle && Sleep == other.Sleep && Intensity == other.Intensity && Solid == other.Solid;
     }
 }
 

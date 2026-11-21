@@ -320,10 +320,16 @@ pick Effect Cycle
   = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=78 Intensity=100 (off) [Revert] [Save to keyboard]
 pick Effect Rain
   8040 fn1
-  = status "Live only." [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Rain Dim after=1 min Pause when screen off or locked=on <Color FFFFFF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=66 Intensity=50 [Revert] [Save to keyboard (off)]
+  = status "Live only." [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Rain Dim after=1 min <Color FFFFFF> Dim to=50% Turn off after=5 min Pause when screen off or locked=on Pause on low battery=on Brightness=100 Speed=66 Intensity=50 [Revert] [Save to keyboard (off)]
 pick Effect Aurora
   8040 fn1
-  = status "Live only." [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Aurora Dim after=1 min Pause when screen off or locked=on Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=72 Intensity=50 [Revert] [Save to keyboard (off)]
+  = status "Live only." [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Aurora Dim after=1 min Dim to=50% Turn off after=5 min Pause when screen off or locked=on Pause on low battery=on Brightness=100 Speed=72 Intensity=50 [Revert] [Save to keyboard (off)]
+pick Effect Audio
+  8040 fn1
+  = status "Live only." [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Audio Dim after=1 min <Color FFFFFF> Dim to=50% Solid color=off Turn off after=5 min Pause when screen off or locked=on Pause on low battery=on Brightness=100 Speed=72 (off) Intensity=50 [Revert] [Save to keyboard (off)]
+press Solid color
+  8040 fn1
+  = status "Live only." [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Audio Dim after=1 min <Color FFFFFF> Dim to=50% Solid color=on Turn off after=5 min Pause when screen off or locked=on Pause on low battery=on Brightness=100 Speed=72 (off) Intensity=50 [Revert] [Save to keyboard (off)]
 pick Effect Cycle
   8071 fn5  01
   8101 fn6  03

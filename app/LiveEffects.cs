@@ -19,7 +19,7 @@ static class LiveEffects
         {
             Id = 0xE1, Name = "Echo", Color = true, Speed = true, Intensity = true, MinPeriod = 200, MaxPeriod = 3000, DefaultPeriod = 1000
         },
-        new EffectInfo { Id = 0xE2, Name = "Audio", Color = true, Intensity = true },
+        new EffectInfo { Id = 0xE2, Name = "Audio", Color = true, Intensity = true, OffersSolid = true },
         new EffectInfo
         {
             Id = 0xE3, Name = "Rain", Color = true, Speed = true, Intensity = true, MinPeriod = 300, MaxPeriod = 3000, DefaultPeriod = 1200
@@ -103,6 +103,7 @@ class KeyField
 abstract class LiveEffect : IDisposable
 {
     public int Color = 0xFFFFFF, Period = 2000, Intensity = LiveEffects.DefaultIntensity;
+    public bool Solid;
     protected double Level { get { return Math.Max(0, Math.Min(100, Intensity)) / 100.0; } }
     // Why the effect can't run, for the status line; null while it can.
     public string Problem;
@@ -188,9 +189,9 @@ class Echo : LiveEffect
     public override void Dispose() { presses.Dispose(); }
 }
 
-// Bars rise from the bottom row with the sound playing on the PC: low notes on the left, high on the right. Their hue turns by a third
-// from the bottom row to the top: white (or grey) is green to red, any other colour starts at that colour. Intensity: how loud a sound
-// has to be to reach the top row.
+// Bars rise from the bottom row with the sound playing on the PC: low notes on the left, high on the right. They start in the colour
+// at the bottom row and turn as they rise: a colour's hue by a third (green to red), white (or grey) to red. Solid keeps the colour.
+// Intensity: how loud a sound has to be to reach the top row.
 class Audio : LiveEffect
 {
     const int Bands = 20;
@@ -218,13 +219,15 @@ class Audio : LiveEffect
         double gain = 1.15 * (0.4 + Level * 1.2);
         int red = Color >> 16 & 0xFF, green = Color >> 8 & 0xFF, blue = Color & 0xFF, top = Math.Max(red, Math.Max(green, blue));
         double saturation = top == 0 ? 0 : (top - Math.Min(red, Math.Min(green, blue))) / (double)top;
-        bool spectrum = saturation < 0.05;
-        double hue = spectrum ? 0.33 : System.Drawing.Color.FromArgb(red, green, blue).GetHue() / 360, value = spectrum ? 1 : top / 255.0;
-        if (spectrum) saturation = 1;
+        bool grey = saturation < 0.05;
+        double hue = System.Drawing.Color.FromArgb(red, green, blue).GetHue() / 360, value = top / 255.0;
         for (int i = 0; i < field.Count; i++)
         {
             double height = 1 - field.Y[i], lit = Math.Max(0, Math.Min(1, (levels[columns[i]] * gain - height) * 6 + 1));
-            colors[i] = Scale(Hsv(hue - 0.33 * height, saturation, value), lit);
+            int color = Solid ? Color
+                : grey ? Blend(Color, Scale(0xFF0000, value), height)
+                : Hsv(hue - 0.33 * height, saturation, value);
+            colors[i] = Scale(color, lit);
         }
     }
 

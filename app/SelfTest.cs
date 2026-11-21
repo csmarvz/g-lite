@@ -302,6 +302,11 @@ static class SelfTest
             out setBright);
         Check(set.Same(new Lighting { Effect = 0x16, Color = 0x3080FF, Period = 2500, Direction = 6 }) && setBright == 40,
             "a set round-trips through text");
+        var audio = new Lighting { Effect = 0xE2, Color = 0x3080FF, Intensity = 100, Solid = true };
+        int audioBright;
+        Check(audio.ToText(40) == "226,3080FF,5000,1,50,60,300,40,100,1" && Lighting.FromText(audio.ToText(40), out audioBright).Same(audio)
+            && new Lighting { Intensity = 30 }.ToText(40).EndsWith(",40,30") && new Lighting().ToText(40).EndsWith(",300,40"),
+            "the intensity and Solid are written only when set, and read back");
         var full = new FoundDevice { BatteryId = 0x1001 };
         Devices.Decode(full, new byte[] { 0x10, 0x72, 0x81 });
         var charging = new FoundDevice { BatteryId = 0x1001 };
