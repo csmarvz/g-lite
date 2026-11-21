@@ -404,6 +404,10 @@ class Toggle : DrawnControl
 class Dropdown : DrawnControl
 {
     public readonly List<string> Items = new List<string>();
+    // Items listed but greyed out.
+    public int[] Off = new int[0];
+    // A small tag after an item's name (Live, for the effects G-Lite draws itself), or null.
+    public Func<int, string> Badge;
     public event Action<int> Picked;
     public Func<string, string> Label;
     int index = -1;
@@ -418,7 +422,7 @@ class Dropdown : DrawnControl
 
     public void Pick(int i)
     {
-        if (!Enabled || !Visible) throw new InvalidOperationException(AccessibleName + " can't be changed now");
+        if (!Enabled || !Visible || Off.Contains(i)) throw new InvalidOperationException(AccessibleName + " can't be changed now");
         Index = i;
         if (Picked != null) Picked(i);
     }
@@ -436,7 +440,9 @@ class Dropdown : DrawnControl
         for (int i = 0; i < Items.Count; i++)
         {
             int picked = i;
-            var item = new ToolStripMenuItem(Label != null ? Label(Items[i]) : Items[i]) { Checked = i == index };
+            var item = new ToolStripMenuItem(Label != null ? Label(Items[i]) : Items[i]) { Checked = i == index, Enabled = !Off.Contains(i) };
+            string badge = Badge != null ? Badge(i) : null;
+            if (badge != null) { item.ShortcutKeyDisplayString = badge; item.ShowShortcutKeys = true; }
             item.Click += (s, args) => { Index = picked; if (Picked != null) Picked(picked); };
             menu.Items.Add(item);
         }
@@ -452,8 +458,22 @@ class Dropdown : DrawnControl
         Ui.Fill(graphics, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 6 * DpiScale,
             Pressed ? Theme.ButtonPressed : Enabled && hover ? Theme.ButtonHover : Theme.Button, Theme.Border);
         DrawFocusRing(graphics, 6 * DpiScale);
-        Ui.Draw(graphics, Text, Ui.Get(9.75f, Ui.Regular), new RectangleF(10 * DpiScale, 0, Width - 38 * DpiScale, Height), fore,
-            TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+        var font = Ui.Get(9.75f, Ui.Regular);
+        float left = 10 * DpiScale, textWidth = Width - 38 * DpiScale;
+        string badge = Badge != null && index >= 0 && index < Items.Count ? Badge(index) : null;
+        if (badge != null)
+        {
+            var badgeFont = Ui.Get(7.5f, Ui.Semibold);
+            float badgeWidth = TextRenderer.MeasureText(graphics, badge, badgeFont, Size.Empty, TextFormatFlags.NoPadding).Width + 10 * DpiScale,
+                nameWidth = TextRenderer.MeasureText(graphics, Text, font, Size.Empty, TextFormatFlags.NoPadding).Width,
+                badgeLeft = Math.Min(left + nameWidth + 6 * DpiScale, left + textWidth - badgeWidth);
+            var pill = new RectangleF(badgeLeft, (Height - 16 * DpiScale) / 2, badgeWidth, 16 * DpiScale);
+            Ui.Fill(graphics, pill, 8 * DpiScale, Theme.AccentBackground, Theme.AccentBackground);
+            Ui.Draw(graphics, badge, badgeFont, pill, Enabled ? Theme.Accent : fore,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            textWidth = badgeLeft - left - 4 * DpiScale;
+        }
+        Ui.Draw(graphics, Text, font, new RectangleF(left, 0, textWidth, Height), fore, TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
         Icons.Draw(graphics, "chevron",
             new RectangleF(Width - 26 * DpiScale, (Height - 16 * DpiScale) / 2, 16 * DpiScale, 16 * DpiScale), Enabled ? Theme.Dim : fore);
     }
@@ -494,7 +514,7 @@ class TextField : DrawnControl
 class Slider : DrawnControl
 {
     public int Max = 100, Value, Step = 5;
-    // The only values the slider takes, in order, each marked with a tick under the track; null for any value.
+    // The only values the slider takes, in order, unmarked (ticks under the track were dropped at the owner's request); null for any.
     public int[] Stops;
     public event EventHandler Changed;
     int wheel, grab;
@@ -576,17 +596,6 @@ class Slider : DrawnControl
             graphics.FillRectangle(brush, 7 * DpiScale, mid - 2 * DpiScale, X(Value) - 7 * DpiScale, 4 * DpiScale);
             graphics.FillEllipse(brush, X(Value) - 7 * DpiScale, mid - 7 * DpiScale, 14 * DpiScale, 14 * DpiScale);
         }
-        // Ticks under the track, between the track's grey and the labels': dots on the track looked cluttered over the fill.
-        if (Stops != null)
-            using (var tick = new SolidBrush(Color.FromArgb((Theme.Dim.R + Theme.Track.R) / 2, (Theme.Dim.G + Theme.Track.G) / 2,
-                (Theme.Dim.B + Theme.Track.B) / 2)))
-            {
-                // Whole pixels: a tick between two is smoothed over both and looks blurred.
-                int width = Math.Max(1, (int)Math.Round(2 * DpiScale)), top = (int)Math.Round(mid + 7 * DpiScale),
-                    length = Math.Min((int)Math.Round(5 * DpiScale), Height - top);
-                foreach (int stop in Stops)
-                    graphics.FillRectangle(tick, (int)Math.Round(X(stop)) - width / 2, top, width, length);
-            }
         if (Focused && ShowFocusCues && Enabled)
             using (var pen = new Pen(Theme.Text, 2 * DpiScale))
                 graphics.DrawEllipse(pen, X(Value) - 6 * DpiScale, mid - 6 * DpiScale, 12 * DpiScale, 12 * DpiScale);

@@ -257,6 +257,46 @@ static class KeyLights
             }
         hidpp.CallUnlogged(feature, 7, 0, 0, 0, 0, 0);
     }
+
+    // A frame of colours by lighting id, for the live effects: keys sharing a colour go three or more to a message (fn 6, up to 13),
+    // the others four to a message (fn 1: id, red, green, blue each; a short message repeats its last key), then fn 7 shows the frame.
+    // individual turns false when the keyboard refuses fn 1, and fn 6 takes every key from then on.
+    public static void SendColors(Hidpp hidpp, Dictionary<int, int> colorById, ref bool individual)
+    {
+        byte feature = hidpp.FeatureIndex(0x8081);
+        var singles = new List<KeyValuePair<int, int>>();
+        var groups = new Dictionary<int, List<int>>();
+        foreach (var group in colorById.GroupBy(pair => pair.Value))
+        {
+            if (individual && group.Count() < 3) singles.AddRange(group);
+            else groups[group.Key] = group.Select(pair => pair.Key).ToList();
+        }
+        for (int start = 0; start < singles.Count && individual; start += 4)
+        {
+            var batch = singles.Skip(start).Take(4).ToList();
+            while (batch.Count < 4) batch.Add(batch[batch.Count - 1]);
+            var parameters = batch.SelectMany(pair => new[] { (byte)pair.Key, (byte)(pair.Value >> 16), (byte)(pair.Value >> 8), (byte)pair.Value });
+            try { hidpp.CallUnlogged(feature, 1, parameters.ToArray()); }
+            catch (HidppError)
+            {
+                individual = false;
+                foreach (var pair in singles.Skip(start))
+                {
+                    List<int> list;
+                    if (!groups.TryGetValue(pair.Value, out list)) groups[pair.Value] = list = new List<int>();
+                    list.Add(pair.Key);
+                }
+            }
+        }
+        foreach (var group in groups)
+            for (int start = 0; start < group.Value.Count; start += 13)
+            {
+                var parameters = new List<byte> { (byte)(group.Key >> 16), (byte)(group.Key >> 8), (byte)group.Key };
+                parameters.AddRange(group.Value.Skip(start).Take(13).Select(id => (byte)id));
+                hidpp.CallUnlogged(feature, 6, parameters.ToArray());
+            }
+        hidpp.CallUnlogged(feature, 7, 0, 0, 0, 0, 0);
+    }
 }
 
 static class Presence

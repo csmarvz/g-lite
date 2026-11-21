@@ -13,7 +13,7 @@ Mockups: the G-Lite design canvas "G915 Onboard Profiles", design E (private to 
 
 ## Screen
 
-The slots are a segmented picker in the footer, left of Revert and as tall, in the Effect picker's style: M1, M2, M3, the one the keyboard runs picked (first built right of the device name, moved on 2026-11-20 at the owner's request). The footer, on the right, left to right:
+The slots are a segmented picker in the footer, left of Revert and as tall: M1, M2, M3, the one the keyboard runs picked (first built right of the device name, moved on 2026-11-20 at the owner's request). The footer, on the right, left to right:
 
 1. **Reload**, which is Revert renamed. Same behaviour as Revert today: it reads the keyboard again (with – as the G-Lite preset: releases the live lighting and shows what's saved). Not built: the button still says Revert.
 2. **Save to M1**: the primary button, named after the slot shown.

@@ -46,3 +46,4 @@ Controls.cs
 DeviceList.cs
 Tray.cs
 Screen.cs
+LiveEffects.cs

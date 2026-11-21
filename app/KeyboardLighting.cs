@@ -7,19 +7,21 @@ class EffectInfo
 {
     public byte Id;
     public string Name;
-    public bool Color, Speed, Direction;
+    public bool Color, Speed, Direction, Intensity;
     public int MinPeriod, MaxPeriod, DefaultPeriod;
 }
 
 class Lighting
 {
     public byte Effect = 0x01;
-    public int Color = 0xFFFFFF, Period = 5000, Direction = 1, Dim = 50, Idle = 60, Sleep = 300;
+    public int Color = 0xFFFFFF, Period = 5000, Direction = 1, Dim = 50, Idle = 60, Sleep = 300, Intensity = 100;
     public Lighting Clone() { return (Lighting)MemberwiseClone(); }
 
+    // The intensity only when it isn't 100, so the text of a lighting and of older presets stays the same.
     public string ToText(int brightness)
     {
-        return string.Join(",", Effect, Color.ToString("X6"), Period, Direction, Dim, Idle, Sleep, brightness);
+        return string.Join(",", Effect, Color.ToString("X6"), Period, Direction, Dim, Idle, Sleep, brightness)
+            + (Intensity != 100 ? "," + Intensity : "");
     }
 
     public static Lighting FromText(string text, out int brightness)
@@ -30,13 +32,13 @@ class Lighting
         {
             Effect = byte.Parse(parts[0]), Color = int.Parse(parts[1], System.Globalization.NumberStyles.HexNumber),
             Period = int.Parse(parts[2]), Direction = int.Parse(parts[3]), Dim = int.Parse(parts[4]),
-            Idle = int.Parse(parts[5]), Sleep = int.Parse(parts[6]),
+            Idle = int.Parse(parts[5]), Sleep = int.Parse(parts[6]), Intensity = parts.Length > 8 ? int.Parse(parts[8]) : 100,
         };
     }
     public bool Same(Lighting other)
     {
         return other != null && Effect == other.Effect && Color == other.Color && Period == other.Period && Direction == other.Direction
-            && Dim == other.Dim && Idle == other.Idle && Sleep == other.Sleep;
+            && Dim == other.Dim && Idle == other.Idle && Sleep == other.Sleep && Intensity == other.Intensity;
     }
 }
 
@@ -59,12 +61,17 @@ static class G515Profile
         new EffectInfo { Id = 0x01, Name = "Static", Color = true },
         new EffectInfo
         {
-            Id = 0x0A, Name = "Breathe", Color = true, Speed = true, MinPeriod = 1000, MaxPeriod = 20000, DefaultPeriod = 5000
+            Id = 0x0A, Name = "Breathe", Color = true, Speed = true, Intensity = true, MinPeriod = 1000, MaxPeriod = 20000,
+            DefaultPeriod = 5000
         },
-        new EffectInfo { Id = 0x15, Name = "Cycle", Speed = true, MinPeriod = 1000, MaxPeriod = 20000, DefaultPeriod = 5000 },
         new EffectInfo
         {
-            Id = 0x16, Name = "Wave", Speed = true, Direction = true, MinPeriod = 1000, MaxPeriod = 20000, DefaultPeriod = 5000
+            Id = 0x15, Name = "Cycle", Speed = true, Intensity = true, MinPeriod = 1000, MaxPeriod = 20000, DefaultPeriod = 5000
+        },
+        new EffectInfo
+        {
+            Id = 0x16, Name = "Wave", Speed = true, Direction = true, Intensity = true, MinPeriod = 1000, MaxPeriod = 20000,
+            DefaultPeriod = 5000
         },
         new EffectInfo { Id = 0x17, Name = "Ripple", Color = true, Speed = true, MinPeriod = 2, MaxPeriod = 200, DefaultPeriod = 20 },
     };
@@ -403,15 +410,20 @@ static class G915Lighting
     public static byte[] Encode(byte id, Lighting lighting)
     {
         var parameters = new byte[10];
-        int color = lighting.Color;
+        // 0 shows as 100 on the G815, so the slider's 0 is sent as 1.
+        int color = lighting.Color, intensity = Math.Max(1, Math.Min(100, lighting.Intensity));
         switch (id)
         {
             case 0x03:
-                parameters[5] = (byte)(lighting.Period >> 8); parameters[6] = (byte)lighting.Period; parameters[7] = 100;
+                parameters[5] = (byte)(lighting.Period >> 8); parameters[6] = (byte)lighting.Period; parameters[7] = (byte)intensity;
                 return parameters;
             case 0x04:
-                parameters[6] = (byte)lighting.Period; parameters[7] = (byte)lighting.Direction; parameters[8] = 100;
+                parameters[6] = (byte)lighting.Period; parameters[7] = (byte)lighting.Direction; parameters[8] = (byte)intensity;
                 parameters[9] = (byte)(lighting.Period >> 8);
+                return parameters;
+            case 0x0A:
+                parameters[0] = (byte)(color >> 16); parameters[1] = (byte)(color >> 8); parameters[2] = (byte)color;
+                parameters[3] = (byte)(lighting.Period >> 8); parameters[4] = (byte)lighting.Period; parameters[6] = (byte)intensity;
                 return parameters;
             case 0x0B:
                 parameters[0] = (byte)(color >> 16); parameters[1] = (byte)(color >> 8); parameters[2] = (byte)color;
@@ -478,8 +490,9 @@ static class G915Lighting
         return profile;
     }
 
-    // Returns null when the keys hold an effect this app doesn't know.
-    public static Lighting Decode(byte[] profile, int keys)
+    // Returns null when the keys hold an effect this app doesn't know. The intensity is read only when the screen shows it (else
+    // G-Lite sends 100); G HUB saves 0, which shows as 100.
+    public static Lighting Decode(byte[] profile, int keys, bool intensity = false)
     {
         var record = profile.Skip(RecordsAt + RecordLength * keys).Take(RecordLength).ToArray();
         var lighting = new Lighting
@@ -498,6 +511,8 @@ static class G915Lighting
             default: return null;
         }
         if (lighting.Effect != 0x01 && lighting.Effect != 0x0A && lighting.Effect != 0x17) lighting.Color = 0xFFFFFF;
+        bool hasIntensity = record[0] == 0x03 || record[0] == 0x04 || record[0] == 0x0A;
+        if (intensity && hasIntensity && Level(record) > 0) lighting.Intensity = Math.Min(100, Level(record));
         var dim = profile.Skip(RecordsAt + RecordLength * (2 + keys)).Take(RecordLength).ToArray();
         lighting.Dim = dim[0] == record[0] && Level(record) > 0 ? Math.Min(100, Level(dim) * 100 / Level(record)) : 50;
         return lighting;
@@ -514,16 +529,16 @@ static class G915Lighting
         }
     }
 
-    // The dimmed records keep the colour and lower the intensity, as the keyboard's own profiles do; Static and Ripple have no
-    // intensity, so their colour is scaled.
+    // The dimmed records keep the colour and lower the intensity, as the keyboard's own profiles do, to percent of the normal one;
+    // Static and Ripple have no intensity, so their colour is scaled.
     static byte[] Dimmed(byte id, byte[] parameters, int percent)
     {
         parameters = (byte[])parameters.Clone();
         switch (id)
         {
-            case 0x03: parameters[7] = (byte)Math.Max(1, percent); break;
-            case 0x04: parameters[8] = (byte)Math.Max(1, percent); break;
-            case 0x0A: parameters[6] = (byte)Math.Max(1, percent); break;
+            case 0x03: parameters[7] = (byte)Math.Max(1, parameters[7] * percent / 100); break;
+            case 0x04: parameters[8] = (byte)Math.Max(1, parameters[8] * percent / 100); break;
+            case 0x0A: parameters[6] = (byte)Math.Max(1, parameters[6] * percent / 100); break;
             default: for (int i = 0; i < 3; i++) parameters[i] = (byte)(parameters[i] * percent / 100); break;
         }
         return parameters;

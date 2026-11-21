@@ -18,6 +18,12 @@ class KeyboardKinds
     public string[] GKeys;
     // The Game mode key's list of keys can be set (0x4522, tried on the G815; OpenGHub couldn't on a G915, so only the G815 for now).
     public bool GameMode;
+    // Wave 0x04 also goes up (direction 7) and down (2) on the G815, and 0 cycles through every direction; 4, 5, 9 and 10 change
+    // nothing (tried on an owner's keyboard). The G915s wait for an owner.
+    public bool VerticalWave;
+    // An Intensity slider for the effects that have one (0x8071's intensity byte; 0 shows as 100 on the G815). It doesn't make finer
+    // brightness steps: tried as the level above with the intensity lowered, 60% looked darker than 50% (an owner's G815).
+    public bool Intensity;
     public int[] Bar;
 
     public static string File(string name)
@@ -56,7 +62,8 @@ class KeyboardKinds
         G915 = new KeyboardKinds { Keys = KeyLayout.Load("g915.json"), Prefix = "profile.g915.", Profile = true },
         G815 = new KeyboardKinds { Keys = KeyLayout.Load("g815.json"), Prefix = "profile.g815.", Profile = true, NoIdleTimes = true,
             ReloadThroughHostMode = true, BrightnessLevels = new[] { 0, 12, 25, 50, 100 },
-            GKeys = new[] { "G1", "G2", "G3", "G4", "G5" }, GameMode = true },
+            GKeys = new[] { "G1", "G2", "G3", "G4", "G5" }, GameMode = true, VerticalWave = true,
+            Intensity = true },
         G512X = new KeyboardKinds
         {
             Keys = KeyLayout.Load("g512-x-75.json"), Prefix = "profile.g512x.", Bar = Enumerable.Range(0xA0, 33).ToArray()

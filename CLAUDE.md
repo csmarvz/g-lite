@@ -30,6 +30,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - Litra lights: `app/LightPage.cs`, `LitraProtocol.cs`
 - Other Logitech devices: `app/OtherDevicePage.cs`, `OtherDevice.cs`
 - `app/Screen.cs`: the Screen effect
+- `app/LiveEffects.cs`: the live effects G-Lite draws key by key (Starlight, Echo press, Audio visualizer, Rain, Fire, Aurora)
 - `app/Report.cs`, `ReportView.cs`: device reports
 - `app/Log.cs`, `LogsPage.cs`: `log.txt` and its screen
 - `app/Backups.cs`: copies of a device's memory before every write

@@ -204,8 +204,15 @@ class Script : IDisposable
                             + ")"));
             }
             else if (control is Dropdown)
+            {
+                var dropdown = (Dropdown)control;
                 parts.Add(control.AccessibleName + "="
-                    + (control.AccessibleName == "Monitor" ? "<monitor>" : control.Text == "" ? "-" : control.Text) + disabled);
+                    + (control.AccessibleName == "Monitor" ? "<monitor>" : control.Text == "" ? "-" : control.Text) + disabled
+                    + (dropdown.Off.Length == 0
+                        ? ""
+                        : " (no " + string.Join(", ", dropdown.Off.Where(i => i >= 0 && i < dropdown.Items.Count).Select(i => dropdown.Items[i]))
+                            + ")"));
+            }
             else if (control is Slider) parts.Add(control.AccessibleName + "=" + ((Slider)control).Value + disabled);
             else if (control is Toggle) parts.Add(control.AccessibleName + "=" + (((Toggle)control).Checked ? "on" : "off") + disabled);
             else if (control is Swatch && ((Swatch)control).On) parts.Add("<" + control.AccessibleName + ">");
@@ -292,6 +299,10 @@ static class Traces
             script.Do("power cycle", () => { device.PowerCycle(); for (int i = 0; i < 6; i++) page.Watch(); });
             script.Menu("Backups", "Restore the factory lighting");
             script.Pick("Effect", "Cycle");
+            // A live effect sends nothing until its timer draws a frame; Cycle after it gives the keyboard its lighting back.
+            script.Pick("Effect", "Rain");
+            script.Pick("Effect", "Aurora");
+            script.Pick("Effect", "Cycle");
             script.Do("quit", () => page.Exiting());
             return script.Text;
         }
@@ -338,6 +349,7 @@ static class Traces
     // The G815's G keys: edited in the Bindings view, saved with Save to M1 (bytes 0x20-0x33 of profile 1), left out of presets.
     // Its Game mode keys: sent at once (0x4522 fn 3, then fn 1), kept in presets, cleared by –, and sent again by a new page, as after
     // the keyboard is plugged in again. Off its onboard profiles (G HUB), Save is off and the status line red, until it runs them again.
+    // Its Wave also goes up (direction 7).
     static string G815()
     {
         var found = new FoundDevice
@@ -390,6 +402,8 @@ static class Traces
             script.Do("G HUB takes the keyboard off its onboard profiles", () => { keyboard.Modes.Add(2); page.CheckKeyboard(); });
             script.Pick("Effect", "Breathe");
             script.Do("G HUB closes", () => { keyboard.Modes.Add(1); page.CheckKeyboard(); });
+            script.Pick("Effect", "Wave");
+            script.Pick("Direction", "Up");
             script.Do("quit", () => page.Exiting());
             text = script.Text;
         }

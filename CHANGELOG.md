@@ -5,11 +5,16 @@
 ### Added
 
 - G815: a Game view to pick the keys the Game mode key turns off, on top of the Windows and Menu keys, which are always off. Click a key on the picture to add it or take it off (keys you can pick light up under the pointer); the change reaches the keyboard at once. The Game mode key is outlined on the picture, with its joystick icon. The keyboard forgets the list when it loses power, so G-Lite sends it again whenever the keyboard connects. Presets keep it, and – clears it. The keys show what they type with your Windows keyboard layout.
+- G815: Wave also goes up and down, or through every direction (All).
+- Keyboards with per-key lighting: live effects that G-Lite draws while it runs, like the Screen effect: Starlight, Echo (keys light up as you type, anywhere in Windows), Audio (bars that follow the sound playing on the PC, turning from your colour to another as they rise; white goes green to red), Rain, Fire and Aurora. Intensity sets each one's density, height, spread or colour mix. They take a few percent of one CPU core, and pause while the screen is off or locked unless you turn that off beside the effect. The effects run by G-Lite are marked Live in the list.
+- G815: an Intensity slider for Breathe, Cycle and Wave. It shows the intensity the profile has, and Save keeps the one set.
 - Reports read the lighting's control, power settings and power mode (0x8071).
 
 ### Changed
 
 - Mice and the G815: the Buttons view is now called Bindings.
+- G915, G915 TKL and G815: pressing an M key while the Screen effect or a live effect runs stops it, and the keyboard shows that profile's lighting.
+- Keyboards: the effect is picked from a dropdown, which leaves room for more effects. The G815's Brightness slider still stops at its five levels, now without tick marks.
 - G915, G915 TKL and G815: while G HUB or another app has taken the keyboard off its onboard profiles, the status line says so with a red dot and Save is off, since the save would fail. When the app lets go, the screen reads the keyboard again and M1–M3 come back.
 
 ## [0.0.33-alpha] - 2026-11-20

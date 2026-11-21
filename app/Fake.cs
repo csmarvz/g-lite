@@ -101,6 +101,9 @@ class FakeHidpp : Hidpp
                     Keys[parameters[i]] = parameters[0] << 16 | parameters[1] << 8 | parameters[2];
                 }
             }
+            if (fn == 1)
+                for (int at = 0; at + 3 < 16 && at + 3 < parameters.Length; at += 4)
+                    Keys[parameters[at]] = parameters[at + 1] << 16 | parameters[at + 2] << 8 | parameters[at + 3];
             if (fn == 7) Frames++;
         }
         else if (featureIndex == Index[0x4540]) reply[0] = 0x0D;

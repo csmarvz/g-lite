@@ -29,7 +29,7 @@ If Windows says it protected your PC, click **More info**, then **Run anyway**. 
 
 - **Saved to the device** (the G515 and mice, with **Save to keyboard** or **Save to mouse**): stays on the device, even without G-Lite or on another PC.
 - **Set on the device, not saved** (the G915, G915 TKL and G815 until you save, the G560, the Litra colours and the untested keyboards): stays until the device sleeps or turns off. G-Lite sets it again when it starts.
-- **Run by G-Lite** (the Screen effect, and the Litra's Breathe, Cycle and Wave): keeps going while G-Lite runs, in the tray too, and stops if you quit it.
+- **Run by G-Lite** (the effects marked Live: Screen, and on keyboards with per-key lighting Starlight, Echo, Audio, Rain, Fire and Aurora; the Litra's Breathe, Cycle and Wave): keeps going while G-Lite runs, in the tray too, and stops if you quit it.
 
 The preset you picked on each device is picked again when G-Lite starts, and set on the device if it no longer has it, like a G515 or mouse whose preset wasn't saved to it.
 

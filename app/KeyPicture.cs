@@ -86,6 +86,9 @@ class KeyPicture : DrawnControl
     public int Count { get { return keys.Count; } }
     public int IdOf(int key) { return ids[key]; }
     public float XOf(int key) { return (keys[key].X + keys[key].Width / 2) / widthInKeys; }
+    public float YOf(int key) { return (keys[key].Y + Math.Min(keys[key].Height, 1) / 2) / heightInKeys; }
+    public float WidthInKeys { get { return widthInKeys; } }
+    public float HeightInKeys { get { return heightInKeys; } }
 
     bool Pickable(int key) { return ids[key] >= 0 && CanPick != null && CanPick(ids[key]); }
 

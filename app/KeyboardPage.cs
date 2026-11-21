@@ -17,13 +17,40 @@ class KeyboardPage : DevicePage
     static readonly string[] DimText = { "Dark", "10%", "25%", "50%", "75%" };
     static readonly int[] SleepSecs = { 0, 60, 120, 300, 600, 900, 1800 };
     static readonly string[] SleepText = { "Never", "1 min", "2 min", "5 min", "10 min", "15 min", "30 min" };
-    static readonly int[] Directions = { 6, 1, 3, 8 };
-    static readonly string[] DirText = { "Left", "Right", "Center out", "Center in" };
+    static readonly int[] Directions = { 6, 1, 3, 8 }, VerticalDirections = { 6, 1, 7, 2, 3, 8, 0 };
+    static readonly string[] DirText = { "Left", "Right", "Center out", "Center in" },
+        VerticalDirText = { "Left", "Right", "Up", "Down", "Center out", "Center in", "All" };
+    readonly int[] directionValues;
+    readonly Label intensityHead, intensityValue;
+    readonly Slider intensity;
+    readonly Toggle livePause;
+    readonly Label livePauseLabel;
     const byte ScreenEffect = 0xFE;
     string Remembered { get { return "lighting." + found.SettingsKey; } }
     string Saved { get { return "screen." + found.SettingsKey; } }
+    // 1 while the Screen effect runs, the lighting's text while a live effect does.
     string Active { get { return "screen.on." + found.SettingsKey; } }
-    bool Screening { get { return current.Effect == ScreenEffect; } }
+    string ActiveText { get { return Sampling ? "1" : current.ToText(brightness); } }
+    // The Screen effect or a live effect (LiveEffects): G-Lite draws the keys itself, through 0x8081, and nothing can be saved.
+    bool Screening { get { return current.Effect == ScreenEffect || LiveEffects.Is(current.Effect); } }
+    // The Screen effect itself, with its monitor, zones and Screen box.
+    bool Sampling { get { return current.Effect == ScreenEffect; } }
+    int FrameInterval { get { return Sampling ? setup.Interval : 40; } }
+    string EffectName { get { return Sampling ? "Screen" : Info(current.Effect) != null ? Info(current.Effect).Name : "live"; } }
+    static EffectInfo Info(byte id) { return G515Profile.EffectById(id) ?? LiveEffects.Info(id); }
+    // The Effect dropdown's ids, in order: the keyboards' own effects, then the Screen effect and the live ones on keyboards with 0x8081.
+    readonly List<byte> effectIds;
+    LiveEffect animation;
+    byte animationId;
+    KeyField keyField;
+    Stopwatch animationClock;
+    double lastFrame;
+    string animationProblem, runningName = "Screen";
+    // The colours last sent by lighting id; only the keys that changed are sent, and all of them every 2 s.
+    volatile Dictionary<int, int> sentColors;
+    bool individualColors = true;
+    // The period and intensity were last set for a live effect, so a keyboard effect picked next takes its own defaults.
+    bool liveSettings;
     bool leftScreen;
 
     readonly KeyboardKinds kind;
@@ -69,7 +96,8 @@ class KeyboardPage : DevicePage
     internal override bool Busy { get { return debounce.Enabled; } }
 
     readonly Label lightHead, colorHead, directionHead, speedHead, speedValue, brightValue;
-    readonly SegmentedPicker effects, directions;
+    readonly SegmentedPicker directions;
+    readonly Dropdown effects;
     readonly ColorRow colors;
     readonly Slider speed, bright;
     readonly Dropdown idleBox, dimBox, sleepBox;
@@ -149,25 +177,50 @@ class KeyboardPage : DevicePage
         var light = lightBox = Ui.Add(this, new RoundedBox(), 20, 339, 380, 272);
         lightHead = Ui.Text(light, "Lighting", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         var effectHead = Ui.Text(light, "Effect", 14, 40, () => Theme.Dim, 9f);
+        effectIds = G515Profile.Effects.Select(effect => effect.Id).ToList();
         var names = G515Profile.Effects.Select(effect => effect.Name).ToList();
-        if (canScreen) names.Add("Screen");
-        effects = Ui.Add(light, new SegmentedPicker { Items = names.ToArray(), AccessibleName = "Effect" }, 14, 58, 352, 32);
+        if (canScreen)
+        {
+            effectIds.Add(ScreenEffect);
+            names.Add("Screen");
+            effectIds.AddRange(LiveEffects.All.Select(effect => effect.Id));
+            names.AddRange(LiveEffects.All.Select(effect => effect.Name));
+        }
+        effects = Ui.Add(light, new Dropdown { AccessibleName = "Effect" }, 14, 58, 196, 32);
+        effects.Items.AddRange(names);
+        effects.Badge = i => effectIds[i] == ScreenEffect || LiveEffects.Is(effectIds[i]) ? "Live" : null;
         effects.Picked += i =>
         {
-            if (i == G515Profile.Effects.Length)
+            byte id = effectIds[i];
+            if (id == ScreenEffect || LiveEffects.Is(id))
             {
                 part = 0;
                 bar = null;
-                if (!Screening) { current.Effect = ScreenEffect; ScreenOn(); }
+                bool was = Screening;
+                byte before = current.Effect;
+                var liveInfo = LiveEffects.Info(id);
+                current.Effect = id;
+                if (liveInfo != null && liveInfo.Speed && (current.Period < liveInfo.MinPeriod || current.Period > liveInfo.MaxPeriod))
+                    current.Period = liveInfo.DefaultPeriod;
+                // The keyboard's intensity (100) means the most of a live effect's density or height; each starts in the middle.
+                if (liveInfo != null && !LiveEffects.Is(before)) current.Intensity = LiveEffects.DefaultIntensity;
+                if (liveInfo != null) liveSettings = true;
+                if (!was) ScreenOn();
+                else if (before != id) SoftwareSwitched();
                 Changed(true);
                 return;
             }
+            // A live effect's period and intensity mean something else (Aurora's 20 s turn, Rain's density), so after one, even through
+            // the Screen effect, the keyboard's effect starts at its own defaults. A keyboard without the slider always sends 100.
+            bool fromLive = liveSettings;
+            liveSettings = false;
             if (Screening) ScreenOff();
-            var effect = G515Profile.Effects[i];
+            var effect = G515Profile.EffectById(id);
             var target = Target();
             target.Effect = effect.Id;
-            if (effect.Speed && (target.Period < effect.MinPeriod || target.Period > effect.MaxPeriod))
+            if (effect.Speed && (fromLive || target.Period < effect.MinPeriod || target.Period > effect.MaxPeriod))
                 target.Period = effect.DefaultPeriod;
+            if (fromLive || !(kind.Intensity && effect.Intensity)) target.Intensity = 100;
             Changed(true);
         };
         colorHead = Ui.Text(light, "Color", 14, 98, () => Theme.Dim, 9f);
@@ -175,8 +228,10 @@ class KeyboardPage : DevicePage
         colors.Picked += color => { Target().Color = color; Changed(true); };
 
         directionHead = Ui.Text(light, "Direction", 14, 156, () => Theme.Dim, 9f);
-        directions = Ui.Add(light, new SegmentedPicker { Items = DirText, AccessibleName = "Direction" }, 14, 174, 352, 32);
-        directions.Picked += i => { Target().Direction = Directions[i]; Changed(true); };
+        directionValues = kind.VerticalWave ? VerticalDirections : Directions;
+        directions = Ui.Add(light, new SegmentedPicker { Items = kind.VerticalWave ? VerticalDirText : DirText, AccessibleName = "Direction" },
+            14, 174, 352, 32);
+        directions.Picked += i => { Target().Direction = directionValues[i]; Changed(true); };
 
         Ui.Text(light, kind.Bar != null ? "Brightness (all)" : "Brightness", 14, 214, () => Theme.Dim, 9f);
         brightValue = Value(light, 14, 214, 172);
@@ -188,13 +243,31 @@ class KeyboardPage : DevicePage
         speed.Changed += (s, e) =>
         {
             var target = Target();
-            var effect = G515Profile.EffectById(target.Effect);
+            var effect = Info(target.Effect);
             target.Period = effect.MaxPeriod - (effect.MaxPeriod - effect.MinPeriod) * speed.Value / 100;
             Changed(false);
         };
+        // Also for the live effects; not on the G512 X, whose per-zone row leaves no room above the footer for another.
+        if (kind.Intensity || (canScreen && !Parts))
+        {
+            intensityHead = Ui.Text(light, "Intensity", 14, 266, () => Theme.Dim, 9f);
+            intensityValue = Value(light, 14, 266, 172);
+            intensity = Ui.Add(light, new Slider { AccessibleName = "Intensity" }, 14, 286, 172, 24);
+            intensity.Changed += (s, e) => { Target().Intensity = intensity.Value; Changed(false); };
+            light.Height += 52;
+        }
 
         foreach (Control control in light.Controls)
             if (control != lightHead && control != effectHead && control != effects) plainLight.Add(control);
+
+        // The Screen box's pause switch, beside the effect for the live effects, which have no box of their own; the same setting.
+        livePause = Ui.Add(light, new Toggle { AccessibleName = "Pause when screen off or locked", Visible = false }, 222, 65, 34, 18);
+        livePause.Changed += () => { setup.PauseWhenLocked = livePause.Checked; ScreenChanged(); };
+        livePauseLabel = Ui.Text(light, "Pause when screen off or locked", 262, 58, () => Theme.Text, 9f);
+        livePauseLabel.AutoSize = false;
+        livePauseLabel.Size = new Size(108, 34);
+        livePauseLabel.Visible = false;
+        livePause.Follow(livePauseLabel);
 
         screenLight.Add(Ui.Text(light, "Monitor", 14, 98, () => Theme.Dim, 9f));
         monitorDropdown = Ui.Add(light, new Dropdown { AccessibleName = "Monitor" }, 14, 116, 200, 30);
@@ -252,11 +325,12 @@ class KeyboardPage : DevicePage
         foreach (var control in screenLight) control.Visible = false;
         picture.KeysPicked += picked =>
         {
+            if (!Sampling) return;
             foreach (int key in picked) if (picture.IdOf(key) >= 0) setup.Keys[picture.IdOf(key)] = selectedZone;
             ScreenChanged();
         };
 
-        screenBox = Ui.Add(this, new RoundedBox { Visible = false }, 412, 339, 224, Parts ? 316 : 272);
+        screenBox = Ui.Add(this, new RoundedBox { Visible = false }, 412, 339, 224, light.Height);
         Ui.Text(screenBox, "Screen", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         Ui.Text(screenBox, "Color boost", 14, 36, () => Theme.Dim, 9f);
         boostValue = Value(screenBox, 14, 36, 196);
@@ -277,7 +351,7 @@ class KeyboardPage : DevicePage
         {
             setup.Interval = 1000 - rateSlider.Value * 100;
             rateValue.Text = setup.Interval + " ms";
-            screenTimer.Interval = setup.Interval;
+            screenTimer.Interval = FrameInterval;
             Edited();
             debounce.Stop();
             debounce.Start();
@@ -295,7 +369,7 @@ class KeyboardPage : DevicePage
         exiting = (s, e) => Exiting();
         Application.ApplicationExit += exiting;
 
-        var idle = Ui.Add(this, new RoundedBox(), 412, 339, 224, Parts ? 316 : 272);
+        var idle = Ui.Add(this, new RoundedBox(), 412, 339, 224, light.Height);
         idleArea = idle;
         bool note = live && !kind.Profile;
         Ui.Text(idle, note ? "Saving" : "When idle", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
@@ -371,11 +445,13 @@ class KeyboardPage : DevicePage
             496, 685, 140, 32);
         saveButton.Click += (s, e) => Save();
 
-        if (canScreen && Settings.Get(Active) == "1")
-        {
-            current.Effect = ScreenEffect;
-            ScreenOn();
-        }
+        string active = canScreen ? Settings.Get(Active) : null;
+        Lighting kept = null;
+        if (active != null && active != "1")
+            try { int ignored; kept = Lighting.FromText(active, out ignored); }
+            catch (Exception) { }
+        if (active == "1") { current.Effect = ScreenEffect; ScreenOn(); }
+        else if (kept != null && LiveEffects.Is(kept.Effect)) { current = kept; liveSettings = true; ScreenOn(); }
         RefreshControls();
         if (live) Load();
     }
@@ -458,28 +534,51 @@ class KeyboardPage : DevicePage
 
     void ScreenOn()
     {
-        Settings.Set(Active, "1");
+        Settings.Set(Active, ActiveText);
         Settings.Set(Saved, setup.ToText());
         dirty = true;
         force = true;
         released = false;
         shown = sent = null;
         nextTry = DateTime.MinValue;
-        LogUserAction("Screen effect on");
-        screenTimer.Interval = setup.Interval;
+        runningName = EffectName;
+        LogUserAction(runningName + " effect on");
+        screenTimer.Interval = FrameInterval;
+        if (Manual) return;
         screenTimer.Start();
-        snapTimer.Start();
-        Snap();
+        if (Sampling) { snapTimer.Start(); Snap(); }
+    }
+
+    // From the Screen effect or a live effect to another, while they run.
+    void SoftwareSwitched()
+    {
+        StopAnimation();
+        Settings.Set(Active, ActiveText);
+        force = true;
+        shown = sent = null;
+        runningName = EffectName;
+        LogUserAction(runningName + " effect on");
+        screenTimer.Interval = FrameInterval;
+        if (Sampling && !Manual) { snapTimer.Start(); Snap(); } else snapTimer.Stop();
+    }
+
+    void StopAnimation()
+    {
+        if (animation != null) animation.Dispose();
+        animation = null;
+        animationProblem = null;
+        sentColors = null;
     }
 
     void ScreenOff()
     {
         screenTimer.Stop();
         snapTimer.Stop();
+        StopAnimation();
         Settings.Remove(Active);
         shown = sent = null;
         released = false;
-        LogUserAction("Screen effect off");
+        LogUserAction(runningName + " effect off");
         leftScreen = true;
         if (claimed) RunOnDevice(hidpp => { if (live) G915Lighting.Release(hidpp); else G515Profile.Release(hidpp); claimed = false; });
     }
@@ -505,7 +604,7 @@ class KeyboardPage : DevicePage
 
     void ShowLive()
     {
-        if (!Screening) return;
+        if (!Sampling) return;
         var colors = new Color[picture.Count];
         var outlined = new bool[picture.Count];
         for (int key = 0; key < picture.Count; key++)
@@ -535,9 +634,10 @@ class KeyboardPage : DevicePage
     {
         claimed = false;
         sent = null;
+        sentColors = null;
         failing = true;
         nextTry = DateTime.UtcNow.AddSeconds(5);
-        problem = "The screen effect couldn't reach the keyboard: " + error.Message;
+        problem = "The " + runningName + " effect couldn't reach the keyboard: " + error.Message;
     }
 
     void Worked()
@@ -577,6 +677,7 @@ class KeyboardPage : DevicePage
             return;
         }
         if (released) { released = false; force = true; ClearStatus(); }
+        if (!Sampling) { Animate(readBattery); return; }
         if (capturing) return;
         capturing = true;
         var monitor = ScreenCapture.Find(setup.Monitor).Bounds;
@@ -591,7 +692,7 @@ class KeyboardPage : DevicePage
                 context.Post(posted =>
                 {
                     capturing = false;
-                    if (sampled != null && !IsDisposed && Screening && !sending && sampled.Length == setup.Zones.Count)
+                    if (sampled != null && !IsDisposed && Sampling && !sending && sampled.Length == setup.Zones.Count)
                         Sampled(sampled, readBattery);
                     else if (readBattery) nextBattery = DateTime.UtcNow;
                 }, null);
@@ -650,6 +751,79 @@ class KeyboardPage : DevicePage
         }, null, message => { });
     }
 
+    // A frame of the live effect: drawn on the picture, and the keys whose colour changed sent to the keyboard (all of them every 2 s,
+    // with the claim again, as the Screen effect does).
+    void Animate(bool readBattery)
+    {
+        if (animation == null || animationId != current.Effect)
+        {
+            StopAnimation();
+            animation = LiveEffects.Make(current.Effect);
+            animationId = current.Effect;
+            animationClock = Stopwatch.StartNew();
+            lastFrame = 0;
+            if (animation == null) return;
+        }
+        if (keyField == null) keyField = KeyField.From(picture);
+        animation.Color = current.Color;
+        animation.Period = current.Period;
+        animation.Intensity = current.Intensity;
+        double seconds = animationClock.Elapsed.TotalSeconds, elapsed = Math.Min(0.25, seconds - lastFrame);
+        lastFrame = seconds;
+        var frameColors = new int[keyField.Count];
+        animation.Frame(keyField, seconds, elapsed, frameColors);
+        if (animation.Problem != animationProblem) { animationProblem = animation.Problem; statusDirty = true; }
+        ShowAnimation(frameColors);
+        // Lost and Failed, on the device's thread, drop the map to force a full frame; this frame keeps the one it took.
+        var lastSent = sentColors;
+        bool full = force || lastSent == null || DateTime.UtcNow >= nextRefresh;
+        if (full) nextRefresh = DateTime.UtcNow.AddSeconds(2);
+        if (lastSent == null) sentColors = lastSent = new Dictionary<int, int>();
+        var changes = new Dictionary<int, int>();
+        for (int i = 0; i < keyField.Count; i++)
+        {
+            int id = keyField.Ids[i], color = frameColors[i], before;
+            bool known = lastSent.TryGetValue(id, out before);
+            if (full || !known || ScreenCapture.Distance(before, color) > 9 || (color == 0 && before != 0)) changes[id] = color;
+        }
+        if (changes.Count == 0 && !readBattery) return;
+        force = false;
+        foreach (var change in changes) lastSent[change.Key] = change.Value;
+        sending = true;
+        bool claimAgain = full;
+        RunOnDevice(hidpp =>
+        {
+            try
+            {
+                if (changes.Count > 0)
+                {
+                    if (present == null) present = KeyLights.Present(hidpp);
+                    if (!claimed || claimAgain) { Claim(hidpp, claimed); claimed = true; }
+                    var lit = changes.Where(pair => present.Contains(pair.Key)).ToDictionary(pair => pair.Key, pair => pair.Value);
+                    KeyLights.SendColors(hidpp, lit, ref individualColors);
+                }
+                if (readBattery) { ReadBattery(hidpp); statusDirty = true; }
+                Worked();
+            }
+            catch (Exception ex) { Failed(ex); throw; }
+            finally { sending = false; }
+        }, null, message => { });
+    }
+
+    void ShowAnimation(int[] frameColors)
+    {
+        var byId = new Dictionary<int, int>();
+        for (int i = 0; i < keyField.Count; i++) byId[keyField.Ids[i]] = frameColors[i];
+        var keyColors = new Color[picture.Count];
+        for (int key = 0; key < picture.Count; key++)
+        {
+            int color;
+            byId.TryGetValue(picture.IdOf(key), out color);
+            keyColors[key] = Color.FromArgb(color >> 16 & 0xFF, color >> 8 & 0xFF, color & 0xFF);
+        }
+        picture.ShowLive(keyColors, new bool[picture.Count]);
+    }
+
     void ReadBattery(Hidpp hidpp)
     {
         var reply = hidpp.CallUnlogged(hidpp.FeatureIndex(0x1004), 1);
@@ -665,13 +839,14 @@ class KeyboardPage : DevicePage
         iso = true;
         picture.SetModel(model);
         if (gamePicture != null) gamePicture.SetModel(model);
+        keyField = null;
         force = true;
-        if (Screening) SyncScreen();
+        if (Sampling) SyncScreen();
     }
 
     void Snap()
     {
-        if (!Screening || !Visible || snapping) return;
+        if (!Sampling || !Visible || snapping) return;
         snapping = true;
         var monitor = ScreenCapture.Find(setup.Monitor).Bounds;
         int width = preview.Width, height = Math.Max(1, width * monitor.Height / Math.Max(1, monitor.Width));
@@ -733,7 +908,7 @@ class KeyboardPage : DevicePage
         batteryToggle.Checked = setup.PauseOnBattery;
         lockToggle.Checked = setup.PauseWhenLocked;
         foreach (var s in new Control[] { boostSlider, screenBright, rateSlider }) s.Invalidate();
-        screenTimer.Interval = setup.Interval;
+        screenTimer.Interval = FrameInterval;
         ShowLive();
     }
 
@@ -754,6 +929,7 @@ class KeyboardPage : DevicePage
         if (disposing)
         {
             screenTimer.Dispose();
+            StopAnimation();
             watchTimer.Dispose();
             snapTimer.Dispose();
             Presence.Changed -= presenceChanged;
@@ -767,7 +943,7 @@ class KeyboardPage : DevicePage
 
     public override void Restyle() { RefreshControls(); }
 
-    protected override void Lost() { claimed = false; clusters = null; present = null; }
+    protected override void Lost() { claimed = false; clusters = null; present = null; sentColors = null; }
 
     protected override void Opened(Hidpp hidpp) { SendGameKeys(hidpp); }
 
@@ -812,16 +988,20 @@ class KeyboardPage : DevicePage
         var newSetup = parts.Length > 1 ? ScreenSettings.FromText(parts[1]) : setup;
         if (game != null) SetGameKeys(GameModeKeys.FromText(game));
         if (text == LightingText()) { RefreshControls(); ClearStatus(); return; }
-        if (lighting.Effect == ScreenEffect && !canScreen) lighting.Effect = 0x01;
-        bar = lighting.Effect == ScreenEffect ? null : BarFrom(pieces);
+        bool software = lighting.Effect == ScreenEffect || LiveEffects.Is(lighting.Effect);
+        if (software && !canScreen) { lighting.Effect = 0x01; software = false; }
+        bar = software ? null : BarFrom(pieces);
         part = bar == null ? 0 : 1;
         bool was = Screening;
+        byte before = current.Effect;
         setup = newSetup;
         current = lighting;
+        liveSettings = LiveEffects.Is(lighting.Effect);
         brightness = Allowed(Math.Max(0, Math.Min(100, level)));
         if (was && !Screening) ScreenOff();
         if (!was && Screening) ScreenOn();
-        if (Screening) ScreenChanged();
+        else if (was && Screening && before != current.Effect) SoftwareSwitched();
+        if (Sampling) ScreenChanged();
         Changed(true);
     }
 
@@ -847,25 +1027,26 @@ class KeyboardPage : DevicePage
     {
         loading = true;
         if (gKeys == null && openView == ButtonsView) openView = SettingsView;
-        bool screening = Screening, settings = openView == SettingsView;
-        foreach (var control in plainLight) control.Visible = !screening;
-        foreach (var control in screenLight) control.Visible = screening;
-        screenBox.Visible = screening && settings;
-        idleArea.Visible = !screening && !kind.NoIdleTimes && settings;
+        bool screening = Screening, sampling = Sampling, settings = openView == SettingsView;
+        foreach (var control in plainLight) control.Visible = !sampling;
+        foreach (var control in screenLight) control.Visible = sampling;
+        screenBox.Visible = sampling && settings;
+        idleArea.Visible = !sampling && !kind.NoIdleTimes && settings;
         pictureBox.Visible = lightBox.Visible = settings;
-        Widen(!screening && kind.NoIdleTimes && !Parts);
+        Widen(!sampling && kind.NoIdleTimes && !Parts);
         if (picture.Live != screening) picture.Live = screening;
         var view = Viewed;
-        var effect = G515Profile.EffectById(view.Effect);
+        var effect = Info(view.Effect);
         bool known = Known();
         bool color = known && effect != null && effect.Color, hasDirection = known && effect != null && effect.Direction,
-            hasSpeed = known && effect != null && effect.Speed;
+            hasSpeed = known && effect != null && effect.Speed,
+            hasIntensity = known && effect != null && effect.Intensity && (kind.Intensity || LiveEffects.Is(effect.Id));
         lightHead.Text = known ? "Lighting"
             : broken ? "Lighting (half written on the keyboard)"
             : live ? "Lighting (as on the keyboard)"
             : "Lighting (factory animation)";
-        effects.Index = known ? Array.FindIndex(G515Profile.Effects, info => info.Id == view.Effect) : -1;
-        effects.Off = part == 2 ? new[] { Array.FindIndex(G515Profile.Effects, info => info.Id == Ripple) } : new int[0];
+        effects.Index = known ? effectIds.IndexOf(view.Effect) : -1;
+        effects.Off = part == 2 ? new[] { effectIds.IndexOf(Ripple) } : new int[0];
         effects.Invalidate();
         if (partPicker != null)
         {
@@ -880,12 +1061,20 @@ class KeyboardPage : DevicePage
         colors.RefreshControls(view.Color, color);
         SetDimmed(directionHead, hasDirection);
         directions.Enabled = hasDirection;
-        directions.Index = hasDirection ? Array.IndexOf(Directions, view.Direction) : -1;
+        directions.Index = hasDirection ? Array.IndexOf(directionValues, view.Direction) : -1;
         SetDimmed(speedHead, hasSpeed);
         speed.Enabled = hasSpeed;
         if (hasSpeed) speed.Value = (effect.MaxPeriod - view.Period) * 100 / (effect.MaxPeriod - effect.MinPeriod);
         speedValue.Text = hasSpeed ? speed.Value + "%" : "";
         speed.Invalidate();
+        if (intensity != null)
+        {
+            SetDimmed(intensityHead, hasIntensity);
+            intensity.Enabled = hasIntensity;
+            intensity.Value = view.Intensity;
+            intensityValue.Text = hasIntensity ? view.Intensity + "%" : "";
+            intensity.Invalidate();
+        }
         bright.Value = brightness;
         brightValue.Text = brightness + "%";
         bright.Invalidate();
@@ -897,13 +1086,19 @@ class KeyboardPage : DevicePage
         ShowSlots();
         ShowViews();
         picture.Display(known ? current : null, known ? bar : null, brightness);
+        livePause.Visible = livePauseLabel.Visible = screening && !sampling;
+        livePause.Checked = setup.PauseWhenLocked;
         if (screening)
         {
-            foreach (var control in plainLight) control.Visible = false;
-            effects.Index = G515Profile.Effects.Length;
+            effects.Index = effectIds.IndexOf(current.Effect);
+            effects.Invalidate();
             lightHead.Text = "Lighting";
             saveButton.Enabled = false;
-            SyncScreen();
+            if (sampling)
+            {
+                foreach (var control in plainLight) control.Visible = false;
+                SyncScreen();
+            }
         }
         loading = false;
     }
@@ -918,10 +1113,10 @@ class KeyboardPage : DevicePage
         int extra = pictureBox.Right - idleArea.Left + gap;
         int change = on ? extra : -extra, half = on ? extra / 2 : -(extra / 2);
         lightBox.Width += change;
-        effects.Width += change;
         directions.Width += change;
         bright.Width += half;
         brightValue.Width += half;
+        if (intensity != null) { intensity.Width += half; intensityValue.Width += half; }
         foreach (Control control in new Control[] { speedHead, speedValue, speed }) control.Left += half;
         speed.Width += half;
         speedValue.Width += half;
@@ -947,7 +1142,7 @@ class KeyboardPage : DevicePage
             // The Screen effect stops Save, and its box is hidden here: the G keys wait until it's off.
             bool screening = Screening;
             buttonRows.Show(kind.GKeys, gKeys, !broken && !screening,
-                screening ? "Turn off the Screen effect to change the G keys." : "Changes take effect once saved to the keyboard.");
+                screening ? "Turn off the " + EffectName + " effect to change the G keys." : "Changes take effect once saved to the keyboard.");
         }
         if (gameBox != null)
         {
@@ -1085,9 +1280,17 @@ class KeyboardPage : DevicePage
         if (sector == running) return;
         if (picked) LogUserAction("Switch to M" + sector);
         running = sector;
-        bool screening = Screening;
+        // A live effect or the Screen effect stops too: the keyboard shows the new profile's lighting (the owner's choice, 2026-11-21).
+        if (Screening)
+        {
+            ScreenOff();
+            current = stored != null ? stored.Clone() : new Lighting();
+            liveSettings = false;
+        }
         DropPreset();
-        if (!screening) { Settings.Remove(Remembered); bar = null; part = 0; }
+        Settings.Remove(Remembered);
+        bar = null;
+        part = 0;
         dirty = false;
         edits++;
         DropGKeyEdits();
@@ -1096,7 +1299,8 @@ class KeyboardPage : DevicePage
         RefreshControls();
         RunOnDevice(hidpp =>
         {
-            if (!screening) { G915Lighting.Release(hidpp); claimed = false; }
+            G915Lighting.Release(hidpp);
+            claimed = false;
             if (picked) hidpp.Call(hidpp.FeatureIndex(0x8100), 3, (byte)(sector >> 8), (byte)sector);
         });
         Load();
@@ -1128,8 +1332,10 @@ class KeyboardPage : DevicePage
         {
             var why = Paused();
             if (why != null) ShowStatus(why, true);
-            else if (ScreenCapture.Missing(setup.Monitor)) ShowStatus("The chosen monitor isn't connected. Using the main monitor.", true);
-            else ShowStatus(GKeysChanged ? "Live only. G keys not saved: turn off the Screen effect to save them." : "Live only.");
+            else if (!Sampling && animationProblem != null) ShowStatus(animationProblem, true);
+            else if (Sampling && ScreenCapture.Missing(setup.Monitor))
+                ShowStatus("The chosen monitor isn't connected. Using the main monitor.", true);
+            else ShowStatus(GKeysChanged ? "Live only. G keys not saved: turn off the " + EffectName + " effect to save them." : "Live only.");
         }
         else if (live && kind.Profile)
             ShowStatus(dirty ? "Set by G-Lite, not saved to the keyboard"
@@ -1209,6 +1415,7 @@ class KeyboardPage : DevicePage
         if (Screening)
         {
             Settings.Set(Saved, setup.ToText());
+            if (!Sampling) Settings.Set(Active, ActiveText);
             int screenLevel = brightness;
             previewSequence++;
             RunOnDevice(hidpp =>
@@ -1445,7 +1652,7 @@ class KeyboardPage : DevicePage
                 {
                     int sector;
                     var profile = G915Lighting.ReadProfile(hidpp, out sector);
-                    if (lighting == null) saved = G915Lighting.Decode(profile, G915Lighting.Keys(clusters));
+                    if (lighting == null) saved = G915Lighting.Decode(profile, G915Lighting.Keys(clusters), kind.Intensity);
                     if (kind.GKeys != null) keysRead = G915Lighting.ReadButtons(profile, kind.GKeys.Length);
                 }
                 catch (Exception) { }
