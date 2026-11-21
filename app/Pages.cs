@@ -627,6 +627,9 @@ class ColorRow
         more.Left = custom.Left + (custom.Visible ? (int)Math.Round(36 * Ui.DpiScale) : 0);
         more.Enabled = on;
     }
+
+    // The right edge of the last swatch (+), which moves right once a custom colour is kept.
+    public int Right { get { return more.Right; } }
 }
 
 class InfoPage : Control

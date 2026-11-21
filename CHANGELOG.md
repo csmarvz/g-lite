@@ -13,7 +13,7 @@
 ### Changed
 
 - Mice and the G815: the Buttons view is now called Bindings.
-- G915, G915 TKL and G815: pressing an M key while the Screen effect or a live effect runs stops it, and the keyboard shows that profile's lighting, the running profile's own M key too.
+- G915, G915 TKL and G815: pressing an M key while the Screen effect or a live effect runs stops it, and the keyboard shows that profile's lighting. The running profile's own M key tells G-Lite nothing; to go back to its lighting, click that profile's M button in G-Lite.
 - Dropdowns: the picked row is filled green instead of checked.
 - Screen effect: Color boost is now called Intensity.
 - Keyboards: the effect is picked from a dropdown, which leaves room for more effects. The G815's Brightness slider still stops at its five levels, now without tick marks.

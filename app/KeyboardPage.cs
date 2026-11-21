@@ -134,7 +134,6 @@ class KeyboardPage : DevicePage
     int running;
     volatile byte profilesFeature, brightnessFeature;
     volatile bool checkingSlot, checkingBrightness;
-    bool pressPending;
     // The keyboard isn't running its onboard profiles (0x8100 fn 2 isn't 1): G HUB switches it off them while it runs (seen on the
     // G815, 2026-11-21), and then fn 4 answers 0, M1-M3 don't show and Save would be refused. Save is off until it runs them again.
     bool takenOver;
@@ -161,7 +160,9 @@ class KeyboardPage : DevicePage
         if (kind.Profile)
         {
             slotPicker = Ui.Add(this, new SegmentedPicker { AccessibleName = "Onboard profile", Visible = false }, 264, 685, 144, 32);
-            slotPicker.Picked += i => { if (i >= 0 && i < slots.Count) SlotSwitched(slots[i], true); };
+            // The running profile's own M key on the keyboard sends nothing and leaves 0x8071 control as it was (tried on the G815,
+            // 2026-11-21), so a live effect can't follow it; picking that profile here stops the effect instead.
+            slotPicker.Picked += i => { if (i >= 0 && i < slots.Count) SlotSwitched(slots[i], true, Screening && slots[i] == running); };
             FooterPicker = slotPicker;
         }
 
@@ -272,8 +273,8 @@ class KeyboardPage : DevicePage
             on => { setup.PauseOnBattery = on; ScreenChanged(); });
         liveControls.Add(pauseHead);
         // Beside the colours, for Audio: the colour as it is, not turning with height.
-        // Right of the colour row's last swatch, which reaches 296 once a custom colour is kept.
-        solidToggle = SideOption(light, "Solid", "Solid color", 304, 123, 34, on => { Target().Solid = on; Changed(true); });
+        // Placed after the colour row's + in RefreshControls, which moves right once a custom colour is kept.
+        solidToggle = SideOption(light, "Solid", "Solid color", 272, 123, 34, on => { Target().Solid = on; Changed(true); });
 
         screenLight.Add(Ui.Text(light, "Monitor", 14, 98, () => Theme.Dim, 9f));
         monitorDropdown = Ui.Add(light, new Dropdown { AccessibleName = "Monitor" }, 14, 116, 200, 30);
@@ -1120,6 +1121,8 @@ class KeyboardPage : DevicePage
         // Paused() reads the battery from 0x1004 only, so a wired keyboard doesn't offer it.
         ShowOption(liveBattery, liveEffect && found.Has(0x1004));
         ShowOption(solidToggle, liveEffect && effect != null && effect.OffersSolid);
+        solidToggle.Left = colors.Right + (int)Math.Round(12 * Ui.DpiScale);
+        ((Control)solidToggle.Tag).Left = solidToggle.Left + (int)Math.Round(40 * Ui.DpiScale);
         livePause.Checked = setup.PauseWhenLocked;
         liveBattery.Checked = setup.PauseOnBattery;
         solidToggle.Checked = view.Solid;
@@ -1238,7 +1241,7 @@ class KeyboardPage : DevicePage
     public void Heard(byte feature, int fn)
     {
         if (fn != 0) return;
-        if (profilesFeature != 0 && feature == profilesFeature) CheckSlot(true);
+        if (profilesFeature != 0 && feature == profilesFeature) CheckSlot();
         if (brightnessFeature != 0 && feature == brightnessFeature) CheckBrightness();
     }
 
@@ -1268,13 +1271,9 @@ class KeyboardPage : DevicePage
         }, message => { checkingBrightness = false; });
     }
 
-    // pressed: an M key sent the event. The running profile's own M key only reloads it, which still stops a live effect; a press
-    // during a check already running is kept for its end (pressPending), since no later check could see it.
-    void CheckSlot(bool pressed = false)
+    void CheckSlot()
     {
-        if (slotPicker == null || (slots.Count < 2 && !takenOver)) return;
-        if (pressed) pressPending = true;
-        if (checkingSlot) return;
+        if (slotPicker == null || (slots.Count < 2 && !takenOver) || checkingSlot) return;
         checkingSlot = true;
         int now = 0;
         bool host = false;
@@ -1287,8 +1286,6 @@ class KeyboardPage : DevicePage
         }, () =>
         {
             checkingSlot = false;
-            bool wasPressed = pressPending;
-            pressPending = false;
             if (host && !takenOver)
             {
                 Log.Add(DeviceLabel, "found", "the keyboard left its onboard profiles");
@@ -1307,11 +1304,10 @@ class KeyboardPage : DevicePage
                 if (running != 0 && now != running) SlotSwitched(now, false); else Load();
                 return;
             }
-            bool again = wasPressed && now == running && Screening;
-            if (now == 0 || (now == running && !again)) return;
+            if (now == 0 || now == running) return;
             Log.Add(DeviceLabel, "found", "M" + now + " picked on the keyboard");
-            SlotSwitched(now, false, again);
-        }, message => { checkingSlot = false; pressPending = false; });
+            SlotSwitched(now, false);
+        }, message => { checkingSlot = false; });
     }
 
     // Another onboard profile runs, picked here or with an M key. The keyboard shows that profile's saved lighting, so a live lighting
