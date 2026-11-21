@@ -228,7 +228,7 @@ class KeyboardPage : DevicePage
                 target.Period = effect.DefaultPeriod;
             if (fromLive || !(kind.Intensity && effect.Intensity)) target.Intensity = 100;
             target.Solid = false;
-            if (Array.IndexOf(directionValues, target.Direction) < 0) target.Direction = 1;
+            if (fromLive && Array.IndexOf(directionValues, target.Direction) < 0) target.Direction = 1;
             Changed(true);
         };
         colorHead = Ui.Text(light, "Color", 14, 98, () => Theme.Dim, 9f);
@@ -278,10 +278,11 @@ class KeyboardPage : DevicePage
         var pauseHead = Ui.Text(light, "Pause", 194, 266, () => Theme.Dim, 9f);
         livePause = SideOption(light, "Screen off or locked", "Pause when screen off or locked", 194, 289, 132,
             on => { setup.PauseWhenLocked = on; ScreenChanged(); });
-        liveBattery = SideOption(light, "Low battery", "Pause on low battery", 194, 311, 132,
+        liveBattery = SideOption(light, "Low battery", "Pause on low battery", 194, 310, 132,
             on => { setup.PauseOnBattery = on; ScreenChanged(); });
         liveControls.Add(pauseHead);
-        if (intensity != null) light.Height += 10;
+        // Room for Low battery below, ending above the footer's line at 673.
+        if (intensity != null) light.Height += 6;
         // Beside the colours, for Audio: the colour as it is, not turning with height.
         // Placed after the colour row's + in RefreshControls, which moves right once a custom colour is kept.
         solidToggle = SideOption(light, "Solid", "Solid color", 272, 123, 34, on => { Target().Solid = on; Changed(true); });
@@ -1078,7 +1079,8 @@ class KeyboardPage : DevicePage
         bool color = known && effect != null && effect.Color, hasDirection = known && effect != null && effect.Direction,
             hasSpeed = known && effect != null && effect.Speed,
             hasIntensity = known && effect != null && effect.Intensity && (kind.Intensity || LiveEffects.Is(effect.Id));
-        lightHead.Text = known ? "Lighting"
+        // The G512 X's title row also holds Per zone, so it keeps the short heading.
+        lightHead.Text = known || Parts ? "Lighting"
             : broken ? "Lighting (half written on the keyboard)"
             : live ? "Lighting (as on the keyboard)"
             : "Lighting (factory animation)";
@@ -1134,10 +1136,9 @@ class KeyboardPage : DevicePage
         // Paused() reads the battery from 0x1004 only, so it's greyed out on a wired keyboard.
         ShowOption(liveBattery, liveEffect);
         liveBattery.Enabled = found.Has(0x1004);
-        ((Label)liveBattery.Tag).ForeColor = found.Has(0x1004) ? Theme.Text : Ui.Off;
         ShowOption(solidToggle, liveEffect && effect != null && effect.OffersSolid);
-        solidToggle.Left = colors.Right + (int)Math.Round(12 * Ui.DpiScale);
-        ((Control)solidToggle.Tag).Left = solidToggle.Left + (int)Math.Round(40 * Ui.DpiScale);
+        solidToggle.Left = colors.Right + Scaled(12);
+        ((Control)solidToggle.Tag).Left = solidToggle.Left + Scaled(40);
         livePause.Checked = setup.PauseWhenLocked;
         liveBattery.Checked = setup.PauseOnBattery && found.Has(0x1004);
         solidToggle.Checked = view.Solid;
@@ -1178,13 +1179,17 @@ class KeyboardPage : DevicePage
         foreach (Control control in rightHalf) control.Left += half;
         // Low battery beside Screen off or locked where there's room, below it in the narrow box.
         var batteryLabel = (Control)liveBattery.Tag;
-        liveBattery.Left = livePause.Left + (on ? (int)Math.Round(170 * Ui.DpiScale) : 0);
-        liveBattery.Top = livePause.Top + (on ? 0 : (int)Math.Round(22 * Ui.DpiScale));
-        batteryLabel.Left = liveBattery.Left + (int)Math.Round(40 * Ui.DpiScale);
-        batteryLabel.Top = liveBattery.Top - (int)Math.Round(Ui.DpiScale);
+        liveBattery.Left = livePause.Left + (on ? Scaled(170) : 0);
+        liveBattery.Top = livePause.Top + (on ? 0 : Scaled(21));
+        batteryLabel.Left = liveBattery.Left + Scaled(40);
+        batteryLabel.Top = liveBattery.Top - Scaled(1);
         speed.Width += half;
         speedValue.Width += half;
     }
+
+    // Layout units in the page's current pixels: the page is built at 100% and scaled as a whole once placed (MainWindow.Place),
+    // which may come after RefreshControls, so the picture box's width tells the scale, not Ui.DpiScale.
+    int Scaled(int units) { return (int)Math.Round(units * pictureBox.Width / 616f); }
 
     void ShowView(int shown)
     {
