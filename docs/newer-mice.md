@@ -24,6 +24,7 @@ The PRO X SUPERLIGHT 2 (Featherweight's fn 0 reply: `01 07 01 05 01 05 10 00 FF 
 | 0x02 | Default DPI stage |
 | 0x03 | DPI shift stage |
 | 0x04 | Five stages of 5 bytes: X LE16, Y LE16, lift-off (1 low, 2 medium, 3 high) |
+| 0x25 | Bunny-hop prevention timeout in 10 ms units, 0 or FF off (lomm-web, GFlick) |
 | 0x2C, 0x2E | Sleep and power-off timeouts in seconds, LE16 |
 | 0x30 | 16 buttons of 4 bytes |
 | 0x70 | The G-shift layer |
@@ -35,8 +36,18 @@ The PRO X SUPERLIGHT 2 (Featherweight's fn 0 reply: `01 07 01 05 01 05 10 00 FF 
 - Writing: fn 6 `<sector> 00 00 00 FF`, fn 7 for each 16 bytes (the last one 15 bytes and a 00), fn 8, then read back. Featherweight did this on the active profile (0001) and a disabled one (0005); both read back byte for byte, and the mouse used the new DPI straight away, with no fn 3. The factory sectors read with no valid CRC.
 - **What G-Lite writes** (`MouseProtocol.BuildWide`): the edited stage's X and Y (only when its DPI changed; a Y set apart from X keeps its ratio), the default stage (byte 2), the rate byte of the link in use (`State.Wired`: 1 on the cable, 0 behind the receiver) and the buttons. Everything else is kept as read, the LED records too: a light set on a format 7 mouse that has one stays live, and the status line says the save won't keep it. A profile with a bad CRC shows as damaged and isn't saved. A backup comes first, the sector is read back after, then fn 3 reloads the profile, as on the older mice. `State.WideFormat` is format 7 only.
 - **DPI:** these mice refuse 0x2202 fn 6 while they run their profile (error 5, seen by logi-cli and OpenGMice), so `HidppMouse.SendDpi` only picks the stage, and an edited stage's DPI waits for the save ("DPI changes when saved to the mouse"). The report rate waits for the save too.
-- **Not done:** factory restore (the factory profile's layout isn't known), lift-off, the shift stage, timeouts, the G-shift layer, lighting (the SUPERLIGHT 2 has none), formats 6, 8 and 10 (lomm-web, GOMM and superstrike-studio describe them; see [research/more-references.md](research/more-references.md)).
+- **Not done:** factory restore (the factory profile's layout isn't known), lift-off, the shift stage, bunny-hop prevention, timeouts, the G-shift layer, lighting (the SUPERLIGHT 2 has none), formats 6, 8 and 10 (lomm-web, GOMM and superstrike-studio describe them; see [research/more-references.md](research/more-references.md)).
+
+## Format 4: the original PRO X SUPERLIGHT
+
+Not one of the newer mice: it has 0x2201, 0x8060 and a hidden 0x8070 (Solaar's report of a PRO X Wireless, WPID 4093, USB C094; the mouse names itself PRO X Wireless). Its profiles are format 4, which libratbag calls the G915's, but a mouse's format 4 has format 3's layout up to 0xD0.
+
+- Sources: [GFlick](https://github.com/R4ULtv/gflick) (MIT) wrote 255 bytes to a disabled profile (0005) of an original SUPERLIGHT and read them back with a valid CRC, changed the name, checked it, restored the original bytes, and turned the profile off and on in the directory. Its encoder treats formats 1 to 5 as one layout: byte 0 the report interval in ms (one rate for both links), 1 the default stage, 2 the shift stage, five LE16 stages from 3, timeouts at 28 and 30, buttons from 32, name at 160. [onboard-lite](https://github.com/ZhichenJin/onboard-lite) (MIT, C#) reads and saves the same layout on the same mouse; its README says reading and saving were checked on one, wired and over LIGHTSPEED.
+- **What G-Lite writes** (`State.ClassicFormat`): the same as on formats 2 and 3 (`MouseProtocol.Build`: the edited stage, the default stage, the report interval, the buttons), never the LED records from 0xD0. onboard-lite writes OMM's lighting into 0xD0 and 0xDB, plus power-save copies at 0xE6 and 0xF1 and flags at 0xFC on 0x8071 mice; that part isn't checked by a second source, so a light set on a format 4 mouse stays live and the status line says the save won't keep it.
+- Lighting: the SUPERLIGHT's 0x8070 is flagged internal and hidden (root fn 0, byte 1 bit 6) and refuses fn 1 with error 5. It's the status light. G-Lite shows no lighting for a hidden 0x8070 (`Hidpp.Hidden`).
+- Kept as on formats 2 and 3: backup first, read back, fn 3 to reload, a bad CRC counts as damaged, Restore the factory profile copies 0x0101 whole, its LED records too (its layout is the same, per onboard-lite, which builds a blank profile from it). Not kept: setting up a mouse that runs its factory profile (`MouseProtocol.Setup` stays on formats 2 and 3: OMM marks a profile on with 00 in the Superlight's directory, where G-Lite writes 01).
+- A G502 X wired (C099) reports format 4 in dukaci/driver-mouse-g502x and format 3 in omalogi (see [research/more-references.md](research/more-references.md)). Either way it gets this save; no source has written format 4 on one.
 
 ## Next
 
-An owner's report and one save tried on a SUPERLIGHT 2 or DEX. The report shows the profile sectors, so the layout above can be checked against a third mouse.
+An owner's report and one save tried on a SUPERLIGHT 2, a DEX or an original SUPERLIGHT. The report shows the profile sectors, so the layout above can be checked against a third mouse.

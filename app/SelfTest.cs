@@ -214,9 +214,8 @@ static class SelfTest
         Check(heroState.Savable && MouseProtocol.Read(hero).Dpi == 3200 && heroFreshState.Fresh && heroFreshState.Savable
             && MouseProtocol.Valid(heroFresh.Sectors[0x0000]) && MouseProtocol.Read(heroFresh).Sector == 1
             && !MouseProtocol.Read(new FakeMouse { Info = "01010105050B1000FF0A01" }).Writable
-            && !MouseProtocol.Read(new FakeMouse { Info = "01040105020B1000FF0A01" }).Writable
             && MouseProtocol.Unwritten(Enumerable.Repeat((byte)0xFF, 255).ToArray()) && !MouseProtocol.Unwritten(restoredState.Profile),
-            "profile format 2 (G502 HERO) saves like format 3, a directory of zeros counts as none, formats 1 and 4 stay read-only");
+            "profile format 2 (G502 HERO) saves like format 3, a directory of zeros counts as none, format 1 stays read-only");
 
         var headset = new FakeHeadset();
         var headsetState = HeadsetProtocol.Read(headset, true);
@@ -416,6 +415,31 @@ static class SelfTest
                 new[] { @"\\?\hid#vid_046d&pid_c066&mi_01&col04#x" }) == null
             && Devices.Unfound(@"HID\VID_046D&PID_C547&MI_02&COL02\8&1A2B3C&0&0001", new string[0]) == null,
             "a Logitech audio device or old G device the HID++ scan didn't find is listed for its report, others aren't");
+        var superlight = FakeMouse.Superlight();
+        var superlightMouse = new HidppMouse();
+        var superlightState = superlightMouse.Read(superlight);
+        var superlightBefore = (byte[])superlight.Sectors[1].Clone();
+        var superlightButtons = superlightState.Buttons.Select(binding => (byte[])binding.Clone()).ToArray();
+        superlightButtons[3] = FakeHidpp.Hex("90050000");
+        superlightMouse.Save(superlight, superlightState, superlightBefore, new MouseSettings
+        {
+            Dpi = 1000, Stage = 1, Rate = 500, Buttons = superlightButtons, Light = new MouseLight { Effect = 0x01, Color = 0xFF0000 }
+        });
+        var superlightSaved = superlight.Sectors[1];
+        var superlightFresh = new FakeMouse(true) { Info = "0104010501051000ff0a04" };
+        superlightFresh.Sectors[0x0000] = new byte[255];
+        var superlightFreshState = MouseProtocol.Read(superlightFresh);
+        Check(superlightState.Format == 4 && superlightState.Savable && superlightState.Zones.Count == 0
+            && MouseProtocol.Read(new FakeMouse()).Zones.Count == 2 && superlightMouse.HasFactory
+            && superlightState.Stages.SequenceEqual(new[] { 400, 800, 1600, 3200, 6400 }) && superlightState.Buttons.Length == 5
+            && MouseProtocol.Valid(superlightSaved) && superlight.Reloads == 1
+            && BitConverter.ToString(superlightSaved, 0, 0x0D) == "02-01-02-90-01-E8-03-40-06-80-0C-00-19"
+            && BitConverter.ToString(superlightSaved, 0x2C, 4) == "90-05-00-00"
+            && superlightSaved.Skip(0x30).Take(0xFD - 0x30).SequenceEqual(superlightBefore.Skip(0x30).Take(0xFD - 0x30))
+            && superlightSaved.Skip(0x0D).Take(0x2C - 0x0D).SequenceEqual(superlightBefore.Skip(0x0D).Take(0x2C - 0x0D))
+            && !superlightFreshState.Fresh && !superlightFreshState.Writable,
+            "a format 4 mouse (the original SUPERLIGHT) saves format 3's fields and keeps its LED records; its hidden 0x8070 shows no "
+                + "lighting; one on its factory profile isn't set up");
         var proX2 = MouseProtocol.Read(FakeMouse.ProX2());
         Check(new FoundDevice { Name = "PRO X SUPERLIGHT 2", Kind = "mouse", Features = new[] { 0x2202, 0x8061 } }.IsMouse
             && proX2.Dpi == 800 && proX2.Dpis.First() == 100 && proX2.Dpis.Last() == 32000 && proX2.Dpis.Length == 639

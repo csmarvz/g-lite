@@ -5,9 +5,10 @@
 ### Added
 
 - PRO X SUPERLIGHT 2 and PRO X 2 DEX (onboard profile format 7): Save to mouse. It writes the DPI stages, the default stage, the report rate (for the receiver or the cable, whichever the mouse is on) and the buttons, and leaves the rest of the profile as it was. A backup is made first and the profile is read back after writing. These mice only take their saved DPI stages, so a stage's new DPI reaches the mouse when you save. Not yet tried by an owner in G-Lite: the layout and the way to write it come from Featherweight (on a SUPERLIGHT 2) and logitech-onboard-memory (on a DEX), which both checked their writes on the mouse. No factory restore on these mice yet.
+- Original PRO X SUPERLIGHT (onboard profile format 4; it calls itself PRO X Wireless): Save to mouse, like the G Pro Wireless: DPI stages, report rate and buttons, with a backup first and the profile read back after writing. Its lighting record is left as it is. Not yet tried by an owner in G-Lite: GFlick and onboard-lite wrote this layout on the mouse and read it back. The SUPERLIGHT's light settings are gone from its screen: they drove its status light, which the mouse marks as hidden.
 - Newer mice: the Bindings view shows the buttons saved in the profile.
 - G600: its screen, read only for now. It shows the active mode's DPI levels, report rate, lighting and its 20 buttons. The G600 doesn't speak HID++: G-Lite reads its feature reports, as libratbag does on Linux. Not yet tried on a real G600: a report from an owner would confirm Windows lets G-Lite read them.
-- Demo: a PRO X 2 DEX, a G600, a G915 X and a G915 X TKL.
+- Demo: an original PRO X SUPERLIGHT, a PRO X 2 DEX, a G600, a G915 X and a G915 X TKL.
 - G915 X and G915 X TKL: their own key pictures, from projects that lit every key on the keyboard: G1–G5 down the left and G6–G9 above F1–F4 on the full size, the media keys, the logo and the brightness key. Still not saved to the keyboard.
 
 ## [0.0.34-alpha] - 2026-11-21

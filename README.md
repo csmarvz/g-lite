@@ -60,6 +60,7 @@ The preset you picked on each device is picked again when G-Lite starts, and set
 | G9x Laser Mouse | USB | Works | DPI and DPI stage, colour (Off and Static), report rate, profiles, saving to the mouse, backups and restoring them. See [docs/G9x.md](docs/G9x.md). |
 | G5, G9, G700 and G700s | USB | Untested | DPI (from the G5's four settings, the G9's 200–3200, or 200–5700 / 8200 on the G700 and G700s) and report rate, set while G-Lite runs, and profiles. Not saved to the mouse. The G700 and G700s on their cable or through their receiver. See [docs/G9x.md](docs/G9x.md). |
 | G500 and G500s | USB | Untested | DPI and DPI stage (up to 8200 on the G500s), report rate, profiles, saving to the mouse, backups and restoring them. They save like the G9x. See [docs/G9x.md](docs/G9x.md). |
+| PRO X SUPERLIGHT (the first one, which calls itself PRO X Wireless) | LIGHTSPEED receiver or USB | Untested | DPI and DPI stage, report rate, profiles, saving to the mouse, backups and restoring them, factory profile, what each button does. Its lighting record is kept as it is. Built from GFlick and onboard-lite, which saved to this mouse. See [docs/newer-mice.md](docs/newer-mice.md#format-4-the-original-pro-x-superlight). |
 | PRO X SUPERLIGHT 2, PRO X 2 DEX, PRO X 2, G502 X and other newer G mice | LIGHTSPEED receiver or USB | Untested | DPI, switching between the DPI stages saved on the mouse, the report rate up to 8000 Hz, and the buttons. On the SUPERLIGHT 2, the DEX and other mice with profile format 7: saving the DPI stages, report rate and buttons to the mouse, with backups. Some of these mice only accept their saved DPI stages. See [docs/newer-mice.md](docs/newer-mice.md). |
 | G600 | USB | Untested | Read only: the active mode's DPI levels, report rate, lighting and 20 buttons. See [docs/G600.md](docs/G600.md). |
 
@@ -149,6 +150,7 @@ Reports from device owners help the most, and need no code. To build G-Lite, add
 - [Lghub](https://github.com/HolyJoey/Lghub) (MIT), G HUB reverse-engineered for Linux. How G HUB talks to Logitech G headsets, mice, keyboards and other devices, over USB, LIGHTSPEED, Unifying, Bolt and Bluetooth. G HUB's key-to-LED table for the G915's logo, G keys and media keys comes from it.
 - [logi-cli](https://github.com/meech-io/logi-cli) (MIT) by Dimitri Brooks and [OpenLogi](https://github.com/AprilNEA/OpenLogi). The newer mice: 0x2202 DPI, 0x8061 report rate and where the DPI stages sit in their onboard profile.
 - [Featherweight](https://github.com/Ad1FPS/Featherweight) (MIT) and [logitech-onboard-memory](https://github.com/marco-vrinssen/logitech-onboard-memory) (MIT). Profile format 7 and how to write it, on a PRO X SUPERLIGHT 2 and a PRO X 2 DEX.
+- [GFlick](https://github.com/R4ULtv/gflick) (MIT) by Raul Carini and [onboard-lite](https://github.com/ZhichenJin/onboard-lite) (MIT). Profile format 4 on the original PRO X SUPERLIGHT, written and read back on the mouse.
 - libratbag's G600 driver and [g600prog](https://github.com/tulth/g600prog) (MIT). The G600's feature reports.
 - [G-Helper](https://github.com/seerge/g-helper), the model for the look and feel of the tray panel.
 

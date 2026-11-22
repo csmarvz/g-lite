@@ -457,7 +457,7 @@ class FakeMouse : Hidpp
 {
     public int Dpi = 1600, Stage = 2, Reloads, Rate = 1, ZoneCount = 2;
     public string Info = "0103010501081000ff0a04";
-    public bool Wheel, Wide;
+    public bool Wheel, Wide, HiddenLight;
     public byte WheelMode;
     public readonly byte[][] Zones = { new byte[12], new byte[12] };
     public readonly Dictionary<int, byte[]> Sectors = new Dictionary<int, byte[]>();
@@ -527,6 +527,7 @@ class FakeMouse : Hidpp
         return found.Models.Contains("C08B") ? Hero()
             : found.WirelessId == 0x407F ? G502()
             : found.WirelessId == 0x4074 ? G305()
+            : found.WirelessId == 0x4093 ? Superlight()
             : new FakeMouse();
     }
 
@@ -534,6 +535,17 @@ class FakeMouse : Hidpp
     {
         var mouse = new FakeMouse(true) { ZoneCount = 1, Info = "0103010101060600ff0a02", Dpi = 800, Stage = 1 };
         mouse.Sectors[0x0101] = FakeHidpp.Hex("010100900120034006800C0000FFFFFFFF00FFFFFFFFFFFFFFFFFFFFFFFFFFFF800100018001000280010004800100088001001090050000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000000000001F400000000000000000001F40000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+        return mouse;
+    }
+
+    // An original PRO X SUPERLIGHT: profile format 4, five profiles and five buttons (GFlick's counts; the rest of the 0x8100
+    // fn 0 reply is the SUPERLIGHT 2's), and 0x8070 flagged hidden (Solaar's PRO X Wireless 4093 report).
+    public static FakeMouse Superlight()
+    {
+        var mouse = new FakeMouse { Info = "0104010501051000ff0a04", HiddenLight = true, ZoneCount = 1 };
+        foreach (var sector in new[] { 0x0001, 0x0101 })
+            FakeHidpp.Hex("8001000180010002800100048001000880010010").CopyTo(mouse.Sectors[sector], 0x20);
+        MouseProtocol.WriteChecksum(mouse.Sectors[0x0001]);
         return mouse;
     }
 
@@ -577,6 +589,7 @@ class FakeMouse : Hidpp
                 reply[0] = (byte)(id == 0x2201 ? 1 : id == 0x8060 ? 2 : id == 0x8070 ? 3 : id == 0x8100 ? 4
                     : id == 0x2121 && Wheel ? 5 : id == 0x1D4B ? 9 : 0);
                 if (Wide) reply[0] = (byte)(id == 0x2202 ? 6 : id == 0x8061 ? 7 : id == 0x8100 ? 4 : 0);
+                if (HiddenLight && id == 0x8070) reply[1] = 0x60;
                 break;
             case 6:
                 if (fn == 1) { reply[1] = 5; reply[2] = 3; }

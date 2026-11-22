@@ -31,6 +31,7 @@ class Hidpp : IDisposable
     byte[] longBuffer = new byte[20], shortBuffer = new byte[7];
     Task<int> pending, shortPending;
     Dictionary<int, byte> features = new Dictionary<int, byte>();
+    readonly HashSet<int> hiddenFeatures = new HashSet<int>();
     public string DeviceLabel;
     public static Action<string> Tap;
     readonly string path;
@@ -317,9 +318,14 @@ class Hidpp : IDisposable
         byte index;
         if (!features.TryGetValue(id, out index))
         {
-            features[id] = index = Call(0, 0, (byte)(id >> 8), (byte)id)[0];
+            var reply = Call(0, 0, (byte)(id >> 8), (byte)id);
+            features[id] = index = reply[0];
+            if ((reply[1] & 0x40) != 0) hiddenFeatures.Add(id);
         }
         if (index == 0) throw new NotSupportedException(string.Format("The device lacks feature {0:x4}", id));
         return index;
     }
+
+    // Flagged hidden by the device (root fn 0, byte 1 bit 6): meant for Logitech's own tools, not for users. Known after FeatureIndex.
+    public bool Hidden(int id) { return hiddenFeatures.Contains(id); }
 }

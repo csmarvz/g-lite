@@ -125,9 +125,11 @@ class HidppMouse : IMouse
     {
         return MouseProtocol.ReadSector(hidpp, state.Sector, state.SectorSize);
     }
+    // Format 4's LED records aren't checked, so they're kept: a zone count of 0 leaves them.
     byte[] Build(byte[] now, MouseSettings want, MouseProtocol.State state)
     {
-        return Wide ? MouseProtocol.BuildWide(now, want, state.Wired) : MouseProtocol.Build(now, want, state.Zones.Count);
+        if (Wide) return MouseProtocol.BuildWide(now, want, state.Wired);
+        return MouseProtocol.Build(now, want, MouseProtocol.State.KnownFormat(format) ? state.Zones.Count : 0);
     }
 
     public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSettings want)

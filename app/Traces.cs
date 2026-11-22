@@ -816,6 +816,34 @@ static class Traces
         }
     }
 
+    // Format 4, the original PRO X SUPERLIGHT: no lighting (its 0x8070 is hidden), and a save writes format 3's fields and keeps
+    // the LED records.
+    static string Superlight()
+    {
+        var found = new FoundDevice
+        {
+            Key = "trace|superlight", Name = "PRO X Wireless", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x4093,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2201, 0x8060, 0x8070, 0x8100 }
+        };
+        var device = FakeMouse.Superlight();
+        // A preset with a light, as one saved on a mouse that has lighting: nothing to send here, so the status doesn't mention it.
+        Settings.Set("profile." + found.SettingsKey + ".Lit", "800,1,FF0000,5000,100,1000");
+        var lightRecords = device.Sectors[1].Skip(MouseProtocol.LightRecordsAt).Take(0xFD - MouseProtocol.LightRecordsAt).ToArray();
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device, null)))
+        {
+            script.Pick("DPI stage", "800");
+            script.Slide("DPI", 20);
+            script.Pick("Report rate", "500");
+            script.Pick("View", "Bindings");
+            script.Pick("Button 4", "DPI cycle");
+            script.Press("Save to mouse");
+            script.Pick("G-Lite preset", "Lit");
+            var savedRecords = device.Sectors[1].Skip(MouseProtocol.LightRecordsAt).Take(0xFD - MouseProtocol.LightRecordsAt).ToArray();
+            return script.Text + "profile after the save: " + BitConverter.ToString(device.Sectors[1], 0, 0x34).Replace("-", "") + "\n"
+                + "LED records after the save: " + (savedRecords.SequenceEqual(lightRecords) ? "unchanged" : "changed") + "\n";
+        }
+    }
+
     // Format 7: the buttons read from 0x30.
     static string Dex()
     {
@@ -966,6 +994,7 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("g510", G510);
         yield return new KeyValuePair<string, Func<string>>("prox60", Generic);
         yield return new KeyValuePair<string, Func<string>>("litra", Litra);
+        yield return new KeyValuePair<string, Func<string>>("superlight", Superlight);
         yield return new KeyValuePair<string, Func<string>>("superlight2", TraceWideDpiMouse);
         yield return new KeyValuePair<string, Func<string>>("dex", Dex);
         yield return new KeyValuePair<string, Func<string>>("g600", G600);

@@ -51,6 +51,7 @@ More G500/G9x facts:
 
 | Reference | Licence | Evidence | What's new |
 |---|---|---|---|
+| [R4ULtv/gflick](https://github.com/R4ULtv/gflick) | MIT | Original PRO X SUPERLIGHT (format 4): 255 bytes written to disabled profile 0005 and read back, a name change checked then the original restored, a directory off and on. SUPERLIGHT 2 and G305: live settings only | Rust. Formats 1–5 as one layout: 0 report interval in ms (one rate for both links), 1 default stage, 2 shift stage, five LE16 stages from 3, timeouts at 28 and 30, buttons from 32, name at 160. Formats 6 and 7: 0 receiver rate, 1 cable rate (0x8061 indexes), 2 default, 3 shift, stages from 4 (X, Y, lift-off 1–3), 0x25 bunny-hop timeout in 10 ms (format 7, 0 or FF off), timeouts at 44 and 46, buttons from 48. A save changes only edited fields, refuses a source with a bad CRC, checks the sector didn't change since it was read, reads back and writes the original again on a mismatch. The SUPERLIGHT's 0x8070 is internal and hidden: its status light, not shown. `crates/gflick-core/src/mouse.rs`, `docs/feature-matrix.md` |
 | [ZhichenJin/onboard-lite](https://github.com/ZhichenJin/onboard-lite) | MIT | PRO X Superlight (format 4), wired and LIGHTSPEED | C# 4.8 built with csc, decoded from OMM. One layout for formats 1–5. 0x8071 mice keep power-save LED copies at 0xE6/0xF1 (OMM writes half intensity) and flags at 0xFC. LED blocks: 01 fixed (p3 = 02 no ramp), 03 cycle, 0A breathing. `src/Profile.cs`, `src/Lighting.cs`, `src/Device.cs` |
 | [Ahmedxsaad/g502-hub](https://github.com/Ahmedxsaad/g502-hub) | GPL-3.0 | G502 HERO C08B, format 2 | `docs/protocol.md` §3.6: format 1–5 offsets (2 shift DPI, 13–15 RGB, 16 power mode, 17 angle snap, 18–19 write counter to keep, 28–31 timeouts, 32 buttons, 96 G-shift buttons, 160 name, 208/219 LEDs, 230/241 power-save LEDs, 252 animation). §3.7 button encoding (`80 01` mouse, `80 02` key, `80 03` consumer, `90 <code>` special 00–11, `FF FF FF FF` unset). §6.2 0x2202, §5.2 0x8061. `docs/hardware-notes.md`: rewriting the active sector drops a live DPI change |
 | [elberacasa/omalogi](https://github.com/elberacasa/omalogi) | unclear | G502 X C099 and LIGHTSPEED 409F, format 3 | `docs/hardware-tests.md`: factory specials are `90 xx FF 00`, keep the FF. Enabling a profile before the active one moves the current profile back by one without loading it |
@@ -236,6 +237,23 @@ From lomm (MIT), read and written on a PRO X 2 DEX over LIGHTSPEED and cable, ev
 ### Not useful
 
 hakangit/g512-keyboard-controller (OpenRGB client), geromet/g502-linux-control (ratbagd client), grumpybollocks/g910-control (keyledsctl wrapper), swylem/gpro-control (one constant), aubymori/LogiFadeFix (plays silence), szympik/logitech-gpro-x-battery-tray (G HUB websocket), mafik/logitech-g600-linux (evdev mapping), softmaxe/gbat (mouse battery only), pschmitt/aur-g9xled (0x57 only), aron-w/logi-omm-wine and zzoko/Onboard-Memory-Manager-macOS-workaround (run OMM under Wine). AI-built but with dated hardware logs: MyHUB, gnexus, g502x-onboard.
+
+## Found on 2026-11-22
+
+From a second research pass: source read at a pinned commit, no hardware. Facts only from the GPL ones.
+
+- [abidr/open-ghub](https://github.com/abidr/open-ghub) (GPL-3.0-or-later, Windows Rust): original SUPERLIGHT. Writes a profile over the FF00 collection after a backup, compares the read-back byte for byte, and writes the original again when it differs. Keeps the 7-byte and 20-byte reports on separate handles, a reader each. dvgmdvgm/G-Hubick is the same commit.
+- [ctnkyaumt/Rodent](https://github.com/ctnkyaumt/Rodent) (GPLv2, Windows C#, a port of Solaar): tested on a G402 (C07E) only, which has one profile sector. Stored DPI, buttons, lighting and macros (libratbag's macro format). The G402 can't stop a repeating macro once it runs (nor can G HUB). Other mice fall through to the G402's layout.
+- [Nuitfanee/ClickSync](https://github.com/Nuitfanee/ClickSync) (GPLv2, WebHID): its README lists the PRO 2 LIGHTSPEED and PRO X SUPERLIGHT 2c among five tested mice. Live commands and whole-profile writes; a lead for those two layouts.
+- [m3744/superstrike-macos-cli](https://github.com/m3744/superstrike-macos-cli) (MIT, macOS Go, from mclol0's linux-superstrike): writes and compares the read-back, but reports success when the read-back times out. zeex64/openghub fails instead.
+- [quinn-stack/kyxen](https://github.com/quinn-stack/kyxen) (licence not checked): G815. Copies the three factory profiles into the user sectors with G1–G5 set to F13–F17, for a macro daemon on the PC. It replaces whatever the user profiles held.
+- [Airp2008/lghub-linux](https://github.com/Airp2008/lghub-linux) (MIT, Rust): G102/G203 LIGHTSYNC C092 tested: live DPI, rate, lighting, picking a profile.
+- [Sharper-Flow/Open-G-Hub](https://github.com/Sharper-Flow/Open-G-Hub) (Rust): reads 0x8100 and picks a profile, through WinUSB. G-Lite needs no driver change.
+- [amroot/logiflick](https://github.com/amroot/logiflick): writes the active sector's DPI as the two-byte stages of formats 1–5 whatever the format, with no read-back.
+- [jazzvier1/Solaar-Windows](https://github.com/jazzvier1/Solaar-Windows): Solaar on hidapi; its author tested EQ and sidetone on a G733 and a G935.
+- Java-Idl/universal-omm-webhid (above): its `commitProfileToFlash` sends fn 0x0C (set the DPI stage) and reads with fn 0x0B (get the stage), so it isn't a reference for the write sequence.
+- OpenMouse: sets up a blank mouse (profiles, read back, then the directory and the selected profile) from a G HUB reset capture on a PRO X3 SUPERSTRIKE; its source says it wasn't tried on a mouse never linked to G HUB.
+- Leads only: [Lordbooker/gkey-config](https://github.com/Lordbooker/gkey-config) (G13, G15, G510, G11 through the Linux driver; G11, G15 and G510 untested), [martynsmith/lg4l](https://github.com/martynsmith/lg4l) (old G13/G15/G19 kernel modules), [IT-NWD/G15-Daemon_Linux](https://github.com/IT-NWD/G15-Daemon_Linux), [Chryseus/x56linux](https://github.com/Chryseus/x56linux) (X56 calibration and RGB over libusb), [gmlinux/logitech-rs50-linux-driver](https://github.com/gmlinux/logitech-rs50-linux-driver), [Adiakys/SimRig](https://github.com/Adiakys/SimRig) (untested on hardware), [jazzstack/Gear-Hub](https://github.com/jazzstack/Gear-Hub) (a G502 X adapter).
 
 ## Leads not read
 

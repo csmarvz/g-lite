@@ -42,7 +42,7 @@ The useful leads, **not a write specification approved for G-Lite**:
 - The newer base separates wireless and wired report-rate bytes at offsets `00` and `01`, represented as rate indexes rather than milliseconds.
 - Five-byte DPI stage entries contain little-endian X, little-endian Y and a lift-off byte. The reference's hardware subsection places stages at `04`, `09`, `0E`, `13`, `18` and says the region extends through `1C`.
 - Default and shift stage indexes move to `02`/`03`; button tables move to `30` and `70`. This differs materially from the old profile parser.
-- It reports a real original SUPERLIGHT C094/WPID 4093 with **format 4**, whereas G-Lite supports writes only for format 3. Do not classify all format-4 devices as keyboards merely because libratbag names that format `PROFILE_TYPE_G915`.
+- It reports a real original SUPERLIGHT C094/WPID 4093 with **format 4**, which G-Lite now saves like format 3 (see [newer-mice.md](../newer-mice.md#format-4-the-original-pro-x-superlight)). Do not classify all format-4 devices as keyboards merely because libratbag names that format `PROFILE_TYPE_G915`.
 - CRC is CCITT-FALSE with initial FFFF, stored big-endian in the final two sector bytes. Reference-specific valid-CRC examples are good verification fixtures for future work, but no code or binary fixture was copied here.
 - Some devices reject a 16-byte read that crosses a 255-byte sector boundary. The reference recommends reading the final block from `size - 16`; capture firmware behavior before changing G-Lite.
 

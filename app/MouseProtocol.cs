@@ -39,7 +39,7 @@ static class MouseProtocol
             {
                 // Pages 1–16 are the flash; 17 and up hold the G500's and G700s's factory profiles (cvuchener's g500 doc/memory.md).
                 if (Flash) return Sector >= 2 && Sector <= 16 && SectorSize == G9xRegisters.PageSize && Current != null;
-                return Onboard && (KnownFormat(Format) || WideFormat(Format)) && SectorSize >= 0xF0
+                return Onboard && (ClassicFormat(Format) || WideFormat(Format)) && SectorSize >= 0xF0
                     && ((Sector > 0 && Sector < 0x100) || Fresh);
             }
         }
@@ -49,9 +49,15 @@ static class MouseProtocol
         public static bool WideFormat(int format) { return format == 7; }
 
         // Format 2 (G502 HERO, G303, G502 Proteus Spectrum) has format 3's layout up to the LED blocks at 0xD0 and 0xDB:
-        // libratbag, Solaar and cvuchener's hidpp agree (summed up in g502-hub's docs/protocol.md). Format 1 ends at 0xD0, 4 and 5
-        // differ in the LED area.
+        // libratbag, Solaar and cvuchener's hidpp agree (summed up in g502-hub's docs/protocol.md). Format 1 ends at 0xD0; 4 and 5
+        // keep the same records at 0xD0 and 0xDB but add power-save copies at 0xE6 and 0xF1 and flags at 0xFC (onboard-lite), which
+        // G-Lite doesn't write. Only these get their LED records written and a profile set up from the factory one.
         public static bool KnownFormat(int format) { return format == 2 || format == 3; }
+
+        // Format 4 (the original PRO X SUPERLIGHT) has format 3's layout up to 0xD0: GFlick (wrote one and read it back) and
+        // onboard-lite (saved on one, wired and over LIGHTSPEED) both use it, and with g502-hub and libratbag treat formats 1–5 alike
+        // there. Its LED records are left as they are (docs/newer-mice.md).
+        public static bool ClassicFormat(int format) { return KnownFormat(format) || format == 4; }
         public bool Savable { get { return Writable && ProfileOk; } }
         public string Key { get { return Sector.ToString("X4"); } }
     }
@@ -425,7 +431,9 @@ static class MouseProtocol
         try
         {
             byte lightFeature = hidpp.FeatureIndex(0x8070);
-            int zones = hidpp.Call(lightFeature, 0)[0];
+            // The original PRO X SUPERLIGHT flags 0x8070 internal and hidden: its status light, which refuses fn 1 with error 5
+            // (Solaar's PRO X Wireless 4093 report; GFlick doesn't show it either).
+            int zones = hidpp.Hidden(0x8070) ? 0 : hidpp.Call(lightFeature, 0)[0];
             for (int zone = 0; zone < zones; zone++)
             {
                 var info = hidpp.Call(lightFeature, 1, (byte)zone, 0xFF, 0);
