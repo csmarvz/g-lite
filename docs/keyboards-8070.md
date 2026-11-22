@@ -8,6 +8,8 @@ Tested on a real G213 (see [G213.md](G213.md)): fn 3 without a persistence byte 
 
 ## Per-key colours (0x8080), not built
 
+From g810-led (GPL-3.0, facts only; read 2026-11-22), for the G410, G512, G513, G610, G810 and G PRO keyboard: per-key colours go in long reports to the feature at index 0x0C, fn 3 (`12 FF 0C 3A`): `00 <group> 00 <count>`, then `<key> R G B` entries, 14 per report; group 0x01 keys (HID usage), 0x02 media (G610, G810), 0x10 logo, 0x40 indicators. A commit, `11 FF 0C 5A` (fn 5), shows them. Effects on those keyboards go to index 0x0D fn 3; a startup mode is `11 FF 0D 5A 00 01 <mode>` (1 wave, 2 colour). g810-led hard-codes the indexes per model; G-Lite would look the features up. The G413 and G213 have no per-key writes and no commit ("non-transactional").
+
 From Lghub (`perkey.py`, read from G HUB): fn 0 gives the key types the keyboard has as bits in its first two bytes (keyboard 1, consumer 2, G key 4, button 8, logo 0x10, other keys 0x40); fn 3 sets colours, `<type u16> <count u16>` then `<key> R G B` per key, up to 14 in a 64-byte report (3 in a 20-byte one); fn 5 `<persist>` shows them. The key byte is the HID usage for keyboard keys.
 
 ## The G512
@@ -32,7 +34,9 @@ No 0x8071, 0x8040 (brightness), 0x8100 or 0x8101. So:
 
 From what's known about these models, not checked:
 
-- G513, G413 (single colour), G910 and G810 may also use 0x8070 and 0x8080. Only a report tells.
+- The G413 Silver uses 0x8070 alone, one zone, and says it's monochrome (fn 0's extended capabilities, bit 3): see [G413.md](G413.md).
+- G512 and G513: the owner's list gives the G512 Carbon USB C342 and the G513 Carbon C33C; OpenLogi's recording named "G512" has C33C. Photos of both show the G413's layout (Ⓐ and Ⓖ lights, the G logo top right).
+- G513, G910 and G810 may also use 0x8070 and 0x8080. Only a report tells.
 - The G213 uses 0x8070 with six zones: the whole keyboard and five areas that take Static only. See [G213.md](G213.md).
 - The G815 is the wired G915: its report shows 0x8071, 0x8040 and 0x8100 like the G915 TKL, and it gets the G915 screen. See [G815-G915.md](G815-G915.md).
 

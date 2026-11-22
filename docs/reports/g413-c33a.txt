@@ -1,0 +1,47 @@
+G-Lite device report
+G-Lite 0.0.36-alpha, Windows 11 build 26200
+2026-11-22 17:02 UTC
+
+Device    G413 Silver Mechanical Gaming Keyboard
+Kind      keyboard
+Link      USB, USB 046D:C33A
+Model     USB C33A
+Firmware  U1 14.00, build 0008
+Battery   –
+Screen    ZonesPage
+
+Features
+01 0001 v1  feature set
+02 0003 v2  firmware
+03 4522 v0
+04 0005 v0  name
+05 1E00 v0  hidden
+06 4540 v0  keyboard layout
+07 1EB0 v0  hidden internal
+08 8060 v0  report rate
+09 00C2 v0
+0A 1801 v0  hidden internal
+0B 1802 v0  hidden internal
+0C 8070 v5  LED effects
+0D 1821 v0
+0E 1BC0 v0
+0F 1806 v0  hidden internal
+10 40A2 v0
+
+0003 firmware
+entity 0=00 55 31 20 14 00 00 08 01 C3 3A 00 00 00 00 00
+entity 1=01 42 4F 54 44 00 00 01 00 AA D1 00 00 00 00 00
+
+4540 keyboard layout
+layout=0D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+8060 report rate
+rates=8B 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+now=01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+8070 LED effects
+info=01 00 01 00 08 00 00 00 00 00 00 00 00 00 00 00
+zone 0=00 00 01 03 00 00 00 00 00 00 00 00 00 00 00 00
+zone 0 effect 0=00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+zone 0 effect 1=00 01 00 01 00 05 00 00 00 00 00 00 00 00 00 00
+zone 0 effect 2=00 02 00 0A C0 01 03 E0 00 00 00 00 00 00 00 00

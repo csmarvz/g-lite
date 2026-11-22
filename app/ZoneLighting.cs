@@ -19,12 +19,20 @@ static class ZoneLighting
     public static readonly int[] Directions = { 6, 1, 3, 8 };
     public static readonly string[] DirText = { "Left", "Right", "Center out", "Center in" };
 
-    public static EffectInfo EffectById(byte id) { return Effects.FirstOrDefault(effect => effect.Id == id); }
+    // Drawn by G-Lite, not the keyboard: the loudness of the PC's sound sets each zone's level, sent as Static (ZonesPage.AudioTick).
+    // The id is the per-key Audio effect's (LiveEffects), so a lighting text means the same effect on either screen.
+    public static readonly EffectInfo Audio = new EffectInfo { Id = 0xE2, Name = "Audio", Color = true };
 
-    // A keyboard's key map with each key's 0x8070 zone in "ids". The G213's zones were shown by its owner (docs/G213.md).
+    public static EffectInfo EffectById(byte id) { return Effects.FirstOrDefault(effect => effect.Id == id) ?? (id == Audio.Id ? Audio : null); }
+
+    // A keyboard's key map: with "kind": "zones", each key's 0x8070 zone in "ids" (the G213's zones were shown by its owner,
+    // docs/G213.md); otherwise lighting ids, every key in zone 0 of a one-zone keyboard (the G413, drawn from its owner's photo), which
+    // also serve its Game view.
     public static string Picture(FoundDevice found)
     {
-        return found.Kind == "keyboard" && found.ShortName.ToUpper() == "G213" ? "g213.json" : null;
+        if (found.Kind != "keyboard") return null;
+        string name = found.ShortName.ToUpper();
+        return name == "G213" ? "g213.json" : name.StartsWith("G413") ? "g413.json" : null;
     }
 
     // Wave 0x04: OpenRGB's layout for the G915 (docs/G815-G915.md): period low at 6, direction 7, intensity 8, period high 9.
@@ -67,11 +75,15 @@ static class ZoneLighting
         return place == 1 ? "Keys" : place == 2 ? "Logo" : IsArea(place) ? "Zone " + (place - 5) : "Zone " + (index + 1);
     }
 
-    public static List<Dictionary<int, int>> Zones(Hidpp hidpp)
+    // fn 0 bytes 3–4 are the extended capabilities, and bit 3 says the LEDs have one colour (docs/lighting-control.md): set on a
+    // G413 Silver, whose backlight is white (docs/reports/g413-c33a.txt), clear on the G213 and the G560.
+    public static List<Dictionary<int, int>> Zones(Hidpp hidpp, out bool monochrome)
     {
         byte feature = hidpp.FeatureIndex(0x8070);
         var zones = new List<Dictionary<int, int>>();
-        int count = hidpp.Call(feature, 0)[0];
+        var device = hidpp.Call(feature, 0);
+        monochrome = (device[4] & 0x08) != 0;
+        int count = device[0];
         for (int zone = 0; zone < count; zone++)
         {
             var info = hidpp.Call(feature, 1, (byte)zone, 0xFF, 0);

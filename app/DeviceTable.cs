@@ -27,7 +27,7 @@ class DeviceTable
             Fake = found => FakeG915.G512X() },
         new DeviceTable { Matches = found => found.IsLedKeyboard, Screen = typeof(ZonesPage),
             Make = (found, fake, drag) => new ZonesPage(found, fake, drag),
-            Fake = found => new FakeSpeaker { Count = 2 } },
+            Fake = found => found.ShortName.ToUpper().StartsWith("G413") ? FakeSpeaker.G413Silver() : new FakeSpeaker { Count = 2 } },
         new DeviceTable { Matches = found => found.IsG510, Screen = typeof(G510Page),
             Make = (found, fake, drag) => new G510Page(found, fake, drag),
             Fake = found => new FakeG510() },

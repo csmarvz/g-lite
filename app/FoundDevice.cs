@@ -91,7 +91,7 @@ class FoundDevice
             return Regex.Replace(
                 Regex.Replace(
                     Regex.Replace(Name, "^" + GamingFirst, "", RegexOptions.IgnoreCase),
-                    @"(\s+(Wireless\s+)?RGB\s+Mechanical)?\s+Gaming\s+(Mouse|Headset|Keyboard)$", "", RegexOptions.IgnoreCase),
+                    @"(\s+(Wireless\s+)?(RGB\s+)?Mechanical)?\s+Gaming\s+(Mouse|Headset|Keyboard)$", "", RegexOptions.IgnoreCase),
                 @"\s+LIGHTSPEED\b", "", RegexOptions.IgnoreCase);
         }
     }

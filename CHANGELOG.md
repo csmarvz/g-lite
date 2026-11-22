@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+
+- G413 (Silver, white backlight): a picture of its keys, with its caps lock and Game mode lights. The keyboard says its LEDs have one colour, so its screen has no colour swatches: Brightness sets the level, as G HUB's black-to-white slider does, and G-Lite always sends white. Off, Static and Breathe, the effects it lists; Breathe's brightness now works (the keyboard ignores the intensity G-Lite sent, so the white is dimmed instead). No zone row, since it has one zone. Its name shows as "G413 Silver".
+- G413 and other keyboards on the zones screen: an Audio effect, the lighting following the PC's sound, like G HUB's audio visualizer (one level for the whole keyboard). Not yet tried on a keyboard.
+- G413: Game mode keys (Fn+F8), picked on a Game view as on the G815, kept in presets. Experimental, not yet tried on the keyboard.
+
 ### Fixed
 
 - Keyboards without a cable (a G515 over LIGHTSPEED): live effects failed with "HID++ error 0x08", and Aurora was choppy. The keyboard said it was busy because frames came faster than it could show them. G-Lite now waits and tries again when the keyboard is busy, sends a live effect 10 times a second instead of 25 without a cable, and at most 40 keys a frame there, the most changed first. On USB nothing changes.

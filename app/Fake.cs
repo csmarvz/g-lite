@@ -135,19 +135,25 @@ class FakeHidpp : Hidpp
 
 class FakeSpeaker : Hidpp
 {
-    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8070, 4 }, { 0x8040, 8 }, { 0x4540, 9 } };
+    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8070, 4 }, { 0x8040, 8 }, { 0x4540, 9 }, { 0x4522, 10 } };
     static readonly byte[] Effects = { 0x00, 0x01, 0x03, 0x07, 0x0A };
     public readonly byte[][] Live = new byte[6][];
     public int Count = 4;
-    public bool G213;
+    public bool G213, G413;
+    public readonly SortedSet<int> GameKeys = new SortedSet<int>();
 
     public FakeSpeaker() : base(false) { }
 
     // From a G213's report: zone 0 is the whole keyboard, zones 1–5 (locations 6–10) take Off and Static only.
     byte[] ZoneEffects(int zone)
     {
+        if (G413) return new byte[] { 0x00, 0x01, 0x0A };
         return !G213 ? Effects : zone == 0 ? new byte[] { 0x00, 0x01, 0x0A, 0x03, 0x04 } : new byte[] { 0x00, 0x01 };
     }
+
+    // A G413 Silver, from its report (docs/reports/g413-c33a.txt): one zone, the keys, with Off, Static and Breathe, and the
+    // monochrome bit in fn 0's extended capabilities.
+    public static FakeSpeaker G413Silver() { return new FakeSpeaker { Count = 1, G413 = true }; }
 
     public override void Dispose() { }
 
@@ -158,11 +164,15 @@ class FakeSpeaker : Hidpp
         if (featureIndex == 0) { byte i; reply[0] = Index.TryGetValue(parameters[0] << 8 | parameters[1], out i) ? i : (byte)0; }
         else if (featureIndex == Index[0x8070])
         {
-            if (fn == 0) reply[0] = (byte)Count;
+            if (fn == 0)
+            {
+                reply[0] = (byte)Count;
+                if (G413) { reply[2] = 0x01; reply[4] = 0x08; }
+            }
             else if (fn == 1)
             {
                 reply[0] = parameters[0];
-                reply[2] = (byte)(G213 ? (parameters[0] == 0 ? 1 : parameters[0] + 5) : parameters[0] + 1);
+                reply[2] = (byte)(G213 ? (parameters[0] == 0 ? 1 : parameters[0] + 5) : G413 ? 1 : parameters[0] + 1);
                 reply[3] = (byte)ZoneEffects(parameters[0]).Length;
             }
             else if (fn == 2)
@@ -178,7 +188,12 @@ class FakeSpeaker : Hidpp
                 Live[parameters[0]] = parameters.Take(12).ToArray();
             }
         }
-        else if (featureIndex == Index[0x4540] && G213) reply[0] = 0x0D;
+        else if (featureIndex == Index[0x4540] && (G213 || G413)) reply[0] = 0x0D;
+        else if (featureIndex == Index[0x4522] && G413)
+        {
+            if (fn == 1) foreach (var usage in parameters.TakeWhile(usage => usage != 0)) GameKeys.Add(usage);
+            if (fn == 3) GameKeys.Clear();
+        }
         else if (featureIndex != Index[0x8040]) throw new HidppError(2, "invalid argument");
         return reply;
     }

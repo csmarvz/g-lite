@@ -1,0 +1,69 @@
+open
+  8070 fn0
+  8070 fn1  00 FF
+  8070 fn2  00 00 FF
+  8070 fn2  00 01 FF
+  8070 fn2  00 02 FF
+  4540 fn0
+  = status "" [Report] G-Lite preset=– [New…] […] View=Settings Effect=- (no Cycle, Wave) Brightness=100 (off) Speed=0 (off) [Revert (off)]
+pick Effect Static
+  8070 fn3  00 01 FF FF FF
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Static (no Cycle, Wave) Brightness=100 Speed=0 (off) [Revert (off)]
+slide Brightness 50
+  8070 fn3  00 01 7F 7F 7F
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Static (no Cycle, Wave) Brightness=50 Speed=0 (off) [Revert (off)]
+pick Effect Breathe
+  8070 fn3  00 02 7F 7F 7F 13 88 00 32
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Breathe (no Cycle, Wave) Brightness=50 Speed=78 [Revert (off)]
+slide Speed 80
+  8070 fn3  00 02 7F 7F 7F 12 C0 00 32
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Breathe (no Cycle, Wave) Brightness=50 Speed=80 [Revert (off)]
+pick Effect Audio
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Audio (no Cycle, Wave) Brightness=50 Speed=80 (off) [Revert (off)]
+pick Effect Off
+  8070 fn3
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Off (no Cycle, Wave) Brightness=50 (off) Speed=80 (off) [Revert (off)]
+pick View Game
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Game Game mode keys=- [Clear (off)] [Revert (off)]
+click K
+  4522 fn3
+  4522 fn1  0E
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Game Game mode keys=K [Clear] [Revert (off)]
+click W
+  4522 fn3
+  4522 fn1  0E 1A
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Game Game mode keys=W K [Clear] [Revert (off)]
+check the keyboard's Game mode list
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Game Game mode keys=W K [Clear] [Revert (off)]
+click K
+  4522 fn3
+  4522 fn1  1A
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Game Game mode keys=W [Clear] [Revert (off)]
+pick View Settings
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Off (no Cycle, Wave) Brightness=50 (off) Speed=80 (off) [Revert (off)]
+open
+  4522 fn3
+  4522 fn1  1A
+  8070 fn0
+  8070 fn1  00 FF
+  8070 fn2  00 00 FF
+  8070 fn2  00 01 FF
+  8070 fn2  00 02 FF
+  4540 fn0
+  8070 fn3
+  8070 fn0
+  8070 fn1  00 FF
+  8070 fn2  00 00 FF
+  8070 fn2  00 01 FF
+  8070 fn2  00 02 FF
+  8070 fn3
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Off (no Cycle, Wave) Brightness=50 (off) Speed=0 (off) [Revert (off)]
+check the Game mode list is sent again
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Off (no Cycle, Wave) Brightness=50 (off) Speed=0 (off) [Revert (off)]
+pick View Game
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Game Game mode keys=W [Clear] [Revert (off)]
+press Clear
+  4522 fn3
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Game Game mode keys=- [Clear (off)] [Revert (off)]
+check the list is cleared
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Game Game mode keys=- [Clear (off)] [Revert (off)]

@@ -8,6 +8,7 @@ Reports from G-Lite's Report button, kept as they were sent, so the facts in the
 | [g915tkl-408e.txt](g915tkl-408e.txt) | G915 TKL (408E, USB C343), Swiss layout, through its receiver | MPK 14.02, build 0022 | 2026-11-17 | An owner | [G815-G915.md](../G815-G915.md) |
 | [g815-c33f.txt](g815-c33f.txt) | G815 (USB C33F), Swiss layout | U1 31.02, build 0018 | 2026-11-21 | An owner | [G815-G915.md](../G815-G915.md) |
 | [g512x75-c35f.txt](g512x75-c35f.txt) | G512 X 75 (USB C35F) | U1 81.05, build 0020 | 2026-11-11 | An owner | [G512X.md](../G512X.md) |
+| [g413-c33a.txt](g413-c33a.txt) | G413 Silver (USB C33A), Swiss layout | U1 14.00, build 0008 | 2026-11-22 | The maintainer's keyboard | [G413.md](../G413.md) |
 | [g213-c336.txt](g213-c336.txt) | G213 (USB C336) | U1 09.00, build 0006 | 2026-11-15 | The maintainer's keyboard | [G213.md](../G213.md) |
 | [g510s-c22d.txt](g510s-c22d.txt) | G510s (USB C22D), no HID++ | | 2026-11-14 | An owner | [G510.md](../G510.md) |
 | [gprowireless-4079.txt](gprowireless-4079.txt) | G Pro Wireless (4079, USB C088), through its receiver | MPM 15.02, build 0026 | 2026-11-21 | The maintainer's mouse | `MouseProtocol` in `app/MouseProtocol.cs` |

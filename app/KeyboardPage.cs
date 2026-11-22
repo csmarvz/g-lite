@@ -120,7 +120,8 @@ class KeyboardPage : DevicePage
     readonly Control pictureBox, lightBox;
     bool wide;
     readonly SegmentedPicker viewPick;
-    readonly RoundedBox buttonsBox, gameBox;
+    readonly RoundedBox buttonsBox;
+    readonly GameModeBox gameBox;
     readonly ButtonRows buttonRows;
     // Settings, Bindings (the G keys) or Game mode; views holds the ones this keyboard has, in the picker's order.
     const int SettingsView = 0, ButtonsView = 1, GameView = 2;
@@ -132,8 +133,6 @@ class KeyboardPage : DevicePage
     // gameMode: the Game view sets the list; the view may also be shown without it (GameModeSupport.NotImplemented).
     readonly bool gameMode;
     volatile List<int> gameKeys = new List<int>();
-    readonly KeyPicture gamePicture;
-    readonly FlatButton clearGame;
     string GameKeysSetting { get { return "gamemode." + found.SettingsKey; } }
     // The G keys' bindings as edited, and as the running profile has them. They reach the keyboard on Save only.
     byte[][] gKeys, storedGKeys;
@@ -429,8 +428,6 @@ class KeyboardPage : DevicePage
         if (gameShown)
         {
             if (gameMode) gameKeys = GameModeKeys.FromText(Settings.Get(GameKeysSetting));
-            gameBox = Ui.Add(this, new RoundedBox { Visible = false }, 20, 118, 616, 543);
-            Ui.Text(gameBox, "Game mode", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
             string gameText = "Select the keys you want to disable while gaming. Windows and Menu keys are always disabled in Game mode. "
                 + "Changes apply immediately and can be saved in your G-Lite presets, but not in the keyboard's on-board memory.";
             if (kind.GameMode == GameModeSupport.Experimental)
@@ -438,31 +435,14 @@ class KeyboardPage : DevicePage
             if (!gameMode)
                 gameText = "Not implemented yet: this keyboard sets its Game mode keys through a feature G-Lite doesn't know, "
                     + "so keys can't be selected here.";
-            var gameNote = Ui.Text(gameBox, gameText, 14, 36, () => Theme.Dim, 9f);
-            gameNote.AutoSize = false;
-            gameNote.Size = new Size(588, 56);
-            // Tall enough that the width limits the keys, so the picture spans the box like the Clear button's column below.
-            gamePicture = Ui.Add(gameBox, new KeyPicture(kind.Keys) { Picking = true, GameModeKey = "Game" }, 14, 96, 588, 210);
-            gamePicture.AccessibleName = "Game mode keys";
-            // The G915s' Fn key has the id the right Windows key has on the G815, and stays on.
-            var keyNames = kind.Keys.KeyNames();
-            var keyIds = kind.Keys.KeyIds();
-            gamePicture.FixedIds = !gameMode ? new HashSet<int>() : new HashSet<int>(keyIds.Where((id, key) =>
-                id >= 0 && GameModeKeys.AlwaysOff.Contains(GameModeKeys.Usage(id)) && keyNames[key] != "Fn"));
-            gamePicture.CanPick = id => gameMode && GameModeKeys.CanPick(GameModeKeys.Usage(id));
-            gamePicture.Label = (id, name) => GameModeKeys.Typed(GameModeKeys.Usage(id)) ?? name;
-            gamePicture.IdPicked += id =>
+            gameBox = Ui.Add(this, new GameModeBox(kind.Keys, gameMode, gameText), 20, 118, 616, 543);
+            gameBox.Picked += usage =>
             {
-                int usage = GameModeKeys.Usage(id);
                 var keys = gameKeys.ToList();
                 if (!keys.Remove(usage)) keys.Add(usage);
                 SetGameKeys(keys);
             };
-            clearGame = Ui.Add(gameBox, new FlatButton { Text = "Clear", AccessibleName = "Clear the Game mode keys", Visible = gameMode },
-                14, 318, 100, 32);
-            clearGame.Click += (s, e) => SetGameKeys(new int[0]);
-            gamePicture.Resize += (s, e) => AlignClear();
-            AlignClear();
+            gameBox.Cleared += () => SetGameKeys(new int[0]);
         }
         if (kind.GKeys != null)
         {
@@ -926,7 +906,7 @@ class KeyboardPage : DevicePage
         if (model == null) return;
         iso = true;
         picture.SetModel(model);
-        if (gamePicture != null) { gamePicture.SetModel(model); AlignClear(); }
+        if (gameBox != null) gameBox.SetModel(model);
         keyField = null;
         force = true;
         if (Sampling) SyncScreen();
@@ -1268,18 +1248,8 @@ class KeyboardPage : DevicePage
         if (gameBox != null)
         {
             gameBox.Visible = openView == GameView;
-            ShowGameKeys();
+            gameBox.ShowKeys(gameKeys);
         }
-    }
-
-    // Clear lines up with the drawn keyboard, which a narrow layout (a TKL) leaves centred in the picture.
-    void AlignClear() { clearGame.Left = gamePicture.Left + gamePicture.DrawnLeft; }
-
-    void ShowGameKeys()
-    {
-        gamePicture.PickedIds = new HashSet<int>(gameKeys.Select(GameModeKeys.LightingId));
-        gamePicture.Invalidate();
-        clearGame.Enabled = gameKeys.Count > 0;
     }
 
     void SetGameKeys(IEnumerable<int> keys)
@@ -1292,7 +1262,7 @@ class KeyboardPage : DevicePage
         LogUserAction(text == "" ? "Game mode keys cleared" : "Game mode keys " + string.Join(" ", list.Select(usage => usage.ToString("X2"))));
         RunOnDevice(hidpp => GameModeKeys.Send(hidpp, list));
         Edited();
-        ShowGameKeys();
+        gameBox.ShowKeys(gameKeys);
     }
 
     // The G keys aren't in presets, so Revert with a preset picked brings them back too.

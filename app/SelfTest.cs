@@ -5,7 +5,7 @@ using System.Collections.Generic;
 static class SelfTest
 {
     static readonly string[] LayoutFiles =
-        { "g515-tkl.json", "g915-tkl.json", "g915.json", "g915-x.json", "g915-x-tkl.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json" };
+        { "g515-tkl.json", "g915-tkl.json", "g915.json", "g915-x.json", "g915-x-tkl.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json", "g413.json" };
 
     static byte[] Hex(string hex)
     {
@@ -391,6 +391,17 @@ static class SelfTest
             && !new FoundDevice { Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Features = new[] { 0x8070, 0x8071 } }.IsLedKeyboard
             && !new FoundDevice { Name = "G502 HERO Gaming Mouse", Kind = "mouse", Features = new[] { 0x8070 } }.IsLedKeyboard,
             "a keyboard with 0x8070 and no 0x8071 gets the zone lighting screen");
+        var g413 = new FoundDevice
+        {
+            Name = "G413 Silver Mechanical Gaming Keyboard", Kind = "keyboard", Features = new[] { 0x4540, 0x8060, 0x8070 }
+        };
+        bool g413Monochrome, speakersMonochrome;
+        var g413Zones = ZoneLighting.Zones(FakeSpeaker.G413Silver(), out g413Monochrome);
+        ZoneLighting.Zones(new FakeSpeaker(), out speakersMonochrome);
+        Check(g413.ShortName == "G413 Silver" && g413.IsLedKeyboard && DeviceTable.For(g413).Screen == typeof(ZonesPage)
+            && g413Monochrome && !speakersMonochrome && g413Zones.Count == 1 && g413Zones[0][ZoneLighting.Place] == 1
+            && g413Zones[0].ContainsKey(0x0A) && !g413Zones[0].ContainsKey(0x03),
+            "a G413 Silver is named without Mechanical and gets the zones screen; its 0x8070 says monochrome (fn 0 byte 4 bit 3)");
         Check(new FoundDevice
             {
                 Name = "G815 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8100 }

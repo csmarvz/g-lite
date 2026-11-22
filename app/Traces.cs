@@ -423,10 +423,12 @@ static class Traces
         }
     }
 
-    static void CheckGameKeys(FakeG915 keyboard, params int[] usages)
+    static void CheckGameKeys(FakeG915 keyboard, params int[] usages) { CheckGameKeys(keyboard.GameKeys, usages); }
+
+    static void CheckGameKeys(IEnumerable<int> listed, params int[] usages)
     {
-        if (!keyboard.GameKeys.SequenceEqual(usages))
-            throw new InvalidOperationException("the Game mode list holds " + string.Join(" ", keyboard.GameKeys.Select(usage => usage.ToString("X2"))));
+        if (!listed.SequenceEqual(usages))
+            throw new InvalidOperationException("the Game mode list holds " + string.Join(" ", listed.Select(usage => usage.ToString("X2"))));
     }
 
     static string G512X()
@@ -500,6 +502,45 @@ static class Traces
             script.Pick("Effect", "Cycle");
             script.Pick("Effect", "Off");
             return script.Text;
+        }
+    }
+
+    // The G413 Silver's white backlight: 0x8070 says monochrome, so there's no colour row, every light goes out white, and Breathe's
+    // white is scaled by brightness. One zone, so no zone row. Audio sends nothing here (timers don't run in traces). Game mode keys
+    // through 0x4522, as on the G815: picked, cleared, and sent again by a new page.
+    static string G413()
+    {
+        var found = new FoundDevice
+        {
+            Key = "trace|g413", Name = "G413 Silver Mechanical Gaming Keyboard", Kind = "keyboard", Link = "USB", Index = 0xFF,
+            Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x4540, 0x8060, 0x8070, 0x40A2 }
+        };
+        var keyboard = FakeSpeaker.G413Silver();
+        string text;
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard, null)))
+        {
+            script.Pick("Effect", "Static");
+            script.Slide("Brightness", 50);
+            script.Pick("Effect", "Breathe");
+            script.Slide("Speed", 80);
+            script.Pick("Effect", "Audio");
+            script.Pick("Effect", "Off");
+            script.Pick("View", "Game");
+            script.Click("K");
+            script.Click("W");
+            script.Do("check the keyboard's Game mode list", () => CheckGameKeys(keyboard.GameKeys, 0x0E, 0x1A));
+            script.Click("K");
+            script.Pick("View", "Settings");
+            text = script.Text;
+        }
+        var pluggedAgain = FakeSpeaker.G413Silver();
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, pluggedAgain, null)))
+        {
+            script.Do("check the Game mode list is sent again", () => CheckGameKeys(pluggedAgain.GameKeys, 0x1A));
+            script.Pick("View", "Game");
+            script.Press("Clear");
+            script.Do("check the list is cleared", () => CheckGameKeys(pluggedAgain.GameKeys));
+            return text + script.Text;
         }
     }
 
@@ -1069,6 +1110,7 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("g560", G560);
         yield return new KeyValuePair<string, Func<string>>("g512", G512);
         yield return new KeyValuePair<string, Func<string>>("g213", G213);
+        yield return new KeyValuePair<string, Func<string>>("g413", G413);
         yield return new KeyValuePair<string, Func<string>>("g510", G510);
         yield return new KeyValuePair<string, Func<string>>("prox60", Generic);
         yield return new KeyValuePair<string, Func<string>>("litra", Litra);
