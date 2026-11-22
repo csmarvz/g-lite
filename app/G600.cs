@@ -52,7 +52,8 @@ class G600Mouse : IMouse
     static MouseLight Light(byte[] report)
     {
         int color = report[ColorAt] << 16 | report[ColorAt + 1] << 8 | report[ColorAt + 2];
-        int period = Math.Max(1000, report[DurationAt] * 1000);
+        // libratbag caps the duration at 15 s; MouseProtocol.Effects' periods run from 1 to 20 s.
+        int period = Math.Min(20000, Math.Max(1000, report[DurationAt] * 1000));
         switch (report[EffectAt])
         {
             case 0: return color == 0 ? new MouseLight { Effect = 0x00, Color = 0 } : new MouseLight { Effect = 0x01, Color = color };

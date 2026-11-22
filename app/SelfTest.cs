@@ -437,6 +437,21 @@ static class SelfTest
             && wideWiredProfile[0] == 3 && wideWiredProfile[1] == 2 && wideWiredProfile[2] == 1
             && MouseProtocol.DescribeWide(wideProfile) == "1800 DPI",
             "a format 7 save changes the stage (X and Y), the default stage, the rate of the link in use and the buttons, nothing else");
+        var apart = (byte[])proX2Profile.Clone();
+        apart[0x0B] = 0x40; apart[0x0C] = 0x06;
+        MouseProtocol.WriteChecksum(apart);
+        var apartSame = MouseProtocol.BuildWide(apart, new MouseSettings { Dpi = 800, Stage = 1, Buttons = wideButtons }, false);
+        var apartChanged = MouseProtocol.BuildWide(apart, new MouseSettings { Dpi = 1000, Stage = 1 }, false);
+        var damagedMouse = FakeMouse.ProX2();
+        damagedMouse.Sectors[1][0x40] ^= 0xFF;
+        var damaged = MouseProtocol.Read(damagedMouse);
+        var formatSix = FakeMouse.ProX2();
+        formatSix.Info = "0106010501051000ff0a04";
+        Check(BitConverter.ToString(apartSame, 0x09, 4) == "20-03-40-06"
+            && BitConverter.ToString(apartChanged, 0x09, 4) == "E8-03-D0-07"
+            && !damaged.ProfileOk && !damaged.Savable
+            && MouseProtocol.Read(formatSix).Buttons == null && MouseProtocol.Read(formatSix).Stages.Length == 4,
+            "a format 7 stage is left alone unless its DPI changes, a Y apart from X keeps its ratio, a bad CRC isn't saved, and format 6 shows no buttons");
         var g600Report = new FakeG600().Modes[2];
         var g600 = G600Mouse.Decode(g600Report, 3);
         Check(g600.ReadOnly && !g600.Writable && g600.Stages.SequenceEqual(new[] { 400, 1200, 2000, 3200 }) && g600.Stage == 3

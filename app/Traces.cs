@@ -816,7 +816,7 @@ static class Traces
         }
     }
 
-    // Format 7: the buttons read from 0x30, shown but not editable.
+    // Format 7: the buttons read from 0x30.
     static string Dex()
     {
         var found = new FoundDevice

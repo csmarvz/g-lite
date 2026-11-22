@@ -111,7 +111,6 @@ static class Bindings
     }
 
     // The HID usage of a key Windows reports, for a keystroke binding; 0 for one G-Lite doesn't map.
-
     public static int Usage(Keys key)
     {
         if (key >= Keys.A && key <= Keys.Z) return 0x04 + (int)key - (int)Keys.A;
@@ -151,8 +150,6 @@ static class Bindings
         }
         return 0;
     }
-
-
 
     public static bool Same(byte[][] first, byte[][] second)
     {

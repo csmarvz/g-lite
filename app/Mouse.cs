@@ -114,7 +114,7 @@ class HidppMouse : IMouse
         bool staged = state.Onboard && want.Stage >= 0 && want.Stage < state.Stages.Length;
         bool saved = staged && state.Stages[want.Stage] == want.Dpi;
         if (saved) MouseProtocol.SetStage(hidpp, want.Stage);
-        else if (staged && Wide && state.Savable) { if (sent == null || sent.Stage != want.Stage) MouseProtocol.SetStage(hidpp, want.Stage); }
+        else if (Wide && state.Savable) { if (staged && (sent == null || sent.Stage != want.Stage)) MouseProtocol.SetStage(hidpp, want.Stage); }
         else MouseProtocol.SetDpi(hidpp, want.Dpi);
     }
 

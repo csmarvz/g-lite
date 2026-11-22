@@ -180,10 +180,15 @@ static class MouseProtocol
         if (stages.Length == 0) throw new RefusedException("The profile on the mouse has no DPI stages, not touching it");
         int i = want.Stage >= 0 && want.Stage < stages.Length ? want.Stage : Array.IndexOf(stages, want.Dpi);
         if (i < 0) i = Math.Min((int)built[WideDefaultStageAt], stages.Length - 1);
-        for (int axis = 0; axis < 2; axis++)
+        // The stage is only rewritten when its DPI changed, and a Y set apart from X (in G HUB) keeps its ratio to X.
+        int at = WideStagesAt + WideStageLength * i, x = stages[i], y = built[at + 2] | built[at + 3] << 8;
+        if (want.Dpi != x)
         {
-            built[WideStagesAt + WideStageLength * i + 2 * axis] = (byte)want.Dpi;
-            built[WideStagesAt + WideStageLength * i + 2 * axis + 1] = (byte)(want.Dpi >> 8);
+            int newY = y == x || y == 0 || y == 0xFFFF ? want.Dpi : (int)Math.Round((double)y * want.Dpi / x);
+            built[at] = (byte)want.Dpi;
+            built[at + 1] = (byte)(want.Dpi >> 8);
+            built[at + 2] = (byte)newY;
+            built[at + 3] = (byte)(newY >> 8);
         }
         built[WideDefaultStageAt] = (byte)i;
         int rate = Array.IndexOf(WideRateValues, want.Rate);
@@ -463,13 +468,15 @@ static class MouseProtocol
                     state.ProfileOk = Valid(state.Profile) || state.Sector >= 0x100;
                     if (state.Format >= 6)
                     {
+                        bool wide = State.WideFormat(state.Format);
                         if (state.ProfileOk)
                         {
                             state.Stages = WideStages(state.Profile, state.Dpis);
-                            state.Buttons = ButtonsOf(state.Profile, WideButtonsAt, state.ButtonCount);
+                            if (wide) state.Buttons = ButtonsOf(state.Profile, WideButtonsAt, state.ButtonCount);
                         }
                         state.Profile = null;
-                        state.ProfileOk = true;
+                        // Only format 7 is saved, so only its damage matters (shown, and no save); the others are just read.
+                        if (!wide) state.ProfileOk = true;
                     }
                     else
                     {

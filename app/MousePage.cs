@@ -394,7 +394,11 @@ class MousePage : DevicePage
                 + " when saved to the mouse");
             return;
         }
+        // MouseProtocol.BuildWide doesn't write format 7's LED records (their layout isn't checked), so a light set there stays live.
+        bool liveLight = MouseProtocol.State.WideFormat(state.Format) && stored != null && current.Light != null
+            && !current.Light.Same(stored.Light);
         ShowStatus(!dirty ? "Matches the mouse"
+            : liveLight ? "Lighting applied to the mouse; Save to mouse doesn't keep it on this mouse"
             : state.Savable ? "Applied to the mouse, not saved on it yet"
             : "Applied to the mouse, not saved on it");
     }
