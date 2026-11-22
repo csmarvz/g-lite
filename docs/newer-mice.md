@@ -47,6 +47,7 @@ Not one of the newer mice: it has 0x2201, 0x8060 and a hidden 0x8070 (Solaar's r
 - Lighting: the SUPERLIGHT's 0x8070 is flagged internal and hidden (root fn 0, byte 1 bit 6) and refuses fn 1 with error 5. It's the status light. G-Lite shows no lighting for a hidden 0x8070 (`Hidpp.Hidden`).
 - Kept as on formats 2 and 3: backup first, read back, fn 3 to reload, a bad CRC counts as damaged, Restore the factory profile copies 0x0101 whole, its LED records too (its layout is the same, per onboard-lite, which builds a blank profile from it). Not kept: setting up a mouse that runs its factory profile (`MouseProtocol.Setup` stays on formats 2 and 3: OMM marks a profile on with 00 in the Superlight's directory, where G-Lite writes 01).
 - A G502 X wired (C099) reports format 4 in dukaci/driver-mouse-g502x and format 3 in omalogi (see [research/more-references.md](research/more-references.md)). Either way it gets this save; no source has written format 4 on one.
+- A G903 reports format 4 too, with 12 buttons (fn 0 `01 04 01 05 01 0C 10 00 FF 0A 04`, from shefben/open_logitech_GHUB's test vectors, unchecked; see [research/more-references.md](research/more-references.md#profile-format-7)). It gets this save as well, and its lighting stays live only. No source has written its profile; the layout is the one GFlick, onboard-lite, g502-hub and libratbag give for formats 1 to 5. A report from an owner would check it.
 
 ## Next
 
