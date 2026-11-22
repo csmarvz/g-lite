@@ -403,6 +403,56 @@ class FakeG915 : Hidpp
     }
 }
 
+// A G600 with tulth/g600prog's defaults.json: mode 1 rainbow with the keypad as 1 to =, mode 2 white with the numeric keypad,
+// mode 3 a green pulse with DPI buttons. 400, 1200, 2000 and 3200 DPI, 1000 Hz. Each report is the 154 bytes G600Mouse reads.
+class FakeG600 : Hidpp
+{
+    public int Mode, Level = 1;
+    public readonly byte[][] Modes =
+    {
+        Report(0xF3, 0x000000, 2, 6, "010000020000030000040000050000170000000205140000"
+            + "00001E00001F000020000021000022000023000024000025000026000027"+ "00002D00002E"),
+        Report(0xF4, 0xFFFFFF, 0, 0, "010000020000030000040000050000170000000205140000"
+            + "00005900005A00005B00005C00005D00005E00005F000060000061000062" + "000056000057"),
+        Report(0xF5, 0x00FF00, 1, 4, "010000020000030000040000050000150000130000140000"
+            + "00001E00001F000020000021000022000023" + "110000160000050000120000000008040000"),
+    };
+
+    public FakeG600() : base(false) { }
+
+    static byte[] Report(byte id, int color, byte effect, byte duration, string buttons)
+    {
+        var report = new byte[G600Mouse.ReportLength];
+        report[0] = id;
+        report[1] = (byte)(color >> 16); report[2] = (byte)(color >> 8); report[3] = (byte)color;
+        report[4] = effect;
+        report[5] = duration;
+        FakeHidpp.Hex("000802" + "08182840").CopyTo(report, 11);
+        FakeHidpp.Hex(buttons).CopyTo(report, 31);
+        report[91] = report[92] = report[93] = 0xFF;
+        FakeHidpp.Hex("010000020000030000").CopyTo(report, 94);
+        return report;
+    }
+
+    public override void Dispose() { }
+
+    protected override byte[] ReadFeature(byte id)
+    {
+        Latency.Pause();
+        var reply = new byte[G600Mouse.ReportLength];
+        if (id == G600Mouse.ActiveReport) { reply[0] = id; reply[1] = (byte)(Mode << 4 | Level << 1); return reply; }
+        if (id < G600Mouse.FirstModeReport || id >= G600Mouse.FirstModeReport + G600Mouse.ModeCount)
+            throw new System.IO.IOException("Couldn't read feature report " + id.ToString("X2") + " (error 31)");
+        Array.Copy(Modes[id - G600Mouse.FirstModeReport], reply, reply.Length);
+        return reply;
+    }
+
+    protected override void WriteFeature(byte[] report)
+    {
+        throw new System.IO.IOException("Couldn't set feature report " + report[0].ToString("X2") + " (error 31)");
+    }
+}
+
 class FakeMouse : Hidpp
 {
     public int Dpi = 1600, Stage = 2, Reloads, Rate = 1, ZoneCount = 2;
@@ -487,11 +537,18 @@ class FakeMouse : Hidpp
         return mouse;
     }
 
-    public static FakeMouse ProX2()
+    // A PRO X SUPERLIGHT 2: Featherweight's 0x8100 fn 0 reply (format 7, 255-byte sectors, 5 buttons), docs/newer-mice.md.
+    public static FakeMouse ProX2() { return Wider("0107010501051000ff0a04", "80010001800100028001000480010008" + "80010010"); }
+
+    // A PRO X 2 DEX, the same format; the thumb buttons swapped to show the bindings come from the profile.
+    public static FakeMouse Dex() { return Wider("0107010501051000ff0a04", "80010001800100028001000480010010" + "80010008"); }
+
+    static FakeMouse Wider(string info, string buttons)
     {
-        var mouse = new FakeMouse { Wide = true, ZoneCount = 0, Info = "0106010501051000ff0a04", Dpi = 800, Stage = 1, Rate = 3 };
+        var mouse = new FakeMouse { Wide = true, ZoneCount = 0, Info = info, Dpi = 800, Stage = 1, Rate = 3 };
         var profile = Enumerable.Repeat((byte)0xFF, 255).ToArray();
         FakeHidpp.Hex("03030100" + "9001900102" + "2003200302" + "4006400602" + "800C800C02" + "0000000000").CopyTo(profile, 0);
+        FakeHidpp.Hex(buttons).CopyTo(profile, 0x30);
         MouseProtocol.WriteChecksum(profile);
         mouse.Sectors[0x0001] = profile;
         mouse.Sectors[0x0101] = (byte[])profile.Clone();
@@ -570,7 +627,7 @@ class FakeMouse : Hidpp
                     current = readUInt16(0);
                     Reloads++;
                     Rate = prof[0];
-                    Stage = prof[1];
+                    Stage = prof[Wide ? MouseProtocol.WideDefaultStageAt : MouseProtocol.DefaultStageAt];
                     Dpi = Stages[Stage];
                     Zones[0] = new byte[] { 0, 0 }.Concat(prof.Skip(0xD1).Take(10)).ToArray();
                     Zones[1] = new byte[] { 1, 0 }.Concat(prof.Skip(0xDC).Take(10)).ToArray();

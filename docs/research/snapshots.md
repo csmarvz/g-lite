@@ -41,3 +41,13 @@ Inspected on 2026-11-08. Existing sibling checkouts were read without pulling or
 | [rigdeck](https://github.com/gabriellaines/rigdeck) | [`b9a89b3d8a14`](https://github.com/gabriellaines/rigdeck/tree/b9a89b3d8a141922c54b4ba6de3eaae1bcf980e6) | `C:\Users\csmar\AppData\Local\Temp\glite-research-20261108\rigdeck` |
 | [openlogi-net](https://github.com/loxsmoke/openlogi-net) | [`277ca756777e`](https://github.com/loxsmoke/openlogi-net/tree/277ca756777e0eefd99f7a832ddc10dfe1dfd08c) | `C:\Users\csmar\AppData\Local\Temp\glite-research-20261108\openlogi-net` |
 | [xteom](https://github.com/Xteom/logitech_linux_controllers) | [`9e72bf41e1c2`](https://github.com/Xteom/logitech_linux_controllers/tree/9e72bf41e1c2284d482acde1d1a13367790025a3) | `C:\Users\csmar\AppData\Local\Temp\glite-research-20261108\xteom` |
+
+Read on 2026-11-22 from shallow clones:
+
+| Project | Commit |
+|---|---|
+| [omm.py](https://github.com/lexr1/omm.py) | [`8e6c3f00a20a`](https://github.com/lexr1/omm.py/tree/8e6c3f00a20acbde1d3001244c9ca24db613804f) |
+| [logitech-onboard-memory](https://github.com/marco-vrinssen/logitech-onboard-memory) | [`1f1abc613a82`](https://github.com/marco-vrinssen/logitech-onboard-memory/tree/1f1abc613a82d7500cb77d1d9b0dd68a6b22de96) |
+| [g-manager](https://github.com/samyrataylor/g-manager) | [`5ef3d4a199cb`](https://github.com/samyrataylor/g-manager/tree/5ef3d4a199cbd9916e5091a2e49df128d9685d02) |
+| [g600prog](https://github.com/tulth/g600prog) | [`cd4eb062006d`](https://github.com/tulth/g600prog/tree/cd4eb062006dd42c50b87121575bc0a571416b01) |
+| [Featherweight](https://github.com/Ad1FPS/Featherweight) | [`7c006c14e585`](https://github.com/Ad1FPS/Featherweight/tree/7c006c14e585a4c002f9f7aad1e40be4a11d0704) |

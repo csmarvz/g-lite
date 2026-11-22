@@ -385,6 +385,7 @@ static class SelfTest
         Check(Bindings.Find(mouseActions, Hex("9007FFFF")) == dpiShift && Bindings.Find(mouseActions, Hex("9007FF00")) == dpiShift
             && Bindings.Find(mouseActions, Hex("8000FFFF")) == disabled && Bindings.Find(mouseActions, Hex("80010005")) < 0
             && Bindings.Describe(Hex("900AFFFF")) == "Cycle profile" && Bindings.Describe(Hex("900D0003")) == "Profile 3"
+            && Bindings.Describe(Hex("90000000")) == "Disabled" && Bindings.Find(Bindings.KeyboardActions, Hex("9000FF00")) >= 0
             && Bindings.Names(new FoundDevice { Models = "USB C08B" }, 11)[5] == "Sniper",
             "factory special bindings (90 xx FF FF) are named, and the G502 HERO gets the G502's button names");
         Check(g512.IsLedKeyboard && g512.ShortName == "G512" && DeviceTable.For(g512).Screen == typeof(ZonesPage)
@@ -420,8 +421,35 @@ static class SelfTest
             && proX2.Dpi == 800 && proX2.Dpis.First() == 100 && proX2.Dpis.Last() == 32000 && proX2.Dpis.Length == 639
             && proX2.Stages.SequenceEqual(new[] { 400, 800, 1600, 3200 }) && proX2.Stage == 1 && proX2.Rate == 1000
             && proX2.Rates.SequenceEqual(new[] { 125, 250, 500, 1000, 2000, 4000, 8000 })
-            && proX2.Onboard && !proX2.Writable && new MouseProtocol.State().ProfileOk && proX2.Buttons == null && proX2.ProfileOk,
-            "a mouse with 0x2202 and 0x8061 reads its DPI, stages and rate, and can't be saved to");
+            && proX2.Onboard && proX2.Savable && proX2.Format == 7 && new MouseProtocol.State().ProfileOk && proX2.ProfileOk
+            && proX2.Buttons.Length == 5 && proX2.Buttons[4].SequenceEqual(FakeHidpp.Hex("80010010"))
+            && !new MouseProtocol.State { Onboard = true, Format = 6, SectorSize = 255, Sector = 1 }.Writable,
+            "a format 7 mouse with 0x2202 and 0x8061 reads its DPI, stages, rate and buttons (from 0x30) and can be saved to; format 6 can't");
+        var proX2Profile = FakeMouse.ProX2().Sectors[1];
+        var wideButtons = proX2.Buttons.Select(binding => (byte[])binding.Clone()).ToArray();
+        wideButtons[3] = FakeHidpp.Hex("90050000");
+        var wideProfile = MouseProtocol.BuildWide(proX2Profile, new MouseSettings { Dpi = 1800, Stage = 2, Rate = 2000, Buttons = wideButtons }, false);
+        var wideWiredProfile = MouseProtocol.BuildWide(proX2Profile, new MouseSettings { Dpi = 800, Stage = 1, Rate = 500 }, true);
+        Check(MouseProtocol.Valid(wideProfile) && wideProfile.Length == 255
+            && BitConverter.ToString(wideProfile, 0, 0x1D) == "04-03-02-00-90-01-90-01-02-20-03-20-03-02-08-07-08-07-02-80-0C-80-0C-02-00-00-00-00-00"
+            && BitConverter.ToString(wideProfile, 0x3C, 4) == "90-05-00-00"
+            && wideProfile.Skip(0x44).Take(0xFD - 0x44).SequenceEqual(proX2Profile.Skip(0x44).Take(0xFD - 0x44))
+            && wideWiredProfile[0] == 3 && wideWiredProfile[1] == 2 && wideWiredProfile[2] == 1
+            && MouseProtocol.DescribeWide(wideProfile) == "1800 DPI",
+            "a format 7 save changes the stage (X and Y), the default stage, the rate of the link in use and the buttons, nothing else");
+        var g600Report = new FakeG600().Modes[2];
+        var g600 = G600Mouse.Decode(g600Report, 3);
+        Check(g600.ReadOnly && !g600.Writable && g600.Stages.SequenceEqual(new[] { 400, 1200, 2000, 3200 }) && g600.Stage == 3
+            && g600.Dpi == 3200 && g600.Rate == 1000 && g600.Light.Effect == 0x0A && g600.Light.Color == 0x00FF00
+            && g600.Light.Period == 4000 && g600.Buttons.Length == 20 && new G600Mouse().DefaultStage(g600Report) == 1
+            && G600Mouse.Binding(FakeHidpp.Hex("070000"), 0).SequenceEqual(FakeHidpp.Hex("80010040"))
+            && G600Mouse.Binding(FakeHidpp.Hex("140000"), 0).SequenceEqual(FakeHidpp.Hex("900A0000"))
+            && G600Mouse.Binding(FakeHidpp.Hex("170000"), 0).SequenceEqual(FakeHidpp.Hex("900B0000"))
+            && G600Mouse.Binding(FakeHidpp.Hex("000205"), 0).SequenceEqual(FakeHidpp.Hex("80020205"))
+            && G600Mouse.Binding(FakeHidpp.Hex("000000"), 0).SequenceEqual(FakeHidpp.Hex("80000000"))
+            && G600Mouse.Decode(new FakeG600().Modes[0], 1).Light.Effect == 0x03
+            && G600Mouse.Decode(new byte[G600Mouse.ReportLength], 0).Light.Effect == 0x00,
+            "a G600 mode report reads as DPI levels, rate, lighting (solid black is off) and its 20 buttons as HID++ bindings");
         Check(MouseProtocol.WideStages(FakeHidpp.Hex("03030100" + "9001900102" + "FFFF") .Concat(new byte[40]).ToArray(),
                 new[] { 100, 32000 }).SequenceEqual(new[] { 400 })
             && MouseProtocol.WideStages(FakeHidpp.Hex("03030100" + "0A00000002").Concat(new byte[40]).ToArray(),

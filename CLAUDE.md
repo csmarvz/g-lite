@@ -23,7 +23,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/Pages.cs`: `DevicePage` (what every device screen shares: presets, work queue, status line, backups menu), `ColorRow`, `InfoPage`, `EmptyPage`
 - Keyboards: `app/KeyboardPage.cs`, `KeyboardKinds.cs`, `KeyboardLighting.cs` (`Lighting`, `G515Profile`, `G915Lighting`), `GameMode.cs` (the Game mode key's list), `KeyPicture.cs`, `KeyLayout.cs` and the layouts in `app/models/`
 - Zones (the G560 and the 0x8070 keyboards): `app/ZonesPage.cs`, `ZoneLighting.cs`
-- Mice: `app/MousePage.cs`, `Mouse.cs` (`IMouse`, `MouseSettings`), `MouseProtocol.cs`, `G9x.cs` (HID++ 1.0 mice)
+- Mice: `app/MousePage.cs`, `Mouse.cs` (`IMouse`, `MouseSettings`), `MouseProtocol.cs`, `G9x.cs` (HID++ 1.0 mice), `G600.cs` (the G600's feature reports)
 - Button bindings, for mice and the G815's G keys: `app/Buttons.cs`
 - Headsets: `app/HeadsetPage.cs`, `HeadsetProtocol.cs`
 - G510: `app/G510Page.cs`, `G510.cs`
@@ -49,7 +49,8 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - HID++ 1.0 (G9x): short reports `10 <idx> <sub> <register> p0 p1 p2`, sub-id 0x81 reads and 0x80 sets a short register, 0x83 reads and 0x82 sets a long one, 0x8F is an error. The G9x answers at index 0x00. `G9xRegisters.Store` saves a page: 0x0F `FF`, then for each half 0xA1 `01`, an upload to RAM page 0 (0x92, then 0x93, each acked by 0x50), erase (0xA0 op 2, first half only) and copy (0xA0 op 3), then 0x0F `00 <index>` and a read back. If it fails after the erase, it writes the page as it was (the caller passes it) and loads it again. Never without a backup, and never to pages 0 (RAM) or 1 (the directory).
 - Never set bit 0 of 0x2121 byte 0 (it diverts the wheel to software). No button diversion.
 - `Report.Build` calls only the functions in `Report.Reads`. Add a function there only when it's known to only read.
-- A mouse profile of format 6 and up is only read (`Writable` stays false): its layout isn't known.
+- Mouse profile format 7 (`State.WideFormat`: the PRO X SUPERLIGHT 2 and PRO X 2 DEX) is written by `MouseProtocol.BuildWide`: byte 0 the rate as a 0x8061 index over the receiver, byte 1 on the cable, byte 2 the default stage, five stages of 5 bytes from 4 (X and Y LE16, lift-off), the buttons from 0x30; nothing else changes. No factory restore (its layout isn't known). Formats 6 and 8 and up are only read (`Writable` stays false). See `docs/newer-mice.md`.
+- The G600 isn't HID++: feature reports F0 (active mode and DPI level) and F3–F5 (one 154-byte report per mode) on its FF80 collection. Only read (`State.ReadOnly`), never written until an owner tries it. See `docs/G600.md`.
 - Mouse changes are sent live, and Save to mouse writes them into the active onboard profile. On the G Pro Wireless in onboard mode, DPI, the DPI stage (0x8100 fn 0x0C) and lighting (0x8070 fn 3) can be set live, but the report rate is refused, so it only changes on save.
 - Mouse onboard profiles (0x8100, profile formats 2 and 3, `State.KnownFormat`: format 2, the G502 HERO, G303 and G502 Proteus Spectrum, has the same layout up to the LED blocks, per libratbag, Solaar and cvuchener's hidpp, untested by an owner): fn 0 gives the sector size at bytes 7–8 (255 on the G Pro Wireless), fn 4 the active profile's sector, fn 5 reads 16 bytes at a sector and offset.
   - Layout: byte 0 is the report interval in ms, byte 1 the default DPI stage, bytes 3–12 the five stages (little endian), 0xA0 the name (UTF-16), LED records of 11 bytes from 0xD0 (effect id, then the 0x8070 parameters). The last two bytes are a CRC-16 (CCITT, start 0xFFFF, big endian) over the rest.

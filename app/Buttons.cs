@@ -47,12 +47,15 @@ static class Bindings
     // Factory profiles store a special's last two bytes as FF FF (G502 HERO) or FF 00 (a G502 X LIGHTSPEED; a 409F on
     // MPM 30.00 has 00 00), G HUB as 00 00,
     // and "no action" as 80 00 FF FF (Solaar): only the first two bytes say what the button does (g502-hub's docs/protocol.md, facts only).
+    // G HUB also writes "no action" as the special 90 00 (a G502 X's profile, docs/G502X.md; OMM's enums): shown as Disabled.
     public static int Find(ButtonAction[] actions, byte[] binding)
     {
         if (binding == null) return -1;
         int exact = Array.FindIndex(actions, action => action.Bytes.SequenceEqual(binding));
         if (exact >= 0 || binding.Length < 2 || !(binding[0] == 0x90 || (binding[0] == 0x80 && binding[1] == 0x00))) return exact;
-        return Array.FindIndex(actions, action => action.Bytes[0] == binding[0] && action.Bytes[1] == binding[1]);
+        byte kind = binding[0], function = binding[1];
+        if (kind == 0x90 && function == 0x00) kind = 0x80;
+        return Array.FindIndex(actions, action => action.Bytes[0] == kind && action.Bytes[1] == function);
     }
 
     static readonly Dictionary<int, string> Specials = new Dictionary<int, string>
@@ -107,7 +110,8 @@ static class Bindings
         return BitConverter.ToString(binding).Replace("-", " ");
     }
 
-    // The HID usage of a key Windows reports, for a keystroke binding; 0 for one G-Lite doesn't map.
+    // The HID usage of a key Windows reports, for a keystroke binding; 0 for one G-Lite doesn't map.
+
     public static int Usage(Keys key)
     {
         if (key >= Keys.A && key <= Keys.Z) return 0x04 + (int)key - (int)Keys.A;
@@ -146,8 +150,10 @@ static class Bindings
             case Keys.Up: return 0x52;
         }
         return 0;
-    }
-
+    }
+
+
+
     public static bool Same(byte[][] first, byte[][] second)
     {
         if (first == null || second == null) return first == second;
@@ -163,7 +169,12 @@ static class Bindings
     public static string[] Names(FoundDevice found, int count)
     {
         int wpid = found.Models.Contains("C08B") ? 0x407F : found.WirelessId;
-        var known = wpid == 0x407F
+        var known = found.IsG600
+                // libratbag's and g600prog's order: G4 and G5 tilt the wheel, G6 is under the ring finger, G7 and G8 are behind the
+                // wheel, G9 to G20 the thumb's keypad.
+                ? new[] { "Left button", "Right button", "Wheel click", "Wheel tilt left", "Wheel tilt right", "Ring finger (G6)" }
+                    .Concat(Enumerable.Range(7, 14).Select(number => "G" + number)).ToArray()
+            : wpid == 0x407F
                 ? new[]
                 {
                     "Left button", "Right button", "Wheel click", "Thumb, back", "Thumb, front", "Sniper", "G7", "G8", "G9",
@@ -192,7 +203,8 @@ static class Bindings
 // The mouse and keyboard screens share it; the screen keeps the bindings and gets each change through Assigned.
 class ButtonRows
 {
-    const int Max = 16;
+    // The G600 has 20 buttons: past 16 rows, they're packed closer to fit the box.
+    const int Max = 20, Roomy = 16, Pitch = 28, CompactPitch = 25;
     readonly Control parent;
     readonly ButtonAction[] actions;
     readonly Label hint;
@@ -202,6 +214,8 @@ class ButtonRows
     string[] names = new string[0];
     byte[][] bindings;
     bool editable;
+    int pitch = Pitch;
+    float scale;
     string idleHint = "";
     public int Recording = -1, Pressed = -1;
     public event Action<int, byte[]> Assigned;
@@ -225,7 +239,7 @@ class ButtonRows
         {
             if (Pressed < 0 || Pressed >= Max || !rowNames[Pressed].Visible) return;
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            Ui.Fill(e.Graphics, new RectangleF(6 * Ui.DpiScale, (40 + 28 * Pressed) * Ui.DpiScale, 360 * Ui.DpiScale, 26 * Ui.DpiScale),
+            Ui.Fill(e.Graphics, new RectangleF(6 * Ui.DpiScale, (40 + pitch * Pressed) * Ui.DpiScale, 360 * Ui.DpiScale, (pitch - 2) * Ui.DpiScale),
                 6 * Ui.DpiScale, Theme.AccentBackground, Theme.AccentBackground);
         };
         keyField = Ui.Add(parent, new TextField { Visible = false }, 380, 40, 222, 26);
@@ -245,6 +259,7 @@ class ButtonRows
     void Sync()
     {
         int count = bindings == null ? 0 : Math.Min(Max, Math.Min(names.Length, bindings.Length));
+        Space(count > Roomy ? CompactPitch : Pitch);
         for (int i = 0; i < Max; i++)
         {
             bool on = i < count;
@@ -262,6 +277,22 @@ class ButtonRows
         keyField.Visible = Recording >= 0 && Recording < count;
         if (keyField.Visible) keyField.Top = rowDropdowns[Recording].Top;
         hint.Text = Recording >= 0 ? "Press the keys, or Esc to cancel." : idleHint;
+    }
+
+    // The page is scaled as a whole once placed, so rows moved later take its scale from a dropdown's width (222 when built).
+    void Space(int newPitch)
+    {
+        if (newPitch == pitch) return;
+        if (scale == 0) scale = rowDropdowns[0].Width / 222f;
+        pitch = newPitch;
+        Func<int, int> scaled = units => (int)Math.Round(units * scale);
+        for (int i = 0; i < Max; i++)
+        {
+            rowDropdowns[i].Top = scaled(40 + pitch * i);
+            rowDropdowns[i].Height = scaled(pitch - 2);
+            rowNames[i].Top = scaled(40 + pitch * i + (pitch - 18) / 2);
+        }
+        keyField.Height = scaled(pitch - 2);
     }
 
     void Pick(int row, int actionIndex)

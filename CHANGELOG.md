@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- PRO X SUPERLIGHT 2 and PRO X 2 DEX (onboard profile format 7): Save to mouse. It writes the DPI stages, the default stage, the report rate (for the receiver or the cable, whichever the mouse is on) and the buttons, and leaves the rest of the profile as it was. A backup is made first and the profile is read back after writing. These mice only take their saved DPI stages, so a stage's new DPI reaches the mouse when you save. Not yet tried by an owner in G-Lite: the layout and the way to write it come from Featherweight (on a SUPERLIGHT 2) and logitech-onboard-memory (on a DEX), which both checked their writes on the mouse. No factory restore on these mice yet.
+- Newer mice: the Bindings view shows the buttons saved in the profile.
+- G600: its screen, read only for now. It shows the active mode's DPI levels, report rate, lighting and its 20 buttons. The G600 doesn't speak HID++: G-Lite reads its feature reports, as libratbag does on Linux. Not yet tried on a real G600: a report from an owner would confirm Windows lets G-Lite read them.
+- Demo: a PRO X 2 DEX and a G600.
+
 ## [0.0.34-alpha] - 2026-11-21
 
 ### Added

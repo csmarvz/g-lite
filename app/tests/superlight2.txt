@@ -23,15 +23,98 @@ open
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8100 fnB
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] Effect=- (off) DPI stage=800 DPI=14 Report rate=1k (off) Brightness=100 (off) Speed=0 (off) [Revert (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=800 DPI=14 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert (off)] [Save to mouse (off)]
 slide DPI 20
-  2202 fn1
-  2202 fn5
-  2202 fn6  00 04 4C 04 4C 02
-  = status "The mouse refused this DPI. It may only take its saved DPI stages." [Report] [Backups] G-Lite preset=– [New…] […] Effect=- (off) DPI stage=- DPI=20 Report rate=1k (off) Brightness=100 (off) Speed=0 (off) [Revert]
+  = status "DPI changes when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=1100 DPI=20 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
 pick DPI stage 1600
   8100 fnC  02
-  = status "Applied to the mouse, not saved on it" [Report] [Backups] G-Lite preset=– [New…] […] Effect=- (off) DPI stage=1600 DPI=30 Report rate=1k (off) Brightness=100 (off) Speed=0 (off) [Revert]
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=1600 DPI=30 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
 pick DPI stage 400
   8100 fnC
-  = status "Applied to the mouse, not saved on it" [Report] [Backups] G-Lite preset=– [New…] […] Effect=- (off) DPI stage=400 DPI=6 Report rate=1k (off) Brightness=100 (off) Speed=0 (off) [Revert]
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=400 DPI=6 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
+slide DPI 20
+  = status "DPI changes when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=1100 DPI=20 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
+pick Report rate 2k
+  = status "DPI and report rate change when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=1100 DPI=20 Report rate=2k Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
+pick View Bindings
+  = status "DPI and report rate change when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings Left button=Left click Right button=Right click Wheel click=Middle click Button 4=Back Button 5=Forward [Revert] [Save to mouse]
+pick Button 4 DPI cycle
+  = status "DPI, buttons and report rate change when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings Left button=Left click Right button=Right click Wheel click=Middle click Button 4=DPI cycle Button 5=Forward [Revert] [Save to mouse]
+press Save to mouse
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fn6  00 01 00 00 00 FF
+  8100 fn7  04 03 00 00 4C 04 4C 04 02 20 03 20 03 02 40 06
+  8100 fn7  40 06 02 80 0C 80 0C 02 00 00 00 00 00 FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  80 01 00 01 80 01 00 02 80 01 00 04 90 05
+  8100 fn7  80 01 00 10 FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FE 65
+  8100 fn8
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fn3  00 01
+  2202 fn2
+  2202 fn5
+  8061 fn1
+  8061 fn2  01
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fnB
+  = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings Left button=Left click Right button=Right click Wheel click=Middle click Button 4=DPI cycle Button 5=Forward [Revert (off)] [Save to mouse (off)]
+profile after the save: 040300004C044C040220032003024006400602800C800C020000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF8001000180010002800100049005000080010010

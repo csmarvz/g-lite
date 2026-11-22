@@ -29,6 +29,7 @@ Buttons.cs
 Mouse.cs
 MouseProtocol.cs
 G9x.cs
+G600.cs
 HeadsetProtocol.cs
 Report.cs
 Log.cs

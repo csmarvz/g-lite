@@ -93,15 +93,29 @@ interface IMouse
 
 class HidppMouse : IMouse
 {
-    public EffectInfo[] Effects { get { return MouseProtocol.Effects; } }
-    public bool HasFactory { get { return true; } }
-    public MouseProtocol.State Read(Hidpp hidpp) { return MouseProtocol.Read(hidpp); }
+    // The last profile format read: format 7 has its own layout, and its factory profile's layout isn't known.
+    int format;
+    bool Wide { get { return MouseProtocol.State.WideFormat(format); } }
 
+    public EffectInfo[] Effects { get { return MouseProtocol.Effects; } }
+    public bool HasFactory { get { return !Wide; } }
+    public MouseProtocol.State Read(Hidpp hidpp)
+    {
+        var state = MouseProtocol.Read(hidpp);
+        format = state.Format;
+        return state;
+    }
+
+    // A format 7 mouse refuses a DPI that isn't one of its stages while it runs its profile (logi-cli, OpenGMice): an edited stage
+    // goes on the mouse when saved, so only the stage is picked.
     public void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSettings want, MouseSettings sent)
     {
         if (sent != null && want.Dpi == sent.Dpi && want.Stage == sent.Stage) return;
-        bool saved = state.Onboard && want.Stage >= 0 && want.Stage < state.Stages.Length && state.Stages[want.Stage] == want.Dpi;
-        if (saved) MouseProtocol.SetStage(hidpp, want.Stage); else MouseProtocol.SetDpi(hidpp, want.Dpi);
+        bool staged = state.Onboard && want.Stage >= 0 && want.Stage < state.Stages.Length;
+        bool saved = staged && state.Stages[want.Stage] == want.Dpi;
+        if (saved) MouseProtocol.SetStage(hidpp, want.Stage);
+        else if (staged && Wide && state.Savable) { if (sent == null || sent.Stage != want.Stage) MouseProtocol.SetStage(hidpp, want.Stage); }
+        else MouseProtocol.SetDpi(hidpp, want.Dpi);
     }
 
     public void SetLight(Hidpp hidpp, MouseProtocol.State state, MouseLight light) { MouseProtocol.SetLight(hidpp, state, light); }
@@ -111,6 +125,11 @@ class HidppMouse : IMouse
     {
         return MouseProtocol.ReadSector(hidpp, state.Sector, state.SectorSize);
     }
+    byte[] Build(byte[] now, MouseSettings want, MouseProtocol.State state)
+    {
+        return Wide ? MouseProtocol.BuildWide(now, want, state.Wired) : MouseProtocol.Build(now, want, state.Zones.Count);
+    }
+
     public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSettings want)
     {
         MouseProtocol.Setup(hidpp, state,
@@ -118,7 +137,7 @@ class HidppMouse : IMouse
     }
     public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSettings want)
     {
-        MouseProtocol.Store(hidpp, state, MouseProtocol.Build(now, want, state.Zones.Count));
+        MouseProtocol.Store(hidpp, state, Build(now, want, state));
     }
     // Reloading the active profile (fn 3) leaves a G305's DPI as it was set live, so the restored default stage is set too.
     public void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data)
@@ -126,10 +145,10 @@ class HidppMouse : IMouse
         var restored = data ?? MouseProtocol.Factory(MouseProtocol.ReadSector(hidpp, MouseProtocol.RomSector, state.SectorSize), now);
         MouseProtocol.Store(hidpp, state, restored);
         int stage = DefaultStage(restored);
-        if (stage < MouseProtocol.StagesOf(restored).Length)
+        if (stage < (Wide ? MouseProtocol.WideStagesOf(restored) : MouseProtocol.StagesOf(restored)).Length)
             try { MouseProtocol.SetStage(hidpp, stage); }
             catch (HidppError) { }
     }
-    public string Describe(byte[] profile) { return MouseProtocol.Describe(profile); }
-    public int DefaultStage(byte[] profile) { return profile[MouseProtocol.DefaultStageAt]; }
+    public string Describe(byte[] profile) { return Wide ? MouseProtocol.DescribeWide(profile) : MouseProtocol.Describe(profile); }
+    public int DefaultStage(byte[] profile) { return profile[Wide ? MouseProtocol.WideDefaultStageAt : MouseProtocol.DefaultStageAt]; }
 }

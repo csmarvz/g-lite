@@ -65,8 +65,10 @@ More G500/G9x facts:
 | [xrfc/gpw-battery-tray](https://github.com/xrfc/gpw-battery-tray) | MIT | G Pro Wireless on C539 | C# tray app, 0x1001 voltage curve in `source/curves.txt` |
 | [ymergame/g502-stage-mouse-macos](https://github.com/ymergame/g502-stage-mouse-macos) | MIT | — | 0x1C00 persistent remappable action, read only. Its profile code looks invented |
 | [Java-Idl/universal-omm-webhid](https://github.com/Java-Idl/universal-omm-webhid) | MIT | G502 HERO C08B capture | Decompiled OMM 2.7.4428 (.NET 4.8 WPF, HID++ in the embedded `logi_nethidppio.dll`). `BUTTON_REMAPPING_SPEC.md`: OMM's button enums and a capture of a button write. AI-written; some claims are wrong (output and input on separate collections), so check each against a device |
-| [marco-vrinssen/logitech-onboard-memory](https://github.com/marco-vrinssen/logitech-onboard-memory) | MIT | PRO X 2 DEX, LIGHTSPEED and wired | macOS app and CLI in Swift. Profile format 6 and up: buttons, a G-shift layer, LOD per DPI stage, wired and wireless report rates. Blocks writes to format 5 and older. `Sources/LogiHIDPP/ProfileDecoder.swift`, `ProfileEditor.swift` |
-| [samyrataylor/g-manager](https://github.com/samyrataylor/g-manager) | MIT | G600 | Python, a field per profile byte: `app/devices/mouse/G600.py`, `app/fields/byte/*.py` (buttons, keys, modifiers, DPI, report rate, lighting) |
+| [marco-vrinssen/logitech-onboard-memory](https://github.com/marco-vrinssen/logitech-onboard-memory) | MIT | PRO X 2 DEX (format 7), LIGHTSPEED and wired | macOS app and CLI (`lomm`) in Swift. Reads and writes profile format 6 and up: DPI stages with LOD, wired and wireless rates, buttons, the G-shift layer, the name. Blocks writes to format 5 and older. Layout in the README and `Sources/LogiHIDPP/ProfileDecoder.swift`, `ProfileEditor.swift`; see [Profile format 7](#profile-format-7) |
+| [lexr1/omm.py](https://github.com/lexr1/omm.py) | GPL-3.0, facts only | G502 Proteus Core C07D, G502 HERO C08B, wired | Windows Python CLI over hidapi: 0x8100 profiles to and from JSON, buttons, macros, the four LED records, onboard mode. The only reference here that writes 0x8100 macros. `libs/FeatureOnboardProfile.py`, `HidppProfile.py`, `HidppMacro.py`, `HidppConstants.py`; see [0x8100 macros](#0x8100-macros-macro-format-1) |
+| [tulth/g600prog](https://github.com/tulth/g600prog) | MIT | G600 | Python over pyusb, Linux. The three profile reports to and from JSON; g-manager is a rewrite of it. See [G600 and G300](#g600-and-g300) |
+| [samyrataylor/g-manager](https://github.com/samyrataylor/g-manager) | MIT | G600 | Python, a field per profile byte: `app/devices/mouse/G600.py`, `app/fields/byte/*.py`. A rewrite of tulth/g600prog with the same layout and transfers; nothing g600prog doesn't have |
 | [hwkim3330/logitech](https://github.com/hwkim3330/logitech) | none | — | WebHID onboard editor: DPI, buttons, RGB. `js/profile.js`, `js/constants.js`. Facts only |
 | [RadNotRed/open-mouse-memory](https://github.com/RadNotRed/open-mouse-memory) | GPL-3.0 | — | Onboard memory manager. Facts only, not read |
 
@@ -129,6 +131,57 @@ The rest of what the reads found, by topic. Same licence rules as above.
 - dukaci keeps slots in G HUB order G1–G11 and enables only slot 1, to avoid the corrupt-slot problem.
 - 0x1C00 persistent remappable action (opengcontrol): fn1 count, fn2 `<index> FF` gives a control id, fn3 `<id BE16> FF` gives [3] action type (0 empty, 1 key, 2 mouse, 3/4 X/Y, 5/6 scroll, 7 consumer, 8 internal, 9 power), [4–5] value, [6] modifiers. Read only. Its "memory model 0, 3-page layout" with fn3/fn4 flash reads contradicts the spec: likely made up.
 
+### 0x8100 info and modes (omm.py, lomm)
+
+- fn0 reply: [0] memory model (both refuse anything but 1), [1] profile format, [2] macro format (omm.py refuses anything but 1), [3] profiles, [4] ROM profiles, [5] buttons, [6] sector count, [7–8] sector size, [9] mechanical layout (bits 0–1 = 2: the mouse has a G-shift layer), [10] various info. A G502 HERO answers `01 02 01 05 05 0B 10 01 00 0A`: format 2, five profiles, five ROM profiles, 11 buttons, 16 sectors of 256 bytes, G-shift.
+- fn1 `01` onboard mode, `02` host mode. fn2 byte 0: 1 onboard. fn3 `<sector BE16>` selects; fn4 byte 1 the current profile.
+- Directory entries: `00 <sector> <enabled> 00`; omm.py reads a first byte of 01 as "profile in ROM" and `FF FF FF FF` as an empty slot.
+- Profile byte 0, formats 1–5: the interval in ms (1, 2, 4, 8). When the mouse has 0x8061, omm.py reads it as an index into 125, 250, 500, 1000, 2000, 4000, 8000 Hz instead, as format 7 does (untested above 1000 Hz, its README says). Byte 2 is the DPI-shift stage, bytes 13–15 a colour (unnamed), the name 48 bytes at 0xA0, four LED records of 11 bytes at 0xD0.
+- 255-byte sectors (lomm, PRO X 2 DEX): the mouse refuses a 16-byte read that crosses the end, so the tail is read at offset 239 overlapping the chunk before. `MouseProtocol.ReadSector` already does this. Writes go in 16-byte chunks, the last padded with zeros.
+- lomm writes a special as `90 <id> FF 00` and Disabled as `FF FF FF FF`. Special ids 0–0x11 as in the button records above (0F host switch).
+
+### 0x8100 macros (macro format 1)
+
+From omm.py (GPL-3.0, facts only), which reads and writes them on the G502 HERO. The same opcodes as g502-hub's `docs/protocol.md` §3.8.
+
+- A button record `00 <sector> 00 <offset>` (two BE16) points to a macro. Macro sectors have no CRC.
+- Opcode length from the top three bits: 0x00–0x1F 1 byte, 0x20–0x3F 2, 0x40–0x5F 3, 0x60–0x7F 5. FF ends the macro.
+- 00 no-op. 01 wait for release (the rest runs on release). 02 repeat while held. 03 repeat until another profile is picked.
+- 20 `<signed>` wheel, 21 `<signed>` horizontal wheel.
+- 40 `<ms BE16>` delay. 41 / 42 `<bits BE16>` mouse buttons down / up (bit 0 left to bit 4 forward). 43 / 44 `<BE16>` key down / up: a HID key usage in the low byte, or a modifier in the high byte (0x01 LCtrl to 0x80 RGui, as in `80 02`).
+- 60 `<sector BE16> <offset BE16>` continues elsewhere. 61 `<BE16> <BE16>` moves the pointer (signed; omm.py isn't sure which is X).
+- Where they go: sectors after the profiles, two per profile by default ((sectors − profiles − 1) / profiles). A macro is cut at 11 bytes before the end of a sector, where a 60 jump continues it in the next.
+- G-Lite shows such a button as Macro and keeps the record. Writing one would mean writing sectors past the profiles: not done.
+
+### Profile format 7
+
+From lomm (MIT), read and written on a PRO X 2 DEX over LIGHTSPEED and cable, every write read back. The rate rows are lomm's; the other sources below swap them, and [newer-mice.md](../newer-mice.md#format-7) has the layout G-Lite uses:
+
+| Offset | Content |
+|---|---|
+| 0x00 | Wired report rate, an index into 125, 250, 500, 1000, 2000, 4000, 8000 Hz |
+| 0x01 | Wireless report rate, the same index (checked against 0x8061) |
+| 0x02–0x03 | Not decoded (the default and shift stages, per lomm-web and GOMM) |
+| 0x04 | Five DPI stages of 5 bytes: X LE16, Y LE16, lift-off level |
+| 0x2C | Sleep and power-off timeouts in seconds, LE16 each |
+| 0x30 | 16 buttons of 4 bytes |
+| 0x70 | The G-shift layer |
+| 0xA0 | Name, UTF-16LE, 48 bytes |
+| 0xD0 | LED records of 11 bytes (unused on a mouse without lighting) |
+| last 2 | CRC-16 CCITT, BE |
+
+- lomm applies it to every format from 6, untested below 7. Its fallback for formats 4 and 5 (buttons at 0x23) is wrong: libratbag and our G502 reports put them at 0x20.
+- Stage DPI accepted: 0 (stage off) or 100–30000. lomm doesn't check the stages against 0x2202's list.
+- It puts the mouse in onboard mode whenever it connects, and edits profile 1.
+- It reads each link's rates with 0x8061 fn0 `<connection>`, as in [report-rate-8061.md](../report-rate-8061.md).
+- [Ad1FPS/Featherweight](https://github.com/Ad1FPS/Featherweight) (MIT, PRO X SUPERLIGHT 2, `docs/ONBOARD_PROFILES.md`): fn 0 `01 07 01 05 01 05 10 00 FF 0A 04`. Wrote sectors 0001 and 0005 and read them back byte for byte; the mouse used the new DPI at once, without fn 3. Byte 0 set to 04 made the live rate over the receiver 2000 Hz: byte 0 is the receiver's rate. The last fn 7 chunk is 15 bytes and a 00, accepted. The factory sectors 0100 and 0101 have no valid CRC. Its byte 1–3 labels (default, shift, active stage) don't fit its own dump (byte 1 = 03 with one stage).
+- [lnx00/lomm-web](https://github.com/lnx00/lomm-web) (MIT, WebHID, a simulator, vibecoded), `js/profile.js`: OMM's offsets for formats 1, 2/3, 4, 5, 6, 7, 8 and 10. Format 6: rate bytes 0 (receiver) and 1 (cable), default and shift stage at 2 and 3, stages at 4, DPI delta at 29, power mode 33, angle snapping 34, write counter 35, timeouts 44 and 46, buttons at 0x30, G-shift at 0x70, name at 160. Format 7 adds bunny-hop prevention at 0x25 (10 ms units, 0 off), format 8 analog buttons at 0x26. Format 10 (the G502 X family after a firmware update, per GOMM): format 1's layout with the rates at 0x14 and 0x15, 13 buttons from 32 and a Y DPI table at 0x56. It also names model ids from 0x0003 fn 0 bytes 7–12 (`40a9c09b` PRO X SUPERLIGHT 2, `b03c40b1` G309, `b02e409d` G705, `b0244085` G604).
+- [Sunya0804/logitech_omm](https://github.com/Sunya0804/logitech_omm) ("GOMM", licence Other, facts only): checked against OMM 2.7 and a PRO X Wireless (format 4), G502 X PLUS (format 5) and PRO X 2 DEX (format 7). Macro opcodes 45/46 are consumer key down/up `<usage BE16>`. It reads 0x60 as a 3-byte jump, where omm.py and leodbc read 5; untested.
+- [CharlExMachina/LibreHub](https://github.com/CharlExMachina/LibreHub) (no licence, facts only), G502 X PLUS: G HUB stores macros as `00 00 00 00` and writes no macro data, though the firmware runs format 1 macros. fn 8 answers error 04 when the CRC is wrong. Format 5: bytes 28–29 dim after N s, 30–31 lights off after N s (FFFF never); LED slots active-all, active-primary, inactive-all, inactive-primary; byte 252 bits 0 and 1 pick the all slot. Effect ids 0x0F Pulsar Point, 0x10 Neutron Null. Its `docs/PROTOCOL.md` covers the A50 X headset (0B0B, page FF32).
+- [sabam54/OpenGMice](https://github.com/sabam54/OpenGMice) (GPL-3.0, facts only): G305 X SUPERLIGHT (B046 over Bluetooth) is format 7, with four LED records at 0xD0 (zones 0 and 1, then their passive copies). 0x2202 fn 6 is refused in onboard mode with error 05.
+- [Adhamura/superstrike-studio](https://github.com/Adhamura/superstrike-studio) (MIT, PRO X3 SUPERSTRIKE, format 8): 0x22 angle snapping, 0x25 in 10 ms units (FF off), 0x26 HITS for left and right; 0x8090 surface mode, 0x1B0C HITS, 0x80E0.
+- Other reads, unchecked: [HolyJoey/Lghub](https://github.com/HolyJoey/Lghub) `docs/protocol.md` (0x2240 surface tuning, 0x80E0 bunny hopping, 0x8102/0x8103 tags, Centurion features); [shefben/open_logitech_GHUB](https://github.com/shefben/open_logitech_GHUB) fn 0 vectors (G903 `01 04 01 05 01 0C 10 00 FF 0A 04`, G815 `01 04 01 03 03 08 10 01 00 36 01`); G300s tools civelasco/g300s-configurator (MIT: writes only on interface 1, FF80; 0xF1 the colour; rate codes 0 1000, 1 125, 2 250, 3 500 Hz).
+
 ### Lighting
 
 - onboard-lite picks 0x8071 over 0x8070 unless the feature is hidden (flag 0x40). 0x8070 with 0 zones means no lighting. OMM writes the power-save LED copies at half intensity and half RGB. Flags byte 0xFC = 0 means one effect per cluster.
@@ -175,6 +228,10 @@ The rest of what the reads found, by topic. Same licence rules as above.
 - Button codes: 11 DPI up, 12 DPI down, 13 DPI cycle, 14 mode switch, 15 DPI shift, 16 DPI default, 17 G-shift.
 - 0xF0: read bits 1–2 resolution, 4–7 profile. Set resolution `F0 40|(i << 1) 00 00`, profile `F0 80|(i << 4) 00 00`.
 - G300: 0xF1 active LED, 35-byte profiles.
+- Transfers (g600prog, Linux): GET_REPORT `A1 01`, wValue 0x03F3–0x03F5 (feature report F3–F5), wIndex 1, 154 bytes including the report id. SET_REPORT `21 09` with the same values; g600prog waits 1.1 s after each profile. On Windows this would be HidD_GetFeature and HidD_SetFeature on interface 1 with byte 0 = F3 (inference, untried).
+- Bytes 6–10 and 18–30 are unknown, zero in g600prog's sample. The poll rate is 1000 / (1 + n), so 0 is 1000 Hz. DPI bytes × 50, up to 8200.
+- Button codes 00 none (then the modifier and key bytes count), 01 left, 02 right, 03 middle, 04 back, 05 forward, 06 and 07 buttons 6 and 7, then 11–17 as above. Lighting effect 00 solid, 01 pulse, 02 rainbow; rate 0–15.
+- g600prog's `defaults.json` is a full set of three modes (rainbow at rate 6, 400/1200/2000/3200 DPI, the G-shift colour white). Whether it's the factory set isn't said.
 
 ### Not useful
 

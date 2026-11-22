@@ -800,11 +800,53 @@ static class Traces
             Key = "trace|superlight2", Name = "PRO X SUPERLIGHT 2", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40A9,
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2202, 0x8061, 0x8100 }
         };
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, FakeMouse.ProX2(), null)))
+        var device = FakeMouse.ProX2();
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device, null)))
         {
             script.Slide("DPI", 20);
             script.Pick("DPI stage", "1600");
             script.Pick("DPI stage", "400");
+            script.Slide("DPI", 20);
+            script.Pick("Report rate", "2k");
+            script.Pick("View", "Bindings");
+            script.Pick("Button 4", "DPI cycle");
+            script.Press("Save to mouse");
+            return script.Text + "profile after the save: "
+                + BitConverter.ToString(device.Sectors[1], 0, 0x44).Replace("-", "") + "\n";
+        }
+    }
+
+    // Format 7: the buttons read from 0x30, shown but not editable.
+    static string Dex()
+    {
+        var found = new FoundDevice
+        {
+            Key = "trace|dex", Name = "PRO X 2 DEX", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40B8,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2202, 0x8061, 0x8100 }
+        };
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, FakeMouse.Dex(), null)))
+        {
+            script.Pick("View", "Bindings");
+            return script.Text;
+        }
+    }
+
+    // Read only: feature reports F0 and the active mode's, every control off, 20 buttons in the Bindings view.
+    static string G600()
+    {
+        var device = new FakeG600();
+        var found = new FoundDevice
+        {
+            Key = "trace|g600", Name = "G600 Gaming Mouse", Kind = "mouse", Models = "USB C24A", Link = "USB", Index = 0xFF,
+            PlainHid = true, HasVendorCollection = true, Path = @"\\?\hid#vid_046d&pid_c24a&mi_01&col03"
+        };
+        MousePage page = null;
+        using (var script = Begin(() => page = (MousePage)DeviceTable.For(found).Make(found, device, null)))
+        {
+            script.Pick("View", "Bindings");
+            script.Pick("View", "Settings");
+            script.Do("mode 3 picked on the mouse, then the screen loads again", () => { device.Mode = 2; device.Level = 3; page.Load(); });
+            script.Pick("View", "Bindings");
             return script.Text;
         }
     }
@@ -925,6 +967,8 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("prox60", Generic);
         yield return new KeyValuePair<string, Func<string>>("litra", Litra);
         yield return new KeyValuePair<string, Func<string>>("superlight2", TraceWideDpiMouse);
+        yield return new KeyValuePair<string, Func<string>>("dex", Dex);
+        yield return new KeyValuePair<string, Func<string>>("g600", G600);
         yield return new KeyValuePair<string, Func<string>>("gpro", () => Mouse("G Pro Wireless Gaming Mouse", new FakeMouse(),
             new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("g305", () => Mouse("G305 Lightspeed Wireless Gaming Mouse", FakeMouse.G305(),

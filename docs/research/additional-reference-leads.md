@@ -59,13 +59,13 @@ Origin: [projects-g502.md](https://github.com/mevdschee/logirgb/blob/4282d82e00f
 
 - [vaisajuh/logiled](https://github.com/vaisajuh/logiled) — discovery lead only.
 - [8081Works/g502-bass-led](https://github.com/8081Works/g502-bass-led) — discovery lead only.
-- [lexr1/omm.py](https://github.com/lexr1/omm.py) — discovery lead only.
+- [lexr1/omm.py](https://github.com/lexr1/omm.py) — read on 2026-11-22, see [more-references.md](more-references.md).
 - [DalindaLimon/Fivo-o2-Hub](https://github.com/DalindaLimon/Fivo-o2-Hub) — discovery lead only.
 - [UZ9/g502-lightcontroller](https://github.com/UZ9/g502-lightcontroller) — discovery lead only.
 - [Roritharr/logitech-g502-led-off](https://github.com/Roritharr/logitech-g502-led-off) — discovery lead only.
 - [meiyoutou/Mouser-G502](https://github.com/meiyoutou/Mouser-G502) — discovery lead only.
 - [geromet/g502-linux-control](https://github.com/geromet/g502-linux-control) — discovery lead only.
-- [marco-vrinssen/logitech-onboard-memory](https://github.com/marco-vrinssen/logitech-onboard-memory) — discovery lead only.
+- [marco-vrinssen/logitech-onboard-memory](https://github.com/marco-vrinssen/logitech-onboard-memory) — read on 2026-11-22, see [more-references.md](more-references.md).
 - [RalphJS/borochid-driver-logitech-hidpp](https://github.com/RalphJS/borochid-driver-logitech-hidpp) — discovery lead only.
 - [timunrau/g502-hero-macos-onboard-memory](https://github.com/timunrau/g502-hero-macos-onboard-memory) — discovery lead only.
 - [TboyGingy/G502-Hero-Manager](https://github.com/TboyGingy/G502-Hero-Manager) — discovery lead only.

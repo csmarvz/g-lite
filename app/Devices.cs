@@ -126,13 +126,15 @@ static class Devices
             // nothing to read or change.
             if (name == null || name.EndsWith("Charger", StringComparison.OrdinalIgnoreCase)) continue;
             string kind = known != null ? known[1] : name.ToUpper().Contains("SPEAKER") ? "device" : "headset";
-            // The G510 takes its feature reports on its vendor collection (usage page FF00, MI_01&COL02 in an owner's report).
-            var vendor = pid == "C22D" || pid == "C22E"
+            // The G510 takes its feature reports on its vendor collection (usage page FF00, MI_01&COL02 in an owner's report), the G600
+            // on usage page FF80 (LGS's device files; no owner's report yet).
+            int vendorPage = pid == "C22D" || pid == "C22E" ? 0xFF00 : pid == "C24A" ? 0xFF80 : 0;
+            var vendor = vendorPage != 0
                 ? paths.FirstOrDefault(path =>
                 {
                     int page, outputLength;
                     ReadHidCaps(path, out page, out outputLength);
-                    return page == 0xFF00;
+                    return page == vendorPage;
                 })
                 : null;
             plain.Add(new FoundDevice

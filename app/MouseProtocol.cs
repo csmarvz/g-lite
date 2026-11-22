@@ -22,7 +22,9 @@ static class MouseProtocol
     {
         public int Dpi, Stage = -1, Rate;
         public int[] Dpis = new int[0], Stages = new int[0], Rates = new int[0];
-        public bool Onboard, ProfileOk = true, Flash, Fresh, CanInvert, Inverted;
+        public bool Onboard, ProfileOk = true, Flash, Fresh, CanInvert, Inverted, Wired;
+        // Shown, not changed: the G600, whose writes aren't tried yet.
+        public bool ReadOnly;
         public byte ProfilesFeature;
         public MouseLight Light;
         public EffectInfo[] Effects = MouseProtocol.Effects;
@@ -37,9 +39,14 @@ static class MouseProtocol
             {
                 // Pages 1–16 are the flash; 17 and up hold the G500's and G700s's factory profiles (cvuchener's g500 doc/memory.md).
                 if (Flash) return Sector >= 2 && Sector <= 16 && SectorSize == G9xRegisters.PageSize && Current != null;
-                return Onboard && KnownFormat(Format) && SectorSize >= 0xF0 && ((Sector > 0 && Sector < 0x100) || Fresh);
+                return Onboard && (KnownFormat(Format) || WideFormat(Format)) && SectorSize >= 0xF0
+                    && ((Sector > 0 && Sector < 0x100) || Fresh);
             }
         }
+
+        // Format 7 (PRO X SUPERLIGHT 2, PRO X 2 DEX): written by Featherweight on a SUPERLIGHT 2 and by
+        // marco-vrinssen/logitech-onboard-memory on a DEX, each read back byte for byte (docs/newer-mice.md).
+        public static bool WideFormat(int format) { return format == 7; }
 
         // Format 2 (G502 HERO, G303, G502 Proteus Spectrum) has format 3's layout up to the LED blocks at 0xD0 and 0xDB:
         // libratbag, Solaar and cvuchener's hidpp agree (summed up in g502-hub's docs/protocol.md). Format 1 ends at 0xD0, 4 and 5
@@ -57,8 +64,12 @@ static class MouseProtocol
     public const int ReportIntervalAt = 0x00, DefaultStageAt = 0x01, StagesAt = 0x03, StageCount = 5, ButtonsAt = 0x20, ButtonLength = 4,
         NameAt = 0xA0, NameLength = 0x30, LightRecordsAt = 0xD0, LightRecordLength = 11;
 
-    // Formats 6 and up keep five 5-byte stage records from offset 4, the DPI in the first two bytes (docs/newer-mice.md).
-    const int WideStagesAt = 4, WideStageLength = 5;
+    // Formats 6 and up: the rate as a 0x8061 index, the receiver's at 0 and the cable's at 1 (Featherweight changed byte 0 on a
+    // SUPERLIGHT 2 and its live rate over the receiver followed), the default stage at 2, five 5-byte stage records from 4 (X and Y
+    // little-endian, lift-off), the buttons from 0x30 (docs/newer-mice.md).
+    public const int WideRateAt = 0, WideWiredRateAt = 1, WideDefaultStageAt = 2;
+    const int WideStagesAt = 4, WideStageLength = 5, WideButtonsAt = 0x30;
+    static readonly int[] WideRateValues = { 125, 250, 500, 1000, 2000, 4000, 8000 };
 
     public static ushort Crc(byte[] data, int length)
     {
@@ -99,6 +110,11 @@ static class MouseProtocol
             .TakeWhile(x => x != 0 && x != 0xFFFF)
             .ToArray();
         return dpis.Length > 0 && stages.All(x => x >= dpis[0] && x <= dpis[dpis.Length - 1]) ? stages : new int[0];
+    }
+
+    static byte[][] ButtonsOf(byte[] profile, int at, int count)
+    {
+        return Enumerable.Range(0, count).Select(i => profile.Skip(at + ButtonLength * i).Take(ButtonLength).ToArray()).ToArray();
     }
 
     public static int[] WideRates(byte bits)
@@ -143,16 +159,7 @@ static class MouseProtocol
         built[StagesAt + 1 + 2 * i] = (byte)(want.Dpi >> 8);
         built[DefaultStageAt] = (byte)i;
         if (want.Rate > 0) built[ReportIntervalAt] = (byte)(1000 / want.Rate);
-        if (want.Buttons != null)
-        {
-            int count = Math.Min(want.Buttons.Length, 16);
-            var before = Enumerable.Range(0, count)
-                .Select(button => built.Skip(ButtonsAt + ButtonLength * button).Take(ButtonLength).ToArray())
-                .ToArray();
-            if (Bindings.HasLeft(before, count) && !Bindings.HasLeft(want.Buttons, count))
-                throw new RefusedException("No button is set to Left click, not saving");
-            for (int button = 0; button < count; button++) want.Buttons[button].CopyTo(built, ButtonsAt + ButtonLength * button);
-        }
+        if (want.Buttons != null) CopyButtons(built, want.Buttons, ButtonsAt);
         if (want.Light != null)
             for (int zone = 0; zone < Math.Min(zones, 2); zone++)
             {
@@ -161,6 +168,46 @@ static class MouseProtocol
             }
         WriteChecksum(built);
         return built;
+    }
+
+    public static int[] WideStagesOf(byte[] profile) { return WideStages(profile, new[] { 1, 0xFFFE }); }
+
+    // Format 7: only the DPI stages, the default stage, the rate for the link in use and the buttons change; the rest stays as read.
+    public static byte[] BuildWide(byte[] old, MouseSettings want, bool wired)
+    {
+        var built = (byte[])old.Clone();
+        var stages = WideStagesOf(built);
+        if (stages.Length == 0) throw new RefusedException("The profile on the mouse has no DPI stages, not touching it");
+        int i = want.Stage >= 0 && want.Stage < stages.Length ? want.Stage : Array.IndexOf(stages, want.Dpi);
+        if (i < 0) i = Math.Min((int)built[WideDefaultStageAt], stages.Length - 1);
+        for (int axis = 0; axis < 2; axis++)
+        {
+            built[WideStagesAt + WideStageLength * i + 2 * axis] = (byte)want.Dpi;
+            built[WideStagesAt + WideStageLength * i + 2 * axis + 1] = (byte)(want.Dpi >> 8);
+        }
+        built[WideDefaultStageAt] = (byte)i;
+        int rate = Array.IndexOf(WideRateValues, want.Rate);
+        if (rate >= 0) built[wired ? WideWiredRateAt : WideRateAt] = (byte)rate;
+        if (want.Buttons != null) CopyButtons(built, want.Buttons, WideButtonsAt);
+        WriteChecksum(built);
+        return built;
+    }
+
+    public static string DescribeWide(byte[] profile)
+    {
+        if (!Valid(profile)) return "damaged, can't be restored";
+        var stages = WideStagesOf(profile);
+        int defaultStage = profile[WideDefaultStageAt];
+        return defaultStage < stages.Length ? stages[defaultStage] + " DPI" : "DPI stages";
+    }
+
+    static void CopyButtons(byte[] built, byte[][] buttons, int at)
+    {
+        int count = Math.Min(buttons.Length, 16);
+        var before = ButtonsOf(built, at, count);
+        if (Bindings.HasLeft(before, count) && !Bindings.HasLeft(buttons, count))
+            throw new RefusedException("No button is set to Left click, not saving");
+        for (int button = 0; button < count; button++) buttons[button].CopyTo(built, at + ButtonLength * button);
     }
 
     public static byte[] Factory(byte[] rom, byte[] current)
@@ -361,6 +408,7 @@ static class MouseProtocol
             {
                 byte rateFeature = hidpp.FeatureIndex(0x8061);
                 state.Rates = WideRates(hidpp.Call(rateFeature, 1)[1]);
+                state.Wired = hidpp.Direct;
                 int index = hidpp.Call(rateFeature, 2, (byte)(hidpp.Direct ? 0 : 1))[0];
                 state.Rate = index < 7 ? 125 << index : 0;
             }
@@ -415,16 +463,18 @@ static class MouseProtocol
                     state.ProfileOk = Valid(state.Profile) || state.Sector >= 0x100;
                     if (state.Format >= 6)
                     {
-                        if (state.ProfileOk) state.Stages = WideStages(state.Profile, state.Dpis);
+                        if (state.ProfileOk)
+                        {
+                            state.Stages = WideStages(state.Profile, state.Dpis);
+                            state.Buttons = ButtonsOf(state.Profile, WideButtonsAt, state.ButtonCount);
+                        }
                         state.Profile = null;
                         state.ProfileOk = true;
                     }
                     else
                     {
                         state.Stages = StagesOf(state.Profile);
-                        state.Buttons = Enumerable.Range(0, state.ButtonCount)
-                            .Select(i => state.Profile.Skip(ButtonsAt + ButtonLength * i).Take(ButtonLength).ToArray())
-                            .ToArray();
+                        state.Buttons = ButtonsOf(state.Profile, ButtonsAt, state.ButtonCount);
                         if (logo >= 0 && logo < 2)
                             state.Light = Decode(
                                 state.Profile.Skip(LightRecordsAt + LightRecordLength * logo).Take(LightRecordLength).ToArray());

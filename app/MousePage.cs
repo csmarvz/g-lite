@@ -248,6 +248,7 @@ class MousePage : DevicePage
 
     protected override void ApplyPreset(string text)
     {
+        if (state != null && state.ReadOnly) return;
         var settings = MouseSettings.FromText(text);
         var saved = stored != null && stored.Buttons != null ? stored.Buttons : current.Buttons;
         if (current.Buttons == null) settings.Buttons = null;
@@ -289,7 +290,7 @@ class MousePage : DevicePage
         bool ready = state != null;
         var light = current.Light;
         var effect = light == null ? null : Effects.FirstOrDefault(info => info.Id == light.Effect);
-        bool lit = ready && state.Zones.Count > 0, known = lit && effect != null;
+        bool lit = ready && state.Zones.Count > 0, known = lit && effect != null, live = ready && !state.ReadOnly;
         bool color = known && effect.Color, hasSpeed = known && effect.Speed, hasBrightness = known && light.Effect != 0x00;
         lightHead.Text = !ready || lit
             ? (light == null && lit ? "Lighting (as saved on the mouse)"
@@ -297,17 +298,17 @@ class MousePage : DevicePage
                 : "Lighting")
             : "Lighting (not supported on this mouse)";
         effects.Items = Effects.Select(info => info.Name).ToArray();
-        effects.Enabled = lit;
+        effects.Enabled = lit && live;
         effects.Index = known ? Array.FindIndex(Effects, info => info.Id == light.Effect) : -1;
         SetDimmed(colorHead, color);
-        colors.RefreshControls(light == null ? 0xFFFFFF : light.Color, color);
+        colors.RefreshControls(light == null ? 0xFFFFFF : light.Color, color, live);
         SetDimmed(brightHead, hasBrightness);
-        bright.Enabled = hasBrightness;
+        bright.Enabled = hasBrightness && live;
         bright.Value = light == null ? 100 : light.Bright;
         brightValue.Text = hasBrightness ? light.Bright + "%" : "";
         bright.Invalidate();
         SetDimmed(speedHead, hasSpeed);
-        speed.Enabled = hasSpeed;
+        speed.Enabled = hasSpeed && live;
         if (hasSpeed) speed.Value = (effect.MaxPeriod - light.Period) * 100 / (effect.MaxPeriod - effect.MinPeriod);
         speedValue.Text = hasSpeed ? speed.Value + "%" : "";
         speed.Invalidate();
@@ -320,15 +321,15 @@ class MousePage : DevicePage
         var view = hasStages ? (int[])state.Stages.Clone() : new int[0];
         if (stage >= 0 && state.Writable) view[stage] = current.Dpi;
         stages.Items = hasStages ? view.Select(stageDpi => stageDpi.ToString()).ToArray() : new[] { "–" };
-        stages.Enabled = hasStages;
+        stages.Enabled = hasStages && live;
         stages.Index = stage;
         SetDimmed(stageHead, hasStages);
-        dpi.Enabled = ready && state.Dpis.Length > 0;
+        dpi.Enabled = live && state.Dpis.Length > 0;
         dpi.Max = Math.Max(1, ready ? state.Dpis.Length - 1 : 1);
         dpi.Value = ready && state.Dpis.Length > 0 ? Nearest(state.Dpis, current.Dpi) : 0;
         dpi.Invalidate();
         dpiValue.Text = ready ? current.Dpi.ToString() : "";
-        bool rateOn = ready && state.Rates.Length > 0 && (!state.Onboard || state.Savable);
+        bool rateOn = live && state.Rates.Length > 0 && (!state.Onboard || state.Savable);
         int rate = ready ? (current.Rate > 0 ? current.Rate : state.Rate) : 0;
         rates.Items = ready && state.Rates.Length > 0
             ? state.Rates.Select(hz => hz >= 1000 ? hz / 1000 + "k" : hz.ToString()).ToArray()
@@ -339,7 +340,7 @@ class MousePage : DevicePage
         SetDimmed(rateHead, rateOn);
         rateHead.Text = "Report rate" + (ready && state.Rates.Length > 0 ? " (Hz)" : "")
             + (ready && state.Onboard && state.Savable ? ", on save" : "");
-        rateHint.Text = !ready || !state.Onboard || state.Savable ? "" : "Set by the saved profile.";
+        rateHint.Text = !ready || state.ReadOnly || !state.Onboard || state.Savable ? "" : "Set by the saved profile.";
         invert.Visible = invertLabel.Visible = ready && state.CanInvert;
         invert.Checked = ready && state.Inverted;
         viewPick.Visible = ready && state.ButtonCount > 0 && state.Buttons != null;
@@ -375,14 +376,22 @@ class MousePage : DevicePage
     {
         if (state == null) { ShowStatus(""); return; }
         if (!state.ProfileOk) { ShowBroken(); return; }
+        if (state.ReadOnly) { ShowStatus("Read only: G-Lite shows this mouse's settings but can't change them yet"); return; }
         if (!Keepable) { ShowStatus("No button is set to Left click. Set one to save.", true); return; }
         bool buttons = stored != null && !Bindings.Same(current.Buttons, stored.Buttons);
         bool rate = stored != null && state.Onboard && current.Rate > 0 && current.Rate != stored.Rate;
-        if (dirty && (buttons || rate))
+        // A format 7 mouse only takes its stages' DPI, so an edited stage waits for the save (HidppMouse.SendDpi).
+        bool dpi = MouseProtocol.State.WideFormat(state.Format) && state.Savable && current.Stage >= 0
+            && current.Stage < state.Stages.Length && current.Dpi != state.Stages[current.Stage];
+        var waiting = new List<string>();
+        if (dpi) waiting.Add("DPI");
+        if (buttons) waiting.Add("buttons");
+        if (rate) waiting.Add("report rate");
+        if (dirty && waiting.Count > 0)
         {
-            ShowStatus((buttons && rate ? "Buttons and report rate change"
-                : buttons ? "Buttons change"
-                : "Report rate changes") + " when saved to the mouse");
+            var text = waiting.Count == 1 ? waiting[0] : string.Join(", ", waiting.Take(waiting.Count - 1)) + " and " + waiting.Last();
+            ShowStatus(char.ToUpper(text[0]) + text.Substring(1) + (waiting.Count == 1 && !buttons ? " changes" : " change")
+                + " when saved to the mouse");
             return;
         }
         ShowStatus(!dirty ? "Matches the mouse"
@@ -517,6 +526,7 @@ class MousePage : DevicePage
     {
         get
         {
+            if (state != null && state.ReadOnly) return false;
             return current.Buttons == null || Bindings.HasLeft(current.Buttons, ButtonCount)
                 || stored == null || !Bindings.HasLeft(stored.Buttons, ButtonCount);
         }

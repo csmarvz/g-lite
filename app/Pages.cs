@@ -608,24 +608,25 @@ class ColorRow
         form.Activate();
     }
 
-    public void RefreshControls(int newColor, bool on)
+    // A row that shows a colour it can't change (a read-only mouse) passes editable false: the colour stays marked.
+    public void RefreshControls(int newColor, bool on, bool editable = true)
     {
         color = newColor;
         bool isCustom = !Swatches.Contains(newColor);
         if (isCustom) lastCustom = newColor;
         for (int i = 0; i < swatches.Length; i++)
         {
-            swatches[i].Enabled = on;
+            swatches[i].Enabled = on && editable;
             swatches[i].On = on && Swatches[i] == newColor;
             swatches[i].Invalidate();
         }
         custom.Visible = lastCustom >= 0;
         custom.Fill = Color.FromArgb(lastCustom | unchecked((int)0xFF000000));
-        custom.Enabled = on;
+        custom.Enabled = on && editable;
         custom.On = on && isCustom;
         custom.Invalidate();
         more.Left = custom.Left + (custom.Visible ? (int)Math.Round(36 * Ui.DpiScale) : 0);
-        more.Enabled = on;
+        more.Enabled = on && editable;
     }
 
     // The right edge of the last swatch (+), which moves right once a custom colour is kept.

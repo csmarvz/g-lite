@@ -54,6 +54,11 @@ class FoundDevice
         }
     }
     public bool IsG5 { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_(C041|C049)", RegexOptions.IgnoreCase); } }
+    // The G600 doesn't speak HID++: its settings are feature reports on its vendor collection (G600.cs).
+    public bool IsG600
+    {
+        get { return PlainHid && HasVendorCollection && Path != null && Regex.IsMatch(Path, @"PID_C24A", RegexOptions.IgnoreCase); }
+    }
     public bool IsG9 { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_C048", RegexOptions.IgnoreCase); } }
     public G9xModel G500Model
     {
