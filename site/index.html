@@ -12,7 +12,7 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://g-lite.org/">
 <meta property="og:title" content="G-Lite: a lightweight G HUB alternative">
-<meta property="og:description" content="Lighting, DPI, buttons and sidetone for Logitech G devices, without G HUB. One file under 500 KB.">
+<meta property="og:description" content="Lighting, DPI, buttons and sidetone for Logitech G devices, without G HUB. One file, nothing to install.">
 <meta property="og:image" content="https://g-lite.org/img/keyboard.png">
 <meta property="og:image:width" content="868">
 <meta property="og:image:height" content="730">
@@ -68,7 +68,9 @@ nav .wrap { display: flex; align-items: center; gap: 28px; height: 60px; }
 .hero h1 span { color: var(--accent); }
 .hero .lead { color: var(--dim); font-size: 19px; max-width: 640px; margin: 20px auto 0; }
 .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 32px; }
-.meta { color: var(--dim); font-size: 14px; margin-top: 14px; }
+.hero-actions { align-items: flex-start; }
+.download { display: flex; flex-direction: column; align-items: center; }
+.meta { color: var(--dim); font-size: 14px; margin-top: 10px; }
 .shot { display: block; width: 100%; height: auto; border-radius: var(--radius); border: 1px solid var(--border); }
 .hero .shot { max-width: 868px; margin: 56px auto 0; box-shadow: 0 0 0 1px #000, 0 30px 80px -20px rgba(63,169,138,0.28), 0 20px 50px rgba(0,0,0,0.5); }
 
@@ -185,16 +187,18 @@ footer p { max-width: 460px; }
 <main id="top">
   <header class="hero wrap">
     <div class="badge"><img src="img/logo.svg" alt="">G-Lite</div>
-    <h1>Lightweight control for Logitech&nbsp;G devices. <span>No G&nbsp;HUB.</span></h1>
+    <h1>Lightweight control for Logitech&nbsp;G devices. <span>No&nbsp;G&nbsp;HUB.</span></h1>
     <p class="lead">Lighting, DPI, report rate, buttons and sidetone for your Logitech G keyboard, mouse, headset or light. One file, nothing to install, next to no CPU when idle.</p>
-    <div class="actions">
-      <a class="button primary" href="https://github.com/csmarvz/g-lite/releases/latest/download/GLite.exe">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>
-        Download GLite.exe
-      </a>
+    <div class="actions hero-actions">
+      <div class="download">
+        <a class="button primary" href="https://github.com/csmarvz/g-lite/releases/latest/download/GLite.exe">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></svg>
+          Download GLite.exe
+        </a>
+        <p class="meta" id="meta">For Windows</p>
+      </div>
       <a class="button" href="https://github.com/csmarvz/g-lite">View on GitHub</a>
     </div>
-    <p class="meta" id="meta">For Windows 10 and 11, under 500 KB</p>
     <img class="shot" src="img/keyboard.png" width="868" height="730" fetchpriority="high" alt="G-Lite showing a G515 LIGHTSPEED TKL with the Wave effect on its live key picture, and the other devices in the sidebar">
 
     <div class="facts">
@@ -400,8 +404,7 @@ footer p { max-width: 460px; }
 <script>
 fetch("https://api.github.com/repos/csmarvz/g-lite/releases/latest").then(function (r) { return r.ok ? r.json() : null; }).then(function (release) {
   if (!release) return;
-  var exe = (release.assets || []).filter(function (a) { return a.name === "GLite.exe"; })[0];
-  document.getElementById("meta").textContent = release.tag_name + " for Windows 10 and 11" + (exe ? ", " + Math.round(exe.size / 1024) + " KB" : "");
+  document.getElementById("meta").textContent = release.tag_name + " for Windows";
 }).catch(function () {});
 </script>
 </body>

@@ -1,6 +1,6 @@
 # G-Lite
 
-A small Windows app that controls the lighting, DPI and other settings of Logitech G keyboards, mice, headsets and lights, without G HUB. One file of about 400 KB, nothing to install, and next to no CPU when idle.
+A small Windows app that controls the lighting, DPI and other settings of Logitech G keyboards, mice, headsets and lights, without G HUB. One file, nothing to install, and next to no CPU when idle.
 
 [![Download alpha version](https://img.shields.io/badge/Download-alpha%20version-2ea44f?style=for-the-badge)](https://github.com/csmarvz/g-lite/releases/latest)
 
