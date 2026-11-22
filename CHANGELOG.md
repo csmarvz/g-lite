@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.0.36-alpha] - 2026-11-22
+
 ### Added
 
 - G502 X PLUS (onboard profile format 5): Save to mouse, like the original PRO X SUPERLIGHT: DPI stages, report rate and buttons, with a backup first and the profile read back after writing, and Restore the factory profile. Its lighting records, write counter and timeouts are left as they are. Not yet tried by an owner in G-Lite: the layout comes from OMM's own profile code, and GOMM checked it against OMM on this mouse. Only on the firmware with profile format 5.
