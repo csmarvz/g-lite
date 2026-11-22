@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.0.37-alpha] - 2026-11-22
+
 ### Added
 
 - G413 (Silver, white backlight): a picture of its keys, with its caps lock and Game mode lights. The keyboard says its LEDs have one colour, so its screen has no colour swatches: Brightness sets the level, as G HUB's black-to-white slider does, and G-Lite always sends white. Off, Static and Breathe, the effects it lists; Breathe's brightness is now sent as a dimmer white, since the keyboard ignored the intensity G-Lite sent (not yet tried on the keyboard). No zone row, since it has one zone. Its name shows as "G413 Silver".
