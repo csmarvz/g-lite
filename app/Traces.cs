@@ -488,10 +488,12 @@ static class Traces
         var found = new FoundDevice
         {
             Key = "trace|g512", Name = "G512 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Link = "USB", Index = 0xFF,
-            Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8060, 0x8070, 0x8080 }
+            Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x4540, 0x8060, 0x8080, 0x8070 }
         };
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeSpeaker { Count = 2 }, null)))
+        var keyboard = FakeSpeaker.G512();
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard, null)))
         {
+            script.Pick("Effect", "Rain");
             script.Pick("Effect", "Static");
             script.Press("Color 30D050");
             script.Slide("Brightness", 50);
@@ -501,6 +503,10 @@ static class Traces
             script.Pick("Zone", "All");
             script.Pick("Effect", "Cycle");
             script.Pick("Effect", "Off");
+            script.Pick("View", "Game");
+            script.Click("W");
+            script.Do("check the keyboard's Game mode list", () => CheckGameKeys(keyboard.GameKeys, 0x1A));
+            script.Pick("View", "Settings");
             return script.Text;
         }
     }

@@ -576,7 +576,7 @@ class MainWindow : Form
                 Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
             new FoundDevice { Key = "demo|g512", Name = "G512 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard",
                 Link = "USB", Index = 0xFF, Firmware = "U1 38.03, build 0015",
-                Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8060, 0x8070, 0x8080 } },
+                Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x4540, 0x8060, 0x8080, 0x8070 } },
             new FoundDevice { Key = "demo|g413", Name = "G413 Silver Mechanical Gaming Keyboard", Kind = "keyboard",
                 Link = "USB", Index = 0xFF, Firmware = "U1 14.00, build 0008",
                 Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x4540, 0x8060, 0x8070, 0x40A2 } },

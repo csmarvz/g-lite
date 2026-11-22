@@ -135,12 +135,18 @@ class FakeHidpp : Hidpp
 
 class FakeSpeaker : Hidpp
 {
-    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8070, 4 }, { 0x8040, 8 }, { 0x4540, 9 }, { 0x4522, 10 } };
+    static readonly Dictionary<int, byte> Index = new Dictionary<int, byte>
+    {
+        { 0x8070, 4 }, { 0x8040, 8 }, { 0x4540, 9 }, { 0x4522, 10 }, { 0x8080, 11 }
+    };
     static readonly byte[] Effects = { 0x00, 0x01, 0x03, 0x07, 0x0A };
     public readonly byte[][] Live = new byte[6][];
     public int Count = 4;
-    public bool G213, G413;
+    public bool G213, G413, PerKey;
     public readonly SortedSet<int> GameKeys = new SortedSet<int>();
+    // 0x8080: colours by USB usage as fn 3 left them, and the frames fn 5 showed.
+    public readonly Dictionary<int, int> KeyColors = new Dictionary<int, int>();
+    public int Frames;
 
     public FakeSpeaker() : base(false) { }
 
@@ -154,6 +160,12 @@ class FakeSpeaker : Hidpp
     // A G413 Silver, from its report (docs/reports/g413-c33a.txt): one zone, the keys, with Off, Static and Breathe, and the
     // monochrome bit in fn 0's extended capabilities.
     public static FakeSpeaker G413Silver() { return new FakeSpeaker { Count = 1, G413 = true }; }
+
+    // A G512 or G513: the keys and the logo on 0x8070, per-key colours on 0x8080, 0x4522 (OpenLogi's G512 recording has all three).
+    public static FakeSpeaker G512() { return new FakeSpeaker { Count = 2, PerKey = true }; }
+
+    // A posted call (Hidpp.PostUnlogged) gets no reply read.
+    protected override void Write(byte featureIndex, int fn, byte[] parameters) { Send(featureIndex, fn, parameters); }
 
     public override void Dispose() { }
 
@@ -188,8 +200,18 @@ class FakeSpeaker : Hidpp
                 Live[parameters[0]] = parameters.Take(12).ToArray();
             }
         }
-        else if (featureIndex == Index[0x4540] && (G213 || G413)) reply[0] = 0x0D;
-        else if (featureIndex == Index[0x4522] && G413)
+        else if (featureIndex == Index[0x4540] && (G213 || G413 || PerKey)) reply[0] = 0x0D;
+        else if (featureIndex == Index[0x8080] && PerKey)
+        {
+            if (fn == 3)
+            {
+                if (parameters[1] != 0x01 || parameters[3] > 3) throw new HidppError(2, "invalid argument");
+                for (int entry = 0; entry < parameters[3]; entry++)
+                    KeyColors[parameters[4 + 4 * entry]] = parameters[5 + 4 * entry] << 16 | parameters[6 + 4 * entry] << 8 | parameters[7 + 4 * entry];
+            }
+            if (fn == 5) Frames++;
+        }
+        else if (featureIndex == Index[0x4522] && (G413 || PerKey))
         {
             if (fn == 1) foreach (var usage in parameters.TakeWhile(usage => usage != 0)) GameKeys.Add(usage);
             if (fn == 3) GameKeys.Clear();

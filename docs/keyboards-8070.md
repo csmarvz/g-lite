@@ -2,11 +2,15 @@
 
 The G512 and similar G keyboards light up through 0x8070, the feature `MouseProtocol` already uses, not through 0x8071 like the G515 and G915. Supporting them is mostly a new screen around code G-Lite has. From OpenLogi's G512 recording (see [openlogi.md](openlogi.md)) and [lighting-control.md](lighting-control.md).
 
-Status: built on the G560's screen (`ZonesPage`, for `FoundDevice.IsLedKeyboard`: kind keyboard, 0x8070, no 0x8071). It sets Off, Static, Breathe, Cycle and Wave live on all zones or each one, greys out the effects a zone doesn't list, names zones from their location (`ZoneLighting.ZoneName`: 1 Keys, 2 Logo, 6–11 Zone 1–6, else Zone n), keeps the lighting as `lighting.<device>` and sets it again on load. A keyboard with a zone key map (`ZoneLighting.Picture`, only the G213 so far) gets a live key picture. No per-key colours, no Save.
+Status: built on the G560's screen (`ZonesPage`, for `FoundDevice.IsLedKeyboard`: kind keyboard, 0x8070, no 0x8071). It sets Off, Static, Breathe, Cycle and Wave live on all zones or each one, greys out the effects a zone doesn't list, names zones from their location (`ZoneLighting.ZoneName`: 1 Keys, 2 Logo, 6–11 Zone 1–6, else Zone n), keeps the lighting as `lighting.<device>` and sets it again on load. A keyboard with a key map (`ZoneLighting.Picture`: the G213's zones; the G413's lighting ids, also the G512's and G513's) gets a live key picture. An Audio effect on every keyboard here; the G512 and G513 get G-Lite's per-key live effects instead (below, experimental). No per-key colours of the user's choosing, no Save.
 
 Tested on a real G213 (see [G213.md](G213.md)): fn 3 without a persistence byte lights it, Wave works with OpenRGB's layout, and the persistence byte stores nothing. The G512 and the others are still untested. The plan below (its own page, a shared `Led` class) is kept for when one of them reports.
 
-## Per-key colours (0x8080), not built
+## Per-key colours (0x8080), experimental
+
+Built for the G512 and G513 (2026-11-22), untried on a keyboard. `ZonesPage` gives a keyboard with 0x8080 and a lighting-id picture (the G413's, `g413.json`, which their photos match) an Effect dropdown with G-Lite's live effects after its own (Live badge). A live effect runs every 40 ms (`ZonesPage.LiveTick`, `LiveEffects`) and sends the keys whose colour moved, all of them every 2 s, with `ZoneLighting.SendKeys`: fn 3 `00 01 00 <count>` then `<usage> R G B`, three keys a long report, posted without waiting for a reply (`Hidpp.PostUnlogged`), then fn 5 to show them, waited for. Before the first frame every 0x8070 zone is set to Off, and again with every full frame (unlogged), since a keyboard turned off and on comes back running its own effect: OpenLogi notes a per-key write can't override a running 0x8070 effect, since the firmware keeps replaying it. Picking one of the keyboard's effects sends it on 0x8070, which takes over again. Colour, speed and brightness apply; intensity and direction stay at each effect's default. Usages come from the lighting ids (usage minus 3, modifiers E0–E7). Not sent: the logo (group 0x10) and the indicators (0x40).
+
+From OpenLogi (MIT, `crates/openlogi-device/src/write/lighting.rs`): 0x8080 fn 3 in a 64-byte report (id 0x12) carries 14 `(key, R, G, B)` entries from byte 8, byte 5 the mode `01`, bytes 6–7 the count; keys are HID usages; fn 5 is the frame end, a 20-byte request that is answered. OpenLogi waits for no reply to the 64-byte frames and pings the device afterwards to collect any error. It prefers 0x8070's fixed effect for a solid colour, since a per-key write doesn't override a running stored effect.
 
 From g810-led (GPL-3.0, facts only; read 2026-11-22), for the G410, G512, G513, G610, G810 and G PRO keyboard: per-key colours go in long reports to the feature at index 0x0C, fn 3 (`12 FF 0C 3A`): `00 <group> 00 <count>`, then `<key> R G B` entries, 14 per report; group 0x01 keys (HID usage), 0x02 media (G610, G810), 0x10 logo, 0x40 indicators. A commit, `11 FF 0C 5A` (fn 5), shows them. Effects on those keyboards go to index 0x0D fn 3; a startup mode is `11 FF 0D 5A 00 01 <mode>` (1 wave, 2 colour). g810-led hard-codes the indexes per model; G-Lite would look the features up. The G413 and G213 have no per-key writes and no commit ("non-transactional").
 
@@ -14,16 +18,17 @@ From Lghub (`perkey.py`, read from G HUB): fn 0 gives the key types the keyboard
 
 ## The G512
 
-OpenLogi's recording (`fixtures/devices/g512-001`): "G512 RGB MECHANICAL GAMING KEYBOARD", wired, USB 046D:C33C, HID++ at index 0xFF.
+OpenLogi's recording (`fixtures/devices/g512-001`): "G512 RGB MECHANICAL GAMING KEYBOARD", wired, USB 046D:C33C, HID++ at index 0xFF, long reports only (`report_support: long_only`, so G-Lite's 20-byte requests suit it).
 
-Features that matter:
+Its feature table, by index: 00 0x0000, 01 0x0001, 02 0x0003, 03 0x4522, 04 0x0005, 05 0x1E00 (hidden), 06 0x4540, 07 0x1EB0 (hidden, internal), 08 0x8060, 09 0x00C2, 0A 0x1801, 0B 0x1802 (hidden, internal), 0C 0x8080 v2, 0D 0x8070 v7, 0E 0x1821, 0F 0x1BC0, 10 0x1806 v3 (hidden, internal), 11 0x40A2, 12 0x1B04 v3, 13 0x0020. The indexes of 0x8080 (0x0C) and 0x8070 (0x0D) are the ones g810-led hard-codes for the G512 generation.
 
 | Feature | Version | Use |
 |---|---|---|
 | 0x8070 colour LED effects | 7 | Effects |
-| 0x8080 per-key lighting | 2 | Not used |
+| 0x8080 per-key lighting | 2 | Live effects, experimental (above) |
+| 0x4522 Game mode keys | 0 | The Game view, experimental, as on the G413 and G815 |
 | 0x8060 report rate | 0 | Could reuse `MouseProtocol` |
-| 0x4540 keyboard layout | 0 | ANSI or ISO, later |
+| 0x4540 keyboard layout | 0 | ANSI or ISO |
 
 No 0x8071, 0x8040 (brightness), 0x8100 or 0x8101. So:
 

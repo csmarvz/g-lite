@@ -402,6 +402,25 @@ static class SelfTest
             && g413Monochrome && !speakersMonochrome && g413Zones.Count == 1 && g413Zones[0][ZoneLighting.Place] == 1
             && g413Zones[0].ContainsKey(0x0A) && !g413Zones[0].ContainsKey(0x03),
             "a G413 Silver is named without Mechanical and gets the zones screen; its 0x8070 says monochrome (fn 0 byte 4 bit 3)");
+        var g513 = FakeSpeaker.G512();
+        var g513Sent = new List<string>();
+        Hidpp.Tap = line => g513Sent.Add(line);
+        ZoneLighting.SendKeys(g513, new Dictionary<int, int>
+        {
+            { 0x01, 0xFF0000 }, { 0x02, 0x00FF00 }, { 0x03, 0x0000FF }, { 0x68, 0x101010 }, { -1, 0xFFFFFF }
+        });
+        Hidpp.Tap = null;
+        Check(g513.KeyColors.Count == 4 && g513.KeyColors[0x04] == 0xFF0000 && g513.KeyColors[0x06] == 0x0000FF
+            && g513.KeyColors[0xE0] == 0x101010 && g513.Frames == 1 && g513Sent.Count == 3
+            && g513Sent[0] == "8080 fn3  00 01 00 03 04 FF 00 00 05 00 FF 00 06 00 00 FF" && g513Sent[2] == "8080 fn5",
+            "0x8080 colours go three keys to a message by USB usage (modifiers E0-E7), and fn 5 shows them");
+        var g512Device = new FoundDevice
+        {
+            Name = "G512 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Features = new[] { 0x4540, 0x8060, 0x8070, 0x8080 }
+        };
+        Check(ZoneLighting.Picture(g512Device) == "g413.json" && ZoneLighting.Picture(new FoundDevice { Name = "G513", Kind = "keyboard" }) == "g413.json"
+            && ZoneLighting.FromText("227,FF0000,2000,80,7", 2)[0].Direction == 7 && ZoneLighting.FromText("227,FF0000,2000,80,4", 2)[0].Direction == 2,
+            "the G512 and G513 get the G413's picture; a live effect's direction reads back, and a wrong one is its default");
         Check(new FoundDevice
             {
                 Name = "G815 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard", Features = new[] { 0x8071, 0x8040, 0x8081, 0x8100 }

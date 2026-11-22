@@ -23,7 +23,33 @@ static class ZoneLighting
     // The id is the per-key Audio effect's (LiveEffects), so a lighting text means the same effect on either screen.
     public static readonly EffectInfo Audio = new EffectInfo { Id = 0xE2, Name = "Audio", Color = true };
 
-    public static EffectInfo EffectById(byte id) { return Effects.FirstOrDefault(effect => effect.Id == id) ?? (id == Audio.Id ? Audio : null); }
+    // A live effect's id (LiveEffects) is known too, so a lighting text holding one, from a keyboard with 0x8080, reads back.
+    public static EffectInfo EffectById(byte id)
+    {
+        return Effects.FirstOrDefault(effect => effect.Id == id) ?? (id == Audio.Id ? Audio : LiveEffects.Info(id));
+    }
+
+    // 0x8080, per-key colours on the G512 and G513 generation, from OpenLogi (MIT) and g810-led (GPL, facts only): fn 3 takes 00 01
+    // (keys, by USB usage), the count as two bytes, then key R G B; three in a long report (g810-led and OpenLogi send 14 in a 64-byte
+    // one, which G-Lite doesn't write). Neither waits for a reply to fn 3, so they're posted; fn 5 shows them and its reply is waited
+    // for, after any to the colours. Untried on a keyboard.
+    public static void SendKeys(Hidpp hidpp, Dictionary<int, int> colorByLightingId)
+    {
+        byte feature = hidpp.FeatureIndex(0x8080);
+        var keys = colorByLightingId.Where(pair => GameModeKeys.Usage(pair.Key) >= 0).ToList();
+        for (int at = 0; at < keys.Count; at += 3)
+        {
+            var batch = keys.Skip(at).Take(3).ToList();
+            var parameters = new List<byte> { 0x00, 0x01, 0x00, (byte)batch.Count };
+            foreach (var pair in batch)
+                parameters.AddRange(new[]
+                {
+                    (byte)GameModeKeys.Usage(pair.Key), (byte)(pair.Value >> 16), (byte)(pair.Value >> 8), (byte)pair.Value
+                });
+            hidpp.PostUnlogged(feature, 3, parameters.ToArray());
+        }
+        hidpp.CallUnlogged(feature, 5);
+    }
 
     // A keyboard's key map: with "kind": "zones", each key's 0x8070 zone in "ids" (the G213's zones were shown by its owner,
     // docs/G213.md); otherwise lighting ids, every key in zone 0 of a one-zone keyboard (the G413, drawn from its owner's photo), which
@@ -32,7 +58,10 @@ static class ZoneLighting
     {
         if (found.Kind != "keyboard") return null;
         string name = found.ShortName.ToUpper();
-        return name == "G213" ? "g213.json" : name.StartsWith("G413") ? "g413.json" : null;
+        // The G512 and G513 have the G413's layout, from their photos (docs/keyboards-8070.md).
+        return name == "G213" ? "g213.json"
+            : name.StartsWith("G413") || name.StartsWith("G512") || name.StartsWith("G513") ? "g413.json"
+            : null;
     }
 
     // Wave 0x04: OpenRGB's layout for the G915 (docs/G815-G915.md): period low at 6, direction 7, intensity 8, period high 9.
@@ -99,11 +128,13 @@ static class ZoneLighting
         return zones;
     }
 
-    public static void SetLight(Hidpp hidpp, int zone, Dictionary<int, int> effects, MouseLight light)
+    public static void SetLight(Hidpp hidpp, int zone, Dictionary<int, int> effects, MouseLight light, bool logged = true)
     {
         int index;
         if (!effects.TryGetValue(light.Effect, out index)) return;
-        hidpp.Call(hidpp.FeatureIndex(0x8070), 3, new byte[] { (byte)zone, (byte)index }.Concat(Encode(light)).ToArray());
+        var parameters = new byte[] { (byte)zone, (byte)index }.Concat(Encode(light)).ToArray();
+        if (logged) hidpp.Call(hidpp.FeatureIndex(0x8070), 3, parameters);
+        else hidpp.CallUnlogged(hidpp.FeatureIndex(0x8070), 3, parameters);
     }
 
     public static void SetColor(Hidpp hidpp, int zone, Dictionary<int, int> effects, int color, int bright)
@@ -136,7 +167,7 @@ static class ZoneLighting
     {
         return string.Join(";", lights.Select(light => light == null ? ""
             : string.Join(",", light.Effect, light.Color.ToString("X6"), light.Period, light.Bright)
-                + (light.Effect == 0x04 ? "," + light.Direction : "")));
+                + (light.Effect == 0x04 || LiveEffects.Is(light.Effect) ? "," + light.Direction : "")));
     }
 
     public static MouseLight[] FromText(string text, int zones)
@@ -159,7 +190,9 @@ static class ZoneLighting
         var effectInfo = ZoneLighting.EffectById(effect);
         if (effectInfo.Speed) period = Math.Max(effectInfo.MinPeriod, Math.Min(effectInfo.MaxPeriod, period));
         int direction;
-        if (parts.Length < 5 || !int.TryParse(parts[4], out direction) || !Directions.Contains(direction)) direction = 6;
+        var allowed = LiveEffects.Is(effect) ? LiveEffects.Directions : Directions;
+        if (parts.Length < 5 || !int.TryParse(parts[4], out direction) || !allowed.Contains(direction))
+            direction = LiveEffects.Is(effect) ? LiveEffects.DefaultDirection(effect) : 6;
         return new MouseLight
         {
             Effect = effect, Color = color & 0xFFFFFF, Period = period,

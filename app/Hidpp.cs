@@ -214,6 +214,14 @@ class Hidpp : IDisposable
                 fn, parameters, "sent");
     }
 
+    // For a stream of calls whose replies aren't waited for (0x8080's key colours): tapped for traces, kept out of the log. A later
+    // call reads past their replies, and an error for one, which carries its own software id, is skipped.
+    public void PostUnlogged(byte featureIndex, int fn, params byte[] parameters)
+    {
+        Record(featureIndex, fn, parameters);
+        Write(featureIndex, fn, parameters);
+    }
+
     protected virtual void Write(byte featureIndex, int fn, byte[] parameters) { Message(featureIndex, fn, parameters); }
 
     byte[] Message(byte featureIndex, int fn, byte[] parameters)
