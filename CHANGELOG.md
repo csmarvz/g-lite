@@ -11,6 +11,10 @@
 - Demo: an original PRO X SUPERLIGHT, a PRO X 2 DEX, a G600, a G915 X and a G915 X TKL.
 - G915 X and G915 X TKL: their own key pictures, from projects that lit every key on the keyboard: G1–G5 down the left and G6–G9 above F1–F4 on the full size, the media keys, the logo and the brightness key. Still not saved to the keyboard.
 
+### Changed
+
+- Mice and the G815's G keys: a button set to no action in G HUB now shows as Disabled.
+
 ## [0.0.34-alpha] - 2026-11-21
 
 ### Added
