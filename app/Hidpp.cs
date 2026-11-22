@@ -320,12 +320,13 @@ class Hidpp : IDisposable
         {
             var reply = Call(0, 0, (byte)(id >> 8), (byte)id);
             features[id] = index = reply[0];
-            if ((reply[1] & 0x40) != 0) hiddenFeatures.Add(id);
+            if ((reply[1] & 0x60) == 0x60) hiddenFeatures.Add(id);
         }
         if (index == 0) throw new NotSupportedException(string.Format("The device lacks feature {0:x4}", id));
         return index;
     }
 
-    // Flagged hidden by the device (root fn 0, byte 1 bit 6): meant for Logitech's own tools, not for users. Known after FeatureIndex.
+    // Flagged hidden and internal by the device (root fn 0, byte 1 bits 6 and 5): meant for Logitech's own tools, not for users.
+    // Hidden alone isn't enough, since a feature that works can carry it. Known after FeatureIndex.
     public bool Hidden(int id) { return hiddenFeatures.Contains(id); }
 }

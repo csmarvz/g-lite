@@ -479,9 +479,9 @@ class KeyPicture : DrawnControl
             for (int ray = 0; ray < 8; ray++)
             {
                 double angle = ray * Math.PI / 4;
-                float cos = (float)Math.Cos(angle), sin = (float)Math.Sin(angle);
-                graphics.DrawLine(pen, middleX + cos * size * 0.19f, middleY + sin * size * 0.19f,
-                    middleX + cos * size * 0.27f, middleY + sin * size * 0.27f);
+                float cosine = (float)Math.Cos(angle), sine = (float)Math.Sin(angle);
+                graphics.DrawLine(pen, middleX + cosine * size * 0.19f, middleY + sine * size * 0.19f,
+                    middleX + cosine * size * 0.27f, middleY + sine * size * 0.27f);
             }
         }
     }

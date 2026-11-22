@@ -58,15 +58,15 @@ static class Logo
     {
         using (var brush = new SolidBrush(color))
             graphics.FillEllipse(brush, box.X + box.Width * 0.02f, box.Y + box.Height * 0.02f, box.Width * 0.96f, box.Height * 0.96f);
-        var saved = graphics.Transform;
+        using (var saved = graphics.Transform)
         using (var matrix = new Matrix())
         using (var pen = new Pen(background, 9) { LineJoin = LineJoin.Miter })
         {
             matrix.Translate(box.X, box.Y);
             matrix.Scale(box.Width / 100, box.Height / 100);
             DrawLetters(graphics, matrix, pen);
+            graphics.Transform = saved;
         }
-        graphics.Transform = saved;
     }
 
     public static Icon MakeIcon(int size)

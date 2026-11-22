@@ -2,7 +2,7 @@
 
 What each source file holds, what it does and the protocol facts behind it. `CLAUDE.md` lists the files; keep this map up to date with the code.
 
-- `app/Hidpp.cs`: `Hidpp`, HID++ 2.0 over the receiver, and `Register` and `Upload` for HID++ 1.0 registers and memory uploads when it's given the short collection, and its errors (`HidppError`, `RefusedException`, `HalfWrittenException`). `FeatureIndex` also notes the features the device flags hidden (root fn 0, byte 1 bit 6), which `Hidden` answers
+- `app/Hidpp.cs`: `Hidpp`, HID++ 2.0 over the receiver, and `Register` and `Upload` for HID++ 1.0 registers and memory uploads when it's given the short collection, and its errors (`HidppError`, `RefusedException`, `HalfWrittenException`). `FeatureIndex` also notes the features the device flags hidden and internal (root fn 0, byte 1 bits 6 and 5; hidden alone can mark a working feature), which `Hidden` answers
 - `app/KeyboardLighting.cs`:
   - `Lighting`: the lighting settings
   - `G515Profile`: the effect table, profile encode and decode, CRC32, onboard file read and write, preview
