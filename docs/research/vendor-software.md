@@ -61,7 +61,7 @@ The previous notes' host XML profiles, hardware profiles and G HUB handoff list 
 
 OMM is useful for observing persistent mouse behavior independently of G HUB's application integration layer. [OpenMouse's profile research](https://github.com/OpenMouse-Project/mouse-protocol/blob/b62a1cce2b63698ac00595efdb0067ecd54e34a0/docs/logitech-onboard-profiles.md) says it recovered numeric format builders from OMM 2.6.1749 and later compared some with real hardware. G-Lite should keep its own implementation and require matching device dumps before supporting another layout.
 
-“OMM supports this mouse” and “G-Lite can safely write its profiles” are separate claims. OMM can contain model-specific knowledge that a generic 8100 parser does not have. This pass did not decompile or distribute OMM binaries.
+“OMM supports this mouse” and “G-Lite can safely write its profiles” are separate claims. OMM can contain model-specific knowledge that a generic 8100 parser does not have. This pass did not decompile or distribute OMM binaries. A later pass read OMM 2.7.4428's IL and its profile layout builders: see [omm/](omm/README.md).
 
 ## Suggested map capabilities for vendor comparisons
 

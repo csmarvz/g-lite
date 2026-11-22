@@ -1,0 +1,157 @@
+Component offsets by profile format (format byte at +9 of the 0x8100 fn 0 reply)
+offset, size, component [id] (more constructor arguments)
+
+Format 1 (case at rva 0xe7f50, builders 0xead80)
+  0x000   1  report_rate                          [0]
+  0x001  10  dpi_v1                               [1] (0, 1, 2, 5)
+  0x00d   3  color                                [2]
+  0x010   1  power_mode                           [3]
+  0x011   1  angle_snapping                       [4]
+  0x020  64  button_fn                            [5] (0, 16)
+  0x060  64  button_fn (G-shift)                  [6] (0, 16)
+  0x0a0  48  profile_name                         [7]
+
+Format 2 (case at rva 0xe7f88, builders 0xeaf80)
+  0x000   1  report_rate                          [0]
+  0x001  10  dpi_v1                               [1] (0, 1, 2, 5)
+  0x00d   3  color                                [2]
+  0x010   1  power_mode                           [3]
+  0x011   1  angle_snapping                       [4]
+  0x020  64  button_fn                            [5] (0, 16)
+  0x060  64  button_fn (G-shift)                  [6] (0, 16)
+  0x0a0  48  profile_name                         [7]
+  0x0d0  11  lighting_x8070 (logo)                [8]
+  0x0db  11  lighting_x8070 (side)                [9]
+
+Format 3 (case at rva 0xe7f88, builders 0xeaf80)
+  0x000   1  report_rate                          [0]
+  0x001  10  dpi_v1                               [1] (0, 1, 2, 5)
+  0x00d   3  color                                [2]
+  0x010   1  power_mode                           [3]
+  0x011   1  angle_snapping                       [4]
+  0x020  64  button_fn                            [5] (0, 16)
+  0x060  64  button_fn (G-shift)                  [6] (0, 16)
+  0x0a0  48  profile_name                         [7]
+  0x0d0  11  lighting_x8070 (logo)                [8]
+  0x0db  11  lighting_x8070 (side)                [9]
+
+Format 4 (case at rva 0xe7fbd, builders 0xeaf80)
+  0x000   1  report_rate                          [0]
+  0x001  10  dpi_v1                               [1] (0, 1, 2, 5)
+  0x00d   3  color                                [2]
+  0x010   1  power_mode                           [3]
+  0x011   1  angle_snapping                       [4]
+  0x012   2  write_counter                        [10]
+  0x01c   2  power_save_timeout                   [11]
+  0x01e   2  power_off_timeout                    [12]
+  0x020  64  button_fn                            [5] (0, 16)
+  0x060  64  button_fn (G-shift)                  [6] (0, 16)
+  0x0a0  48  profile_name                         [7]
+  0x0d0  11  lighting_x8070 (logo)                [8]
+  0x0db  11  lighting_x8070 (side)                [9]
+  0x0e6  11  lighting_x8071 (logo, power save)    [13]
+  0x0f1  11  lighting_x8071 (side, power save)    [14]
+
+Format 5 (case at rva 0xe813b, builders 0xeb060)
+  0x000   1  report_rate                          [0]
+  0x001  10  dpi_v1                               [1] (0, 1, 2, 5)
+  0x00d   3  color                                [2]
+  0x010   1  power_mode                           [3]
+  0x011   1  angle_snapping                       [4]
+  0x012   2  write_counter                        [10]
+  0x01c   2  power_save_timeout                   [11]
+  0x01e   2  power_off_timeout                    [12]
+  0x020  64  button_fn                            [5] (0, 16)
+  0x060  64  button_fn (G-shift)                  [6] (0, 16)
+  0x0a0  48  profile_name                         [7]
+  0x0d0  11  lighting_x8071 (cluster 0 active)    [15]
+  0x0db  11  lighting_x8071 (cluster 1 active)    [17]
+  0x0e6  11  lighting_x8071 (cluster 0 passive)   [16]
+  0x0f1  11  lighting_x8071 (cluster 1 passive)   [18]
+  0x0fc   1  lighting_flags                       [19]
+
+Format 6 (case at rva 0xe8170, builders 0xeb250)
+  0x000   1  report_rate_wireless                 [20]
+  0x001   1  report_rate_wired                    [21]
+  0x002  25  dpi_v6                               [22] (0, 1, 2, 5, 5, 0, 2, 4)
+  0x01d   4  dpi_delta                            [23] (0, 2)
+  0x021   1  power_mode                           [3]
+  0x022   1  angle_snapping                       [4]
+  0x023   2  write_counter                        [10]
+  0x02c   2  power_save_timeout                   [11]
+  0x02e   2  power_off_timeout                    [12]
+  0x030  48  button_fn                            [5] (0, 12)
+  0x070  48  button_fn (G-shift)                  [6] (0, 12)
+  0x0a0  48  profile_name                         [7]
+  0x0d0  11  lighting_x8071 (cluster 0 active)    [15] (0)
+  0x0db  11  lighting_x8071 (cluster 1 active)    [17] (0)
+  0x0e6  11  lighting_x8071 (cluster 0 passive)   [16] (0)
+  0x0f1  11  lighting_x8071 (cluster 1 passive)   [18] (0)
+  0x0fc   1  lighting_flags                       [19]
+
+Format 7 (case at rva 0xe81a5, builders 0xeb630)
+  0x000   1  report_rate_wireless                 [20]
+  0x001   1  report_rate_wired                    [21]
+  0x002  25  dpi_v6                               [22] (0, 1, 2, 5, 5, 0, 2, 4)
+  0x01d   4  dpi_delta                            [23] (0, 2)
+  0x021   1  power_mode                           [3]
+  0x022   1  angle_snapping                       [4]
+  0x023   2  write_counter                        [10]
+  0x025   1  bunny_hopping                        [24]
+  0x02c   2  power_save_timeout                   [11]
+  0x02e   2  power_off_timeout                    [12]
+  0x030  48  button_fn                            [5] (0, 12)
+  0x070  48  button_fn (G-shift)                  [6] (0, 12)
+  0x0a0  48  profile_name                         [7]
+  0x0d0  11  lighting_x8071 (cluster 0 active)    [15] (0)
+  0x0db  11  lighting_x8071 (cluster 1 active)    [17] (0)
+  0x0e6  11  lighting_x8071 (cluster 0 passive)   [16] (0)
+  0x0f1  11  lighting_x8071 (cluster 1 passive)   [18] (0)
+  0x0fc   1  lighting_flags                       [19]
+
+Format 8 (case at rva 0xe81da, builders 0xeb630)
+  0x000   1  report_rate_wireless                 [20]
+  0x001   1  report_rate_wired                    [21]
+  0x002  25  dpi_v6                               [22] (0, 1, 2, 5, 5, 0, 2, 4)
+  0x01d   4  dpi_delta                            [23] (0, 2)
+  0x021   1  power_mode                           [3]
+  0x022   1  angle_snapping                       [4]
+  0x023   2  write_counter                        [10]
+  0x025   1  bunny_hopping                        [24]
+  0x026   6  analog_button                        [25] (2)
+  0x02c   2  power_save_timeout                   [11]
+  0x02e   2  power_off_timeout                    [12]
+  0x030  48  button_fn                            [5] (0, 12)
+  0x070  48  button_fn (G-shift)                  [6] (0, 12)
+  0x0a0  48  profile_name                         [7]
+  0x0d0  11  lighting_x8071 (cluster 0 active)    [15] (0)
+  0x0db  11  lighting_x8071 (cluster 1 active)    [17] (0)
+  0x0e6  11  lighting_x8071 (cluster 0 passive)   [16] (0)
+  0x0f1  11  lighting_x8071 (cluster 1 passive)   [18] (0)
+  0x0fc   1  lighting_flags                       [19]
+
+Format 9 (case at rva 0xe830d, builders none)
+  no layout: the case throws "Profile format not supported"
+
+Format 10 (case at rva 0xe827a, builders 0xea920)
+  0x000   1  report_rate                          [0]
+  0x001  10  dpi_v1                               [1] (0, 1, 2, 5)
+  0x00d   3  color                                [2]
+  0x010   1  power_mode                           [3]
+  0x011   1  angle_snapping                       [4]
+  0x012   2  write_counter                        [10]
+  0x014   1  report_rate_wireless                 [20]
+  0x015   1  report_rate_wired                    [21]
+  0x016   4  dpi_delta                            [23] (0, 2)
+  0x01c   2  power_save_timeout                   [11]
+  0x01e   2  power_off_timeout                    [12]
+  0x020  52  button_fn                            [5] (0, 13)
+  0x056  10  dpi_v10_y                            [26]
+  0x060  64  button_fn (G-shift)                  [6] (0, 16)
+  0x0a0  48  profile_name                         [7]
+  0x0d0  11  lighting_x8071 (cluster 0 active)    [15] (0)
+  0x0db  11  lighting_x8071 (cluster 1 active)    [17] (0)
+  0x0e6  11  lighting_x8071 (cluster 0 passive)   [16] (0)
+  0x0f1  11  lighting_x8071 (cluster 1 passive)   [18] (0)
+  0x0fc   1  lighting_flags                       [19]
+

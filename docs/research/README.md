@@ -23,6 +23,7 @@ Research date: **2026-11-08**. This directory is a reference-backed expansion ma
 | [Pinned reference snapshots](snapshots.md) | Exact commits for 27 inspected reference checkouts |
 | [More references](more-references.md) | Second pass: the G9x flash write, profile formats 1–5, headset EQ, Centurion, G560, G600 |
 | [GitHub search results](github-search.md) | 260 more repos from model and topic searches, unread, with licence and activity |
+| [OMM 2.7.4428](omm/README.md) | Read from the binary: profile layouts of formats 1–10, OMM's read, save and restore, effect parameters; the scripts that extract them |
 
 The combined map currently contains **136 rows** for products, aliases, variants, components and unresolved backlog groups. That is not a count of supported or independently tested devices.
 
