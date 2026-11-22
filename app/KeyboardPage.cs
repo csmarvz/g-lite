@@ -37,7 +37,12 @@ class KeyboardPage : DevicePage
     bool Screening { get { return current.Effect == ScreenEffect || LiveEffects.Is(current.Effect); } }
     // The Screen effect itself, with its monitor, zones and Screen box.
     bool Sampling { get { return current.Effect == ScreenEffect; } }
-    int FrameInterval { get { return Sampling ? setup.Interval : 40; } }
+    // A live effect every 40 ms on a cable; without one, every 100 ms, since a G515 over LIGHTSPEED answered busy and looked
+    // choppy at 40 (a frame took it 30–39 ms, docs/screen.md).
+    int FrameInterval { get { return Sampling ? setup.Interval : found.Link == "USB" ? 40 : 100; } }
+    // About 10 messages, the size of a Screen frame the G515 showed in 30–39 ms: Aurora changes nearly every key each frame (about
+    // 23 messages on a TKL), which took the G515 longer than the 100 ms between frames.
+    const int WirelessKeysPerFrame = 40;
     string EffectName { get { return Sampling ? "Screen" : Info(current.Effect) != null ? Info(current.Effect).Name : "live"; } }
     static EffectInfo Info(byte id) { return G515Profile.EffectById(id) ?? LiveEffects.Info(id); }
     // The Effect dropdown's ids, in order: the keyboards' own effects, then the Screen effect and the live ones on keyboards with 0x8081.
@@ -62,6 +67,10 @@ class KeyboardPage : DevicePage
     readonly Timer screenTimer = new Timer { Interval = 100 }, snapTimer = new Timer { Interval = 1000 },
         watchTimer = new Timer { Interval = 500 };
     volatile bool sending, failing, statusDirty, layoutDirty, capturing, snapping, watching, claimed;
+    // A G515 twice kept answering every per-key frame with busy until it was turned off and on, though claimed again every 6 s
+    // (2026-11-22): after a busy frame, the lighting is given back to the keyboard before the next claim, until a release goes
+    // through. Untried on a stuck one.
+    volatile bool releaseFirst;
     volatile string problem;
     bool released, force, iso, away;
     volatile int idleLevel;
@@ -630,7 +639,7 @@ class KeyboardPage : DevicePage
         released = false;
         LogUserAction(runningName + " effect off");
         leftScreen = true;
-        if (claimed) RunOnDevice(hidpp => { if (live) G915Lighting.Release(hidpp); else G515Profile.Release(hidpp); claimed = false; });
+        if (claimed) RunOnDevice(hidpp => { ReleaseLights(hidpp); claimed = false; });
     }
 
     void ScreenChanged()
@@ -668,10 +677,20 @@ class KeyboardPage : DevicePage
 
     void Claim(Hidpp hidpp, bool quiet)
     {
+        if (releaseFirst)
+        {
+            ReleaseLights(hidpp);
+            releaseFirst = false;
+        }
         if (!quiet) { ClaimLights(hidpp); return; }
         if (found.Has(0x8101)) hidpp.CallUnlogged(hidpp.FeatureIndex(0x8101), 6, 0x05);
         hidpp.CallUnlogged(hidpp.FeatureIndex(0x8071), 5, 0x01, 0x03, 0x04);
         if (!found.Has(0x8101)) try { hidpp.CallUnlogged(hidpp.FeatureIndex(0x8071), 8, 0x01, 0x01, 0x00); } catch (HidppError) { }
+    }
+
+    void ReleaseLights(Hidpp hidpp)
+    {
+        if (live) G915Lighting.Release(hidpp); else G515Profile.Release(hidpp);
     }
 
     void ClaimLights(Hidpp hidpp)
@@ -682,6 +701,8 @@ class KeyboardPage : DevicePage
 
     void Failed(Exception error)
     {
+        var refused = error as HidppError;
+        if (refused != null && refused.Code == 8) releaseFirst = true;
         claimed = false;
         sent = null;
         sentColors = null;
@@ -716,7 +737,7 @@ class KeyboardPage : DevicePage
             {
                 try
                 {
-                    if (release && claimed) { if (live) G915Lighting.Release(hidpp); else G515Profile.Release(hidpp); claimed = false; }
+                    if (release && claimed) { ReleaseLights(hidpp); claimed = false; }
                     if (readBattery) ReadBattery(hidpp);
                     statusDirty = true;
                     Worked();
@@ -837,6 +858,21 @@ class KeyboardPage : DevicePage
             int id = keyField.Ids[i], color = frameColors[i], before;
             bool known = lastSent.TryGetValue(id, out before);
             if (full || !known || ScreenCapture.Distance(before, color) > 9 || (color == 0 && before != 0)) changes[id] = color;
+        }
+        // Without a cable a frame takes at most WirelessKeysPerFrame keys, the unsent and most changed first. One left out keeps its
+        // old colour in lastSent, so it comes back further off next frame; on a full frame it's forgotten, so it goes first.
+        if (found.Link != "USB" && changes.Count > WirelessKeysPerFrame)
+        {
+            var left = changes.OrderByDescending(pair =>
+            {
+                int before;
+                return lastSent.TryGetValue(pair.Key, out before) ? ScreenCapture.Distance(before, pair.Value) : int.MaxValue;
+            }).Skip(WirelessKeysPerFrame).Select(pair => pair.Key).ToList();
+            foreach (int id in left)
+            {
+                changes.Remove(id);
+                if (full) lastSent.Remove(id);
+            }
         }
         if (changes.Count == 0 && !readBattery) return;
         force = false;
@@ -969,7 +1005,7 @@ class KeyboardPage : DevicePage
         if (Screening)
         {
             if (!claimed) return;
-            RunOnDevice(hidpp => { if (live) G915Lighting.Release(hidpp); else G515Profile.Release(hidpp); claimed = false; });
+            RunOnDevice(hidpp => { ReleaseLights(hidpp); claimed = false; });
         }
         else if (live || !dirty) return;
         else Release();

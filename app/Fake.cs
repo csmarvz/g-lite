@@ -25,6 +25,8 @@ class FakeHidpp : Hidpp
     public void PowerCycle() { control[0] = control[1] = 0; }
     public int Frames, Battery = 82;
     public bool Charging;
+    // fn 7 answers busy this many times before it shows a frame, like the G515 during Rain.
+    public int BusyFrames;
 
     public static byte[] Hex(string hex)
     {
@@ -104,7 +106,11 @@ class FakeHidpp : Hidpp
             if (fn == 1)
                 for (int at = 0; at + 3 < 16 && at + 3 < parameters.Length; at += 4)
                     Keys[parameters[at]] = parameters[at + 1] << 16 | parameters[at + 2] << 8 | parameters[at + 3];
-            if (fn == 7) Frames++;
+            if (fn == 7)
+            {
+                if (BusyFrames > 0) { BusyFrames--; throw new HidppError(8, "busy"); }
+                Frames++;
+            }
         }
         else if (featureIndex == Index[0x4540]) reply[0] = 0x0D;
         else if (featureIndex == Index[0x1004]) { reply[0] = (byte)Battery; reply[2] = (byte)(Charging ? 1 : 0); }

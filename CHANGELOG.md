@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Keyboards without a cable (a G515 over LIGHTSPEED): live effects failed with "HID++ error 0x08", and Aurora was choppy. The keyboard said it was busy because frames came faster than it could show them. G-Lite now waits and tries again when the keyboard is busy, sends a live effect 10 times a second instead of 25 without a cable, and at most 40 keys a frame there, the most changed first. On USB nothing changes.
+- If the keyboard stays busy, G-Lite gives the lighting back to the keyboard before taking it again. If it's still stuck, turning the keyboard off and on fixes it.
+
 ## [0.0.36-alpha] - 2026-11-22
 
 ### Added

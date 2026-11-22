@@ -1043,6 +1043,16 @@ static class SelfTest
         KeyLights.Send(perKey, groups);
         Check(perKey.Keys.Count == 22 && perKey.Keys[0x14] == 0xFF0000 && perKey.Keys[0x6F] == 0x0000FF && perKey.Frames == 1,
             "per-key colours go out in groups of 13 and end with a frame");
+        var busyKeyboard = new FakeHidpp { BusyFrames = 3 };
+        bool individualColors = true;
+        KeyLights.SendColors(busyKeyboard, new Dictionary<int, int> { { 0x04, 0xFF0000 }, { 0x05, 0x00FF00 } }, ref individualColors);
+        bool shownAfterWaiting = busyKeyboard.Frames == 1 && busyKeyboard.BusyFrames == 0 && individualColors;
+        busyKeyboard.BusyFrames = 25;
+        bool gaveUp = false;
+        try { KeyLights.Send(busyKeyboard, new Dictionary<int, List<int>> { { 0x0000FF, new List<int> { 0x06 } } }); }
+        catch (HidppError ex) { gaveUp = ex.Code == 8; }
+        Check(shownAfterWaiting && gaveUp && busyKeyboard.Frames == 1 && busyKeyboard.BusyFrames == 5,
+            "a busy fn 7 is sent again until the frame shows, and after 20 tries the error stands");
         Check(perKey.Call(perKey.FeatureIndex(0x4540), 0)[0] == 0x0D, "the fake keyboard reports a Swiss layout");
 
         // models/iso keeps each layout's ISO picture as a file to read; it isn't embedded, the app builds it with KeyLayout.Iso.

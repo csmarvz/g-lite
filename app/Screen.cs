@@ -231,6 +231,36 @@ static class ScreenCapture
 
 static class KeyLights
 {
+    static readonly HashSet<string> waitedOn = new HashSet<string>();
+
+    // fn 7 shows the frame. An owner's G515 answered it with error 08, busy, during Rain at a frame every 40 ms (a full frame took it
+    // 30–39 ms over LIGHTSPEED, docs/screen.md): busy means try again, so it's sent again for up to about 200 ms. The first wait per
+    // keyboard is logged; keyboards on their own device threads share the set, hence the lock.
+    public static void ShowFrame(Hidpp hidpp, byte feature)
+    {
+        for (int attempt = 1; ; attempt++)
+        {
+            try
+            {
+                hidpp.CallUnlogged(feature, 7, 0, 0, 0, 0, 0);
+                if (attempt > 1 && hidpp.DeviceLabel != null)
+                {
+                    bool first;
+                    lock (waitedOn) first = waitedOn.Add(hidpp.DeviceLabel);
+                    if (first)
+                        Log.Add(hidpp.DeviceLabel, "sent", "Per-key frame shown after the keyboard was busy " + (attempt - 1) + " time"
+                            + (attempt == 2 ? "" : "s"), "ok");
+                }
+                return;
+            }
+            catch (HidppError ex)
+            {
+                if (ex.Code != 8 || attempt >= 20) throw;
+                System.Threading.Thread.Sleep(10);
+            }
+        }
+    }
+
     public static HashSet<int> Present(Hidpp hidpp)
     {
         byte feature = hidpp.FeatureIndex(0x8081);
@@ -255,7 +285,7 @@ static class KeyLights
                 parameters.AddRange(group.Value.Skip(start).Take(13).Select(id => (byte)id));
                 hidpp.CallUnlogged(feature, 6, parameters.ToArray());
             }
-        hidpp.CallUnlogged(feature, 7, 0, 0, 0, 0, 0);
+        ShowFrame(hidpp, feature);
     }
 
     // A frame of colours by lighting id, for the live effects: keys sharing a colour go three or more to a message (fn 6, up to 13),
@@ -295,7 +325,7 @@ static class KeyLights
                 parameters.AddRange(group.Value.Skip(start).Take(13).Select(id => (byte)id));
                 hidpp.CallUnlogged(feature, 6, parameters.ToArray());
             }
-        hidpp.CallUnlogged(feature, 7, 0, 0, 0, 0, 0);
+        ShowFrame(hidpp, feature);
     }
 }
 
