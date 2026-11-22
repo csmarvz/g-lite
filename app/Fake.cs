@@ -530,7 +530,31 @@ class FakeMouse : Hidpp
             : found.WirelessId == 0x407F ? G502()
             : found.WirelessId == 0x4074 ? G305()
             : found.WirelessId == 0x4093 ? Superlight()
+            : found.WirelessId == 0x4099 ? G502XPlus()
             : new FakeMouse();
+    }
+
+    // A G502 X PLUS: profile format 5 with the G502 X LIGHTSPEED's counts, stages and factory bindings (docs/G502X.md), a write
+    // counter at 0x12 and lights on 0x8071 only, so no 0x8070 zones (Solaar's G502 X PLUS 4099 report).
+    public static FakeMouse G502XPlus()
+    {
+        var mouse = new FakeMouse { Info = "01050105020B1000ff0a04", Wheel = true, ZoneCount = 0, Dpi = 1600, Stage = 2 };
+        var bindings = new[]
+        {
+            "80010001", "80010002", "80010004", "80010008", "90070000", "80010010",
+            "90010000", "90020000", "900A0000", "90030000", "90040000"
+        };
+        var stages = new[] { 800, 1200, 1600, 2400, 3200 };
+        foreach (var sector in new[] { 0x0001, 0x0101 })
+        {
+            var profile = mouse.Sectors[sector];
+            for (int i = 0; i < stages.Length; i++) { profile[3 + 2 * i] = (byte)stages[i]; profile[4 + 2 * i] = (byte)(stages[i] >> 8); }
+            for (int i = 0; i < bindings.Length; i++) FakeHidpp.Hex(bindings[i]).CopyTo(profile, 0x20 + 4 * i);
+            FakeHidpp.Hex("0012").CopyTo(profile, 0x12);
+            FakeHidpp.Hex("3C002C01").CopyTo(profile, 0x1C);
+        }
+        MouseProtocol.WriteChecksum(mouse.Sectors[0x0001]);
+        return mouse;
     }
 
     public static FakeMouse G305()

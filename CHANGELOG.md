@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Added
+
+- G502 X PLUS (onboard profile format 5): Save to mouse, like the original PRO X SUPERLIGHT: DPI stages, report rate and buttons, with a backup first and the profile read back after writing, and Restore the factory profile. Its lighting records, write counter and timeouts are left as they are. Not yet tried by an owner in G-Lite: the layout comes from OMM's own profile code, and GOMM checked it against OMM on this mouse. Only on the firmware with profile format 5.
+- Mice with onboard profile format 6 or 8 (superstrike-studio found format 8 on a SUPERSTRIKE): Save to mouse, as on the PRO X SUPERLIGHT 2. OMM's profile code puts everything G-Lite writes in the same place as on format 7. Not yet tried by an owner in G-Lite.
+- PRO X SUPERLIGHT 2, PRO X 2 DEX and other mice with profile format 6, 7 or 8: Restore the factory profile. It copies the factory profile over the active one, keeping the profile's name, after checking it reads as this layout. OMM's own restore also copies a factory profile over the user one. Not yet tried by an owner in G-Lite.
+
+### Changed
+
+- Mice with profile format 6 to 8 show at most 12 buttons, the slots their profile has.
+- Mice with profile format 9 or higher (a G502 X after its latest firmware update reports format 10) show no DPI stages from their profile: read with format 7's layout, they could come out wrong.
+- Restore the factory profile is only offered when the mouse says it has one.
+- Mice whose onboard profile keeps the report rate in milliseconds (profile formats 2 to 5) only offer rates up to 1000 Hz, the fastest such a profile can hold.
+- Mice whose lighting G-Lite can't drive yet (0x8071, like the G502 X PLUS) say "Lighting (not supported yet)" instead of "not supported on this mouse".
+
 ## [0.0.35-alpha] - 2026-11-22
 
 ### Added

@@ -30,6 +30,8 @@ static class MouseProtocol
         public EffectInfo[] Effects = MouseProtocol.Effects;
         public Dictionary<int, Dictionary<int, int>> Zones = new Dictionary<int, Dictionary<int, int>>();
         public int Sector = -1, SectorSize, Format, ButtonCount;
+        // 0x8100 fn 0 byte 4; -1 until read. OMM offers no restore on a mouse that has none.
+        public int FactoryProfiles = -1;
         public byte[][] Buttons;
         public byte[] Current, Profile;
 
@@ -45,19 +47,25 @@ static class MouseProtocol
         }
 
         // Format 7 (PRO X SUPERLIGHT 2, PRO X 2 DEX): written by Featherweight on a SUPERLIGHT 2 and by
-        // marco-vrinssen/logitech-onboard-memory on a DEX, each read back byte for byte (docs/newer-mice.md).
-        public static bool WideFormat(int format) { return format == 7; }
+        // marco-vrinssen/logitech-onboard-memory on a DEX, each read back byte for byte (docs/newer-mice.md). Formats 6 and 8 (a
+        // SUPERSTRIKE, per superstrike-studio) have the same layout at every byte BuildWide writes, per OMM's layout builders
+        // (docs/research/omm): 6 lacks bunny-hop prevention at 0x25, 8 adds analog buttons at 0x26. OMM refuses format 9, and 10 is
+        // another layout.
+        public static bool WideFormat(int format) { return format >= 6 && format <= 8; }
 
         // Format 2 (G502 HERO, G303, G502 Proteus Spectrum) has format 3's layout up to the LED blocks at 0xD0 and 0xDB:
-        // libratbag, Solaar and cvuchener's hidpp agree (summed up in g502-hub's docs/protocol.md). Format 1 ends at 0xD0; 4 and 5
-        // keep the same records at 0xD0 and 0xDB but add power-save copies at 0xE6 and 0xF1 and flags at 0xFC (onboard-lite), which
-        // G-Lite doesn't write. Only these get their LED records written and a profile set up from the factory one.
+        // libratbag, Solaar and cvuchener's hidpp agree (summed up in g502-hub's docs/protocol.md). Format 1 ends at 0xD0; 4 keeps
+        // the same records at 0xD0 and 0xDB and adds power-save copies at 0xE6 and 0xF1, and 5 has 0x8071 records there and flags at
+        // 0xFC (OMM's builders, docs/research/omm), which G-Lite doesn't write. Only these get their LED records written and a profile
+        // set up from the factory one.
         public static bool KnownFormat(int format) { return format == 2 || format == 3; }
 
         // Format 4 (the original PRO X SUPERLIGHT) has format 3's layout up to 0xD0: GFlick (wrote one and read it back) and
         // onboard-lite (saved on one, wired and over LIGHTSPEED) both use it, and with g502-hub and libratbag treat formats 1–5 alike
-        // there. Its LED records are left as they are (docs/newer-mice.md).
-        public static bool ClassicFormat(int format) { return KnownFormat(format) || format == 4; }
+        // there. So does format 5 (the G502 X PLUS: GOMM), per OMM's layout builders too (docs/research/omm). Both have a write counter
+        // at 0x12 and timeouts at 0x1C and 0x1E, which G-Lite doesn't touch, and their LED records are left as they are
+        // (docs/newer-mice.md).
+        public static bool ClassicFormat(int format) { return KnownFormat(format) || format == 4 || format == 5; }
         public bool Savable { get { return Writable && ProfileOk; } }
         public string Key { get { return Sector.ToString("X4"); } }
     }
@@ -70,7 +78,7 @@ static class MouseProtocol
     public const int ReportIntervalAt = 0x00, DefaultStageAt = 0x01, StagesAt = 0x03, StageCount = 5, ButtonsAt = 0x20, ButtonLength = 4,
         NameAt = 0xA0, NameLength = 0x30, LightRecordsAt = 0xD0, LightRecordLength = 11;
 
-    // Formats 6 and up: the rate as a 0x8061 index, the receiver's at 0 and the cable's at 1 (Featherweight changed byte 0 on a
+    // Formats 6 to 8: the rate as a 0x8061 index, the receiver's at 0 and the cable's at 1 (Featherweight changed byte 0 on a
     // SUPERLIGHT 2 and its live rate over the receiver followed), the default stage at 2, five 5-byte stage records from 4 (X and Y
     // little-endian, lift-off), the buttons from 0x30 (docs/newer-mice.md).
     public const int WideRateAt = 0, WideWiredRateAt = 1, WideDefaultStageAt = 2;
@@ -164,7 +172,7 @@ static class MouseProtocol
         built[StagesAt + 2 * i] = (byte)want.Dpi;
         built[StagesAt + 1 + 2 * i] = (byte)(want.Dpi >> 8);
         built[DefaultStageAt] = (byte)i;
-        if (want.Rate > 0) built[ReportIntervalAt] = (byte)(1000 / want.Rate);
+        if (want.Rate > 0 && want.Rate <= 1000) built[ReportIntervalAt] = (byte)(1000 / want.Rate);
         if (want.Buttons != null) CopyButtons(built, want.Buttons, ButtonsAt);
         if (want.Light != null)
             for (int zone = 0; zone < Math.Min(zones, 2); zone++)
@@ -178,7 +186,7 @@ static class MouseProtocol
 
     public static int[] WideStagesOf(byte[] profile) { return WideStages(profile, new[] { 1, 0xFFFE }); }
 
-    // Format 7: only the DPI stages, the default stage, the rate for the link in use and the buttons change; the rest stays as read.
+    // Formats 6 to 8: only the DPI stages, the default stage, the rate for the link in use and the buttons change; the rest stays as read.
     public static byte[] BuildWide(byte[] old, MouseSettings want, bool wired)
     {
         var built = (byte[])old.Clone();
@@ -221,9 +229,20 @@ static class MouseProtocol
         for (int button = 0; button < count; button++) buttons[button].CopyTo(built, at + ButtonLength * button);
     }
 
-    public static byte[] Factory(byte[] rom, byte[] current)
+    // OMM restores a profile by copying a factory one over it, so the factory profiles have the user profiles' layout, formats 6 to 8
+    // too (docs/research/omm). Featherweight read the SUPERLIGHT 2's with no valid CRC, so its rate bytes, stages (in the mouse's
+    // range) and default stage are what tell it's a profile; the checksum is written here.
+    public static byte[] Factory(byte[] rom, byte[] current, State state)
     {
-        if (rom[ReportIntervalAt] == 0 || rom[ReportIntervalAt] > 8 || StagesOf(rom).Length == 0)
+        bool usable;
+        if (State.WideFormat(state.Format))
+        {
+            int stages = WideStages(rom, state.Dpis).Length;
+            usable = rom[WideRateAt] < WideRateValues.Length && rom[WideWiredRateAt] < WideRateValues.Length && stages > 0
+                && rom[WideDefaultStageAt] < stages;
+        }
+        else usable = rom[ReportIntervalAt] >= 1 && rom[ReportIntervalAt] <= 8 && StagesOf(rom).Length > 0;
+        if (!usable)
             throw new RefusedException("Couldn't read the mouse's factory profile, not restoring it (it starts "
                 + BitConverter.ToString(rom, 0, Math.Min(13, rom.Length)).Replace("-", " ") + ")");
         var built = (byte[])rom.Clone();
@@ -398,7 +417,7 @@ static class MouseProtocol
 
     public static State Read(Hidpp hidpp)
     {
-        var state = new State();
+        var state = new State { Wired = hidpp.Direct };
         try
         {
             byte dpiFeature = hidpp.FeatureIndex(0x2201);
@@ -419,7 +438,6 @@ static class MouseProtocol
             {
                 byte rateFeature = hidpp.FeatureIndex(0x8061);
                 state.Rates = WideRates(hidpp.Call(rateFeature, 1)[1]);
-                state.Wired = hidpp.Direct;
                 int index = hidpp.Call(rateFeature, 2, (byte)(hidpp.Direct ? 0 : 1))[0];
                 state.Rate = index < 7 ? 125 << index : 0;
             }
@@ -466,6 +484,9 @@ static class MouseProtocol
                 state.ProfileOk = false;
                 state.ButtonCount = Math.Min(16, (int)info[5]);
                 state.Format = info[1];
+                state.FactoryProfiles = info[4];
+                // Formats 2 to 5 keep the rate as an interval in ms, so a faster rate couldn't be saved.
+                if (State.ClassicFormat(state.Format)) state.Rates = state.Rates.Where(hz => hz <= 1000).ToArray();
                 state.SectorSize = ReadUInt16BigEndian(info, 7);
                 var current = hidpp.Call(profilesFeature, 4);
                 state.Current = new[] { current[0], current[1] };
@@ -477,13 +498,17 @@ static class MouseProtocol
                     if (state.Format >= 6)
                     {
                         bool wide = State.WideFormat(state.Format);
-                        if (state.ProfileOk)
+                        // Their buttons take 48 bytes from 0x30, then reserved bytes up to the G-shift layer at 0x70 (OMM's builders).
+                        if (wide) state.ButtonCount = Math.Min(12, state.ButtonCount);
+                        // Format 10 has format 1's layout with other fields (docs/newer-mice.md), and read at these offsets its stages
+                        // can come out wrong but in range, so formats past 8 show none.
+                        if (state.ProfileOk && wide)
                         {
                             state.Stages = WideStages(state.Profile, state.Dpis);
-                            if (wide) state.Buttons = ButtonsOf(state.Profile, WideButtonsAt, state.ButtonCount);
+                            state.Buttons = ButtonsOf(state.Profile, WideButtonsAt, state.ButtonCount);
                         }
                         state.Profile = null;
-                        // Only format 7 is saved, so only its damage matters (shown, and no save); the others are just read.
+                        // Only formats 6 to 8 are saved, so only their damage matters (shown, and no save); the others are just read.
                         if (!wide) state.ProfileOk = true;
                     }
                     else

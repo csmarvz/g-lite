@@ -166,7 +166,7 @@ static class SelfTest
             && savedState.Light != null && savedState.Light.Effect == 0x01 && savedState.Light.Color == 0xFF2020
             && secondMouse.Reloads == 1 && savedState.ProfileOk, "saving to the mouse sticks and reloads the profile");
         MouseProtocol.Store(secondMouse, savedState,
-            MouseProtocol.Factory(MouseProtocol.ReadSector(secondMouse, MouseProtocol.RomSector, 255), savedState.Profile));
+            MouseProtocol.Factory(MouseProtocol.ReadSector(secondMouse, MouseProtocol.RomSector, 255), savedState.Profile, savedState));
         var restoredState = MouseProtocol.Read(secondMouse);
         Check(restoredState.Dpi == 1600 && restoredState.Light.Effect == 0x03 && restoredState.ProfileOk
             && System.Text.Encoding.Unicode.GetString(restoredState.Profile, 0xA0, 14) == "Default",
@@ -440,6 +440,20 @@ static class SelfTest
             && !superlightFreshState.Fresh && !superlightFreshState.Writable,
             "a format 4 mouse (the original SUPERLIGHT) saves format 3's fields and keeps its LED records; its hidden 0x8070 shows no "
                 + "lighting; one on its factory profile isn't set up");
+        var g502xPlus = FakeMouse.G502XPlus();
+        var g502xPlusBefore = (byte[])g502xPlus.Sectors[1].Clone();
+        var g502xPlusMouse = new HidppMouse();
+        var g502xPlusState = g502xPlusMouse.Read(g502xPlus);
+        g502xPlusMouse.Save(g502xPlus, g502xPlusState, g502xPlusBefore,
+            new MouseSettings { Dpi = 1000, Stage = 1, Rate = 500, Buttons = g502xPlusState.Buttons });
+        var fastRateBuild = MouseProtocol.Build(g502xPlusBefore, new MouseSettings { Dpi = 800, Stage = 1, Rate = 2000 }, 0);
+        Check(g502xPlusState.Format == 5 && g502xPlusState.Savable && g502xPlusMouse.HasFactory && g502xPlusState.Zones.Count == 0
+            && BitConverter.ToString(g502xPlus.Sectors[1], 0, 7) == "02-01-02-20-03-E8-03"
+            && g502xPlus.Sectors[1][0x12] == 0x00 && g502xPlus.Sectors[1][0x13] == 0x12
+            && g502xPlus.Sectors[1].Skip(0x0D).Take(0xFD - 0x0D).SequenceEqual(g502xPlusBefore.Skip(0x0D).Take(0xFD - 0x0D))
+            && fastRateBuild[0] == g502xPlusBefore[0],
+            "a format 5 mouse (the G502 X PLUS) saves format 3's fields, keeps the write counter at 0x12 and its LED records, and a rate "
+                + "above 1000 Hz leaves the interval byte alone");
         var proX2 = MouseProtocol.Read(FakeMouse.ProX2());
         Check(new FoundDevice { Name = "PRO X SUPERLIGHT 2", Kind = "mouse", Features = new[] { 0x2202, 0x8061 } }.IsMouse
             && proX2.Dpi == 800 && proX2.Dpis.First() == 100 && proX2.Dpis.Last() == 32000 && proX2.Dpis.Length == 639
@@ -447,8 +461,12 @@ static class SelfTest
             && proX2.Rates.SequenceEqual(new[] { 125, 250, 500, 1000, 2000, 4000, 8000 })
             && proX2.Onboard && proX2.Savable && proX2.Format == 7 && new MouseProtocol.State().ProfileOk && proX2.ProfileOk
             && proX2.Buttons.Length == 5 && proX2.Buttons[4].SequenceEqual(FakeHidpp.Hex("80010010"))
-            && !new MouseProtocol.State { Onboard = true, Format = 6, SectorSize = 255, Sector = 1 }.Writable,
-            "a format 7 mouse with 0x2202 and 0x8061 reads its DPI, stages, rate and buttons (from 0x30) and can be saved to; format 6 can't");
+            && new MouseProtocol.State { Onboard = true, Format = 6, SectorSize = 255, Sector = 1 }.Writable
+            && new MouseProtocol.State { Onboard = true, Format = 8, SectorSize = 255, Sector = 1 }.Writable
+            && !new MouseProtocol.State { Onboard = true, Format = 9, SectorSize = 255, Sector = 1 }.Writable
+            && !new MouseProtocol.State { Onboard = true, Format = 10, SectorSize = 255, Sector = 1 }.Writable,
+            "a format 7 mouse with 0x2202 and 0x8061 reads its DPI, stages, rate and buttons (from 0x30) and can be saved to, like 6 and 8; "
+                + "9 and 10 can't");
         var proX2Profile = FakeMouse.ProX2().Sectors[1];
         var wideButtons = proX2.Buttons.Select(binding => (byte[])binding.Clone()).ToArray();
         wideButtons[3] = FakeHidpp.Hex("90050000");
@@ -471,11 +489,57 @@ static class SelfTest
         var damaged = MouseProtocol.Read(damagedMouse);
         var formatSix = FakeMouse.ProX2();
         formatSix.Info = "0106010501051000ff0a04";
+        var formatTen = FakeMouse.ProX2();
+        formatTen.Info = "010A010501101000ff0a04";
+        var manyButtons = FakeMouse.ProX2();
+        manyButtons.Info = "0108010501101000ff0a04";
         Check(BitConverter.ToString(apartSame, 0x09, 4) == "20-03-40-06"
             && BitConverter.ToString(apartChanged, 0x09, 4) == "E8-03-D0-07"
             && !damaged.ProfileOk && !damaged.Savable
-            && MouseProtocol.Read(formatSix).Buttons == null && MouseProtocol.Read(formatSix).Stages.Length == 4,
-            "a format 7 stage is left alone unless its DPI changes, a Y apart from X keeps its ratio, a bad CRC isn't saved, and format 6 shows no buttons");
+            && MouseProtocol.Read(formatSix).Buttons.Length == 5 && MouseProtocol.Read(formatSix).Savable
+            && MouseProtocol.Read(formatTen).Buttons == null && MouseProtocol.Read(formatTen).Stages.Length == 0
+            && !MouseProtocol.Read(formatTen).Writable
+            && MouseProtocol.Read(manyButtons).Buttons.Length == 12,
+            "a format 7 stage is left alone unless its DPI changes, a Y apart from X keeps its ratio, a bad CRC isn't saved; format 6 "
+                + "reads its buttons, format 10 shows no buttons or stages, and at most 12 buttons are read from 0x30");
+        var millisecondRateMouse = FakeMouse.ProX2();
+        millisecondRateMouse.Info = "0104010501051000ff0a04";
+        Check(MouseProtocol.Read(millisecondRateMouse).Rates.SequenceEqual(new[] { 125, 250, 500, 1000 })
+            && MouseProtocol.Read(FakeMouse.ProX2()).Rates.Last() == 8000,
+            "a mouse whose profile keeps the rate in ms (formats 2 to 5) isn't offered rates above 1000 Hz, even with 0x8061");
+        var wideFactoryMouse = FakeMouse.ProX2();
+        var wideFactory = wideFactoryMouse.Sectors[0x0101];
+        wideFactory[4] = 0x20; wideFactory[5] = 0x03; wideFactory[6] = 0x20; wideFactory[7] = 0x03;
+        wideFactory[0xFD] = 0; wideFactory[0xFE] = 0;
+        var wideNamed = (byte[])wideFactoryMouse.Sectors[1].Clone();
+        System.Text.Encoding.Unicode.GetBytes("Mine").CopyTo(wideNamed, 0xA0);
+        MouseProtocol.WriteChecksum(wideNamed);
+        wideFactoryMouse.Sectors[1] = wideNamed;
+        var wideMouse = new HidppMouse();
+        var wideState = wideMouse.Read(wideFactoryMouse);
+        wideMouse.Restore(wideFactoryMouse, wideState, wideNamed, null);
+        var wideRestored = wideFactoryMouse.Sectors[1];
+        Func<int, byte, bool> factoryRefused = (offset, value) =>
+        {
+            var bad = (byte[])wideFactory.Clone();
+            bad[offset] = value;
+            try { MouseProtocol.Factory(bad, wideNamed, wideState); return false; }
+            catch (RefusedException) { return true; }
+        };
+        var noFactory = FakeMouse.ProX2();
+        noFactory.Info = "0107010500051000ff0a04";
+        var noFactoryMouse = new HidppMouse();
+        noFactoryMouse.Read(noFactory);
+        Check(wideMouse.HasFactory && MouseProtocol.Valid(wideRestored) && wideRestored[4] == 0x20 && wideRestored[5] == 0x03
+            && System.Text.Encoding.Unicode.GetString(wideRestored, 0xA0, 8) == "Mine"
+            && wideRestored.Take(0xA0).SequenceEqual(wideFactory.Take(0xA0))
+            && wideRestored.Skip(0xD0).Take(0xFD - 0xD0).SequenceEqual(wideFactory.Skip(0xD0).Take(0xFD - 0xD0))
+            && wideFactoryMouse.Reloads == 1
+            && factoryRefused(0, 0xFF) && factoryRefused(1, 0x07) && factoryRefused(2, 0x04) && factoryRefused(5, 0x7D) && !factoryRefused(2, 0x03)
+            && !noFactoryMouse.HasFactory && new HidppMouse().HasFactory,
+            "a format 7 factory restore copies the factory profile (which has no CRC) with the profile's name and a new CRC; it refuses "
+                + "one whose rate bytes aren't 0x8061 indexes, whose default stage isn't one of its stages or whose stages are out of "
+                + "the mouse's range, and isn't offered when the mouse has no factory profile");
         var g600Report = new FakeG600().Modes[2];
         var g600 = G600Mouse.Decode(g600Report, 3);
         Check(g600.ReadOnly && !g600.Writable && g600.Stages.SequenceEqual(new[] { 400, 1200, 2000, 3200 }) && g600.Stage == 3

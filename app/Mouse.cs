@@ -93,21 +93,22 @@ interface IMouse
 
 class HidppMouse : IMouse
 {
-    // The last profile format read: format 7 has its own layout, and its factory profile's layout isn't known.
-    int format;
+    // The last profile format and factory profile count read: formats 6 to 8 have their own layout.
+    int format, factoryProfiles = -1;
     bool Wide { get { return MouseProtocol.State.WideFormat(format); } }
 
     public EffectInfo[] Effects { get { return MouseProtocol.Effects; } }
-    public bool HasFactory { get { return !Wide; } }
+    public bool HasFactory { get { return factoryProfiles != 0; } }
     public MouseProtocol.State Read(Hidpp hidpp)
     {
         var state = MouseProtocol.Read(hidpp);
         format = state.Format;
+        factoryProfiles = state.FactoryProfiles;
         return state;
     }
 
-    // A format 7 mouse refuses a DPI that isn't one of its stages while it runs its profile (logi-cli, OpenGMice): an edited stage
-    // goes on the mouse when saved, so only the stage is picked.
+    // A format 7 mouse refuses a DPI that isn't one of its stages while it runs its profile (logi-cli, OpenGMice), and 6 and 8 are
+    // taken to do the same: an edited stage goes on the mouse when saved, so only the stage is picked.
     public void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSettings want, MouseSettings sent)
     {
         if (sent != null && want.Dpi == sent.Dpi && want.Stage == sent.Stage) return;
@@ -125,7 +126,7 @@ class HidppMouse : IMouse
     {
         return MouseProtocol.ReadSector(hidpp, state.Sector, state.SectorSize);
     }
-    // Format 4's LED records aren't checked, so they're kept: a zone count of 0 leaves them.
+    // The LED records of formats 4 and 5 aren't checked, so they're kept: a zone count of 0 leaves them.
     byte[] Build(byte[] now, MouseSettings want, MouseProtocol.State state)
     {
         if (Wide) return MouseProtocol.BuildWide(now, want, state.Wired);
@@ -144,7 +145,7 @@ class HidppMouse : IMouse
     // Reloading the active profile (fn 3) leaves a G305's DPI as it was set live, so the restored default stage is set too.
     public void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data)
     {
-        var restored = data ?? MouseProtocol.Factory(MouseProtocol.ReadSector(hidpp, MouseProtocol.RomSector, state.SectorSize), now);
+        var restored = data ?? MouseProtocol.Factory(MouseProtocol.ReadSector(hidpp, MouseProtocol.RomSector, state.SectorSize), now, state);
         MouseProtocol.Store(hidpp, state, restored);
         int stage = DefaultStage(restored);
         if (stage < (Wide ? MouseProtocol.WideStagesOf(restored) : MouseProtocol.StagesOf(restored)).Length)

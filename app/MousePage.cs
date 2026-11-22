@@ -296,6 +296,7 @@ class MousePage : DevicePage
             ? (light == null && lit ? "Lighting (as saved on the mouse)"
                 : found.LightIsLiveOnly ? "Lighting (live only)"
                 : "Lighting")
+            : found.Has(0x8071) ? "Lighting (not supported yet)"
             : "Lighting (not supported on this mouse)";
         effects.Items = Effects.Select(info => info.Name).ToArray();
         effects.Enabled = lit && live;
@@ -380,7 +381,7 @@ class MousePage : DevicePage
         if (!Keepable) { ShowStatus("No button is set to Left click. Set one to save.", true); return; }
         bool buttons = stored != null && !Bindings.Same(current.Buttons, stored.Buttons);
         bool rate = stored != null && state.Onboard && current.Rate > 0 && current.Rate != stored.Rate;
-        // A format 7 mouse only takes its stages' DPI, so an edited stage waits for the save (HidppMouse.SendDpi).
+        // A format 6 to 8 mouse only takes its stages' DPI, so an edited stage waits for the save (HidppMouse.SendDpi).
         bool dpi = MouseProtocol.State.WideFormat(state.Format) && state.Savable && current.Stage >= 0
             && current.Stage < state.Stages.Length && current.Dpi != state.Stages[current.Stage];
         var waiting = new List<string>();
@@ -394,7 +395,7 @@ class MousePage : DevicePage
                 + " when saved to the mouse");
             return;
         }
-        // Only formats 2 and 3 (and the G9x pages) get their LED records written; on formats 4 and 7 a light set stays live.
+        // Only formats 2 and 3 (and the G9x pages) get their LED records written; on formats 4 to 8 a light set stays live.
         bool liveLight = state.Savable && !state.Flash && state.Zones.Count > 0 && !MouseProtocol.State.KnownFormat(state.Format)
             && stored != null && current.Light != null && !current.Light.Same(stored.Light);
         ShowStatus(!dirty ? "Matches the mouse"

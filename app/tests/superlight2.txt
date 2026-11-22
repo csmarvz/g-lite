@@ -117,4 +117,100 @@ press Save to mouse
   8100 fn5  00 01 00 EF
   8100 fnB
   = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings Left button=Left click Right button=Right click Wheel click=Middle click Button 4=DPI cycle Button 5=Forward [Revert (off)] [Save to mouse (off)]
+menu Backups > Restore the factory profile
+  menu: Restore the factory profile | Restore a backup (off) | <when>, 800 DPI, first backup | Open the backups folder
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fn5  01 01
+  8100 fn5  01 01 00 10
+  8100 fn5  01 01 00 20
+  8100 fn5  01 01 00 30
+  8100 fn5  01 01 00 40
+  8100 fn5  01 01 00 50
+  8100 fn5  01 01 00 60
+  8100 fn5  01 01 00 70
+  8100 fn5  01 01 00 80
+  8100 fn5  01 01 00 90
+  8100 fn5  01 01 00 A0
+  8100 fn5  01 01 00 B0
+  8100 fn5  01 01 00 C0
+  8100 fn5  01 01 00 D0
+  8100 fn5  01 01 00 E0
+  8100 fn5  01 01 00 EF
+  8100 fn6  00 01 00 00 00 FF
+  8100 fn7  03 03 01 00 90 01 90 01 02 20 03 20 03 02 40 06
+  8100 fn7  40 06 02 80 0C 80 0C 02 00 00 00 00 00 FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  80 01 00 01 80 01 00 02 80 01 00 04 80 01 00 08
+  8100 fn7  80 01 00 10 FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF 60 FA
+  8100 fn8
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fn3  00 01
+  8100 fnC  01
+  2202 fn2
+  2202 fn5
+  8061 fn1
+  8061 fn2  01
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 EF
+  8100 fnB
+  = status "Restored the factory profile" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings Left button=Left click Right button=Right click Wheel click=Middle click Button 4=Back Button 5=Forward [Revert (off)] [Save to mouse (off)]
 profile after the save: 040300004C044C040220032003024006400602800C800C020000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF8001000180010002800100049005000080010010
+profile after the factory restore: 03030100900190010220032003024006400602800C800C020000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF8001000180010002800100048001000880010010

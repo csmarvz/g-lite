@@ -817,8 +817,10 @@ static class Traces
             script.Pick("View", "Bindings");
             script.Pick("Button 4", "DPI cycle");
             script.Press("Save to mouse");
-            return script.Text + "profile after the save: "
-                + BitConverter.ToString(device.Sectors[1], 0, 0x44).Replace("-", "") + "\n";
+            var saved = BitConverter.ToString(device.Sectors[1], 0, 0x44).Replace("-", "");
+            script.Menu("Backups", "Restore the factory profile");
+            return script.Text + "profile after the save: " + saved + "\n"
+                + "profile after the factory restore: " + BitConverter.ToString(device.Sectors[1], 0, 0x44).Replace("-", "") + "\n";
         }
     }
 
