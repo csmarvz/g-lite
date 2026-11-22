@@ -52,12 +52,13 @@ class ZonesPage : DevicePage
     double audioLevel, audioClock;
     int audioSent = -1;
     string audioProblem;
-    // Per-key colours through 0x8080 (the G512 and G513, experimental): the effects go in a dropdown with G-Lite's live effects
-    // (LiveEffects), drawn key by key every 40 ms like on KeyboardPage, with the keyboard's own effect set to Off first, since a
-    // running 0x8070 effect would draw over them (OpenLogi). Intensity and direction stay at each effect's default.
+    // A keyboard's effects go in a dropdown (effectList) holding only those the picked zones list (shownEffects, out of effectIds).
+    // Per-key colours through 0x8080 (the G512 and G513, experimental) add G-Lite's live effects (LiveEffects), drawn key by key every
+    // 40 ms like on KeyboardPage, with the keyboard's own effect set to Off first, since a running 0x8070 effect would draw over them
+    // (OpenLogi). Intensity and direction stay at each effect's default.
     readonly bool perKey;
     readonly Dropdown effectList;
-    readonly List<byte> effectIds = new List<byte>();
+    readonly List<byte> effectIds = new List<byte>(), shownEffects = new List<byte>();
     readonly Timer liveTimer = new Timer { Interval = 40 };
     LiveEffect animation;
     byte animationId;
@@ -122,39 +123,41 @@ class ZonesPage : DevicePage
             14, 58, 440, 32);
         zonePicker.Picked += index => { picked = index; RefreshControls(); };
         effectHead = Ui.Text(light, "Effect", 14, 98, () => Theme.Dim, 9f);
-        // After the keyboard's own effects, the one G-Lite draws: Screen on the speakers, Audio on a keyboard.
-        var names = ZoneLighting.Effects.Select(effect => effect.Name).ToList();
-        names.Add(keyboard ? ZoneLighting.Audio.Name : "Screen");
+        // After the effects 0x8070 knows, those G-Lite draws: Screen on the speakers; on a keyboard Audio, or the live effects with 0x8080.
         perKey = keyboard && picture != null && !zonesModel && found.Has(0x8080);
-        effects = Ui.Add(light, new SegmentedPicker { Items = names.ToArray(), AccessibleName = "Effect", Visible = !perKey },
+        effects = Ui.Add(light,
+            new SegmentedPicker
+            {
+                Items = ZoneLighting.Effects.Select(effect => effect.Name).Concat(new[] { "Screen" }).ToArray(),
+                AccessibleName = "Effect", Visible = !keyboard
+            },
             14, 116, 440, 32);
-        if (perKey)
+        if (keyboard)
         {
             effectIds.AddRange(ZoneLighting.Effects.Select(effect => effect.Id));
-            effectIds.AddRange(LiveEffects.All.Select(effect => effect.Id));
+            if (perKey) effectIds.AddRange(LiveEffects.All.Select(effect => effect.Id));
+            else effectIds.Add(ZoneLighting.Audio.Id);
             effectList = Ui.Add(light, new Dropdown { AccessibleName = "Effect" }, 14, 116, 196, 32);
-            effectList.Items.AddRange(effectIds.Select(id => InfoOf(id).Name));
-            effectList.Badge = i => LiveEffects.Is(effectIds[i]) ? "Live" : null;
+            effectList.Badge = i => Live(shownEffects[i]) ? "Live" : null;
             effectList.Picked += i =>
             {
-                byte id = effectIds[i];
+                byte id = shownEffects[i];
                 var info = InfoOf(id);
                 // A live effect's period means something else (Rain's fall, Aurora's 20 s turn), so crossing between a live effect and
                 // the keyboard's own starts at the new one's default, as on KeyboardPage.
                 Edit(edited =>
                 {
-                    bool crossed = LiveEffects.Is(edited.Effect) != LiveEffects.Is(id);
+                    bool crossed = Live(edited.Effect) != Live(id);
                     edited.Effect = id;
                     // Without a speed, 0, so the next effect with one starts at its default too.
                     if (crossed) edited.Period = info.Speed ? info.DefaultPeriod : 0;
                     if (info.Speed && (edited.Period < info.MinPeriod || edited.Period > info.MaxPeriod)) edited.Period = info.DefaultPeriod;
-                    if (LiveEffects.Is(id)) edited.Direction = LiveEffects.DefaultDirection(id);
+                    if (Live(id)) edited.Direction = LiveEffects.DefaultDirection(id);
                 }, true);
             };
         }
         effects.Picked += index =>
         {
-            if (index == ZoneLighting.Effects.Length && keyboard) { Edit(edited => edited.Effect = ZoneLighting.Audio.Id, true); return; }
             if (index == ZoneLighting.Effects.Length) { if (!screening) { ScreenOn(); Edited(); } return; }
             if (screening) ScreenOff();
             var effect = ZoneLighting.Effects[index];
@@ -249,10 +252,11 @@ class ZonesPage : DevicePage
             gameKeys = GameModeKeys.FromText(Settings.Get(GameKeysSetting));
             viewPick = Ui.Add(this, new SegmentedPicker { Items = new[] { "Settings", "Game" }, AccessibleName = "View" }, 440, 72, 196, 32);
             viewPick.Picked += index => { gameShown = index == 1; RefreshControls(); };
-            gameBox = Ui.Add(this, new GameModeBox(KeyLayout.Load(model), true,
-                "Experimental, not tried on this keyboard yet. Select the keys you want to disable while gaming (Fn+F8 turns Game mode "
-                    + "on). Changes apply immediately and can be saved in your G-Lite presets, but not in the keyboard's memory."),
-                20, 118, 616, 543);
+            // Tried on the G413 (2026-11-22); the G512 and G513 aren't.
+            string gameText = "Select the keys you want to disable while gaming (Fn+F8 turns Game mode on). Changes apply "
+                + "immediately and can be saved in your G-Lite presets, but not in the keyboard's memory.";
+            if (!found.ShortName.ToUpper().StartsWith("G413")) gameText = "Experimental, not tried on this keyboard yet. " + gameText;
+            gameBox = Ui.Add(this, new GameModeBox(KeyLayout.Load(model), true, gameText), 20, 118, 616, 543);
             gameBox.Picked += usage =>
             {
                 var keys = gameKeys.ToList();
@@ -420,7 +424,9 @@ class ZonesPage : DevicePage
     // On a per-key keyboard Audio is the per-key one (LiveEffects), which shares its id with ZoneLighting.Audio.
     EffectInfo InfoOf(byte id) { return perKey && LiveEffects.Is(id) ? LiveEffects.Info(id) : ZoneLighting.EffectById(id); }
 
-    bool IsLive(MouseLight light) { return perKey && light != null && LiveEffects.Is(light.Effect); }
+    bool Live(byte id) { return perKey && LiveEffects.Is(id); }
+
+    bool IsLive(MouseLight light) { return light != null && Live(light.Effect); }
 
     void LiveTick()
     {
@@ -766,25 +772,26 @@ class ZonesPage : DevicePage
         zonePicker.Index = picked;
         zonePicker.Invalidate();
         effects.Enabled = ready || screening;
-        effects.Index = screening || (known && displayed.Effect == ZoneLighting.Audio.Id) ? ZoneLighting.Effects.Length
+        effects.Index = screening ? ZoneLighting.Effects.Length
             : known ? Array.FindIndex(ZoneLighting.Effects, info => info.Id == displayed.Effect)
             : -1;
         var offered = !ready ? null : picked == 0 ? listed : listed.Skip(Zone).Take(1);
-        // Audio is sent as Static, so it's offered where Static is.
         effects.Off = offered == null ? new int[0]
-            : Enumerable.Range(0, ZoneLighting.Effects.Length + (keyboard ? 1 : 0))
-                .Where(i => !offered.Any(zone => zone.ContainsKey(i < ZoneLighting.Effects.Length ? ZoneLighting.Effects[i].Id : 0x01)))
+            : Enumerable.Range(0, ZoneLighting.Effects.Length)
+                .Where(i => !offered.Any(zone => zone.ContainsKey(ZoneLighting.Effects[i].Id)))
                 .ToArray();
         effects.Invalidate();
         if (effectList != null)
         {
-            // The live effects cover the whole keyboard, so they're off while one zone is picked.
+            // Audio is sent as Static, so it's listed where Static is; the live effects cover the whole keyboard, so only on All.
+            shownEffects.Clear();
+            shownEffects.AddRange(offered == null ? effectIds
+                : effectIds.Where(id => Live(id) ? picked == 0
+                    : offered.Any(zone => zone.ContainsKey(id == ZoneLighting.Audio.Id ? 0x01 : id))));
+            effectList.Items.Clear();
+            effectList.Items.AddRange(shownEffects.Select(id => InfoOf(id).Name));
             effectList.Enabled = ready;
-            effectList.Index = known ? effectIds.IndexOf(displayed.Effect) : -1;
-            effectList.Off = offered == null ? new int[0]
-                : Enumerable.Range(0, effectIds.Count)
-                    .Where(i => LiveEffects.Is(effectIds[i]) ? picked > 0 : !offered.Any(zone => zone.ContainsKey(effectIds[i])))
-                    .ToArray();
+            effectList.Index = known ? shownEffects.IndexOf(displayed.Effect) : -1;
             effectList.Invalidate();
         }
         bool color = known && effect.Color && !monochrome, hasSpeed = known && effect.Speed, hasBrightness = known && displayed.Effect != 0;
@@ -802,7 +809,7 @@ class ZonesPage : DevicePage
         if (!screening) colors.RefreshControls(known ? displayed.Color : 0xFFFFFF, color);
         bool wave = known && effect.Direction && !IsLive(displayed);
         // G HUB gives a one-colour keyboard a slider from black to white; G-Lite sends white, scaled by Brightness, which is the same.
-        colorHead.Text = wave ? "Direction" : monochrome ? "Color: this keyboard has one, Brightness sets its level" : "Color";
+        colorHead.Text = wave ? "Direction" : monochrome ? "Color: one only; Brightness works within the keyboard's own level (F7)" : "Color";
         SetDimmed(colorHead, color || wave);
         if (wave || monochrome) foreach (var control in light.Controls.OfType<Swatch>()) control.Visible = false;
         directions.Visible = !screening && wave;

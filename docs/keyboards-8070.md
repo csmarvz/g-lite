@@ -2,7 +2,7 @@
 
 The G512 and similar G keyboards light up through 0x8070, the feature `MouseProtocol` already uses, not through 0x8071 like the G515 and G915. Supporting them is mostly a new screen around code G-Lite has. From OpenLogi's G512 recording (see [openlogi.md](openlogi.md)) and [lighting-control.md](lighting-control.md).
 
-Status: built on the G560's screen (`ZonesPage`, for `FoundDevice.IsLedKeyboard`: kind keyboard, 0x8070, no 0x8071). It sets Off, Static, Breathe, Cycle and Wave live on all zones or each one, greys out the effects a zone doesn't list, names zones from their location (`ZoneLighting.ZoneName`: 1 Keys, 2 Logo, 6–11 Zone 1–6, else Zone n), keeps the lighting as `lighting.<device>` and sets it again on load. A keyboard with a key map (`ZoneLighting.Picture`: the G213's zones; the G413's lighting ids, also the G512's and G513's) gets a live key picture. An Audio effect on every keyboard here; the G512 and G513 get G-Lite's per-key live effects instead (below, experimental). No per-key colours of the user's choosing, no Save.
+Status: built on the G560's screen (`ZonesPage`, for `FoundDevice.IsLedKeyboard`: kind keyboard, 0x8070, no 0x8071). It sets Off, Static, Breathe, Cycle and Wave live on all zones or each one, lists in an Effect dropdown only the effects the picked zones list, names zones from their location (`ZoneLighting.ZoneName`: 1 Keys, 2 Logo, 6–11 Zone 1–6, else Zone n), keeps the lighting as `lighting.<device>` and sets it again on load. A keyboard with a key map (`ZoneLighting.Picture`: the G213's zones; the G413's lighting ids, also the G512's and G513's) gets a live key picture. An Audio effect on every keyboard here; the G512 and G513 get G-Lite's per-key live effects instead (below, experimental). No per-key colours of the user's choosing, no Save.
 
 Tested on a real G213 (see [G213.md](G213.md)): fn 3 without a persistence byte lights it, Wave works with OpenRGB's layout, and the persistence byte stores nothing. The G512 and the others are still untested. The plan below (its own page, a shared `Led` class) is kept for when one of them reports.
 
@@ -26,7 +26,7 @@ Its feature table, by index: 00 0x0000, 01 0x0001, 02 0x0003, 03 0x4522, 04 0x00
 |---|---|---|
 | 0x8070 colour LED effects | 7 | Effects |
 | 0x8080 per-key lighting | 2 | Live effects, experimental (above) |
-| 0x4522 Game mode keys | 0 | The Game view, experimental, as on the G413 and G815 |
+| 0x4522 Game mode keys | 0 | The Game view, experimental, as on the G413 and G815 (tried on both) |
 | 0x8060 report rate | 0 | Could reuse `MouseProtocol` |
 | 0x4540 keyboard layout | 0 | ANSI or ISO |
 

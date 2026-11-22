@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Changed
+
+- G413: Game mode keys work on the keyboard (tried by its owner), so its Game view no longer says experimental. The G512's and G513's still does.
+- Keyboards on the zones screen (G413, G213, G512, G513 and the others with 0x8070): the effects are a dropdown listing only those the keyboard, or the zone picked, takes, instead of a row with the others greyed out.
+- G413: the Audio effect works on the keyboard. Its colour row now says Brightness works within the keyboard's own level (Fn+F7), which scales whatever G-Lite sends and which G-Lite can't read or set.
+
 ## [0.0.37-alpha] - 2026-11-22
 
 ### Added
