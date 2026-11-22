@@ -5,7 +5,7 @@ using System.Collections.Generic;
 static class SelfTest
 {
     static readonly string[] LayoutFiles =
-        { "g515-tkl.json", "g915-tkl.json", "g915.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json" };
+        { "g515-tkl.json", "g915-tkl.json", "g915.json", "g915-x.json", "g915-x-tkl.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json" };
 
     static byte[] Hex(string hex)
     {
@@ -402,7 +402,7 @@ static class SelfTest
         Check(!rapid.IsG515 && rapid.IsRgbKeyboard && DeviceTable.For(rapid).Screen == typeof(KeyboardPage)
             && KeyboardKinds.For(rapid).Guessed && !KeyboardKinds.For(rapid).Saves && KeyboardKinds.For(rapid).Keys.Name == "G515 RAPID TKL"
             && KeyboardKinds.File("PRO X 60") == "g-60.json" && KeyboardKinds.File("G512 X 98") == "g-full.json"
-            && KeyboardKinds.File("G915 X LIGHTSPEED TKL") == "g915-tkl.json" && KeyboardKinds.File("G915 X") == "g915.json"
+            && KeyboardKinds.File("G915 X LIGHTSPEED TKL") == "g915-x-tkl.json" && KeyboardKinds.File("G915 X") == "g915-x.json"
             && KeyboardKinds.File("G715") == "g515-tkl.json"
             && bigBoard.Keys.Rows.Length == 7 && KeyboardKinds.For(new FoundDevice { Name = "G915 X LIGHTSPEED TKL" }).Keys.Rows.Length == 9
             && bigBoard.Bar == null && bigBoard.Prefix == "profile.g316x75.",
@@ -853,7 +853,7 @@ static class SelfTest
             && GameModeKeys.FromText("1A0EE3zz").SequenceEqual(new[] { 0x0E, 0x1A }) && GameModeKeys.ToText(new[] { 0x0E, 0x1A }) == "0E1A",
             "Game mode keys in a preset: after the last !, none in an older preset, read back without what can't be picked");
 
-        foreach (var file in new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json" })
+        foreach (var file in new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g915-x.json", "g915-x-tkl.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json" })
         {
             var board = KeyLayout.Load(file);
             int keys = board.Rows.Sum(row => row.Split('|').Count(cell => !cell.StartsWith("_")));

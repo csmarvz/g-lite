@@ -30,7 +30,7 @@ class KeyboardKinds
     {
         name = name.ToUpper();
         bool small = name.Contains("TKL");
-        return name.Contains("G915 X") ? (small ? "g915-tkl.json" : "g915.json")
+        return name.Contains("G915 X") ? (small ? "g915-x-tkl.json" : "g915-x.json")
             : name.Contains(" 60") ? "g-60.json"
             : name.Contains(" 75") ? "g512-x-75.json"
             : name.Contains(" 98") ? "g-full.json"
@@ -46,7 +46,9 @@ class KeyboardKinds
             keys.Rows = keys.Rows.Take(7).ToArray();
             keys.Ids = keys.Ids.Take(7).ToArray();
         }
-        return new KeyboardKinds { Keys = keys, Prefix = "profile." + found.SettingsKey + ".", Guessed = true };
+        // The G915 X's pictures come from projects that lit every id on the keyboard (docs/G915X.md), so they aren't a guess.
+        bool known = file.StartsWith("g915-x");
+        return new KeyboardKinds { Keys = keys, Prefix = "profile." + found.SettingsKey + ".", Guessed = !known };
     }
 
     static KeyLayout LoadLayout(string file, string name)

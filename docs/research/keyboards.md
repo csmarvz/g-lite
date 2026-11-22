@@ -44,6 +44,8 @@ The hardware profile format remains a capture requirement before saving. The exi
 
 ## G915 X is a separate family
 
+Read in full on 2026-11-22, with the pictures G-Lite took from them: [../G915X.md](../G915X.md).
+
 Two MIT-licensed focused references were inspected:
 
 - [TheMorpheus407/g915x-heatmap](https://github.com/TheMorpheus407/g915x-heatmap), especially [PROTOCOL.md](https://github.com/TheMorpheus407/g915x-heatmap/blob/50e72459d4e03f1aff7fff41b99f749545ea7b0a/PROTOCOL.md): an author-verified **C356** path, `8071` effects and `8081` per-key batches/commit, G-key/media/logo IDs, host ownership and capture extraction.
