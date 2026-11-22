@@ -1,7 +1,19 @@
 {
   "name": "G915 TKL LIGHTSPEED",
+  "shaped": [
+    "Logo",
+    "Lightspeed",
+    "Bluetooth",
+    "Game",
+    "Light",
+    "Prev",
+    "Play",
+    "Next",
+    "Mute",
+    "Wheel"
+  ],
   "rows": [
-    "Logo|_4.125|Light:.75|_5.25|Prev:.75|_.25|Play:.75|_.25|Next:.75|_.25|Mute:.75",
+    "Logo|_1|Lightspeed|Bluetooth|Game|Light|_5|Prev|Play|Next|Mute|_.35|Wheel:2.8",
     "_.5",
     "Esc|_1|F1|F2|F3|F4|_.5|F5|F6|F7|F8|_.5|F9|F10|F11|F12|_.25|PrtSc|ScrLk|Pause",
     "_.5",
@@ -12,7 +24,7 @@
     "Ctrl:1.25|Win:1.25|Alt:1.25|:6.25|AltGr:1.25|Fn:1.25|Menu:1.25|Ctrl:1.25|_.25|←|↓|→"
   ],
   "ids": [
-    "D2 99 9E 9B 9D 9C",
+    "D2 -- -- -- 99 9E 9B 9D 9C --",
     "",
     "26 37 38 39 3A 3B 3C 3D 3E 3F 40 41 42 43 44 45",
     "",

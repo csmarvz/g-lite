@@ -16,8 +16,12 @@ class KeyboardKinds
     public int[] BrightnessLevels;
     // The names of the keys whose bindings the profile holds first (G1-G5); null when G-Lite doesn't edit them.
     public string[] GKeys;
-    // The Game mode key's list of keys can be set (0x4522, tried on the G815; OpenGHub couldn't on a G915, so only the G815 for now).
-    public bool GameMode;
+    // The G keys come from a layout seen in one report (the G915 TKL's F1-F12) or inferred (the G915's G1-G5, as the G815's), so
+    // they're shown only when 0x8100 counts exactly them and M1-M3, and the view says it's experimental.
+    public bool GKeysExperimental;
+    // Whether the Game view can set the Game mode key's list of keys (0x4522): tried on the G815; offered as experimental on the
+    // G915s, which have 0x4522 but where OpenGHub saw it change nothing; shown without picking on the G915 X, which has 0x4523 instead.
+    public GameModeSupport GameMode;
     // Wave 0x04 also goes up (direction 7) and down (2) on the G815, and 0 cycles through every direction; 4, 5, 9 and 10 change
     // nothing (tried on an owner's keyboard). The G915s wait for an owner.
     public bool VerticalWave;
@@ -48,7 +52,11 @@ class KeyboardKinds
         }
         // The G915 X's pictures come from projects that lit every id on the keyboard (docs/G915X.md), so they aren't a guess.
         bool known = file.StartsWith("g915-x");
-        return new KeyboardKinds { Keys = keys, Prefix = "profile." + found.SettingsKey + ".", Guessed = !known };
+        return new KeyboardKinds
+        {
+            Keys = keys, Prefix = "profile." + found.SettingsKey + ".", Guessed = !known,
+            GameMode = known ? GameModeSupport.NotImplemented : GameModeSupport.None
+        };
     }
 
     static KeyLayout LoadLayout(string file, string name)
@@ -60,14 +68,24 @@ class KeyboardKinds
 
     public static readonly KeyboardKinds
         G515 = new KeyboardKinds { Keys = KeyLayout.Load("g515-tkl.json"), Prefix = "profile.g515.", Saves = true },
-        G915Tkl = new KeyboardKinds { Keys = KeyLayout.Load("g915-tkl.json"), Prefix = "profile.g915.", Profile = true },
-        G915 = new KeyboardKinds { Keys = KeyLayout.Load("g915.json"), Prefix = "profile.g915.", Profile = true },
+        G915Tkl = new KeyboardKinds
+        {
+            Keys = KeyLayout.Load("g915-tkl.json"), Prefix = "profile.g915.", Profile = true, GameMode = GameModeSupport.Experimental,
+            GKeys = new[] { "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12" }, GKeysExperimental = true
+        },
+        G915 = new KeyboardKinds
+        {
+            Keys = KeyLayout.Load("g915.json"), Prefix = "profile.g915.", Profile = true, GameMode = GameModeSupport.Experimental,
+            GKeys = new[] { "G1", "G2", "G3", "G4", "G5" }, GKeysExperimental = true
+        },
         G815 = new KeyboardKinds { Keys = KeyLayout.Load("g815.json"), Prefix = "profile.g815.", Profile = true, NoIdleTimes = true,
             ReloadThroughHostMode = true, BrightnessLevels = new[] { 0, 12, 25, 50, 100 },
-            GKeys = new[] { "G1", "G2", "G3", "G4", "G5" }, GameMode = true, VerticalWave = true,
+            GKeys = new[] { "G1", "G2", "G3", "G4", "G5" }, GameMode = GameModeSupport.Tested, VerticalWave = true,
             Intensity = true },
         G512X = new KeyboardKinds
         {
             Keys = KeyLayout.Load("g512-x-75.json"), Prefix = "profile.g512x.", Bar = Enumerable.Range(0xA0, 33).ToArray()
         };
 }
+
+enum GameModeSupport { None, Tested, Experimental, NotImplemented }

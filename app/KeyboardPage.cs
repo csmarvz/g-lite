@@ -120,6 +120,7 @@ class KeyboardPage : DevicePage
     // The keys the Game mode key turns off besides Windows and Menu, as USB usages (GameModeKeys). They're live, like a lighting not
     // saved: kept in settings and presets, and sent again whenever a connection opens (Opened), since the keyboard forgets them when
     // it loses power, and when G HUB lets go of the keyboard. Replaced, never changed in place, since Opened reads it on the queue.
+    // gameMode: the Game view sets the list; the view may also be shown without it (GameModeSupport.NotImplemented).
     readonly bool gameMode;
     volatile List<int> gameKeys = new List<int>();
     readonly KeyPicture gamePicture;
@@ -403,9 +404,10 @@ class KeyboardPage : DevicePage
         sleepBox = Choice(idle, "Turn off after", SleepText.Skip(never).ToArray(), 156, i => current.Sleep = SleepSecs[i + never]);
         if (note) foreach (Control control in idle.Controls) if (control != noteText && control.Top > 30) control.Visible = false;
 
-        gameMode = kind.GameMode && found.Has(0x4522);
+        gameMode = (kind.GameMode == GameModeSupport.Tested || kind.GameMode == GameModeSupport.Experimental) && found.Has(0x4522);
+        bool gameShown = gameMode || kind.GameMode == GameModeSupport.NotImplemented;
         if (kind.GKeys != null) views.Add(ButtonsView);
-        if (gameMode) views.Add(GameView);
+        if (gameShown) views.Add(GameView);
         if (views.Count > 1)
         {
             // Right of the preset row, which reaches 436 while a preset is named: three views get 64 px each, so Game mode is "Game".
@@ -415,21 +417,30 @@ class KeyboardPage : DevicePage
                 636 - pickWidth, 72, pickWidth, 32);
             viewPick.Picked += index => { if (index >= 0 && index < views.Count) ShowView(views[index]); };
         }
-        if (gameMode)
+        if (gameShown)
         {
-            gameKeys = GameModeKeys.FromText(Settings.Get(GameKeysSetting));
+            if (gameMode) gameKeys = GameModeKeys.FromText(Settings.Get(GameKeysSetting));
             gameBox = Ui.Add(this, new RoundedBox { Visible = false }, 20, 118, 616, 543);
             Ui.Text(gameBox, "Game mode", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
-            var gameNote = Ui.Text(gameBox,
-                "Select the keys you want to disable while gaming. Windows and Menu keys are always disabled in Game mode. Changes apply immediately and can be saved in your G-Lite presets, but not in the keyboard's on-board memory.",
-                14, 36, () => Theme.Dim, 9f);
+            string gameText = "Select the keys you want to disable while gaming. Windows and Menu keys are always disabled in Game mode. "
+                + "Changes apply immediately and can be saved in your G-Lite presets, but not in the keyboard's on-board memory.";
+            if (kind.GameMode == GameModeSupport.Experimental)
+                gameText = "Experimental, not tried on a G915 yet. " + gameText;
+            if (!gameMode)
+                gameText = "Not implemented yet: this keyboard sets its Game mode keys through a feature G-Lite doesn't know, "
+                    + "so keys can't be selected here.";
+            var gameNote = Ui.Text(gameBox, gameText, 14, 36, () => Theme.Dim, 9f);
             gameNote.AutoSize = false;
             gameNote.Size = new Size(588, 56);
             // Tall enough that the width limits the keys, so the picture spans the box like the Clear button's column below.
             gamePicture = Ui.Add(gameBox, new KeyPicture(kind.Keys) { Picking = true, GameModeKey = "Game" }, 14, 96, 588, 210);
             gamePicture.AccessibleName = "Game mode keys";
-            gamePicture.FixedIds = new HashSet<int>(GameModeKeys.AlwaysOff.Select(GameModeKeys.LightingId));
-            gamePicture.CanPick = id => GameModeKeys.CanPick(GameModeKeys.Usage(id));
+            // The G915s' Fn key has the id the right Windows key has on the G815, and stays on.
+            var keyNames = kind.Keys.KeyNames();
+            var keyIds = kind.Keys.KeyIds();
+            gamePicture.FixedIds = !gameMode ? new HashSet<int>() : new HashSet<int>(keyIds.Where((id, key) =>
+                id >= 0 && GameModeKeys.AlwaysOff.Contains(GameModeKeys.Usage(id)) && keyNames[key] != "Fn"));
+            gamePicture.CanPick = id => gameMode && GameModeKeys.CanPick(GameModeKeys.Usage(id));
             gamePicture.Label = (id, name) => GameModeKeys.Typed(GameModeKeys.Usage(id)) ?? name;
             gamePicture.IdPicked += id =>
             {
@@ -438,8 +449,11 @@ class KeyboardPage : DevicePage
                 if (!keys.Remove(usage)) keys.Add(usage);
                 SetGameKeys(keys);
             };
-            clearGame = Ui.Add(gameBox, new FlatButton { Text = "Clear", AccessibleName = "Clear the Game mode keys" }, 14, 318, 100, 32);
+            clearGame = Ui.Add(gameBox, new FlatButton { Text = "Clear", AccessibleName = "Clear the Game mode keys", Visible = gameMode },
+                14, 318, 100, 32);
             clearGame.Click += (s, e) => SetGameKeys(new int[0]);
+            gamePicture.Resize += (s, e) => AlignClear();
+            AlignClear();
         }
         if (kind.GKeys != null)
         {
@@ -876,7 +890,7 @@ class KeyboardPage : DevicePage
         if (model == null) return;
         iso = true;
         picture.SetModel(model);
-        if (gamePicture != null) gamePicture.SetModel(model);
+        if (gamePicture != null) { gamePicture.SetModel(model); AlignClear(); }
         keyField = null;
         force = true;
         if (Sampling) SyncScreen();
@@ -1201,7 +1215,7 @@ class KeyboardPage : DevicePage
     void ShowViews()
     {
         if (viewPick == null) return;
-        viewPick.Visible = gKeys != null || gameMode;
+        viewPick.Visible = gKeys != null || views.Contains(GameView);
         viewPick.Index = views.IndexOf(openView);
         viewPick.Off = gKeys == null && views.Contains(ButtonsView) ? new[] { views.IndexOf(ButtonsView) } : new int[0];
         viewPick.Invalidate();
@@ -1211,7 +1225,9 @@ class KeyboardPage : DevicePage
             // The Screen effect stops Save, and its box is hidden here: the G keys wait until it's off.
             bool screening = Screening;
             buttonRows.Show(kind.GKeys, gKeys, !broken && !screening,
-                screening ? "Turn off the " + EffectName + " effect to change the G keys." : "Changes take effect once saved to the keyboard.");
+                screening ? "Turn off the " + EffectName + " effect to change the G keys."
+                    : kind.GKeysExperimental ? "Experimental: changes take effect once saved to the keyboard."
+                    : "Changes take effect once saved to the keyboard.");
         }
         if (gameBox != null)
         {
@@ -1219,6 +1235,9 @@ class KeyboardPage : DevicePage
             ShowGameKeys();
         }
     }
+
+    // Clear lines up with the drawn keyboard, which a narrow layout (a TKL) leaves centred in the picture.
+    void AlignClear() { clearGame.Left = gamePicture.Left + gamePicture.DrawnLeft; }
 
     void ShowGameKeys()
     {
@@ -1719,10 +1738,11 @@ class KeyboardPage : DevicePage
             if (kind.Profile && (lighting == null || kind.GKeys != null))
                 try
                 {
-                    int sector;
-                    var profile = G915Lighting.ReadProfile(hidpp, out sector);
+                    int sector, buttons;
+                    var profile = G915Lighting.ReadProfile(hidpp, out sector, out buttons);
                     if (lighting == null) saved = G915Lighting.Decode(profile, G915Lighting.Keys(clusters), kind.Intensity);
-                    if (kind.GKeys != null) keysRead = G915Lighting.ReadButtons(profile, kind.GKeys.Length);
+                    if (kind.GKeys != null && (!kind.GKeysExperimental || buttons == kind.GKeys.Length + 3))
+                        keysRead = G915Lighting.ReadButtons(profile, kind.GKeys.Length);
                 }
                 catch (Exception) { }
             if (lighting != null && startedAt == previewSequence && !screening)

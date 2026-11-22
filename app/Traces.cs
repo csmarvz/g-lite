@@ -98,6 +98,12 @@ class Script : IDisposable
         });
     }
 
+    // Whether a key of the visible picking picture can be picked, without picking it.
+    public bool CanClick(string key)
+    {
+        return All<KeyPicture>().Single(picture => picture.Visible && picture.Picking).CanPress(key);
+    }
+
     public void Click(string key)
     {
         Do("click " + key, () => All<KeyPicture>().Single(picture => picture.Visible && picture.Picking).PressKey(key));
@@ -336,7 +342,7 @@ static class Traces
             script.Press("Save to M1");
             script.Pick("Effect", "Wave");
             script.Press("Revert");
-            script.Menu("Backups", "Restore the factory lighting");
+            script.Menu("Backups", "Restore the factory profile");
             script.Pick("G-Lite preset", "Green");
             script.Pick("Onboard profile", "M2");
             script.Pick("Effect", "Wave");
@@ -816,6 +822,73 @@ static class Traces
         }
     }
 
+    // Game mode on a G915 TKL, experimental: W picked and sent like on the G815; Fn, where the G815 has its right Windows key, isn't
+    // hatched or pickable.
+    static string G915Game()
+    {
+        var found = new FoundDevice
+        {
+            Key = "trace|g915game", Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard",
+            Link = "LIGHTSPEED", Index = 1, WirelessId = 0x408E,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x4522, 0x8040, 0x8071, 0x8081, 0x8100 }
+        };
+        var keyboard = new FakeG915();
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard, null)))
+        {
+            script.Pick("View", "Game");
+            script.Click("W");
+            script.Do("check the keyboard's Game mode list", () => CheckGameKeys(keyboard, 0x1A));
+            return script.Text + "Fn pickable: " + Pickable(script, "Fn") + "\n";
+        }
+    }
+
+    // The G915 TKL's F keys in the Bindings view, experimental: F1 set to Disabled and saved into slot 1 of the profile (0x20).
+    // A G915 whose 0x8100 counts other than G1-G5 and M1-M3 gets no bindings.
+    static string G915Keys()
+    {
+        var found = new FoundDevice
+        {
+            Key = "trace|g915keys", Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard",
+            Link = "LIGHTSPEED", Index = 1, WirelessId = 0x408E,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 }
+        };
+        var keyboard = new FakeG915();
+        string text;
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard, null)))
+        {
+            script.Pick("View", "Bindings");
+            script.Pick("F1", "Disabled");
+            script.Press("Save to M1");
+            text = script.Text + "buttons after the save: "
+                + BitConverter.ToString(keyboard.Sectors[1], 0x20, 0x3C).Replace("-", "") + "\n";
+        }
+        var full = new FoundDevice
+        {
+            Key = "trace|g915full", Name = "G915 LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard",
+            Link = "LIGHTSPEED", Index = 1, WirelessId = 0x407C,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 }
+        };
+        using (var script = Begin(() => DeviceTable.For(full).Make(full, new FakeG915 { ButtonSlots = 15 }, null)))
+            return text + "a G915 counting 15 slots:\n" + script.Text;
+    }
+
+    // The G915 X has no 0x4522: its Game view shows the picture with nothing to pick, and nothing is sent.
+    static string G915XGame()
+    {
+        var found = new FoundDevice
+        {
+            Key = "trace|g915xgame", Name = "G915 X LIGHTSPEED", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40B5,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 }
+        };
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, FakeG915.G512X(), null)))
+        {
+            script.Pick("View", "Game");
+            return script.Text + "W pickable: " + Pickable(script, "W") + "\n";
+        }
+    }
+
+    static bool Pickable(Script script, string key) { return script.CanClick(key); }
+
     // Format 4, the original PRO X SUPERLIGHT: no lighting (its 0x8070 is hidden), and a save writes format 3's fields and keeps
     // the LED records.
     static string Superlight()
@@ -987,6 +1060,9 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("g515", G515);
         yield return new KeyValuePair<string, Func<string>>("g915", G915);
         yield return new KeyValuePair<string, Func<string>>("g815", G815);
+        yield return new KeyValuePair<string, Func<string>>("g915game", G915Game);
+        yield return new KeyValuePair<string, Func<string>>("g915keys", G915Keys);
+        yield return new KeyValuePair<string, Func<string>>("g915xgame", G915XGame);
         yield return new KeyValuePair<string, Func<string>>("g512x", G512X);
         yield return new KeyValuePair<string, Func<string>>("g560", G560);
         yield return new KeyValuePair<string, Func<string>>("g512", G512);

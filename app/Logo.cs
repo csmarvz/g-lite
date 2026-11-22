@@ -28,23 +28,45 @@ static class Logo
             {
                 graphics.SmoothingMode = SmoothingMode.AntiAlias;
                 matrix.Scale(scale, scale);
-                matrix.Translate(50, 50);
-                matrix.Scale(0.9f, 0.9f);
-                matrix.Translate(-50, -50);
-                matrix.Translate(14.8f, 20);
-                matrix.Multiply(new Matrix(1, 0, -0.2493f, 1, 0, 0));
-                graphics.Transform = matrix;
-                graphics.DrawLines(pen, new[]
-                {
-                    new PointF(46, 10), new PointF(14, 10), new PointF(14, 50), new PointF(46, 50), new PointF(46, 30), new PointF(32, 30)
-                });
-                graphics.DrawLines(pen, new[] { new PointF(60, 10), new PointF(60, 50), new PointF(88, 50) });
+                DrawLetters(graphics, matrix, pen);
             }
             for (int y = 0; y < size; y++)
                 for (int x = 0; x < size; x++)
                     bitmap.SetPixel(x, y, Color.FromArgb(disc.GetPixel(x, y).A * (255 - letters.GetPixel(x, y).A) / 255, 255, 255, 255));
         }
         return bitmap;
+    }
+
+    // The icon's GL, slanted, in a square of 100 units that matrix places.
+    static void DrawLetters(Graphics graphics, Matrix matrix, Pen pen)
+    {
+        matrix.Translate(50, 50);
+        matrix.Scale(0.9f, 0.9f);
+        matrix.Translate(-50, -50);
+        matrix.Translate(14.8f, 20);
+        matrix.Multiply(new Matrix(1, 0, -0.2493f, 1, 0, 0));
+        graphics.Transform = matrix;
+        graphics.DrawLines(pen, new[]
+        {
+            new PointF(46, 10), new PointF(14, 10), new PointF(14, 50), new PointF(46, 50), new PointF(46, 30), new PointF(32, 30)
+        });
+        graphics.DrawLines(pen, new[] { new PointF(60, 10), new PointF(60, 50), new PointF(88, 50) });
+    }
+
+    // The icon in box, the disc in color with GL in background, drawn straight on graphics (the G815's logo on the key picture).
+    public static void Paint(Graphics graphics, RectangleF box, Color color, Color background)
+    {
+        using (var brush = new SolidBrush(color))
+            graphics.FillEllipse(brush, box.X + box.Width * 0.02f, box.Y + box.Height * 0.02f, box.Width * 0.96f, box.Height * 0.96f);
+        var saved = graphics.Transform;
+        using (var matrix = new Matrix())
+        using (var pen = new Pen(background, 9) { LineJoin = LineJoin.Miter })
+        {
+            matrix.Translate(box.X, box.Y);
+            matrix.Scale(box.Width / 100, box.Height / 100);
+            DrawLetters(graphics, matrix, pen);
+        }
+        graphics.Transform = saved;
     }
 
     public static Icon MakeIcon(int size)

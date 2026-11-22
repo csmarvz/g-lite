@@ -18,7 +18,7 @@ class DeviceTable
                 found.Name.ToUpper().Contains("TKL") ? KeyboardKinds.G915Tkl
                 : found.Name.ToUpper().Contains("G815") ? KeyboardKinds.G815
                 : KeyboardKinds.G915),
-            Fake = found => new FakeG915() },
+            Fake = found => new FakeG915 { ButtonSlots = found.Name.ToUpper().Contains("TKL") ? 15 : 8 } },
         new DeviceTable { Matches = found => found.IsG512X, Screen = typeof(KeyboardPage),
             Make = (found, fake, drag) => new KeyboardPage(found, fake, drag, KeyboardKinds.G512X),
             Fake = found => FakeG915.G512X() },

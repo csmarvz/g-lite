@@ -11,6 +11,9 @@ class KeyLayout
     public string[] Ids { get; set; }
     // The ids are 0x8070 zones (the G213), not lighting ids.
     public bool Zones { get; set; }
+    // The keys drawn in their own shape instead of a key cap (KeyPicture): Logo the G mark, Wheel the volume roller, others round
+    // buttons with their icon or name.
+    public string[] Shaped { get; set; }
 
     // The ISO picture, built from the ANSI one, for a keyboard whose 0x4540 layout is above 2: \ goes and Enter becomes an L from
     // the Tab row (it keeps its id), the Caps row's Enter becomes #, the left Shift shortens for <>, the right Alt is AltGr.
@@ -56,7 +59,7 @@ class KeyLayout
         }
         return new KeyLayout
         {
-            Name = Name, Zones = Zones,
+            Name = Name, Zones = Zones, Shaped = Shaped,
             Rows = rows.Select(row => string.Join("|", row)).ToArray(),
             Ids = Ids == null ? null : ids.Select(row => string.Join(" ", row)).ToArray()
         };
@@ -83,6 +86,12 @@ class KeyLayout
         return all;
     }
 
+    // The name of each key, in the order of KeyIds.
+    public List<string> KeyNames()
+    {
+        return Rows.SelectMany(row => row.Split('|')).Where(cell => !cell.StartsWith("_")).Select(cell => cell.Split(':')[0]).ToList();
+    }
+
     public static KeyLayout Load(string file)
     {
         string text;
@@ -98,6 +107,7 @@ class KeyLayout
         Func<string[], string> list = items => "[\n" + string.Join(",\n", items.Select(item => "    " + quote(item))) + "\n  ]";
         return "{\n  \"name\": " + quote(Name) + ",\n"
             + (Zones ? "  \"kind\": \"zones\",\n" : "")
+            + (Shaped != null ? "  \"shaped\": " + list(Shaped) + ",\n" : "")
             + "  \"rows\": " + list(Rows)
             + ",\n  \"ids\": " + list(Ids ?? new string[0]) + "\n}\n";
     }
@@ -108,7 +118,7 @@ class KeyLayout
         return new KeyLayout
         {
             Name = Strings(text, "name")[0], Rows = Strings(text, "rows"), Ids = Strings(text, "ids"),
-            Zones = kind != null && kind[0] == "zones"
+            Shaped = Strings(text, "shaped"), Zones = kind != null && kind[0] == "zones"
         };
     }
 

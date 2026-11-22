@@ -481,9 +481,17 @@ static class G915Lighting
 
     public static byte[] ReadProfile(Hidpp hidpp, out int sector)
     {
+        int buttons;
+        return ReadProfile(hidpp, out sector, out buttons);
+    }
+
+    // buttons: the profile's button slots, from 0x8100 fn 0 byte 5 (8 on the G815: G1-G5 and M1-M3; 15 on the G915 TKL).
+    public static byte[] ReadProfile(Hidpp hidpp, out int sector, out int buttons)
+    {
         byte feature = hidpp.FeatureIndex(0x8100);
         if (hidpp.Call(feature, 2)[0] != 1) throw new RefusedException("The keyboard isn't on its onboard profiles");
         var info = hidpp.Call(feature, 0);
+        buttons = info[5];
         int size = info[7] << 8 | info[8];
         if (info[1] != 4 || size < RecordsAt + RecordsLength + 2 || size > 0x1000)
             throw new RefusedException("Saving isn't supported on this keyboard (profile format " + info[1] + ")");

@@ -16,6 +16,8 @@ class KeyPicture : DrawnControl
     readonly Random random = new Random();
     List<int> ids = new List<int>();
     List<string> names = new List<string>();
+    readonly HashSet<int> shaped = new HashSet<int>();
+    const string LogoKey = "Logo", WheelKey = "Wheel";
     float widthInKeys, heightInKeys, keySize, offsetX, offsetY;
     byte id = 0x01, barId = 0x01;
     byte[] parameters = new byte[10], barParameters = new byte[10];
@@ -56,6 +58,7 @@ class KeyPicture : DrawnControl
         keys.Clear();
         lips.Clear();
         names.Clear();
+        shaped.Clear();
         hovered = -1;
         widthInKeys = heightInKeys = 0;
         if (!Picking) AccessibleName = layout.Name + " lighting";
@@ -69,6 +72,7 @@ class KeyPicture : DrawnControl
                 float keyWidth = parts.Length > 1 ? float.Parse(parts[1], CultureInfo.InvariantCulture) : 1;
                 float keyHeight = parts.Length > 2 ? float.Parse(parts[2], CultureInfo.InvariantCulture) : 1;
                 if (parts.Length > 3) lips[keys.Count] = float.Parse(parts[3], CultureInfo.InvariantCulture);
+                if (layout.Shaped != null && layout.Shaped.Contains(parts[0])) shaped.Add(keys.Count);
                 keys.Add(new RectangleF(x, heightInKeys, keyWidth, keyHeight));
                 names.Add(parts[0]);
                 x += keyWidth;
@@ -88,6 +92,16 @@ class KeyPicture : DrawnControl
     public float XOf(int key) { return (keys[key].X + keys[key].Width / 2) / widthInKeys; }
     public float YOf(int key) { return (keys[key].Y + Math.Min(keys[key].Height, 1) / 2) / heightInKeys; }
     public float WidthInKeys { get { return widthInKeys; } }
+
+    // Where the drawn keyboard's background starts, from the control's left edge (OnPaint centres it in the control).
+    public int DrawnLeft
+    {
+        get
+        {
+            float pad = 8 * DpiScale, size = Math.Min((Width - 2 * pad) / widthInKeys, (Height - 2 * pad) / heightInKeys);
+            return (int)Math.Round((Width - widthInKeys * size) / 2 - pad);
+        }
+    }
     public float HeightInKeys { get { return heightInKeys; } }
 
     bool Pickable(int key) { return ids[key] >= 0 && CanPick != null && CanPick(ids[key]); }
@@ -101,6 +115,8 @@ class KeyPicture : DrawnControl
                 .Where(key => ids[key] >= 0 && PickedIds.Contains(ids[key])).Select(key => names[key]));
         }
     }
+
+    public bool CanPress(string name) { int key = names.IndexOf(name); return key >= 0 && Pickable(key); }
 
     // A click on the key with this name in the layout (for the traces).
     public void PressKey(string name)
@@ -161,17 +177,47 @@ class KeyPicture : DrawnControl
         return test(Cap(keys[key])) || (top != null && test(top.Value));
     }
 
+    bool Round(int key) { return shaped.Contains(key) && names[key] != LogoKey && names[key] != WheelKey; }
+
+    // A round button (the G815's and G915's M, Game, light and media keys) is a little narrower than its slot, as on the keyboard.
+    static RectangleF Disc(RectangleF cap)
+    {
+        float size = Math.Min(cap.Width, cap.Height) * 0.86f;
+        return new RectangleF(cap.X + (cap.Width - size) / 2, cap.Y + (cap.Height - size) / 2, size, size);
+    }
+
     void FillKey(Graphics graphics, int key, Color fill)
     {
-        Ui.Fill(graphics, Cap(keys[key]), 3 * DpiScale, fill, fill);
+        var cap = Cap(keys[key]);
+        // The roller is drawn in the Game view only; lit pictures show its housing plain, like a key that's off.
+        if (shaped.Contains(key) && names[key] == WheelKey && Picking) { DrawWheel(graphics, cap); return; }
+        if (shaped.Contains(key) && names[key] == WheelKey) { Ui.Fill(graphics, cap, cap.Height * 0.28f, fill, fill); return; }
+        if (shaped.Contains(key) && names[key] == LogoKey) { DrawLogo(graphics, cap, fill); return; }
+        if (Round(key)) { using (var brush = new SolidBrush(fill)) graphics.FillEllipse(brush, Disc(cap)); return; }
+        Ui.Fill(graphics, cap, 3 * DpiScale, fill, fill);
         var top = TopRow(key);
         if (top != null) Ui.Fill(graphics, top.Value, 3 * DpiScale, fill, fill);
+    }
+
+    // A key's own shape for its outline and hatching.
+    GraphicsPath KeyPath(int key, RectangleF cap)
+    {
+        if (!shaped.Contains(key)) return Ui.Round(cap, 3 * DpiScale);
+        var path = new GraphicsPath();
+        if (names[key] == WheelKey) path.AddRectangle(cap); else path.AddEllipse(Disc(cap));
+        return path;
     }
 
     void Outline(Graphics graphics, int key, Pen pen)
     {
         var box = Cap(keys[key]);
         var top = TopRow(key);
+        if (shaped.Contains(key))
+        {
+            box.Inflate(-DpiScale, -DpiScale);
+            using (var path = KeyPath(key, box)) graphics.DrawPath(pen, path);
+            return;
+        }
         if (top == null)
         {
             using (var path = Ui.Round(
@@ -342,35 +388,171 @@ class KeyPicture : DrawnControl
                 if (gameModeKey)
                 {
                     using (var pen = new Pen(Theme.Accent, 2 * DpiScale)) Outline(graphics, key, pen);
-                    DrawJoystick(graphics, cap);
+                    DrawJoystick(graphics, Round(key) ? Disc(cap) : cap, Theme.Text);
                     continue;
                 }
                 if (fixedOff)
                     using (var hatch = new HatchBrush(HatchStyle.WideUpwardDiagonal, Color.FromArgb(120, Theme.Dim), Color.Transparent))
-                    using (var path = Ui.Round(cap, 3 * DpiScale))
+                    using (var path = KeyPath(key, cap))
                         graphics.FillPath(hatch, path);
+                var color = picked ? Theme.OnAccent : pickable ? Theme.Text : Theme.Dim;
+                if (shaped.Contains(key) && (!Round(key) || DrawIcon(graphics, key, color))) continue;
                 var label = Label != null ? Label(keyId, names[key]) : names[key];
                 if (string.IsNullOrEmpty(label)) continue;
-                var color = picked ? Theme.OnAccent : pickable ? Theme.Text : Theme.Dim;
-                var font = Ui.Get(6.5f, Ui.Regular);
+                var font = Ui.Get(Round(key) ? 5.5f : 6.5f, Ui.Regular);
                 foreach (var points in new[] { 5.5f, 4.5f })
                     if (graphics.MeasureString(label, font, PointF.Empty, format).Width > cap.Width) font = Ui.Get(points, Ui.Regular);
                 using (var brush = new SolidBrush(color)) graphics.DrawString(label, font, brush, cap, format);
             }
     }
 
-    // The icon printed on the G815's Game mode key: a ball on a stick, standing on a base.
-    void DrawJoystick(Graphics graphics, RectangleF cap)
+    // The icons printed on the round keys, drawn in the Game view; false for a key that has none.
+    bool DrawIcon(Graphics graphics, int key, Color color)
     {
-        float size = Math.Min(cap.Width, cap.Height) * 0.62f, left = cap.X + (cap.Width - size) / 2, top = cap.Y + (cap.Height - size) / 2;
-        float middle = left + size / 2, ball = size * 0.3f;
-        using (var pen = new Pen(Theme.Text, 1.2f * DpiScale))
+        var disc = Disc(Cap(keys[key]));
+        switch (names[key])
+        {
+            case "Game": DrawJoystick(graphics, disc, color); return true;
+            case "Bluetooth": DrawBluetooth(graphics, disc, color); return true;
+            case "Lightspeed": DrawLightspeed(graphics, disc, color); return true;
+            case "Light": DrawSun(graphics, disc, color); return true;
+            case "Prev": case "Play": case "Next": case "Mute": DrawMedia(graphics, disc, names[key], color); return true;
+            default: return false;
+        }
+    }
+
+    // The Game mode key's icon: a ball on a stick, standing on a round base seen from above.
+    void DrawJoystick(Graphics graphics, RectangleF cap, Color color)
+    {
+        float size = Math.Min(cap.Width, cap.Height) * 0.5f, left = cap.X + (cap.Width - size) / 2, top = cap.Y + (cap.Height - size) / 2;
+        float middle = left + size / 2, ball = size * 0.28f, depth = size * 0.13f;
+        var face = new RectangleF(left + size * 0.04f, top + size * 0.56f, size * 0.92f, size * 0.3f);
+        using (var pen = new Pen(color, 1.2f * DpiScale))
         {
             graphics.DrawEllipse(pen, middle - ball / 2, top, ball, ball);
-            graphics.DrawLine(pen, middle, top + ball, middle, top + size * 0.62f);
-            using (var path = Ui.Round(new RectangleF(left + size * 0.1f, top + size * 0.62f, size * 0.8f, size * 0.32f), size * 0.08f))
-                graphics.DrawPath(pen, path);
+            graphics.DrawLine(pen, middle, top + ball, middle, face.Y + face.Height / 2);
+            graphics.DrawEllipse(pen, face);
+            graphics.DrawLine(pen, face.Left, face.Y + face.Height / 2, face.Left, face.Y + face.Height / 2 + depth);
+            graphics.DrawLine(pen, face.Right, face.Y + face.Height / 2, face.Right, face.Y + face.Height / 2 + depth);
+            graphics.DrawArc(pen, face.X, face.Y + depth, face.Width, face.Height, 0, 180);
         }
+    }
+
+    // The Bluetooth key's icon: the Bluetooth rune.
+    void DrawBluetooth(Graphics graphics, RectangleF disc, Color color)
+    {
+        float middleX = disc.X + disc.Width / 2, middleY = disc.Y + disc.Height / 2, half = disc.Width * 0.22f, arm = half * 0.45f;
+        using (var pen = new Pen(color, 1.2f * DpiScale) { LineJoin = LineJoin.Round })
+            graphics.DrawLines(pen, new[]
+            {
+                new PointF(middleX - arm, middleY - half / 2), new PointF(middleX + arm, middleY + half / 2),
+                new PointF(middleX, middleY + half), new PointF(middleX, middleY - half),
+                new PointF(middleX + arm, middleY - half / 2), new PointF(middleX - arm, middleY + half / 2)
+            });
+    }
+
+    // The LIGHTSPEED key's icon: rays fanning up from a point, over a line, like the LIGHTSPEED mark.
+    void DrawLightspeed(Graphics graphics, RectangleF disc, Color color)
+    {
+        float middleX = disc.X + disc.Width / 2, middleY = disc.Y + disc.Height / 2, size = disc.Width;
+        using (var pen = new Pen(color, 1.1f * DpiScale) { StartCap = LineCap.Round, EndCap = LineCap.Round })
+        {
+            float originY = middleY + size * 0.12f;
+            for (int ray = 0; ray < 5; ray++)
+            {
+                double angle = Math.PI * (1.15 + ray * 0.175);
+                graphics.DrawLine(pen, middleX, originY,
+                    middleX + (float)Math.Cos(angle) * size * 0.26f, originY + (float)Math.Sin(angle) * size * 0.26f);
+            }
+            graphics.DrawLine(pen, middleX - size * 0.2f, originY, middleX + size * 0.2f, originY);
+        }
+    }
+
+    // The lighting key's icon: a sun, a ring with eight rays.
+    void DrawSun(Graphics graphics, RectangleF disc, Color color)
+    {
+        float middleX = disc.X + disc.Width / 2, middleY = disc.Y + disc.Height / 2, size = disc.Width;
+        float ring = size * 0.11f;
+        using (var pen = new Pen(color, 1.2f * DpiScale) { StartCap = LineCap.Round, EndCap = LineCap.Round })
+        {
+            graphics.DrawEllipse(pen, middleX - ring, middleY - ring, 2 * ring, 2 * ring);
+            for (int ray = 0; ray < 8; ray++)
+            {
+                double angle = ray * Math.PI / 4;
+                float cos = (float)Math.Cos(angle), sin = (float)Math.Sin(angle);
+                graphics.DrawLine(pen, middleX + cos * size * 0.19f, middleY + sin * size * 0.19f,
+                    middleX + cos * size * 0.27f, middleY + sin * size * 0.27f);
+            }
+        }
+    }
+
+    // The media keys' icons: previous, play and pause, next, and a speaker with a cross for mute.
+    void DrawMedia(Graphics graphics, RectangleF disc, string name, Color color)
+    {
+        float size = disc.Width * 0.44f, height = size * 0.56f;
+        float left = disc.X + (disc.Width - size) / 2, middle = disc.Y + disc.Height / 2;
+        float top = middle - height / 2, bottom = middle + height / 2;
+        float right = left + size, bar = size * 0.12f;
+        using (var brush = new SolidBrush(color))
+        {
+            // A triangle with its flat side at baseX, from top to bottom, and its tip at tipX, in the middle.
+            Action<float, float> triangle = (baseX, tipX) =>
+                graphics.FillPolygon(brush, new[] { new PointF(baseX, top), new PointF(tipX, middle), new PointF(baseX, bottom) });
+            switch (name)
+            {
+                case "Prev":
+                    graphics.FillRectangle(brush, left, top, bar, height);
+                    triangle(left + size * 0.56f, left + bar);
+                    triangle(right, left + size * 0.56f);
+                    break;
+                case "Next":
+                    triangle(left, left + size * 0.44f);
+                    triangle(left + size * 0.44f, right - bar);
+                    graphics.FillRectangle(brush, right - bar, top, bar, height);
+                    break;
+                case "Play":
+                    triangle(left, left + size * 0.56f);
+                    graphics.FillRectangle(brush, left + size * 0.66f, top, bar, height);
+                    graphics.FillRectangle(brush, right - bar, top, bar, height);
+                    break;
+                case "Mute":
+                    graphics.FillRectangle(brush, left, middle - height * 0.22f, size * 0.18f, height * 0.44f);
+                    graphics.FillPolygon(brush, new[]
+                    {
+                        new PointF(left + size * 0.16f, middle - height * 0.22f), new PointF(left + size * 0.46f, top),
+                        new PointF(left + size * 0.46f, bottom), new PointF(left + size * 0.16f, middle + height * 0.22f)
+                    });
+                    using (var pen = new Pen(color, 1.3f * DpiScale) { StartCap = LineCap.Round, EndCap = LineCap.Round })
+                    {
+                        graphics.DrawLine(pen, left + size * 0.64f, middle - height * 0.3f, right, middle + height * 0.3f);
+                        graphics.DrawLine(pen, left + size * 0.64f, middle + height * 0.3f, right, middle - height * 0.3f);
+                    }
+                    break;
+            }
+        }
+    }
+
+    // The logo, lit in its colour: G-Lite's own icon, the disc with GL cut out, in place of Logitech's G.
+    void DrawLogo(Graphics graphics, RectangleF cap, Color color)
+    {
+        float size = Math.Min(cap.Width, cap.Height) * 1.04f;
+        Logo.Paint(graphics, new RectangleF(cap.X + (cap.Width - size) / 2, cap.Y + (cap.Height - size) / 2, size, size), color,
+            Theme.PictureBackground);
+    }
+
+    // The volume roller in its housing above the media keys: not lit, not a key.
+    void DrawWheel(Graphics graphics, RectangleF cap)
+    {
+        Ui.Fill(graphics, cap, cap.Height * 0.28f, Ui.Mix(Theme.PictureBackground, Theme.KeyOff, 0.55f),
+            Ui.Mix(Theme.PictureBackground, Theme.KeyOff, 0.55f));
+        var roller = new RectangleF(cap.X + cap.Width * 0.12f, cap.Y + cap.Height * 0.14f, cap.Width * 0.76f, cap.Height * 0.5f);
+        Ui.Fill(graphics, roller, 2 * DpiScale, Ui.Mix(Theme.KeyOff, Theme.Text, 0.35f), Ui.Mix(Theme.KeyOff, Theme.Text, 0.35f));
+        using (var pen = new Pen(Ui.Mix(Theme.KeyOff, Theme.Text, 0.15f), DpiScale))
+            for (int groove = 1; groove < 5; groove++)
+            {
+                float y = roller.Y + roller.Height * groove / 5;
+                graphics.DrawLine(pen, roller.X + DpiScale, y, roller.Right - DpiScale, y);
+            }
     }
 
     void PaintLive(Graphics graphics)

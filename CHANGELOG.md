@@ -13,6 +13,11 @@
 
 ### Changed
 
+- G815, G915, G915 TKL, G915 X and G915 X TKL: their key pictures look like the keyboard. The M keys (G6–G9 on the G915 X), Game mode, lighting and media keys are round (in the Game view with their symbols printed on them), the logo is G-Lite's GL in its colour, and the volume roller sits above the media keys. The G915s also show their LIGHTSPEED and Bluetooth buttons, and the G915's numpad + and Enter are two rows tall.
+- G915 and G915 TKL: the Game view to pick the keys the Game mode key turns off, as on the G815, marked experimental: not tried on one yet, and another project found a G915 kept every key working.
+- G915 TKL and G915: a Bindings view, experimental, as on the G815: the G915 TKL's F1–F12 (its G keys) and the G915's G1–G5, saved to the active onboard profile. It only shows when the keyboard reports the button slots expected. Restore the factory profile now brings back their factory bindings too.
+- G915 X and G915 X TKL: a Game view that shows the keyboard but can't pick keys yet; they set their Game mode keys through a feature G-Lite doesn't know.
+- Demo: the G915, G915 TKL, G915 X and G915 X TKL are listed together, in that order.
 - Mice and the G815's G keys: a button set to no action in G HUB now shows as Disabled.
 
 ## [0.0.34-alpha] - 2026-11-21

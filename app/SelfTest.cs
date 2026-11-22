@@ -901,6 +901,20 @@ static class SelfTest
             Check(keyIds.Where(i => i >= 0).All(i => (i >= 0x01 && i <= 0x6F) || (i >= 0x99 && i <= 0xFE)),
                 file + " key ids are lighting ids");
         }
+        var g815Layout = KeyLayout.Load("g815.json");
+        var g815Names = g815Layout.Rows.SelectMany(row => row.Split('|')).Where(cell => !cell.StartsWith("_"))
+            .Select(cell => cell.Split(':')[0]).ToList();
+        Check(LayoutFiles.All(file => (KeyLayout.Load(file).Shaped ?? new string[0]).All(name =>
+                KeyLayout.Load(file).Rows.Any(row => row.Split('|').Any(cell => cell.Split(':')[0] == name))))
+            && g815Layout.Shaped.Length == 12 && g815Layout.KeyIds()[g815Names.IndexOf("Wheel")] == -1,
+            "every shaped key is in its layout; the G815's volume roller has no lighting id");
+        Check(LayoutFiles.All(file => KeyLayout.Load(file).KeyNames().Count == KeyLayout.Load(file).KeyIds().Count)
+            && KeyboardKinds.G815.GameMode == GameModeSupport.Tested && KeyboardKinds.G915.GameMode == GameModeSupport.Experimental
+            && KeyboardKinds.G915Tkl.GameMode == GameModeSupport.Experimental
+            && KeyboardKinds.For(new FoundDevice { Name = "G915 X LIGHTSPEED TKL", Kind = "keyboard" }).GameMode
+                == GameModeSupport.NotImplemented
+            && KeyboardKinds.For(new FoundDevice { Name = "PRO X 60", Kind = "keyboard" }).GameMode == GameModeSupport.None,
+            "Game mode: set on the G815, experimental on the G915s, shown without picking on the G915 X models, none elsewhere");
         // The built ISO pictures were checked equal to the hand-made g515-tkl-iso.json and g213-iso.json they replaced.
         foreach (var file in LayoutFiles)
         {
@@ -980,7 +994,8 @@ static class SelfTest
             }
             var kept = System.IO.File.Exists(path) ? KeyLayout.Parse(System.IO.File.ReadAllText(path)) : null;
             Check(kept != null && kept.Rows.SequenceEqual(builtIso.Rows) && kept.Ids.SequenceEqual(builtIso.Ids)
-                && kept.Zones == builtIso.Zones && kept.Name == builtIso.Name,
+                && kept.Zones == builtIso.Zones && kept.Name == builtIso.Name
+                && (kept.Shaped ?? new string[0]).SequenceEqual(builtIso.Shaped ?? new string[0]),
                 "models/iso/" + System.IO.Path.GetFileName(path) + " is the ISO picture built from " + file
                     + " (run build\\selftest.exe --record after changing a layout)");
         }
