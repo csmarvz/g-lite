@@ -2,10 +2,13 @@
 
 ## [Unreleased]
 
+## [0.0.38-alpha] - 2026-11-23
+
 ### Added
 
 - Settings: a Services box listing G HUB, Logitech Gaming Software and the Logitech LampArray Service (which hands Logitech devices to Windows Dynamic Lighting), whether each runs, with Stop and Start, and Stop all. Stop ends their programs, stops their services and keeps them from starting with Windows; Start puts back what their installers set, so it works even without G-Lite's settings, and Task Manager or Services can undo it too. Windows asks for administrator rights once per click. A last row shows whether Windows Dynamic Lighting is on, with a button to its settings.
 - Settings scrolls with the mouse wheel when it doesn't fit the window, with a thin bar at the right showing where you are.
+- The site and README answer whether you need to uninstall G HUB or Logitech Gaming Software (no: stop them in Settings).
 
 ### Changed
 
