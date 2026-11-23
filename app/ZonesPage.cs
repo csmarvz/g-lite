@@ -183,15 +183,17 @@ class ZonesPage : DevicePage
         brightValue = Value(light, 14, 214, 172);
         bright = Ui.Add(light, new Slider { AccessibleName = "Brightness" }, 14, 234, 172, 24);
         bright.Changed += (s, e) => { int brightness = Math.Max(1, bright.Value); Edit(edited => edited.Bright = brightness, false); };
+        bright.MouseUp += (s, e) => RefreshControls();
         speedHead = Ui.Text(light, "Speed", 194, 214, () => Theme.Dim, 9f);
         speedValue = Value(light, 194, 214, 172);
         speed = Ui.Add(light, new Slider { AccessibleName = "Speed" }, 194, 234, 172, 24);
         speed.Changed += (s, e) =>
         {
             var effect = InfoOf(Displayed().Effect);
-            int period = effect.MaxPeriod - (effect.MaxPeriod - effect.MinPeriod) * speed.Value / 100;
+            int period = SpeedScale.Period(speed.Value, effect.MinPeriod, effect.MaxPeriod);
             Edit(edited => edited.Period = period, false);
         };
+        speed.MouseUp += (s, e) => RefreshControls();
         note = Ui.Text(light, "G-Lite sets the lighting again when it starts and when you open the " + noun + ".",
             14, 272, () => Theme.Dim, 9f);
         note.AutoSize = false;
@@ -799,13 +801,13 @@ class ZonesPage : DevicePage
         bool color = known && effect.Color && !monochrome, hasSpeed = known && effect.Speed, hasBrightness = known && displayed.Effect != 0;
         SetDimmed(brightHead, hasBrightness);
         bright.Enabled = hasBrightness;
-        // Not while it's dragged: the refresh at each send would pull the thumb (speed goes to a period and back, a step off).
+        // Not while they're dragged (the refresh at each send runs then): Brightness at 0 is kept as 1. MouseUp refreshes them.
         if (!bright.Capture) bright.Value = known ? displayed.Bright : 100;
         brightValue.Text = hasBrightness ? displayed.Bright + "%" : "";
         bright.Invalidate();
         SetDimmed(speedHead, hasSpeed);
         speed.Enabled = hasSpeed;
-        if (hasSpeed && !speed.Capture) speed.Value = (effect.MaxPeriod - displayed.Period) * 100 / (effect.MaxPeriod - effect.MinPeriod);
+        if (hasSpeed && !speed.Capture) speed.Value = SpeedScale.Percent(displayed.Period, effect.MinPeriod, effect.MaxPeriod);
         speedValue.Text = hasSpeed ? speed.Value + "%" : "";
         speed.Invalidate();
         foreach (var control in plainLight) control.Visible = !screening;

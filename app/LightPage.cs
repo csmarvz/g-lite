@@ -191,7 +191,7 @@ class LightPage : DevicePage
         speed = Ui.Add(backBox, new Slider { AccessibleName = "Speed" }, 366, 54, 236, 24);
         speed.Changed += (s, e) =>
         {
-            int period = LightState.MaxPeriod - (LightState.MaxPeriod - LightState.MinPeriod) * speed.Value / 100;
+            int period = SpeedScale.Period(speed.Value, LightState.MinPeriod, LightState.MaxPeriod);
             Edit(edited => edited.Period = period, false);
         };
         Ui.Text(backBox, "Effect", 14, 88, () => Theme.Dim, 9f);
@@ -598,7 +598,7 @@ class LightPage : DevicePage
         if (plain) colors.RefreshControls(light == null ? 0xFFFFFF : light.Colors[picked == 0 ? 0 : picked - 1], zoned);
         SetDimmed(speedHead, moving);
         speed.Enabled = moving;
-        if (light != null) speed.Value = (LightState.MaxPeriod - light.Period) * 100 / (LightState.MaxPeriod - LightState.MinPeriod);
+        if (light != null) speed.Value = SpeedScale.Percent(light.Period, LightState.MinPeriod, LightState.MaxPeriod);
         speedValue.Text = moving ? speed.Value + "%" : "";
         speed.Invalidate();
         backBox.Height = backBox.Width * (screening ? 148 : 268) / 616;

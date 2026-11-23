@@ -749,6 +749,21 @@ class ScrollPanel : Control
     }
 }
 
+// A Speed slider's percent and an effect's period, 100% the shortest. Both ways round, so a period read back gives the percent it
+// came from: truncating both left the slider a step off (Ripple's 2–200 ms stuck at 50% with the arrow keys).
+static class SpeedScale
+{
+    public static int Period(int percent, int minPeriod, int maxPeriod)
+    {
+        return maxPeriod - (int)Math.Round((maxPeriod - minPeriod) * percent / 100.0);
+    }
+
+    public static int Percent(int period, int minPeriod, int maxPeriod)
+    {
+        return (int)Math.Round((maxPeriod - period) * 100.0 / (maxPeriod - minPeriod));
+    }
+}
+
 class StatusLine : DrawnControl
 {
     string text = "";

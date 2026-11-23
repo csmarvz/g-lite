@@ -48,7 +48,7 @@ pick Effect Breathe
   8070 fn3  01 04 30 D0 50 13 88 00 32
   8070 fn3  02 04 30 D0 50 13 88 00 32
   8070 fn3  03 04 30 D0 50 13 88 00 32
-  = status "Set by G-Lite, not saved to the speakers" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Breathe (no Wave) <Color 30D050> Brightness=50 Speed=78 [Revert (off)]
+  = status "Set by G-Lite, not saved to the speakers" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Breathe (no Wave) <Color 30D050> Brightness=50 Speed=79 [Revert (off)]
 slide Speed 80
   8070 fn3  00 04 30 D0 50 12 C0 00 32
   8070 fn3  01 04 30 D0 50 12 C0 00 32

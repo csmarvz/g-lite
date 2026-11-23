@@ -181,7 +181,7 @@ class MousePage : DevicePage
         {
             var edited = Light();
             var effect = MouseProtocol.EffectById(edited.Effect);
-            edited.Period = effect.MaxPeriod - (effect.MaxPeriod - effect.MinPeriod) * speed.Value / 100;
+            edited.Period = SpeedScale.Period(speed.Value, effect.MinPeriod, effect.MaxPeriod);
             Changed(false);
         };
 
@@ -312,7 +312,7 @@ class MousePage : DevicePage
         bright.Invalidate();
         SetDimmed(speedHead, hasSpeed);
         speed.Enabled = hasSpeed && live;
-        if (hasSpeed) speed.Value = (effect.MaxPeriod - light.Period) * 100 / (effect.MaxPeriod - effect.MinPeriod);
+        if (hasSpeed) speed.Value = SpeedScale.Percent(light.Period, effect.MinPeriod, effect.MaxPeriod);
         speedValue.Text = hasSpeed ? speed.Value + "%" : "";
         speed.Invalidate();
 

@@ -74,7 +74,7 @@ open
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8040 fn1
-  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Cycle Direction=- (off) Brightness=80 Speed=52 Intensity=50 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Cycle Direction=- (off) Brightness=80 Speed=53 Intensity=50 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
 pick View Bindings
   = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings G1=F1 G2=F2 G3=F3 G4=F4 G5=F5 Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
 pick G1 Mute
@@ -494,19 +494,19 @@ click K
   4522 fn1  0E
   = status "Matches the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Game Game mode keys=K [Clear] Onboard profile=M2 [Revert] [Save to M2 (off)]
 pick View Settings
-  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Static <Your color> Direction=- (off) Brightness=80 Speed=78 (off) Intensity=100 (off) Onboard profile=M2 [Revert] [Save to M2 (off)]
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Static <Your color> Direction=- (off) Brightness=80 Speed=79 (off) Intensity=100 (off) Onboard profile=M2 [Revert] [Save to M2 (off)]
 G HUB takes the keyboard off its onboard profiles
   8100 fn4
   8100 fn2
   8040 fn1
-  = status "G HUB or another app has taken over the keyboard. Close it to save." (red) [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Static <Your color> Direction=- (off) Brightness=80 Speed=78 (off) Intensity=100 (off) [Revert] [Save to keyboard (off)]
+  = status "G HUB or another app has taken over the keyboard. Close it to save." (red) [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Static <Your color> Direction=- (off) Brightness=80 Speed=79 (off) Intensity=100 (off) [Revert] [Save to keyboard (off)]
 pick Effect Breathe
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 03 FF 00 00 13 88 00 64 00 00 00 01
   8071 fn1  01 02 FF 00 00 13 88 00 64 00 00 00 01
-  = status "G HUB or another app has taken over the keyboard. Close it to save." (red) [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Breathe <Your color> Direction=- (off) Brightness=80 Speed=78 Intensity=100 [Revert] [Save to keyboard (off)]
+  = status "G HUB or another app has taken over the keyboard. Close it to save." (red) [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Breathe <Your color> Direction=- (off) Brightness=80 Speed=79 Intensity=100 [Revert] [Save to keyboard (off)]
 G HUB closes
   8100 fn4
   8040 fn1
@@ -554,23 +554,23 @@ G HUB closes
   8071 fn1  00 03 FF 00 00 13 88 00 64 00 00 00 01
   8071 fn1  01 02 FF 00 00 13 88 00 64 00 00 00 01
   8040 fn1
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Breathe <Your color> Direction=- (off) Brightness=80 Speed=78 Intensity=100 Onboard profile=M2 [Revert] [Save to M2]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Breathe <Your color> Direction=- (off) Brightness=80 Speed=79 Intensity=100 Onboard profile=M2 [Revert] [Save to M2]
 pick Effect Wave
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 02 00 00 00 00 00 13 88 64 00 00 01
   8071 fn1  01 04 00 00 00 00 00 00 88 01 64 13 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Wave Direction=Right Brightness=80 Speed=78 Intensity=100 Onboard profile=M2 [Revert] [Save to M2]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Wave Direction=Right Brightness=80 Speed=79 Intensity=100 Onboard profile=M2 [Revert] [Save to M2]
 pick Direction Up
   8040 fn1
   8071 fn5  01 03 04
   8071 fn8  01 01
   8071 fn1  00 02 00 00 00 00 00 13 88 64 00 00 01
   8071 fn1  01 04 00 00 00 00 00 00 88 07 64 13 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Wave Direction=Up Brightness=80 Speed=78 Intensity=100 Onboard profile=M2 [Revert] [Save to M2]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Wave Direction=Up Brightness=80 Speed=79 Intensity=100 Onboard profile=M2 [Revert] [Save to M2]
 quit
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Wave Direction=Up Brightness=80 Speed=78 Intensity=100 Onboard profile=M2 [Revert] [Save to M2]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Wave Direction=Up Brightness=80 Speed=79 Intensity=100 Onboard profile=M2 [Revert] [Save to M2]
 open
   4522 fn3
   4522 fn1  0E
@@ -659,6 +659,6 @@ open
   8071 fn1  00 02 00 00 00 00 00 13 88 64 00 00 01
   8071 fn1  01 04 00 00 00 00 00 00 88 07 64 13 01
   8040 fn1
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Wave Direction=Up Brightness=80 Speed=78 Intensity=100 Onboard profile=M1 [Revert] [Save to M1]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Wave Direction=Up Brightness=80 Speed=79 Intensity=100 Onboard profile=M1 [Revert] [Save to M1]
 check the Game mode list is sent again
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Wave Direction=Up Brightness=80 Speed=78 Intensity=100 Onboard profile=M1 [Revert] [Save to M1]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Settings Effect=Wave Direction=Up Brightness=80 Speed=79 Intensity=100 Onboard profile=M1 [Revert] [Save to M1]

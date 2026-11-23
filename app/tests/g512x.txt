@@ -55,14 +55,14 @@ pick Effect Wave
   8071 fn5  01 03 04
   8071 fn1  00 04 00 FF 00 00 00 00 13 88 64 01 01
   8071 fn1  01 04 00 FF 00 00 00 00 13 88 64 01 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=- (off) Lighting per zone=off Effect=Wave Direction=Right Brightness=80 Speed=78 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=- (off) Lighting per zone=off Effect=Wave Direction=Right Brightness=80 Speed=79 Intensity=100 (off) [Revert]
 pick Effect Ripple
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 05 30 D0 50 FF 00 00 00 14 00 00 01
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=- (off) Lighting per zone=off Effect=Ripple <Color 30D050> Direction=- (off) Brightness=80 Speed=90 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=- (off) Lighting per zone=off Effect=Ripple <Color 30D050> Direction=- (off) Brightness=80 Speed=91 Intensity=100 (off) [Revert]
 slide Brightness 50
   8040 fn1
   8040 fn2  00 32
@@ -70,46 +70,46 @@ slide Brightness 50
   8071 fn5  01 03 04
   8071 fn1  00 05 30 D0 50 FF 00 00 00 14 00 00 01
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=- (off) Lighting per zone=off Effect=Ripple <Color 30D050> Direction=- (off) Brightness=50 Speed=90 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=- (off) Lighting per zone=off Effect=Ripple <Color 30D050> Direction=- (off) Brightness=50 Speed=91 Intensity=100 (off) [Revert]
 press Lighting per zone
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 05 30 D0 50 FF 00 00 00 14 00 00 01
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Keys Lighting per zone=on Effect=Ripple <Color 30D050> Direction=- (off) Brightness=50 Speed=90 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Keys Lighting per zone=on Effect=Ripple <Color 30D050> Direction=- (off) Brightness=50 Speed=91 Intensity=100 (off) [Revert]
 pick Part Light bar
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Light bar Lighting per zone=on Effect=Static (no Ripple) <Color 30D050> Direction=- (off) Brightness=50 Speed=90 (off) Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Light bar Lighting per zone=on Effect=Static (no Ripple) <Color 30D050> Direction=- (off) Brightness=50 Speed=91 (off) Intensity=100 (off) [Revert]
 pick Effect Breathe
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 05 30 D0 50 FF 00 00 00 14 00 00 01
   8071 fn1  01 02 30 D0 50 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Light bar Lighting per zone=on Effect=Breathe (no Ripple) <Color 30D050> Direction=- (off) Brightness=50 Speed=78 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Light bar Lighting per zone=on Effect=Breathe (no Ripple) <Color 30D050> Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert]
 press Color FF2020
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 05 30 D0 50 FF 00 00 00 14 00 00 01
   8071 fn1  01 02 FF 20 20 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Light bar Lighting per zone=on Effect=Breathe (no Ripple) <Color FF2020> Direction=- (off) Brightness=50 Speed=78 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Light bar Lighting per zone=on Effect=Breathe (no Ripple) <Color FF2020> Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert]
 pick Part Keys
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Keys Lighting per zone=on Effect=Ripple <Color 30D050> Direction=- (off) Brightness=50 Speed=90 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Keys Lighting per zone=on Effect=Ripple <Color 30D050> Direction=- (off) Brightness=50 Speed=91 Intensity=100 (off) [Revert]
 pick Effect Cycle
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 03 00 FF 00 00 00 00 13 88 64 00 01
   8071 fn1  01 02 FF 20 20 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=78 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert]
 menu More preset actions > Save as new preset…
   menu: Save as new preset… | Rename… (off) | Delete (off)
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Save] [Cancel] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=78 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Save] [Cancel] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert]
 type Split
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Save] [Cancel] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=78 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Save] [Cancel] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert]
 press Save
-  = status "Saved the preset Split" [Report] G-Lite preset=Split [Update (off)] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=78 Intensity=100 (off) [Revert (off)]
+  = status "Saved the preset Split" [Report] G-Lite preset=Split [Update (off)] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert (off)]
 slide Brightness 70
   8040 fn1
   8040 fn2  00 46
@@ -117,7 +117,7 @@ slide Brightness 70
   8071 fn5  01 03 04
   8071 fn1  00 03 00 FF 00 00 00 00 13 88 64 00 01
   8071 fn1  01 02 FF 20 20 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split • [Update] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=70 Speed=78 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split • [Update] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=70 Speed=79 Intensity=100 (off) [Revert]
 press Revert changes
   8040 fn1
   8040 fn2  00 32
@@ -125,20 +125,20 @@ press Revert changes
   8071 fn5  01 03 04
   8071 fn1  00 03 00 FF 00 00 00 00 13 88 64 00 01
   8071 fn1  01 02 FF 20 20 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split [Update (off)] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=78 Intensity=100 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split [Update (off)] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert (off)]
 press Lighting per zone
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 03 00 FF 00 00 00 00 13 88 64 00 01
   8071 fn1  01 03 00 FF 00 00 00 00 13 88 64 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split • [Update] […] Part=- (off) Lighting per zone=off Effect=Cycle Direction=- (off) Brightness=50 Speed=78 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split • [Update] […] Part=- (off) Lighting per zone=off Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert]
 press Revert changes
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 03 00 FF 00 00 00 00 13 88 64 00 01
   8071 fn1  01 02 FF 20 20 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split [Update (off)] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=78 Intensity=100 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split [Update (off)] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert (off)]
 quit
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split [Update (off)] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=78 Intensity=100 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split [Update (off)] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert (off)]

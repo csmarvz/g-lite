@@ -15,24 +15,24 @@ open
   4540 fn0
   = status "" [Report] G-Lite preset=– [New…] […] View=Settings Zone=All Effect=- Brightness=100 (off) Speed=0 (off) [Revert (off)]
 pick Effect Rain
-  = status "Experimental: G-Lite draws this effect key by key, not tried on this keyboard yet" [Report] G-Lite preset=– [New…] […] View=Settings Zone=All Effect=Rain <Color FFFFFF> Brightness=100 Speed=66 [Revert (off)]
+  = status "Experimental: G-Lite draws this effect key by key, not tried on this keyboard yet" [Report] G-Lite preset=– [New…] […] View=Settings Zone=All Effect=Rain <Color FFFFFF> Brightness=100 Speed=67 [Revert (off)]
 pick Effect Static
   8070 fn3  00 01 FF FF FF
   8070 fn3  01 01 FF FF FF
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Zone=All Effect=Static <Color FFFFFF> Brightness=100 Speed=66 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Zone=All Effect=Static <Color FFFFFF> Brightness=100 Speed=67 (off) [Revert (off)]
 press Color 30D050
   8070 fn3  00 01 30 D0 50
   8070 fn3  01 01 30 D0 50
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Zone=All Effect=Static <Color 30D050> Brightness=100 Speed=66 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Zone=All Effect=Static <Color 30D050> Brightness=100 Speed=67 (off) [Revert (off)]
 slide Brightness 50
   8070 fn3  00 01 18 68 28
   8070 fn3  01 01 18 68 28
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Zone=All Effect=Static <Color 30D050> Brightness=50 Speed=66 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Zone=All Effect=Static <Color 30D050> Brightness=50 Speed=67 (off) [Revert (off)]
 pick Zone Logo
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Zone=Logo Effect=Static <Color 30D050> Brightness=50 Speed=66 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Zone=Logo Effect=Static <Color 30D050> Brightness=50 Speed=67 (off) [Revert (off)]
 pick Effect Breathe
   8070 fn3  01 04 30 D0 50 13 88 00 32
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Zone=Logo Effect=Breathe <Color 30D050> Brightness=50 Speed=78 [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Zone=Logo Effect=Breathe <Color 30D050> Brightness=50 Speed=79 [Revert (off)]
 slide Speed 80
   8070 fn3  01 04 30 D0 50 12 C0 00 32
   = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Zone=Logo Effect=Breathe <Color 30D050> Brightness=50 Speed=80 [Revert (off)]

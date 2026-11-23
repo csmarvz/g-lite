@@ -14,6 +14,8 @@
 ### Fixed
 
 - G515 and the other RGB keyboards: moving Speed or Intensity during a live effect no longer flashes Save to keyboard on.
+- Speed sliders show the speed they set: a period read back could show one percent lower, and Ripple's speed couldn't go past 50% with the arrow keys.
+- G515: each preview no longer looks up the effect's index again (up to 16 calls), so a drag sends faster.
 - Keyboards that report layout code 2 (Solaar reads it as ISO) get the ISO picture; JIS codes too, whose Enter has ISO's shape. G-Lite's reports so far have only 01 (ANSI) and 0D (ISO).
 - A device that answers "busy" (error 8) to a setting is asked again after 30, 60 and 90 ms, as Solaar does.
 - Mice: after restoring a backup or the factory profile, the mouse leaves its onboard mode and comes back, which drops live changes the restored profile doesn't hold (seen by PeriHub on a G502 HERO).

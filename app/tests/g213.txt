@@ -51,16 +51,16 @@ pick Zone All
   = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Static <Color 30D050> Brightness=100 Speed=0 (off) [Revert (off)]
 pick Effect Breathe
   8070 fn3  00 02 30 D0 50 13 88 00 64
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Breathe <Color 30D050> Brightness=100 Speed=78 [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Breathe <Color 30D050> Brightness=100 Speed=79 [Revert (off)]
 pick Effect Cycle
   8070 fn3  00 03 00 00 00 00 00 13 88 64
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Cycle Brightness=100 Speed=78 [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Cycle Brightness=100 Speed=79 [Revert (off)]
 pick Effect Wave
   8070 fn3  00 04 00 00 00 00 00 00 88 06 64 13
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Wave Direction=Left Brightness=100 Speed=78 [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Wave Direction=Left Brightness=100 Speed=79 [Revert (off)]
 pick Direction Center out
   8070 fn3  00 04 00 00 00 00 00 00 88 03 64 13
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Wave Direction=Center out Brightness=100 Speed=78 [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Wave Direction=Center out Brightness=100 Speed=79 [Revert (off)]
 slide Speed 50
   8070 fn3  00 04 00 00 00 00 00 00 04 03 64 29
   = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Wave Direction=Center out Brightness=100 Speed=50 [Revert (off)]

@@ -36,8 +36,6 @@ press Color FF2020
 slide Brightness 40
   8040 fn1
   8040 fn2  00 28
-  8071 fn0
-  8071 fn0  00 01
   8071 fn1  00 01 FF 20 20 02 00 00 00 00 00 00 01
   = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static Dim after=1 min <Color FF2020> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=40 Speed=0 (off) Intensity=100 (off) [Revert] [Save to keyboard]
 pick Effect Breathe
@@ -46,12 +44,9 @@ pick Effect Breathe
   8071 fn0  00 01
   8071 fn0  00 02
   8071 fn1  00 02 FF 20 20 13 88 00 64 00 00 00 01
-  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Breathe Dim after=1 min <Color FF2020> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=40 Speed=78 Intensity=100 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Breathe Dim after=1 min <Color FF2020> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=40 Speed=79 Intensity=100 (off) [Revert] [Save to keyboard]
 slide Speed 30
   8040 fn1
-  8071 fn0
-  8071 fn0  00 01
-  8071 fn0  00 02
   8071 fn1  00 02 FF 20 20 37 DC 00 64 00 00 00 01
   = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Breathe Dim after=1 min <Color FF2020> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=40 Speed=30 Intensity=100 (off) [Revert] [Save to keyboard]
 press Revert changes
@@ -66,14 +61,10 @@ press Color 3080FF
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
-  8071 fn0
-  8071 fn0  00 01
   8071 fn1  00 01 30 80 FF 02 00 00 00 00 00 00 01
   = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static Dim after=1 min <Color 3080FF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) Intensity=100 (off) [Revert] [Save to keyboard]
 pick Dim after 1 min
   8040 fn1
-  8071 fn0
-  8071 fn0  00 01
   8071 fn1  00 01 30 80 FF 02 00 00 00 00 00 00 01
   = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static Dim after=1 min <Color 3080FF> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) Intensity=100 (off) [Revert] [Save to keyboard]
 press Save to keyboard
@@ -135,14 +126,10 @@ press Color FFD000
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
-  8071 fn0
-  8071 fn0  00 01
   8071 fn1  00 01 FF D0 00 02 00 00 00 00 00 00 01
   = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Static Dim after=1 min <Color FFD000> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) Intensity=100 (off) [Revert] [Save to keyboard]
 pick G-Lite preset –
   8040 fn2  00 64
-  8071 fn0
-  8071 fn0  00 01
   8071 fn1  00 01 30 80 FF 02 00 00 00 00 00 00 01
   8071 fn5  01
   8101 fn6  03
@@ -151,8 +138,6 @@ pick G-Lite preset Night
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
-  8071 fn0
-  8071 fn0  00 01
   8071 fn1  00 01 FF D0 00 02 00 00 00 00 00 00 01
   = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Static Dim after=1 min <Color FFD000> Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=30 (off) Intensity=100 (off) [Revert] [Save to keyboard]
 press Update
@@ -165,58 +150,36 @@ pick Effect Wave
   8071 fn0  00 03
   8071 fn0  00 04
   8071 fn1  00 04 00 FF 00 00 00 00 13 88 64 01 01
-  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=100 Speed=78 Intensity=100 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=100 Speed=79 Intensity=100 (off) [Revert] [Save to keyboard]
 idle 70 s
-  8071 fn0
-  8071 fn0  00 01
-  8071 fn0  00 02
-  8071 fn0  00 03
-  8071 fn0  00 04
   8071 fn1  00 04 00 FF 00 00 00 00 13 88 32 01 01
-  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=100 Speed=78 Intensity=100 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=100 Speed=79 Intensity=100 (off) [Revert] [Save to keyboard]
 idle 4000 s
   8071 fn0
   8071 fn1  00 00 00 00 00 00 00 00 00 00 00 00 01
-  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=100 Speed=78 Intensity=100 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=100 Speed=79 Intensity=100 (off) [Revert] [Save to keyboard]
 back
-  8071 fn0
-  8071 fn0  00 01
-  8071 fn0  00 02
-  8071 fn0  00 03
-  8071 fn0  00 04
   8071 fn1  00 04 00 FF 00 00 00 00 13 88 64 01 01
-  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=100 Speed=78 Intensity=100 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=100 Speed=79 Intensity=100 (off) [Revert] [Save to keyboard]
 lock
   8040 fn2  00 64
-  8071 fn0
-  8071 fn0  00 01
   8071 fn1  00 01 30 80 FF 02 00 00 00 00 00 00 01
   8071 fn5  01
   8101 fn6  03
-  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=100 Speed=78 Intensity=100 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=100 Speed=79 Intensity=100 (off) [Revert] [Save to keyboard]
 unlock
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
-  8071 fn0
-  8071 fn0  00 01
-  8071 fn0  00 02
-  8071 fn0  00 03
-  8071 fn0  00 04
   8071 fn1  00 04 00 FF 00 00 00 00 13 88 64 01 01
-  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=100 Speed=78 Intensity=100 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=100 Speed=79 Intensity=100 (off) [Revert] [Save to keyboard]
 power cycle
   8071 fn5
   8101 fn6  05
   8071 fn5  01 03 04
   8040 fn1
-  8071 fn0
-  8071 fn0  00 01
-  8071 fn0  00 02
-  8071 fn0  00 03
-  8071 fn0  00 04
   8071 fn1  00 04 00 FF 00 00 00 00 13 88 64 01 01
-  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=100 Speed=78 Intensity=100 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Wave Dim after=1 min Dim to=50% Direction=Right Turn off after=5 min Brightness=100 Speed=79 Intensity=100 (off) [Revert] [Save to keyboard]
 menu Backups > Restore the factory lighting
   menu: Restore the factory lighting | Restore a backup (off) | <when>, factory lighting, first backup | Open the backups folder
   8101 fn8  01 01 00 63
@@ -315,7 +278,7 @@ menu Backups > Restore the factory lighting
   8101 fn8  00 00 00 10
   8101 fnC
   8040 fn1
-  = status "Restored the factory lighting" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=- Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=78 (off) Intensity=100 (off) [Revert] [Save to keyboard (off)]
+  = status "Restored the factory lighting" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=- Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=79 (off) Intensity=100 (off) [Revert] [Save to keyboard (off)]
 pick Effect Cycle
   8040 fn1
   8101 fn6  05
@@ -325,33 +288,29 @@ pick Effect Cycle
   8071 fn0  00 02
   8071 fn0  00 03
   8071 fn1  00 03 00 FF 00 00 00 00 13 88 64 00 01
-  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=78 Intensity=100 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=79 Intensity=100 (off) [Revert] [Save to keyboard]
 pick Effect Rain
   8040 fn1
-  = status "Live only." [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Rain Dim after=1 min <Color FFFFFF> Dim to=50% Live direction=Down Turn off after=5 min Brightness=100 Speed=66 Intensity=50 Pause when screen off or locked=on Pause on low battery=on [Revert] [Save to keyboard (off)]
+  = status "Live only." [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Rain Dim after=1 min <Color FFFFFF> Dim to=50% Live direction=Down Turn off after=5 min Brightness=100 Speed=67 Intensity=50 Pause when screen off or locked=on Pause on low battery=on [Revert] [Save to keyboard (off)]
 pick Effect Aurora
   8040 fn1
-  = status "Live only." [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Aurora Dim after=1 min Dim to=50% Live direction=- (off) Turn off after=5 min Brightness=100 Speed=72 Intensity=50 Pause when screen off or locked=on Pause on low battery=on [Revert] [Save to keyboard (off)]
+  = status "Live only." [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Aurora Dim after=1 min Dim to=50% Live direction=- (off) Turn off after=5 min Brightness=100 Speed=73 Intensity=50 Pause when screen off or locked=on Pause on low battery=on [Revert] [Save to keyboard (off)]
 pick Effect Audio
   8040 fn1
-  = status "Live only." [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Audio Dim after=1 min <Color FFFFFF> Dim to=50% Solid color=off Live direction=Up Turn off after=5 min Brightness=100 Speed=72 (off) Intensity=50 Pause when screen off or locked=on Pause on low battery=on [Revert] [Save to keyboard (off)]
+  = status "Live only." [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Audio Dim after=1 min <Color FFFFFF> Dim to=50% Solid color=off Live direction=Up Turn off after=5 min Brightness=100 Speed=73 (off) Intensity=50 Pause when screen off or locked=on Pause on low battery=on [Revert] [Save to keyboard (off)]
 press Solid color
   8040 fn1
-  = status "Live only." [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Audio Dim after=1 min <Color FFFFFF> Dim to=50% Solid color=on Live direction=Up Turn off after=5 min Brightness=100 Speed=72 (off) Intensity=50 Pause when screen off or locked=on Pause on low battery=on [Revert] [Save to keyboard (off)]
+  = status "Live only." [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Audio Dim after=1 min <Color FFFFFF> Dim to=50% Solid color=on Live direction=Up Turn off after=5 min Brightness=100 Speed=73 (off) Intensity=50 Pause when screen off or locked=on Pause on low battery=on [Revert] [Save to keyboard (off)]
 pick Effect Cycle
   8071 fn5  01
   8101 fn6  03
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
-  8071 fn0
-  8071 fn0  00 01
-  8071 fn0  00 02
-  8071 fn0  00 03
   8071 fn1  00 03 00 FF 00 00 00 00 13 88 64 00 01
-  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=78 Intensity=100 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=79 Intensity=100 (off) [Revert] [Save to keyboard]
 quit
   8040 fn2  00 64
   8071 fn5  01
   8101 fn6  03
-  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=78 Intensity=100 (off) [Revert] [Save to keyboard]
+  = status "Not saved to the keyboard" [Report] [Backups] G-Lite preset=Night • [Update] […] Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=79 Intensity=100 (off) [Revert] [Save to keyboard]

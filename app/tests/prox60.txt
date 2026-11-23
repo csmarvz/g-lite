@@ -55,7 +55,7 @@ pick Effect Wave
   8071 fn5  01 03 04
   8071 fn1  00 04 00 FF 00 00 00 00 13 88 64 01 01
   8071 fn1  01 04 00 FF 00 00 00 00 13 88 64 01 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Effect=Wave Direction=Right Brightness=80 Speed=78 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Effect=Wave Direction=Right Brightness=80 Speed=79 Intensity=100 (off) [Revert]
 slide Brightness 50
   8040 fn1
   8040 fn2  00 32
@@ -63,6 +63,6 @@ slide Brightness 50
   8071 fn5  01 03 04
   8071 fn1  00 04 00 FF 00 00 00 00 13 88 64 01 01
   8071 fn1  01 04 00 FF 00 00 00 00 13 88 64 01 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Effect=Wave Direction=Right Brightness=50 Speed=78 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Effect=Wave Direction=Right Brightness=50 Speed=79 Intensity=100 (off) [Revert]
 quit
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Effect=Wave Direction=Right Brightness=50 Speed=78 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Effect=Wave Direction=Right Brightness=50 Speed=79 Intensity=100 (off) [Revert]

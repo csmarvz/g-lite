@@ -238,8 +238,8 @@ class OtherDevicePage : DevicePage
         Edited();
         RefreshControls();
         ClearStatus();
-        debounce.Stop();
-        debounce.Start();
+        // While a slider moves, sent at most every 120 ms rather than once it stops.
+        if (!debounce.Enabled) debounce.Start();
     }
 
     void RefreshControls()

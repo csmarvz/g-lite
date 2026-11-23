@@ -45,7 +45,7 @@ class G510Page : DevicePage
         speed = Ui.Add(light, new Slider { AccessibleName = "Speed" }, 290, 180, 260, 24);
         speed.Changed += (s, e) =>
         {
-            int period = G510Settings.MaxPeriod - (G510Settings.MaxPeriod - G510Settings.MinPeriod) * speed.Value / 100;
+            int period = SpeedScale.Period(speed.Value, G510Settings.MinPeriod, G510Settings.MaxPeriod);
             Edit(settings => settings.Period = period, false);
         };
         var note = Ui.Text(light,
@@ -104,8 +104,9 @@ class G510Page : DevicePage
         sequence++;
         Edited();
         RefreshControls();
-        debounce.Stop();
-        if (now) Send(); else debounce.Start();
+        // While a slider moves, sent at most every 120 ms rather than once it stops.
+        if (now) { debounce.Stop(); Send(); }
+        else if (!debounce.Enabled) debounce.Start();
     }
 
     void RefreshControls()
@@ -128,7 +129,7 @@ class G510Page : DevicePage
         bright.Invalidate();
         SetDimmed(speedHead, moving);
         speed.Enabled = moving;
-        speed.Value = known ? (G510Settings.MaxPeriod - settings.Period) * 100 / (G510Settings.MaxPeriod - G510Settings.MinPeriod) : 0;
+        speed.Value = known ? SpeedScale.Percent(settings.Period, G510Settings.MinPeriod, G510Settings.MaxPeriod) : 0;
         speedValue.Text = moving ? speed.Value + "%" : "";
         speed.Invalidate();
         loading = false;

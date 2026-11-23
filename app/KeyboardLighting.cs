@@ -294,12 +294,24 @@ static class G515Profile
 
     public static void Preview(Hidpp hidpp, Lighting lighting) { Preview(hidpp, lighting, 100); }
 
+    // Each effect's index on the keys' cluster, looked up once per connection: a preview runs every 120 ms during a slider drag, and
+    // the lookup took up to 16 calls each time.
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Hidpp, Dictionary<byte, int>> EffectIndexes =
+        new System.Runtime.CompilerServices.ConditionalWeakTable<Hidpp, Dictionary<byte, int>>();
+
     public static void Preview(Hidpp hidpp, Lighting lighting, int level)
     {
         byte feature = hidpp.FeatureIndex(0x8071);
-        int index = -1;
-        for (int effectIndex = 0; effectIndex < 16 && index < 0; effectIndex++)
-            if (hidpp.Call(feature, 0, 0, (byte)effectIndex, 0)[3] == lighting.Effect) index = effectIndex;
+        var known = EffectIndexes.GetOrCreateValue(hidpp);
+        int index;
+        lock (known)
+            if (!known.TryGetValue(lighting.Effect, out index))
+            {
+                index = -1;
+                for (int effectIndex = 0; effectIndex < 16 && index < 0; effectIndex++)
+                    if (hidpp.Call(feature, 0, 0, (byte)effectIndex, 0)[3] == lighting.Effect) index = effectIndex;
+                if (index >= 0) known[lighting.Effect] = index;
+            }
         if (index < 0) throw new NotSupportedException("Effect not supported by this keyboard");
         hidpp.Call(feature, 1, new byte[] { 0, (byte)index }.Concat(Encode(lighting, level)).Concat(new byte[] { 0x01 }).ToArray());
     }

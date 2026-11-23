@@ -265,9 +265,10 @@ class KeyboardPage : DevicePage
         {
             var target = Target();
             var effect = Info(target.Effect);
-            target.Period = effect.MaxPeriod - (effect.MaxPeriod - effect.MinPeriod) * speed.Value / 100;
+            target.Period = SpeedScale.Period(speed.Value, effect.MinPeriod, effect.MaxPeriod);
             Changed(false, true);
         };
+        speed.MouseUp += (s, e) => RefreshControls();
         // Also for the live effects.
         if (kind.Intensity || canScreen)
         {
@@ -275,6 +276,7 @@ class KeyboardPage : DevicePage
             intensityValue = Value(light, 14, 266, 172);
             intensity = Ui.Add(light, new Slider { AccessibleName = "Intensity" }, 14, 286, 172, 24);
             intensity.Changed += (s, e) => { Target().Intensity = intensity.Value; Changed(false, true); };
+            intensity.MouseUp += (s, e) => RefreshControls();
             light.Height += 52;
         }
 
@@ -1009,6 +1011,7 @@ class KeyboardPage : DevicePage
         if (disposing)
         {
             screenTimer.Dispose();
+            debounce.Dispose();
             StopAnimation();
             watchTimer.Dispose();
             snapTimer.Dispose();
@@ -1145,8 +1148,8 @@ class KeyboardPage : DevicePage
         directions.Index = hasDirection ? Array.IndexOf(directionValues, view.Direction) : -1;
         SetDimmed(speedHead, hasSpeed);
         speed.Enabled = hasSpeed;
-        // Not while it's dragged: the refresh at each send would pull the thumb (speed goes to a period and back, a step off).
-        if (hasSpeed && !speed.Capture) speed.Value = (effect.MaxPeriod - view.Period) * 100 / (effect.MaxPeriod - effect.MinPeriod);
+        // Not while it's dragged (the refresh at each send runs then); the slider's MouseUp refreshes once it's let go.
+        if (hasSpeed && !speed.Capture) speed.Value = SpeedScale.Percent(view.Period, effect.MinPeriod, effect.MaxPeriod);
         speedValue.Text = hasSpeed ? speed.Value + "%" : "";
         speed.Invalidate();
         if (intensity != null)
