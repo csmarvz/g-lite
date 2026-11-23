@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- Settings: a Services box listing G HUB, Logitech Gaming Software and the Logitech LampArray Service (which hands Logitech devices to Windows Dynamic Lighting), whether each runs, with Stop and Start, and Stop all. Stop ends their programs, stops their services and keeps them from starting with Windows; Start puts back what their installers set, so it works even without G-Lite's settings, and Task Manager or Services can undo it too. Windows asks for administrator rights once per click. A last row shows whether Windows Dynamic Lighting is on, with a button to its settings.
+- Settings scrolls with the mouse wheel when it doesn't fit the window, with a thin bar at the right showing where you are.
+
 ### Changed
 
 - G413: Game mode keys work on the keyboard (tried by its owner), so its Game view no longer says experimental. The G512's and G513's still does.

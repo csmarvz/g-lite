@@ -16,7 +16,7 @@ A small Windows app that controls the lighting, DPI and other settings of Logite
 
 You need Windows 10 (version 1903 or later) or Windows 11.
 
-1. Quit G HUB, and stop it from starting with Windows. Both apps control the same devices and would undo each other's changes.
+1. Quit G HUB, and stop it from starting with Windows. Both apps control the same devices and would undo each other's changes. G-Lite's Settings can do it for you: Services lists G HUB, Logitech Gaming Software and the LampArray service, with Stop and Start.
 2. On Windows 11, turn off **Dynamic Lighting** (Settings > Personalization > Dynamic Lighting), for the same reason. G-Lite warns you if it's on.
 3. Download `GLite.exe` from the [latest release](https://github.com/csmarvz/g-lite/releases/latest) and double-click it.
 4. G-Lite finds your Logitech G devices and lists them on the left. Click one to change its settings.

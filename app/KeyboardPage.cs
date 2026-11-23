@@ -1441,7 +1441,7 @@ class KeyboardPage : DevicePage
 
     public static int TestDynamicLighting = -1;
 
-    static bool DynamicLightingOn()
+    public static bool DynamicLightingOn()
     {
         if (TestDynamicLighting >= 0) return TestDynamicLighting == 1;
         using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Lighting"))

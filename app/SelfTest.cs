@@ -1009,6 +1009,15 @@ static class SelfTest
                 == GameModeSupport.NotImplemented
             && KeyboardKinds.For(new FoundDevice { Name = "PRO X 60", Kind = "keyboard" }).GameMode == GameModeSupport.None,
             "Game mode: set on the G815, experimental on the G915s, shown without picking on the G915 X models, none elsewhere");
+        var turnedOff = LogitechSoftware.ApprovedValue(false, new DateTime(2026, 11, 23, 0, 0, 0, DateTimeKind.Utc));
+        Check(LogitechSoftware.ApprovedValue(true, DateTime.UtcNow).SequenceEqual(new byte[] { 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 })
+            && turnedOff.Length == 12 && turnedOff[0] == 3
+            && BitConverter.ToInt64(turnedOff, 4) == new DateTime(2026, 11, 23, 0, 0, 0, DateTimeKind.Utc).ToFileTimeUtc()
+            && LogitechSoftware.Mentions(@"C:\Program Files\Logitech Gaming Software\LCore.exe /minimized", "LCore.exe")
+            && !LogitechSoftware.Mentions(null, "LCore.exe")
+            && LogitechSoftware.ByIds(new[] { "lgs", "Spooler", "ghub" }).Select(item => item.Id).SequenceEqual(new[] { "ghub", "lgs" }),
+            "Services: Task Manager's startup values (02 on, 03 off with a FILETIME at byte 4), Run entries found by program, "
+                + "and the elevated G-Lite acting only on its own list");
         // The built ISO pictures were checked equal to the hand-made g515-tkl-iso.json and g213-iso.json they replaced.
         foreach (var file in LayoutFiles)
         {

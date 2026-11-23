@@ -3,98 +3,20 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
-class DeviceList : Control
+// The sidebar's devices: a ScrollPanel without its bar, whose rows fade at an edge with more beyond it (Fade, called by each row).
+class DeviceList : ScrollPanel
 {
-    int offset, content, target;
-    readonly Timer glide = new Timer { Interval = 15 };
-
     public DeviceList()
     {
-        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer
-            | ControlStyles.ResizeRedraw, true);
+        ShowBar = false;
         Ui.Style(this, () => BackColor = Theme.Sidebar);
-        glide.Tick += (s, e) => Glide();
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing) glide.Dispose();
-        base.Dispose(disposing);
-    }
-
-    public int Offset { get { return offset; } }
-
-    public void Watch(Control item)
-    {
-        item.GotFocus += (s, e) => Reveal(item);
-    }
-
-    public void Fit(int height)
-    {
-        content = height;
-        ScrollTo(offset);
-    }
-
-    public void Reveal(Control item)
-    {
-        if (item.Top < 0) ScrollTo(offset + item.Top);
-        else if (item.Bottom > Height) ScrollTo(offset + item.Bottom - Height);
-    }
-
-    void Wheel(int delta)
-    {
-        target = Clamp(target - delta * (int)Math.Round(50 * Ui.DpiScale) / 120);
-        if (target != offset) glide.Start();
-    }
-
-    void Glide()
-    {
-        int gap = target - offset;
-        if (gap == 0) { glide.Stop(); return; }
-        int step = (int)Math.Round(gap * 0.25);
-        if (step == 0) step = Math.Sign(gap);
-        Shift(offset + step);
-    }
-
-    int Clamp(int to) { return Math.Max(0, Math.Min(to, content - Height)); }
-
-    protected override void OnMouseWheel(MouseEventArgs e) { Wheel(e.Delta); base.OnMouseWheel(e); }
-
-    protected override void OnResize(EventArgs e) { base.OnResize(e); ScrollTo(offset); }
-
-    protected override void ScaleControl(SizeF factor, BoundsSpecified specified)
-    {
-        offset = (int)Math.Round(offset * factor.Height);
-        target = (int)Math.Round(target * factor.Height);
-        content = (int)Math.Round(content * factor.Height);
-        base.ScaleControl(factor, specified);
-    }
-
-    void ScrollTo(int to)
-    {
-        glide.Stop();
-        target = Clamp(to);
-        Shift(target);
-    }
-
-    void Shift(int to)
-    {
-        to = Clamp(to);
-        if (to != offset)
-        {
-            SuspendLayout();
-            foreach (Control control in Controls) control.Top += offset - to;
-            ResumeLayout();
-            offset = to;
-        }
-        foreach (Control control in Controls) control.Invalidate();
     }
 
     public void Fade(Graphics graphics, Control item)
     {
         float zone = 32 * Ui.DpiScale, ramp = 46 * Ui.DpiScale;
-        DrawEdgeFade(graphics, item, Height - zone, zone, false, (content - Height - offset) / ramp);
-        DrawEdgeFade(graphics, item, 0, zone, true, offset / ramp);
+        DrawEdgeFade(graphics, item, Height - zone, zone, false, (Content - Height - Offset) / ramp);
+        DrawEdgeFade(graphics, item, 0, zone, true, Offset / ramp);
     }
 
     static void DrawEdgeFade(Graphics graphics, Control item, float top, float height, bool fromTop, float strength)

@@ -645,6 +645,110 @@ class Slider : DrawnControl
     }
 }
 
+// A view whose children can be taller than it: they scroll with the mouse wheel, easing to where the wheel points, and a thin bar at
+// the right shows where the view is when there's more than fits (ShowBar; the device list fades its edges instead). Fit says how
+// tall the children are; focus moving into a child scrolls it into view. Wheel turns over a child reach it through the child's
+// parent chain (Windows passes an unhandled WM_MOUSEWHEEL up), except over a control that takes the wheel itself, like Slider.
+class ScrollPanel : Control
+{
+    int offset, content, target;
+    readonly Timer glide = new Timer { Interval = 15 };
+    public bool ShowBar = true;
+
+    public ScrollPanel()
+    {
+        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer
+            | ControlStyles.ResizeRedraw, true);
+        glide.Tick += (s, e) => Glide();
+        ControlAdded += (s, e) => e.Control.Enter += (sender, args) => Reveal((Control)sender);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) glide.Dispose();
+        base.Dispose(disposing);
+    }
+
+    public int Offset { get { return offset; } }
+
+    protected int Content { get { return content; } }
+
+    public void Watch(Control item) { item.GotFocus += (s, e) => Reveal(item); }
+
+    public void Fit(int height)
+    {
+        content = height;
+        ScrollTo(offset);
+    }
+
+    public void Reveal(Control item)
+    {
+        if (item.Top < 0) ScrollTo(offset + item.Top);
+        else if (item.Bottom > Height) ScrollTo(offset + item.Bottom - Height);
+    }
+
+    void Wheel(int delta)
+    {
+        target = Clamp(target - delta * (int)Math.Round(50 * Ui.DpiScale) / 120);
+        if (target != offset) glide.Start();
+    }
+
+    void Glide()
+    {
+        int gap = target - offset;
+        if (gap == 0) { glide.Stop(); return; }
+        int step = (int)Math.Round(gap * 0.25);
+        if (step == 0) step = Math.Sign(gap);
+        Shift(offset + step);
+    }
+
+    int Clamp(int to) { return Math.Max(0, Math.Min(to, content - Height)); }
+
+    protected override void OnMouseWheel(MouseEventArgs e) { Wheel(e.Delta); base.OnMouseWheel(e); }
+
+    protected override void OnResize(EventArgs e) { base.OnResize(e); ScrollTo(offset); }
+
+    protected override void ScaleControl(SizeF factor, BoundsSpecified specified)
+    {
+        offset = (int)Math.Round(offset * factor.Height);
+        target = (int)Math.Round(target * factor.Height);
+        content = (int)Math.Round(content * factor.Height);
+        base.ScaleControl(factor, specified);
+    }
+
+    void ScrollTo(int to)
+    {
+        glide.Stop();
+        target = Clamp(to);
+        Shift(target);
+    }
+
+    void Shift(int to)
+    {
+        to = Clamp(to);
+        if (to != offset)
+        {
+            SuspendLayout();
+            foreach (Control control in Controls) control.Top += offset - to;
+            ResumeLayout();
+            offset = to;
+            if (ShowBar) Invalidate();
+        }
+        foreach (Control control in Controls) control.Invalidate();
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        e.Graphics.Clear(BackColor);
+        if (!ShowBar || content <= Height) return;
+        float scale = Ui.DpiScale, margin = 6 * scale, track = Height - 2 * margin;
+        float thumb = Math.Max(24 * scale, track * Height / content);
+        float top = margin + (track - thumb) * offset / (content - Height);
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        Ui.Fill(e.Graphics, new RectangleF(Width - 9 * scale, top, 4 * scale, thumb), 2 * scale, Theme.Track, Theme.Track);
+    }
+}
+
 class StatusLine : DrawnControl
 {
     string text = "";

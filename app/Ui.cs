@@ -246,6 +246,18 @@ static class Icons
                 case "plus": graphics.DrawLine(pen, 12, 5, 12, 19); graphics.DrawLine(pen, 5, 12, 19, 12); break;
                 case "chevron": graphics.DrawLines(pen, new[] { new PointF(7, 10), new PointF(12, 15), new PointF(17, 10) }); break;
                 case "check": graphics.DrawLines(pen, new[] { new PointF(5, 12.5f), new PointF(10, 17.5f), new PointF(19, 7) }); break;
+                case "shield":
+                    using (var path = new GraphicsPath())
+                    {
+                        path.AddLine(12, 3.5f, 19, 6);
+                        path.AddLine(19, 6, 19, 11.5f);
+                        path.AddBezier(19, 11.5f, 19, 15.8f, 16, 19.2f, 12, 20.5f);
+                        path.AddBezier(12, 20.5f, 8, 19.2f, 5, 15.8f, 5, 11.5f);
+                        path.AddLine(5, 11.5f, 5, 6);
+                        path.CloseFigure();
+                        graphics.FillPath(brush, path);
+                    }
+                    break;
                 case "gear":
                     {
                         var cog = new List<PointF>();

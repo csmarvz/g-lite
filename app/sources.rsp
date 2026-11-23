@@ -48,3 +48,4 @@ DeviceList.cs
 Tray.cs
 Screen.cs
 LiveEffects.cs
+Services.cs

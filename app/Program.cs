@@ -19,7 +19,7 @@ class MainWindow : Form
 {
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-    const int WindowWidth = 868, WindowHeight = 730, SidebarWidth = 212, SidebarInnerWidth = SidebarWidth - 20;
+    const int SettingsHeader = 52, WindowWidth = 868, WindowHeight = 730, SidebarWidth = 212, SidebarInnerWidth = SidebarWidth - 20;
 
     public NotifyIcon Tray;
     readonly FakeHidpp fake;
@@ -151,7 +151,9 @@ class MainWindow : Form
         settingsPage = Ui.Add(this, new Control { Visible = false }, SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         Ui.Style(settingsPage, () => settingsPage.BackColor = Theme.Background);
         settingsPage.MouseDown += Drag;
-        var settings = settingsPage;
+        // The title stays while the rest scrolls.
+        var settings = Ui.Add(settingsPage, new ScrollPanel(), 0, SettingsHeader, WindowWidth - SidebarWidth, WindowHeight - SettingsHeader);
+        Ui.Style(settings, () => settings.BackColor = Theme.Background);
         logsPage = Ui.Add(this, new LogsPage(Drag), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         updatePage = Ui.Add(this, new UpdatePage(Drag), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         if (demo) updatePage.Fetch = DemoChangelog;
@@ -167,17 +169,17 @@ class MainWindow : Form
             ShowUpdate(null);
             if (updatePage.FromSettings) ShowSettings(); else Pick(selected);
         };
-        Ui.Text(settings, "Settings", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += Drag;
+        Ui.Text(settingsPage, "Settings", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += Drag;
 
-        Ui.Text(settings, "Appearance", 20, 64, () => Theme.Dim, 9f, Ui.Semibold);
-        var look = Ui.Add(settings, new RoundedBox(), 20, 86, 616, 64);
+        Ui.Text(settings, "Appearance", 20, 12, () => Theme.Dim, 9f, Ui.Semibold);
+        var look = Ui.Add(settings, new RoundedBox(), 20, 34, 616, 64);
         themeHint = Row(look, 0, "Theme", "");
         themePicker = Ui.Add(look, new SegmentedPicker { Items = new[] { "System", "Dark", "Light" }, AccessibleName = "Theme" },
             616 - 14 - 240, 16, 240, 32);
         themePicker.Picked += i => { Theme.Mode = Theme.Modes[i]; ShowThemeHint(); };
 
-        Ui.Text(settings, "Updates", 20, 170, () => Theme.Dim, 9f, Ui.Semibold);
-        var updatesBox = Ui.Add(settings, new RoundedBox(), 20, 192, 616, 192);
+        Ui.Text(settings, "Updates", 20, 118, () => Theme.Dim, 9f, Ui.Semibold);
+        var updatesBox = Ui.Add(settings, new RoundedBox(), 20, 140, 616, 192);
         Row(updatesBox, 0, "Check for updates", "Looks for a new release on GitHub when G-Lite starts");
         checkToggle = Ui.Add(updatesBox, new Toggle { Checked = Updater.CheckForUpdates, AccessibleName = "Check for updates" },
             616 - 14 - 40, 21, 40, 22);
@@ -195,11 +197,15 @@ class MainWindow : Form
         var checkNow = Ui.Add(updatesBox, new FlatButton { Text = "Check for updates" }, 616 - 14 - 180, 128 + 16, 180, 32);
         checkNow.Click += (s, e) => { ShowUpdatePage(true); CheckUpdates(true); };
 
-        Ui.Text(settings, "Startup", 20, 404, () => Theme.Dim, 9f, Ui.Semibold);
-        var start = Ui.Add(settings, new RoundedBox(), 20, 426, 616, 64);
+        Ui.Text(settings, "Startup", 20, 352, () => Theme.Dim, 9f, Ui.Semibold);
+        var start = Ui.Add(settings, new RoundedBox(), 20, 374, 616, 64);
         Row(start, 0, "Run on startup", "Starts in the tray when you sign in to Windows");
         runToggle = Ui.Add(start, new Toggle { AccessibleName = "Run on startup" }, 616 - 14 - 40, 21, 40, 22);
         runToggle.Changed += () => SetStartup(runToggle.Checked);
+
+        Ui.Text(settings, "Services", 20, 456, () => Theme.Dim, 9f, Ui.Semibold);
+        var services = Ui.Add(settings, new ServicesBox(demo), 20, 478, 616, ServicesBox.DesignHeight);
+        settings.Fit(services.Bottom + 20);
 
         minimize = Ui.Add(this, new FlatButton { Style = ButtonStyle.Ghost, Icon = "minus", AccessibleName = "Minimize" },
             WindowWidth - 12 - 72, 10, 36, 28);
@@ -959,6 +965,7 @@ class MainWindow : Form
     static void Main(string[] args)
     {
         if (args.Length == 2 && args[0] == "--swap") { Environment.ExitCode = Updater.Swap(args[1]); return; }
+        if (args.Length >= 3 && args[0] == "--services") { Environment.ExitCode = LogitechSoftware.RunElevated(args); return; }
         WindowHelpers.EnableDpiAwareness();
         bool fresh, demo = args.Contains("--demo");
         using (var mutex = new Mutex(true, demo ? "GLiteDemo" : "GLite", out fresh))

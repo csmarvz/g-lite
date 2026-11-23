@@ -8,7 +8,7 @@ if not exist build mkdir build
 if not exist "%OUT%" mkdir "%OUT%"
 set RES=
 for %%f in (models\*.json) do call set "RES=%%RES%% /resource:%%f,%%~nxf"
-set REFS=%RES% /r:System.Windows.Forms.dll /r:System.Drawing.dll
+set REFS=%RES% /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:System.ServiceProcess.dll
 echo [1/5] Compiling the self-test (build\selftest.exe)
 "%CSC%" /nologo /optimize /target:exe /nowarn:649 /main:SelfTest /out:build\selftest.exe %REFS% SelfTest.cs Traces.cs @sources.rsp || (echo Build failed: the self-test didn't compile & exit /b 1)
 echo [2/5] Running the self-test: checks and traces, and writing build\GLite.ico
