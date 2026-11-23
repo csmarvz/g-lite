@@ -9,6 +9,11 @@
 
 ### Changed
 
+- Sliders feel live on every device: while you drag one, G-Lite sends the change at most every 120 ms, where it used to wait until you stopped moving. On the keyboard screens, a drag updates only the values beside the sliders, and the key picture follows with each send, so the slider itself moves smoothly.
+
+### Fixed
+
+- G515 and the other RGB keyboards: moving Speed or Intensity during a live effect no longer flashes Save to keyboard on.
 - Keyboards that report layout code 2 (Solaar reads it as ISO) get the ISO picture; JIS codes too, whose Enter has ISO's shape. G-Lite's reports so far have only 01 (ANSI) and 0D (ISO).
 - A device that answers "busy" (error 8) to a setting is asked again after 30, 60 and 90 ms, as Solaar does.
 - Mice: after restoring a backup or the factory profile, the mouse leaves its onboard mode and comes back, which drops live changes the restored profile doesn't hold (seen by PeriHub on a G502 HERO).

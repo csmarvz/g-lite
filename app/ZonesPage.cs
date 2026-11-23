@@ -98,7 +98,7 @@ class ZonesPage : DevicePage
         Count = keyboard ? 6 : 4;
         if (!keyboard) segZones = Enumerable.Range(0, Count).ToList();
         sent = new MouseLight[Count];
-        debounce.Tick += (s, e) => { debounce.Stop(); Send(); };
+        debounce.Tick += (s, e) => { debounce.Stop(); RefreshControls(); Send(); };
         setup = ZoneLighting.Screen(Settings.Get(Saved));
 
         var model = ZoneLighting.Picture(found);
@@ -372,9 +372,11 @@ class ZonesPage : DevicePage
         }
         sequence++;
         Edited();
-        RefreshControls();
-        debounce.Stop();
-        if (now) Send(); else debounce.Start();
+        if (now) RefreshControls(); else Values();
+        // While a slider moves, sent at most every 120 ms rather than once it stops: restarting the timer on each move sent nothing
+        // during a drag.
+        if (now) { debounce.Stop(); Send(); }
+        else if (!debounce.Enabled) debounce.Start();
     }
 
     public override void Restyle() { RefreshControls(); }
@@ -797,12 +799,13 @@ class ZonesPage : DevicePage
         bool color = known && effect.Color && !monochrome, hasSpeed = known && effect.Speed, hasBrightness = known && displayed.Effect != 0;
         SetDimmed(brightHead, hasBrightness);
         bright.Enabled = hasBrightness;
-        bright.Value = known ? displayed.Bright : 100;
+        // Not while it's dragged: the refresh at each send would pull the thumb (speed goes to a period and back, a step off).
+        if (!bright.Capture) bright.Value = known ? displayed.Bright : 100;
         brightValue.Text = hasBrightness ? displayed.Bright + "%" : "";
         bright.Invalidate();
         SetDimmed(speedHead, hasSpeed);
         speed.Enabled = hasSpeed;
-        if (hasSpeed) speed.Value = (effect.MaxPeriod - displayed.Period) * 100 / (effect.MaxPeriod - effect.MinPeriod);
+        if (hasSpeed && !speed.Capture) speed.Value = (effect.MaxPeriod - displayed.Period) * 100 / (effect.MaxPeriod - effect.MinPeriod);
         speedValue.Text = hasSpeed ? speed.Value + "%" : "";
         speed.Invalidate();
         foreach (var control in plainLight) control.Visible = !screening;
@@ -858,6 +861,14 @@ class ZonesPage : DevicePage
         if (current == null || listed == null || zone < 0 || zone >= listed.Count || zone >= current.Length) return null;
         var own = current[zone];
         return own != null && listed[zone].ContainsKey(own.Effect) ? own : current[0];
+    }
+
+    // While a slider moves, only the values beside the sliders: the whole refresh redraws the key picture, which made the slider
+    // stutter on a large screen. The rest follows at each send (the debounce tick).
+    void Values()
+    {
+        if (bright.Enabled) brightValue.Text = Math.Max(1, bright.Value) + "%";
+        if (speed.Enabled) speedValue.Text = speed.Value + "%";
     }
 
     void ShowFrame()

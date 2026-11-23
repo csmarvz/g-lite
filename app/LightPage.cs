@@ -375,8 +375,10 @@ class LightPage : DevicePage
         sequence++;
         Edited();
         if (now) RefreshControls(); else Values();
-        debounce.Stop();
-        if (now) Send(); else debounce.Start();
+        // While a slider moves, sent at most every 120 ms rather than once it stops: restarting the timer on each move sent nothing
+        // during a drag.
+        if (now) { debounce.Stop(); Send(); }
+        else if (!debounce.Enabled) debounce.Start();
     }
 
     public override void Restyle() { RefreshControls(); }

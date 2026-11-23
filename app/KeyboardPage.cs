@@ -157,7 +157,7 @@ class KeyboardPage : DevicePage
     {
         this.kind = kind;
         live = !kind.Saves;
-        debounce.Tick += (s, e) => { debounce.Stop(); Preview(); };
+        debounce.Tick += (s, e) => { debounce.Stop(); RefreshControls(); Preview(); };
         if (!live && found.WirelessId != 0) Backups.Move(found.WirelessId.ToString("X4"), BackupId);
 
         if (!live)
@@ -266,7 +266,7 @@ class KeyboardPage : DevicePage
             var target = Target();
             var effect = Info(target.Effect);
             target.Period = effect.MaxPeriod - (effect.MaxPeriod - effect.MinPeriod) * speed.Value / 100;
-            Changed(false);
+            Changed(false, true);
         };
         // Also for the live effects.
         if (kind.Intensity || canScreen)
@@ -274,7 +274,7 @@ class KeyboardPage : DevicePage
             intensityHead = Ui.Text(light, "Intensity", 14, 266, () => Theme.Dim, 9f);
             intensityValue = Value(light, 14, 266, 172);
             intensity = Ui.Add(light, new Slider { AccessibleName = "Intensity" }, 14, 286, 172, 24);
-            intensity.Changed += (s, e) => { Target().Intensity = intensity.Value; Changed(false); };
+            intensity.Changed += (s, e) => { Target().Intensity = intensity.Value; Changed(false, true); };
             light.Height += 52;
         }
 
@@ -367,7 +367,7 @@ class KeyboardPage : DevicePage
         boostSlider.Changed += (s, e) =>
         {
             setup.Boost = boostSlider.Value; boostValue.Text = setup.Boost + "%"; force = true;
-            Edited(); debounce.Stop(); debounce.Start();
+            Edited(); if (!debounce.Enabled) debounce.Start();
         };
         Ui.Text(screenBox, "Brightness", 14, 78, () => Theme.Dim, 9f);
         screenBrightValue = Value(screenBox, 14, 78, 196);
@@ -382,8 +382,7 @@ class KeyboardPage : DevicePage
             rateValue.Text = setup.Interval + " ms";
             screenTimer.Interval = FrameInterval;
             Edited();
-            debounce.Stop();
-            debounce.Start();
+            if (!debounce.Enabled) debounce.Start();
         };
         smoothToggle = Option(screenBox, "Smooth changes", 166, () => setup.Smooth = !setup.Smooth);
         batteryToggle = Option(screenBox, "Pause on low battery", 194, () => setup.PauseOnBattery = !setup.PauseOnBattery);
@@ -561,8 +560,7 @@ class KeyboardPage : DevicePage
         saveButton.Enabled = !broken && !Screening && !takenOver;
         picture.Display(Known() ? current : null, Known() ? bar : null, brightness);
         ClearStatus();
-        debounce.Stop();
-        debounce.Start();
+        if (!debounce.Enabled) debounce.Start();
     }
 
     void PickZone(int i)
@@ -1147,14 +1145,15 @@ class KeyboardPage : DevicePage
         directions.Index = hasDirection ? Array.IndexOf(directionValues, view.Direction) : -1;
         SetDimmed(speedHead, hasSpeed);
         speed.Enabled = hasSpeed;
-        if (hasSpeed) speed.Value = (effect.MaxPeriod - view.Period) * 100 / (effect.MaxPeriod - effect.MinPeriod);
+        // Not while it's dragged: the refresh at each send would pull the thumb (speed goes to a period and back, a step off).
+        if (hasSpeed && !speed.Capture) speed.Value = (effect.MaxPeriod - view.Period) * 100 / (effect.MaxPeriod - effect.MinPeriod);
         speedValue.Text = hasSpeed ? speed.Value + "%" : "";
         speed.Invalidate();
         if (intensity != null)
         {
             SetDimmed(intensityHead, hasIntensity);
             intensity.Enabled = hasIntensity;
-            intensity.Value = view.Intensity;
+            if (!intensity.Capture) intensity.Value = view.Intensity;
             intensityValue.Text = hasIntensity ? view.Intensity + "%" : "";
             intensity.Invalidate();
         }
@@ -1165,7 +1164,8 @@ class KeyboardPage : DevicePage
         dimBox.Index = Nearest(DimPcts, current.Dim);
         sleepBox.Index = Nearest(SleepSecs.Skip(never).ToArray(), current.Sleep);
         dimBox.Enabled = current.Idle > 0;
-        saveButton.Enabled = (dirty || GKeysChanged) && !broken && !takenOver;
+        // Off for the Screen and live effects, decided here once: switched on, then off further down, it flashed on each slider move.
+        saveButton.Enabled = (dirty || GKeysChanged) && !broken && !takenOver && !screening;
         ShowSlots();
         ShowViews();
         picture.Display(known ? current : null, known ? bar : null, brightness);
@@ -1414,17 +1414,27 @@ class KeyboardPage : DevicePage
         Load();
     }
 
-    void Changed(bool now)
+    void Changed(bool now, bool sliding = false)
     {
         if (loading) return;
         if (live) unknownStored = false;
         dirty = true;
         edits++;
         Edited();
-        RefreshControls();
+        if (sliding) Values(); else RefreshControls();
         ClearStatus();
-        debounce.Stop();
-        if (now) Preview(); else debounce.Start();
+        // While a slider moves, sent at most every 120 ms rather than once it stops: restarting the timer on each move sent nothing
+        // during a drag.
+        if (now) { debounce.Stop(); Preview(); }
+        else if (!debounce.Enabled) debounce.Start();
+    }
+
+    // While a slider moves, only the values beside the sliders: the whole refresh redraws the key picture, which made the slider
+    // stutter. The rest follows at each send (the debounce tick).
+    void Values()
+    {
+        if (speed.Enabled) speedValue.Text = speed.Value + "%";
+        if (intensity != null && intensity.Enabled) intensityValue.Text = intensity.Value + "%";
     }
 
     protected override void ClearStatus()
