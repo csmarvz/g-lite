@@ -251,14 +251,14 @@ class ZonesPage : DevicePage
         gameMode = keyboard && picture != null && !zonesModel && found.Has(0x4522);
         if (gameMode)
         {
-            gameKeys = GameModeKeys.FromText(Settings.Get(GameKeysSetting));
+            gameKeys = GameModeKeys.FromText(Settings.Get(GameKeysSetting), false);
             viewPick = Ui.Add(this, new SegmentedPicker { Items = new[] { "Settings", "Game" }, AccessibleName = "View" }, 440, 72, 196, 32);
             viewPick.Picked += index => { gameShown = index == 1; RefreshControls(); };
             // Tried on the G413 (2026-11-22); the G512 and G513 aren't.
             string gameText = "Select the keys you want to disable while gaming (Fn+F8 turns Game mode on). Changes apply "
                 + "immediately and can be saved in your G-Lite presets, but not in the keyboard's memory.";
             if (!found.ShortName.ToUpper().StartsWith("G413")) gameText = "Experimental, not tried on this keyboard yet. " + gameText;
-            gameBox = Ui.Add(this, new GameModeBox(KeyLayout.Load(model), true, gameText), 20, 118, 616, 543);
+            gameBox = Ui.Add(this, new GameModeBox(KeyLayout.Load(model), gameText, false), 20, 118, 616, 543);
             gameBox.Picked += usage =>
             {
                 var keys = gameKeys.ToList();
@@ -393,7 +393,7 @@ class ZonesPage : DevicePage
     {
         string game;
         text = GameModeKeys.Split(text, out game);
-        if (game != null) SetGameKeys(GameModeKeys.FromText(game));
+        if (game != null) SetGameKeys(GameModeKeys.FromText(game, false));
         var pieces = text.Split('|');
         var lights = ZoneLighting.FromText(pieces[0], Count);
         bool screen = !keyboard && pieces.Length > 1;
@@ -535,7 +535,7 @@ class ZonesPage : DevicePage
     {
         var keys = gameKeys;
         if (!gameMode || keys.Count == 0) return;
-        try { GameModeKeys.Send(hidpp, keys); }
+        try { GameModeKeys.Send(hidpp, keys, false); }
         catch (HidppError ex) { Log.Add(DeviceLabel, "error", "Game mode keys: " + ex.Message); }
     }
 
@@ -543,13 +543,13 @@ class ZonesPage : DevicePage
 
     void SetGameKeys(IEnumerable<int> keys)
     {
-        var list = GameModeKeys.Clean(keys);
+        var list = GameModeKeys.Clean(keys, false);
         if (!gameMode || list.SequenceEqual(gameKeys)) return;
         gameKeys = list;
         var text = GameModeKeys.ToText(list);
         if (text == "") Settings.Remove(GameKeysSetting); else Settings.Set(GameKeysSetting, text);
         LogUserAction(text == "" ? "Game mode keys cleared" : "Game mode keys " + string.Join(" ", list.Select(usage => usage.ToString("X2"))));
-        RunOnDevice(hidpp => GameModeKeys.Send(hidpp, list));
+        RunOnDevice(hidpp => GameModeKeys.Send(hidpp, list, false));
         Edited();
         gameBox.ShowKeys(gameKeys);
     }

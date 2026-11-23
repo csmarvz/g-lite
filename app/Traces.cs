@@ -921,18 +921,62 @@ static class Traces
             return text + "a G915 counting 15 slots:\n" + script.Text;
     }
 
-    // The G915 X has no 0x4522: its Game view shows the picture with nothing to pick, and nothing is sent.
+    // The G515's Game mode keys go out as a bitmap of its control list (0x1B10, read once), through 0x4523: A and Enter are bits 0x38
+    // and 0x3E, byte 7. Kept in presets, cleared by Clear, back with Revert, and sent again by a new page.
+    static string G515Game()
+    {
+        var found = new FoundDevice
+        {
+            Key = "trace|g515game", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40B4,
+            Features = Keyboard.Concat(new[] { 0x1B10, 0x4523 }).ToArray()
+        };
+        var keyboard = new FakeHidpp();
+        string text;
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard, null)))
+        {
+            script.Pick("View", "Game");
+            script.Click("A");
+            script.Click("Enter");
+            script.Do("check the bitmap", () => CheckBitmap(keyboard.GameBitmap, 7, 0x41));
+            script.Menu("More preset actions", "Save as new preset…");
+            script.Type("Shooter");
+            script.Press("Save");
+            script.Press("Clear");
+            script.Do("check the bitmap is empty", () => CheckBitmap(keyboard.GameBitmap, 7, 0));
+            script.Press("Revert");
+            script.Do("check the preset's keys are back", () => CheckBitmap(keyboard.GameBitmap, 7, 0x41));
+            script.Do("quit", () => ((KeyboardPage)script.Page).Exiting());
+            text = script.Text;
+        }
+        var pluggedAgain = new FakeHidpp();
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, pluggedAgain, null)))
+        {
+            script.Do("check the bitmap is sent again", () => CheckBitmap(pluggedAgain.GameBitmap, 7, 0x41));
+            return text + script.Text;
+        }
+    }
+
+    static void CheckBitmap(byte[] bitmap, int at, byte value)
+    {
+        if (bitmap.Where((bits, index) => index != at).Any(bits => bits != 0) || bitmap[at] != value)
+            throw new InvalidOperationException("the Game mode bitmap is " + BitConverter.ToString(bitmap));
+    }
+
+    // The G915 X has 0x4523 like the G515, experimental: given the G515's control list here, W is bit 0x21, byte 4.
     static string G915XGame()
     {
         var found = new FoundDevice
         {
             Key = "trace|g915xgame", Name = "G915 X LIGHTSPEED", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40B5,
-            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 }
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1B10, 0x4523, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 }
         };
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, FakeG915.G512X(), null)))
+        var keyboard = FakeG915.G512X();
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard, null)))
         {
             script.Pick("View", "Game");
-            return script.Text + "W pickable: " + Pickable(script, "W") + "\n";
+            script.Click("W");
+            script.Do("check the bitmap", () => CheckBitmap(keyboard.GameBitmap, 4, 0x02));
+            return script.Text;
         }
     }
 
@@ -1134,6 +1178,7 @@ static class Traces
     static IEnumerable<KeyValuePair<string, Func<string>>> All()
     {
         yield return new KeyValuePair<string, Func<string>>("g515", G515);
+        yield return new KeyValuePair<string, Func<string>>("g515game", G515Game);
         yield return new KeyValuePair<string, Func<string>>("g915", G915);
         yield return new KeyValuePair<string, Func<string>>("g815", G815);
         yield return new KeyValuePair<string, Func<string>>("g915game", G915Game);

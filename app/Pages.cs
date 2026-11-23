@@ -197,6 +197,16 @@ abstract class DevicePage : Control, IPage
         if (lost && ReopensWhenFound) RunOnDevice(hidpp => { });
     }
 
+    // The receiver says the device connected again (0x41), which a scan misses when it was off only for a moment. A G515 sends two
+    // notices about a second apart and may not answer after the first: a failure stays off the status line, since the next notice
+    // or the scan that follows (a lost connection reopens) sends it again.
+    public void Reconnected()
+    {
+        if (!ReopensWhenFound) return;
+        Log.Add(DeviceLabel, "found", "connected again");
+        RunOnDevice(Opened, null, message => { });
+    }
+
     void ShowSub()
     {
         subtitle.Set(found.Subtitle, found.Level, found.BatteryText, "");

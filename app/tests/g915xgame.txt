@@ -36,5 +36,26 @@ open
   8040 fn1
   = status "" [Report] G-Lite preset=– [New…] […] View=Settings Effect=- Direction=- (off) Brightness=80 Speed=0 (off) Intensity=100 (off) [Revert (off)]
 pick View Game
-  = status "" [Report] G-Lite preset=– [New…] […] View=Game Game mode keys=- [Revert (off)]
-W pickable: False
+  = status "" [Report] G-Lite preset=– [New…] […] View=Game Game mode keys=- [Clear (off)] [Revert (off)]
+click W
+  1B10 fn0
+  1B10 fn1
+  1B10 fn1  08
+  1B10 fn1  10
+  1B10 fn1  18
+  1B10 fn1  20
+  1B10 fn1  28
+  1B10 fn1  30
+  1B10 fn1  38
+  1B10 fn1  40
+  1B10 fn1  48
+  1B10 fn1  50
+  1B10 fn1  58
+  1B10 fn1  60
+  1B10 fn1  68
+  1B10 fn1  70
+  1B10 fn1  78
+  4523 fn0  00 00 00 00 02
+  = status "" [Report] G-Lite preset=– [New…] […] View=Game Game mode keys=W [Clear] [Revert (off)]
+check the bitmap
+  = status "" [Report] G-Lite preset=– [New…] […] View=Game Game mode keys=W [Clear] [Revert (off)]

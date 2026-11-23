@@ -228,7 +228,7 @@ static class SelfTest
         Check(headsetRoundTrip.Sidetone == 20 && headsetRoundTrip.AutoOffMinutes == 15, "a headset profile round-trips through text");
         Check(new FoundDevice { Name = "G Pro Wireless Gaming Mouse" }.SettingsKey == "gprowireless", "profile names for a device");
         var layout = KeyLayout.Load("g515-tkl.json");
-        Check(layout.Name == "G515 LIGHTSPEED TKL" && layout.Rows.Length == 7 && layout.Rows[6].EndsWith("→"), "keyboard model loads");
+        Check(layout.Name == "G515 LIGHTSPEED TKL" && layout.Rows.Length == 9 && layout.Rows[8].EndsWith("→"), "keyboard model loads");
         var game = new Blocks();
         for (int y = 0; y < Game.Rows; y++) game.Cells[y, Game.Columns - 1] = 1;
         game.Cells[0, Game.Columns - 2] = 2;
@@ -1007,8 +1007,9 @@ static class SelfTest
             && GameModeKeys.Usage(0x68) == 0xE0 && GameModeKeys.Usage(0x6F) == 0xE7 && GameModeKeys.Usage(0xB4) == -1
             && GameModeKeys.Usage(0x99) == -1 && GameModeKeys.LightingId(0x1A) == 0x17 && GameModeKeys.LightingId(0xE3) == 0x6B,
             "Game mode keys: lighting ids are USB usages minus 3, the modifiers 0x68-0x6F, and G, media and brightness keys have none");
-        Check(!GameModeKeys.CanPick(0xE3) && !GameModeKeys.CanPick(0xE7) && !GameModeKeys.CanPick(0x65) && GameModeKeys.CanPick(0x2B)
-            && GameModeKeys.Clean(new[] { 0x1A, 0xE3, 0x0E, 0x1A, 0xC0 }).SequenceEqual(new[] { 0x0E, 0x1A }),
+        Check(!GameModeKeys.CanPick(0xE3, false) && !GameModeKeys.CanPick(0xE7, false) && !GameModeKeys.CanPick(0x65, false)
+            && GameModeKeys.CanPick(0x2B, false)
+            && GameModeKeys.Clean(new[] { 0x1A, 0xE3, 0x0E, 0x1A, 0xC0 }, false).SequenceEqual(new[] { 0x0E, 0x1A }),
             "Game mode keys: Windows and Menu are always off and can't be picked, and the list is sorted without repeats");
         var gamePackets = GameModeKeys.Packets(Enumerable.Range(4, 18).ToList());
         Check(gamePackets.Count == 2 && gamePackets[0].SequenceEqual(Enumerable.Range(4, 16).Select(usage => (byte)usage))
@@ -1020,8 +1021,21 @@ static class SelfTest
         string zoneKeys, zonePreset = GameModeKeys.Split("254,FF0000,0,0,0,0,0,100|zones:Hey!,FF0000!0E1A", out zoneKeys);
         Check(gameText == null && oldPreset == "1,FF0000,0,0,0,0,0,100" && noKeys == "" && emptyPreset == oldPreset
             && zoneKeys == "0E1A" && zonePreset.EndsWith("Hey!,FF0000")
-            && GameModeKeys.FromText("1A0EE3zz").SequenceEqual(new[] { 0x0E, 0x1A }) && GameModeKeys.ToText(new[] { 0x0E, 0x1A }) == "0E1A",
+            && GameModeKeys.FromText("1A0EE3zz", false).SequenceEqual(new[] { 0x0E, 0x1A }) && GameModeKeys.ToText(new[] { 0x0E, 0x1A }) == "0E1A",
             "Game mode keys in a preset: after the last !, none in an older preset, read back without what can't be picked");
+        var g515Controls = Enumerable.Range(0, FakeHidpp.ControlList.Length / 2)
+            .Select(i => FakeHidpp.ControlList[i * 2] << 8 | FakeHidpp.ControlList[i * 2 + 1]).ToArray();
+        var aAndEnter = GameModeKeys.Bitmap(g515Controls, new[] { 0x04, 0x28 });
+        Check(aAndEnter[7] == 0x41 && aAndEnter.Where((bits, index) => index != 7).All(bits => bits == 0),
+            "Game mode bitmap (0x4523): A and Enter are the G515's controls 0x38 and 0x3E, bits 0 and 6 of byte 7 (tried)");
+        var g515Usages = KeyLayout.Load("g515-tkl.json").KeyIds().Select(GameModeKeys.Usage).Where(usage => GameModeKeys.CanPick(usage, true))
+            .Concat(new[] { 0x32, 0x64 }).Distinct().ToList();
+        Check(g515Usages.Count == 88 && g515Usages.All(usage =>
+            GameModeKeys.Bitmap(g515Controls, new[] { usage }).Sum(bits => Convert.ToString(bits, 2).Count(bit => bit == '1')) == 1),
+            "Game mode bitmap: each key that can be picked on the G515 (ANSI and ISO) is one control");
+        Check(GameModeKeys.CanPick(0xE3, true) && GameModeKeys.CanPick(0x65, true) && !GameModeKeys.CanPick(0xE7, true)
+            && GameModeKeys.FromText("E365", true).SequenceEqual(new[] { 0x65, 0xE3 }),
+            "Game mode bitmap: Windows and Menu can be picked (the G515 leaves them on), the Fn key can't (no control)");
 
         foreach (var file in new[] { "g515-tkl.json", "g915-tkl.json", "g915.json", "g915-x.json", "g915-x-tkl.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json" })
         {
@@ -1042,10 +1056,11 @@ static class SelfTest
         Check(LayoutFiles.All(file => KeyLayout.Load(file).KeyNames().Count == KeyLayout.Load(file).KeyIds().Count)
             && KeyboardKinds.G815.GameMode == GameModeSupport.Tested && KeyboardKinds.G915.GameMode == GameModeSupport.Experimental
             && KeyboardKinds.G915Tkl.GameMode == GameModeSupport.Experimental
+            && KeyboardKinds.G515.GameMode == GameModeSupport.Tested && KeyboardKinds.G512X.GameMode == GameModeSupport.Experimental
             && KeyboardKinds.For(new FoundDevice { Name = "G915 X LIGHTSPEED TKL", Kind = "keyboard" }).GameMode
-                == GameModeSupport.NotImplemented
+                == GameModeSupport.Experimental
             && KeyboardKinds.For(new FoundDevice { Name = "PRO X 60", Kind = "keyboard" }).GameMode == GameModeSupport.None,
-            "Game mode: set on the G815, experimental on the G915s, shown without picking on the G915 X models, none elsewhere");
+            "Game mode: set on the G815 and the G515, experimental on the G915s, the G915 X models and the G512 X 75, none elsewhere");
         Check(!KeyLayout.IsIso(-1) && !KeyLayout.IsIso(0) && !KeyLayout.IsIso(1) && KeyLayout.IsIso(2) && KeyLayout.IsIso(0x0D)
             && KeyLayout.IsIso(0x3E), "0x4540: 1 is ANSI, 2 and up have ISO's shape (Solaar), unknown stays ANSI");
         var turnedOff = LogitechSoftware.ApprovedValue(false, new DateTime(2026, 11, 23, 0, 0, 0, DateTimeKind.Utc));
@@ -1067,12 +1082,12 @@ static class SelfTest
                 file + " builds an ISO picture with one key id per key");
         }
         var g515Iso = KeyLayout.Load("g515-tkl.json").Iso();
-        Check(g515Iso.Rows[3] == "Tab:1.5|Q|W|E|R|T|Y|U|I|O|P|[|]|_.25|Enter:1.25:2:.25|_.25|Del|End|PgDn"
-            && g515Iso.Rows[4] == "Caps:1.75|A|S|D|F|G|H|J|K|L|;|'|#"
-            && g515Iso.Rows[5] == "Shift:1.25|<>|Z|X|C|V|B|N|M|,|.|/|Shift:2.75|_1.25|↑" && g515Iso.Rows[6].Contains("|AltGr:1.25|")
-            && g515Iso.Ids[3] == "28 11 17 05 12 14 19 15 09 0F 10 2C 2D 25 49 4A 4B"
-            && g515Iso.Ids[4] == "36 01 13 04 06 07 08 0A 0B 0C 30 31 2F"
-            && g515Iso.Ids[5] == "69 61 1A 18 03 16 02 0E 0D 33 34 35 6D 4F",
+        Check(g515Iso.Rows[5] == "Tab:1.5|Q|W|E|R|T|Y|U|I|O|P|[|]|_.25|Enter:1.25:2:.25|_.25|Del|End|PgDn"
+            && g515Iso.Rows[6] == "Caps:1.75|A|S|D|F|G|H|J|K|L|;|'|#"
+            && g515Iso.Rows[7] == "Shift:1.25|<>|Z|X|C|V|B|N|M|,|.|/|Shift:2.75|_1.25|↑" && g515Iso.Rows[8].Contains("|AltGr:1.25|")
+            && g515Iso.Ids[5] == "28 11 17 05 12 14 19 15 09 0F 10 2C 2D 25 49 4A 4B"
+            && g515Iso.Ids[6] == "36 01 13 04 06 07 08 0A 0B 0C 30 31 2F"
+            && g515Iso.Ids[7] == "69 61 1A 18 03 16 02 0E 0D 33 34 35 6D 4F",
             "the G515's ISO picture: an L-shaped Enter from the Tab row with its id, # (2F), a short left Shift and <> (61), AltGr");
         var g213Iso = KeyLayout.Load("g213.json").Iso();
         Check(g213Iso.Rows[6] == "Caps:1.75|A|S|D|F|G|H|J|K|L|;|'|#|_4.75|4|5|6"
@@ -1083,7 +1098,8 @@ static class SelfTest
         var ansiIds = KeyLayout.Load("g515-tkl.json").KeyIds();
         Check(isoIds.Contains(0x61) && isoIds.Contains(0x2F) && !isoIds.Contains(0x2E) && ansiIds.Contains(0x2E) && !ansiIds.Contains(0x61),
             "ISO has <> and the key next to Enter, ANSI has \\");
-        Check(ansiIds.Distinct().Count() == 87 && isoIds.Distinct().Count() == 88, "the G515 has 87 keys in ANSI and 88 in ISO");
+        Check(ansiIds.Where(id => id >= 0).Distinct().Count() == 87 && isoIds.Where(id => id >= 0).Distinct().Count() == 88,
+            "the G515 has 87 lit keys in ANSI and 88 in ISO (its top strip is unlit)");
         Check(ansiIds.Contains(0x6F) && ansiIds.Contains(0x62) && ansiIds.Contains(0x6E), "Fn, Menu and AltGr have ids");
 
         var screen = new ScreenSettings

@@ -134,8 +134,10 @@ class KeyboardPage : DevicePage
     // The keys the Game mode key turns off besides Windows and Menu, as USB usages (GameModeKeys). They're live, like a lighting not
     // saved: kept in settings and presets, and sent again whenever a connection opens (Opened), since the keyboard forgets them when
     // it loses power, and when G HUB lets go of the keyboard. Replaced, never changed in place, since Opened reads it on the queue.
-    // gameMode: the Game view sets the list; the view may also be shown without it (GameModeSupport.NotImplemented).
+    // gameMode: the keyboard has the Game view.
     readonly bool gameMode;
+    // The keyboard takes the list as a bitmap of its controls (0x4523) rather than as usages (0x4522).
+    readonly bool gameBitmap;
     volatile List<int> gameKeys = new List<int>();
     string GameKeysSetting { get { return "gamemode." + found.SettingsKey; } }
     // The G keys' bindings as edited, and as the running profile has them. They reach the keyboard on Save only.
@@ -417,10 +419,11 @@ class KeyboardPage : DevicePage
         sleepBox = Choice(idle, "Turn off after", SleepText.Skip(never).ToArray(), 156, i => current.Sleep = SleepSecs[i + never]);
         if (note) foreach (Control control in idle.Controls) if (control != noteText && control.Top > 30) control.Visible = false;
 
-        gameMode = (kind.GameMode == GameModeSupport.Tested || kind.GameMode == GameModeSupport.Experimental) && found.Has(0x4522);
-        bool gameShown = gameMode || kind.GameMode == GameModeSupport.NotImplemented;
+        gameBitmap = !found.Has(0x4522) && found.Has(0x4523) && found.Has(0x1B10);
+        gameMode = (kind.GameMode == GameModeSupport.Tested || kind.GameMode == GameModeSupport.Experimental)
+            && (found.Has(0x4522) || gameBitmap);
         if (kind.GKeys != null) views.Add(ButtonsView);
-        if (gameShown) views.Add(GameView);
+        if (gameMode) views.Add(GameView);
         if (views.Count > 1)
         {
             // Right of the preset row, which reaches 436 while a preset is named: three views get 64 px each, so Game mode is "Game".
@@ -430,17 +433,15 @@ class KeyboardPage : DevicePage
                 636 - pickWidth, 72, pickWidth, 32);
             viewPick.Picked += index => { if (index >= 0 && index < views.Count) ShowView(views[index]); };
         }
-        if (gameShown)
+        if (gameMode)
         {
-            if (gameMode) gameKeys = GameModeKeys.FromText(Settings.Get(GameKeysSetting));
-            string gameText = "Select the keys you want to disable while gaming. Windows and Menu keys are always disabled in Game mode. "
+            gameKeys = GameModeKeys.FromText(Settings.Get(GameKeysSetting), gameBitmap);
+            string gameText = "Select the keys you want to disable while gaming. "
+                + (gameBitmap ? "" : "Windows and Menu keys are always disabled in Game mode. ")
                 + "Changes apply immediately and can be saved in your G-Lite presets, but not in the keyboard's on-board memory.";
             if (kind.GameMode == GameModeSupport.Experimental)
-                gameText = "Experimental, not tried on a G915 yet. " + gameText;
-            if (!gameMode)
-                gameText = "Not implemented yet: this keyboard sets its Game mode keys through a feature G-Lite doesn't know, "
-                    + "so keys can't be selected here.";
-            gameBox = Ui.Add(this, new GameModeBox(kind.Keys, gameMode, gameText), 20, 118, 616, 543);
+                gameText = "Experimental, not tried on this keyboard yet. " + gameText;
+            gameBox = Ui.Add(this, new GameModeBox(kind.Keys, gameText, gameBitmap), 20, 118, 616, 543);
             gameBox.Picked += usage =>
             {
                 var keys = gameKeys.ToList();
@@ -1036,7 +1037,7 @@ class KeyboardPage : DevicePage
     {
         var keys = gameKeys;
         if (!gameMode || keys.Count == 0) return;
-        try { GameModeKeys.Send(hidpp, keys); }
+        try { GameModeKeys.Send(hidpp, keys, gameBitmap); }
         catch (HidppError ex) { Log.Add(DeviceLabel, "error", "Game mode keys: " + ex.Message); }
     }
 
@@ -1069,7 +1070,7 @@ class KeyboardPage : DevicePage
         var pieces = parts[0].Split('#');
         var lighting = Lighting.FromText(pieces[0], out level);
         var newSetup = parts.Length > 1 ? ScreenSettings.FromText(parts[1]) : setup;
-        if (game != null) SetGameKeys(GameModeKeys.FromText(game));
+        if (game != null) SetGameKeys(GameModeKeys.FromText(game, gameBitmap));
         if (text == LightingText()) { RefreshControls(); ClearStatus(); return; }
         bool software = lighting.Effect == ScreenEffect || LiveEffects.Is(lighting.Effect);
         if (software && !canScreen) { lighting.Effect = 0x01; software = false; }
@@ -1271,13 +1272,13 @@ class KeyboardPage : DevicePage
 
     void SetGameKeys(IEnumerable<int> keys)
     {
-        var list = GameModeKeys.Clean(keys);
+        var list = GameModeKeys.Clean(keys, gameBitmap);
         if (!gameMode || list.SequenceEqual(gameKeys)) return;
         gameKeys = list;
         var text = GameModeKeys.ToText(list);
         if (text == "") Settings.Remove(GameKeysSetting); else Settings.Set(GameKeysSetting, text);
         LogUserAction(text == "" ? "Game mode keys cleared" : "Game mode keys " + string.Join(" ", list.Select(usage => usage.ToString("X2"))));
-        RunOnDevice(hidpp => GameModeKeys.Send(hidpp, list));
+        RunOnDevice(hidpp => GameModeKeys.Send(hidpp, list, gameBitmap));
         Edited();
         gameBox.ShowKeys(gameKeys);
     }

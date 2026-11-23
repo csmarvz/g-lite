@@ -5,6 +5,10 @@
 ### Added
 
 - G300 and G300s: the active profile's four DPI levels (250 to 2500), report rate, colour (one of eight) and buttons, saved to the mouse with a backup and read back. Nothing changes until you save, since the G300 can't take a change live. Built from PeriHub's notes, which saved on a G300 (MIT); not yet tried by a G-Lite owner.
+- G515: a Game view to pick the keys the Game button turns off, as on the G815. Unlike the G815, the G515 leaves Windows and Menu on in Game mode, so they can be picked too. The keyboard forgets the list when turned off, so G-Lite sends it again whenever it connects, even after a quick off and on. Presets keep it. Tried on an owner's G515 TKL.
+- G915 X and G915 X TKL: their Game view can now pick keys, the G515's way. Experimental: not tried on one yet.
+- G512 X 75: a Game view to pick the keys Game mode turns off, the G515's way. Experimental: not tried on one yet. Its picture shows the two knobs right of F12, greyed out.
+- G515: its picture shows the LIGHTSPEED, Bluetooth and Game buttons and the two status lights above the F keys.
 - G515, G915 TKL, G512 X 75 and other keyboards with RGB effects: Wave goes Up and Down when the keyboard says it can (its effect info's direction bits), as on the G815. Not yet tried on these keyboards.
 
 ### Changed

@@ -413,9 +413,23 @@ class MainWindow : Form
         }
     }
 
+    void Reconnected(string path, byte index)
+    {
+        var device = found.FirstOrDefault(candidate => candidate.Path == path && candidate.Index == index);
+        Control page;
+        if (device != null && pages.TryGetValue(device.Key, out page) && page is DevicePage) ((DevicePage)page).Reconnected();
+    }
+
     void Heard(string path, byte[] report)
     {
-        if (report[0] == 0x10 && report[2] == 0x41) { BeginInvoke((Action)RescanSoon); return; }
+        if (report[0] == 0x10 && report[2] == 0x41)
+        {
+            // Bit 6 of byte 3 set: the link went down (as Solaar reads it). A device that connects again may have been off too briefly
+            // for the scan to see it gone (a G515 turned off and on), so its page sends again what it forgot.
+            if ((report[3] & 0x40) == 0) BeginInvoke((Action)(() => Reconnected(path, report[1])));
+            BeginInvoke((Action)RescanSoon);
+            return;
+        }
         // Events have software id 0; replies to G-Lite's own calls don't.
         if (report[0] != 0x11 || (report[3] & 0x0F) != 0) return;
         BeginInvoke((Action)(() =>
@@ -557,7 +571,7 @@ class MainWindow : Form
         {
             new FoundDevice { Key = "demo|keyboard", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard",
                 Link = "LIGHTSPEED", WirelessId = 0x40B4, Battery = 82, Firmware = "MPK 25.02, build 0016",
-                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1B10, 0x4523, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
             new FoundDevice { Key = "demo|g915full", Name = "G915 LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard",
                 Link = "LIGHTSPEED", Index = 2, WirelessId = 0x407C, Battery = 46, BatteryFromVoltage = true, Millivolts = 3780,
                 Firmware = "MPK 12.01, build 0019",
@@ -577,7 +591,7 @@ class MainWindow : Form
                 Features = new[] { 0x0001, 0x0003, 0x0005, 0x4522, 0x4540, 0x8040, 0x8071, 0x8081, 0x8100 } },
             new FoundDevice { Key = "demo|g512x", Name = "G512 X 75", Kind = "keyboard",
                 Link = "USB", Index = 0xFF, Firmware = "U1 81.05, build 0020",
-                Features = new[] { 0x0001, 0x0003, 0x0005, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1B10, 0x4523, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
             new FoundDevice { Key = "demo|prox60", Name = "PRO X 60", Kind = "keyboard",
                 Link = "LIGHTSPEED", Index = 5, WirelessId = 0x40C1, Battery = 77, Firmware = "MPK 21.01, build 0012",
                 Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },

@@ -1,0 +1,114 @@
+open
+  4540 fn0
+  8071 fn0
+  8071 fn0  00 01
+  8071 fn0  00 02
+  8071 fn0  00 03
+  8071 fn0  00 04
+  8071 fn0  00 05
+  8071 fn0  00 06
+  8071 fn0  01
+  8101 fn8  01 01 00 63
+  8101 fnC
+  8101 fnC  00 10
+  8101 fnC  00 20
+  8101 fnC  00 30
+  8101 fnC  00 40
+  8101 fnC  00 50
+  8101 fnC  00 60
+  8101 fn8  01 00 00 10
+  8101 fnC
+  8101 fn8  00 08 00 63
+  8101 fn8  00 00 00 10
+  8040 fn1
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=0 (off) Intensity=100 (off) [Revert (off)] [Save to keyboard (off)]
+pick View Game
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Game Game mode keys=- [Clear (off)] [Revert (off)] [Save to keyboard (off)]
+click A
+  1B10 fn0
+  1B10 fn1
+  1B10 fn1  08
+  1B10 fn1  10
+  1B10 fn1  18
+  1B10 fn1  20
+  1B10 fn1  28
+  1B10 fn1  30
+  1B10 fn1  38
+  1B10 fn1  40
+  1B10 fn1  48
+  1B10 fn1  50
+  1B10 fn1  58
+  1B10 fn1  60
+  1B10 fn1  68
+  1B10 fn1  70
+  1B10 fn1  78
+  4523 fn0  00 00 00 00 00 00 00 01
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Game Game mode keys=A [Clear] [Revert (off)] [Save to keyboard (off)]
+click Enter
+  4523 fn0  00 00 00 00 00 00 00 41
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Game Game mode keys=Enter A [Clear] [Revert (off)] [Save to keyboard (off)]
+check the bitmap
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Game Game mode keys=Enter A [Clear] [Revert (off)] [Save to keyboard (off)]
+menu More preset actions > Save as new preset…
+  menu: Save as new preset… | Rename… (off) | Delete (off)
+  = status "Matches the keyboard" [Report] [Backups] [Save] [Cancel] View=Game Game mode keys=Enter A [Clear] [Revert (off)] [Save to keyboard (off)]
+type Shooter
+  = status "Matches the keyboard" [Report] [Backups] [Save] [Cancel] View=Game Game mode keys=Enter A [Clear] [Revert (off)] [Save to keyboard (off)]
+press Save
+  = status "Saved the preset Shooter" [Report] [Backups] G-Lite preset=Shooter [Update (off)] […] View=Game Game mode keys=Enter A [Clear] [Revert (off)] [Save to keyboard (off)]
+press Clear
+  4523 fn0
+  = status "Saved the preset Shooter" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Game Game mode keys=- [Clear (off)] [Revert] [Save to keyboard (off)]
+check the bitmap is empty
+  = status "Saved the preset Shooter" [Report] [Backups] G-Lite preset=Shooter • [Update] […] View=Game Game mode keys=- [Clear (off)] [Revert] [Save to keyboard (off)]
+press Revert
+  4523 fn0  00 00 00 00 00 00 00 41
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=Shooter [Update (off)] […] View=Game Game mode keys=Enter A [Clear] [Revert (off)] [Save to keyboard (off)]
+check the preset's keys are back
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=Shooter [Update (off)] […] View=Game Game mode keys=Enter A [Clear] [Revert (off)] [Save to keyboard (off)]
+quit
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=Shooter [Update (off)] […] View=Game Game mode keys=Enter A [Clear] [Revert (off)] [Save to keyboard (off)]
+open
+  1B10 fn0
+  1B10 fn1
+  1B10 fn1  08
+  1B10 fn1  10
+  1B10 fn1  18
+  1B10 fn1  20
+  1B10 fn1  28
+  1B10 fn1  30
+  1B10 fn1  38
+  1B10 fn1  40
+  1B10 fn1  48
+  1B10 fn1  50
+  1B10 fn1  58
+  1B10 fn1  60
+  1B10 fn1  68
+  1B10 fn1  70
+  1B10 fn1  78
+  4523 fn0  00 00 00 00 00 00 00 41
+  4540 fn0
+  8071 fn0
+  8071 fn0  00 01
+  8071 fn0  00 02
+  8071 fn0  00 03
+  8071 fn0  00 04
+  8071 fn0  00 05
+  8071 fn0  00 06
+  8071 fn0  01
+  8101 fn8  01 01 00 63
+  8101 fnC
+  8101 fnC  00 10
+  8101 fnC  00 20
+  8101 fnC  00 30
+  8101 fnC  00 40
+  8101 fnC  00 50
+  8101 fnC  00 60
+  8101 fn8  01 00 00 10
+  8101 fnC
+  8101 fn8  00 08 00 63
+  8101 fn8  00 00 00 10
+  8040 fn1
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=Shooter [Update (off)] […] View=Settings Effect=- Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=0 (off) Intensity=100 (off) [Revert (off)] [Save to keyboard (off)]
+check the bitmap is sent again
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=Shooter [Update (off)] […] View=Settings Effect=- Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=0 (off) Intensity=100 (off) [Revert (off)] [Save to keyboard (off)]

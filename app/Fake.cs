@@ -16,7 +16,7 @@ class FakeHidpp : Hidpp
 {
     static readonly Dictionary<int, byte> Index = new Dictionary<int, byte>
     {
-        { 0x8071, 9 }, { 0x8040, 14 }, { 0x8101, 15 }, { 0x8081, 16 }, { 0x4540, 17 }, { 0x1004, 18 }
+        { 0x8071, 9 }, { 0x8040, 14 }, { 0x8101, 15 }, { 0x8081, 16 }, { 0x4540, 17 }, { 0x1004, 18 }, { 0x1B10, 11 }, { 0x4523, 12 }
     };
     static readonly byte[] EffectIds = { 0x00, 0x01, 0x0A, 0x15, 0x16, 0x17 };
     public readonly Dictionary<int, int> Keys = new Dictionary<int, int>();
@@ -43,6 +43,16 @@ class FakeHidpp : Hidpp
     public byte[] Live = new byte[12];
 
     public FakeHidpp() : base(false) { }
+
+    // The control list (0x1B10) of an owner's G515 TKL, and the Game mode bitmap 0x4523 fn 0 sets.
+    public static readonly byte[] ControlList = Hex("014C00EF00F100F300F5014E0150004E010B014401460148014A01420153015600F600F000F200F4014D014F004C004D0143014501470149014B0158017E0116010C01380133013A012A0131015B0118010D013401270129012C015C0169011701320126013501360130015A011E011A012201250128012B012D015D015501190000010E013B01240123012E015F017C010F018B0161018D004F00EC0152011B0000016A01390137012F0160015E0115018C0180017F00340114015100EB000000000000015900000000000000000000000000000000000000000000000000000000018A01850000000000000000000000000000000000000000000000000000");
+    public byte[] GameBitmap = new byte[16];
+
+    public static void Controls(int fn, byte[] parameters, byte[] reply)
+    {
+        if (fn == 0) reply[0] = (byte)(ControlList.Length / 2);
+        if (fn == 1) for (int i = 0; i < 16 && parameters[0] * 2 + i < ControlList.Length; i++) reply[i] = ControlList[parameters[0] * 2 + i];
+    }
 
     // What the keys show now: effect ID and its 10 parameter bytes, plus brightness.
     public void State(out byte id, out byte[] parameters, out int bright)
@@ -115,6 +125,8 @@ class FakeHidpp : Hidpp
             }
         }
         else if (featureIndex == Index[0x4540]) reply[0] = 0x0D;
+        else if (featureIndex == Index[0x1B10]) Controls(fn, parameters, reply);
+        else if (featureIndex == Index[0x4523] && fn == 0) GameBitmap = parameters.Take(16).ToArray();
         else if (featureIndex == Index[0x1004]) { reply[0] = (byte)Battery; reply[2] = (byte)(Charging ? 1 : 0); }
         else if (featureIndex == Index[0x8101])
         {
@@ -337,6 +349,7 @@ class FakeG915 : Hidpp
     Dictionary<int, byte> Index = new Dictionary<int, byte> { { 0x8071, 10 }, { 0x8040, 20 }, { 0x8100, 21 }, { 0x4540, 16 }, { 0x4522, 8 } };
     // The Game mode list (0x4522): usages added with fn 1 and taken off with fn 2, all cleared with fn 3.
     public readonly SortedSet<int> GameKeys = new SortedSet<int>();
+    public byte[] GameBitmap = new byte[16];
     public byte[][] Ids = { new byte[] { 0x00, 0x01, 0x03, 0x0A }, new byte[] { 0x00, 0x01, 0x0A, 0x03, 0x04, 0x0B, 0x0C } };
     // Profile 1 of an owner's G915 TKL (Cycle at 10 s on both clusters, power save after 60 s, off after 300 s),
     // and its factory copy (Cycle at 5 s).
@@ -382,7 +395,10 @@ class FakeG915 : Hidpp
     {
         return new FakeG915
         {
-            Index = new Dictionary<int, byte> { { 0x8071, 6 }, { 0x8081, 7 }, { 0x8040, 8 }, { 0x8101, 9 }, { 0x4540, 10 } },
+            Index = new Dictionary<int, byte>
+            {
+                { 0x8071, 6 }, { 0x8081, 7 }, { 0x8040, 8 }, { 0x8101, 9 }, { 0x4540, 10 }, { 0x1B10, 11 }, { 0x4523, 12 }
+            },
             Ids = new[] { new byte[] { 0x00, 0x01, 0x0A, 0x15, 0x16, 0x17, 0x18 }, new byte[] { 0x00, 0x01, 0x0A, 0x15, 0x16, 0x18 } }
         };
     }
@@ -395,6 +411,9 @@ class FakeG915 : Hidpp
         var reply = new byte[16];
         if (featureIndex == 0) { byte i; reply[0] = Index.TryGetValue(parameters[0] << 8 | parameters[1], out i) ? i : (byte)0; }
         else if (featureIndex == Index[0x4540]) reply[0] = Layout;
+        // The G515's list, for the G915 X: its own isn't known.
+        else if (Index.ContainsKey(0x1B10) && featureIndex == Index[0x1B10]) FakeHidpp.Controls(fn, parameters, reply);
+        else if (Index.ContainsKey(0x4523) && featureIndex == Index[0x4523] && fn == 0) GameBitmap = parameters.Take(16).ToArray();
         else if (Index.ContainsKey(0x4522) && featureIndex == Index[0x4522])
         {
             if (fn == 0) reply[0] = 0xFF;
