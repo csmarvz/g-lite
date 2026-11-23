@@ -98,7 +98,10 @@ Logitech devices with none of these settings show up in the sidebar with their c
 ## FAQ
 
 **Can I use G-Lite and G HUB at the same time?**
-Not well. Both control the same devices, so each would undo the other's changes. Quit G HUB while you use G-Lite.
+Not well. Both control the same devices, so each would undo the other's changes. Stop G HUB while you use G-Lite: **Settings**, **Services** does it for you.
+
+**Do I need to uninstall G HUB or Logitech Gaming Software?**
+No. In **Settings**, **Services** lists G HUB, Logitech Gaming Software and the Logitech LampArray Service (which hands Logitech devices to Windows Dynamic Lighting), and shows which are running. **Stop** ends their apps, stops their Windows services and keeps them from starting with Windows; Windows asks for administrator rights once per click, and **Stop all** does them all at once. **Start** puts everything back, and so can Task Manager (Startup apps) and Services, even without G-Lite. G HUB still opens if you start it yourself. See [docs/services.md](docs/services.md).
 
 **What happens to my settings if I stop using G-Lite?**
 Whatever you saved to a keyboard or mouse stays on it, and works without any app. Settings that aren't saved to the device (the Untested keyboards, the G560, the Litra) go back to the device's own when it restarts.

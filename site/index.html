@@ -91,6 +91,7 @@ section > .wrap > h2 { font-size: clamp(28px, 4vw, 38px); }
 .card svg { width: 26px; height: 26px; stroke: var(--accent); fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 14px; }
 .card h3 { font-size: 18px; margin-bottom: 6px; }
 .card p { color: var(--dim); font-size: 15px; }
+.card.wide { grid-column: 1 / -1; }
 
 /* Split */
 .split { display: grid; grid-template-columns: 1fr 1.35fr; gap: 56px; align-items: center; margin-top: 72px; }
@@ -245,6 +246,11 @@ footer p { max-width: 460px; }
           <h3>Backups</h3>
           <p>A copy of the device is kept before every save. The factory profile is never written.</p>
         </div>
+        <div class="card wide">
+          <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9.5 9.5v5M14.5 9.5v5"/></svg>
+          <h3>Keep G HUB out of the way</h3>
+          <p>Settings shows whether G HUB, Logitech Gaming Software or Logitech's Dynamic Lighting service is running, and stops them in a click, so they don't undo your settings or start with Windows. Nothing is uninstalled: Start brings them back.</p>
+        </div>
       </div>
 
       <div class="split">
@@ -365,7 +371,8 @@ footer p { max-width: 460px; }
       <p class="kicker">FAQ</p>
       <h2>Questions</h2>
       <div class="faq">
-        <details><summary>Can I use G-Lite and G HUB at the same time?</summary><p>Not well. Both control the same devices, so each undoes the other's changes. Quit G HUB, or Logitech Gaming Software, while you use G-Lite.</p></details>
+        <details><summary>Can I use G-Lite and G HUB at the same time?</summary><p>Not well. Both control the same devices, so each undoes the other's changes. Stop G HUB, or Logitech Gaming Software, while you use G-Lite: Settings, Services does it for you.</p></details>
+        <details><summary>Do I need to uninstall G HUB or Logitech Gaming Software?</summary><p>No. In G-Lite's Settings, Services lists them, with Logitech's Dynamic Lighting service, and shows which are running. Stop ends their apps, stops their Windows services and keeps them from starting with Windows; Windows asks for administrator rights once per click. Stop all does them all at once. Start puts everything back, and so can Task Manager (Startup apps) and Services, even without G-Lite. G HUB still opens if you start it yourself.</p></details>
         <details><summary>What if my device isn't supported yet?</summary><p>Open G-Lite anyway: it lists every Logitech device it finds, with its connection, battery and firmware. Click Report on its screen, then Open GitHub issue, and the report is filled in for you. It holds what G-Lite needs to add the device, and nothing personal.</p></details>
         <details><summary>What happens to my settings if I stop using G-Lite?</summary><p>Whatever you saved to a keyboard or mouse stays on it and works without any app. Settings that aren't saved to the device go back to the device's own when it restarts.</p></details>
         <details><summary>What if a save goes wrong?</summary><p>G-Lite backs up the device before every save and reads back everything it writes. If a save stops halfway, it offers to restore the backup. Any backup, or the factory profile, can be restored from Backups.</p></details>

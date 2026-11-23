@@ -106,6 +106,8 @@ class LogitechSoftware
             new StartupEntry { Hive = RegistryHive.LocalMachine, RunView = RegistryView.Registry64, Approved = ApprovedKey + "Run" },
             new StartupEntry { Hive = RegistryHive.LocalMachine, RunView = RegistryView.Registry32, Approved = ApprovedKey + "Run32" },
         };
+        // On 32-bit Windows both views are the same key.
+        if (!Environment.Is64BitOperatingSystem) places = places.Take(2).ToArray();
         var found = new List<StartupEntry>();
         if (StartupPrograms.Length == 0) return found;
         foreach (var place in places)
@@ -159,6 +161,7 @@ class LogitechSoftware
     // From the screen, on a worker thread. Null, or what went wrong.
     public static string Change(List<LogitechSoftware> software, bool stop)
     {
+        string problem = null;
         bool elevate = software.Any(item => item.Services.Any(name => ServiceStatus(name) != null)
             || item.StartupEntries().Any(entry => entry.Machine));
         if (elevate)
@@ -172,13 +175,22 @@ class LogitechSoftware
             {
                 using (var process = Process.Start(info))
                 {
-                    if (!process.WaitForExit(90000)) return "Windows didn't finish in time";
-                    if (process.ExitCode != 0) return (stop ? "Not all stopped" : "Not all started") + ", see Logs";
+                    if (process == null) return "Windows didn't start it";
+                    if (!process.WaitForExit(90000)) problem = "Windows didn't finish in time";
+                    else if (process.ExitCode != 0)
+                    {
+                        problem = stop ? "Not all stopped" : "Not all started";
+                        // The elevated G-Lite says which, as bits of All's order (RunElevated).
+                        var failed = All.Where((item, index) => (process.ExitCode >> index & 1) != 0).Select(item => item.Name).ToList();
+                        Log.Add("", "error", "Couldn't " + (stop ? "stop " : "start ") + "all of "
+                            + (failed.Count > 0 ? string.Join(", ", failed) : "it") + " (exit code " + process.ExitCode + ")");
+                    }
                 }
             }
             // 1223: the Windows prompt was cancelled.
             catch (Win32Exception ex) { return ex.NativeErrorCode == 1223 ? "Cancelled in the Windows prompt" : ex.Message; }
         }
+        // Done even when the elevated part partly failed, so a service left on doesn't also come with its program at sign-in.
         // The user's own entries, from here: an elevated G-Lite can run as another account, with another HKCU.
         foreach (var item in software)
         {
@@ -190,34 +202,29 @@ class LogitechSoftware
                 }
             if (stop) item.EndProcesses();
         }
-        return null;
+        return problem;
     }
 
-    // GLite.exe --services stop|start <id>..., run elevated by Change. The ids pick from All, so it can't touch other services.
+    // GLite.exe --services stop|start <id>..., run elevated by Change. The ids pick from All, so it can't touch other services. It
+    // returns a bit for each of All that failed, and doesn't log: it doesn't touch Settings or Log, whose files it could find
+    // elsewhere (an administrator can write next to the exe where the user's G-Lite couldn't), and Change logs the bits.
     public static int RunElevated(string[] args)
     {
         bool stop = args[1] == "stop";
-        if (!stop && args[1] != "start") return 2;
+        if (!stop && args[1] != "start") return 1 << All.Length;
         int failed = 0;
         foreach (var item in ByIds(args.Skip(2)))
         {
+            int bit = 1 << Array.IndexOf(All, item);
             foreach (var name in item.Services)
                 try { ChangeService(name, stop); }
-                catch (Exception ex)
-                {
-                    failed++;
-                    Log.Add("", "error", "Couldn't " + (stop ? "stop " : "start ") + name + ": " + ex.Message);
-                }
+                catch (Exception) { failed |= bit; }
             foreach (var entry in item.StartupEntries().Where(entry => entry.Machine))
                 try { SetEnabled(entry, !stop); }
-                catch (Exception ex)
-                {
-                    failed++;
-                    Log.Add("", "error", "Couldn't turn " + (stop ? "off" : "on") + " the startup entry " + entry.Name + ": " + ex.Message);
-                }
+                catch (Exception) { failed |= bit; }
             if (stop) item.EndProcesses();
         }
-        return failed == 0 ? 0 : 1;
+        return failed;
     }
 
     static void ChangeService(string name, bool stop)
@@ -253,6 +260,8 @@ class ServicesBox : RoundedBox
     readonly SoftwareState[] demoStates = { SoftwareState.Running, SoftwareState.NotInstalled, SoftwareState.Running };
     SoftwareState[] shown;
     bool lightingOn, busy, reading;
+    // Bumped by each Stop or Start, so a read started before it is dropped.
+    int sequence;
     DateTime problemsUntil;
 
     public ServicesBox(bool demo)
@@ -296,16 +305,30 @@ class ServicesBox : RoundedBox
 
     void Read()
     {
-        if (reading || busy || !Visible) return;
+        var form = FindForm();
+        if (reading || busy || !Visible || (form != null && form.WindowState == FormWindowState.Minimized)) return;
         if (demo) { Show(demoStates.ToArray(), false); return; }
         reading = true;
+        int startedAt = sequence;
         Task.Run(() =>
         {
-            var running = LogitechSoftware.RunningProcesses();
-            var states = LogitechSoftware.All.Select(item => item.State(running)).ToArray();
-            bool lighting = KeyboardPage.DynamicLightingOn();
-            if (IsHandleCreated && !IsDisposed)
-                BeginInvoke((Action)(() => { reading = false; Show(states, lighting); }));
+            SoftwareState[] states = null;
+            bool lighting = false;
+            try
+            {
+                var running = LogitechSoftware.RunningProcesses();
+                states = LogitechSoftware.All.Select(item => item.State(running)).ToArray();
+                lighting = KeyboardPage.DynamicLightingOn();
+            }
+            catch (Exception ex) { Log.Add("", "error", "Couldn't read the services: " + ex.Message); }
+            if (!IsHandleCreated || IsDisposed) { reading = false; return; }
+            BeginInvoke((Action)(() =>
+            {
+                reading = false;
+                if (states == null || busy) return;
+                if (startedAt != sequence) { Read(); return; }
+                Show(states, lighting);
+            }));
         });
     }
 
@@ -353,6 +376,7 @@ class ServicesBox : RoundedBox
         string names = string.Join(", ", software.Select(item => item.Name));
         Log.Add("", "you", (stop ? "Stop " : "Start ") + names);
         busy = true;
+        sequence++;
         foreach (var row in rows) { stateLabels[row].Text = stop ? "Stopping…" : "Starting…"; problems[row] = null; }
         foreach (var button in buttons.Concat(new[] { allButton })) button.Enabled = false;
         if (demo)
@@ -364,10 +388,12 @@ class ServicesBox : RoundedBox
         }
         Task.Run(() =>
         {
-            string problem = LogitechSoftware.Change(software, stop);
+            string problem;
+            try { problem = LogitechSoftware.Change(software, stop); }
+            catch (Exception ex) { problem = ex.Message; }
             if (problem != null) Log.Add("", "error", (stop ? "Stop " : "Start ") + names + ": " + problem);
             else Log.Add("", "services", (stop ? "Stopped " : "Started ") + names);
-            if (!IsHandleCreated || IsDisposed) return;
+            if (!IsHandleCreated || IsDisposed) { busy = false; return; }
             BeginInvoke((Action)(() =>
             {
                 busy = false;

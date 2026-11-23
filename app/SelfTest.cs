@@ -1015,9 +1015,10 @@ static class SelfTest
             && BitConverter.ToInt64(turnedOff, 4) == new DateTime(2026, 11, 23, 0, 0, 0, DateTimeKind.Utc).ToFileTimeUtc()
             && LogitechSoftware.Mentions(@"C:\Program Files\Logitech Gaming Software\LCore.exe /minimized", "LCore.exe")
             && !LogitechSoftware.Mentions(null, "LCore.exe")
-            && LogitechSoftware.ByIds(new[] { "lgs", "Spooler", "ghub" }).Select(item => item.Id).SequenceEqual(new[] { "ghub", "lgs" }),
+            && LogitechSoftware.ByIds(new[] { "lgs", "Spooler", "ghub" }).Select(item => item.Id).SequenceEqual(new[] { "ghub", "lgs" })
+            && LogitechSoftware.RunElevated(new[] { "--services", "delete", "ghub" }) != 0,
             "Services: Task Manager's startup values (02 on, 03 off with a FILETIME at byte 4), Run entries found by program, "
-                + "and the elevated G-Lite acting only on its own list");
+                + "and the elevated G-Lite acting only on its own list and commands");
         // The built ISO pictures were checked equal to the hand-made g515-tkl-iso.json and g213-iso.json they replaced.
         foreach (var file in LayoutFiles)
         {

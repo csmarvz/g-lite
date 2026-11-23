@@ -154,6 +154,7 @@ class MainWindow : Form
         // The title stays while the rest scrolls.
         var settings = Ui.Add(settingsPage, new ScrollPanel(), 0, SettingsHeader, WindowWidth - SidebarWidth, WindowHeight - SettingsHeader);
         Ui.Style(settings, () => settings.BackColor = Theme.Background);
+        settings.MouseDown += Drag;
         logsPage = Ui.Add(this, new LogsPage(Drag), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         updatePage = Ui.Add(this, new UpdatePage(Drag), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         if (demo) updatePage.Fetch = DemoChangelog;

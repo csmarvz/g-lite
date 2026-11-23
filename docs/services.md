@@ -16,7 +16,7 @@ Seen on a PC with both installed (2026-11-23):
 
 The LampArray service hands Logitech devices to Windows Dynamic Lighting. Dynamic Lighting itself is a setting (`HKCU\Software\Microsoft\Lighting`, `AmbientLightingEnabled`), not a service; G-Lite only reads it, since changing the value directly may not take effect until Windows reads it again.
 
-A row is Running when one of its services isn't stopped or one of its programs runs, Stopped when a service, a startup entry or a program is found, otherwise Not installed.
+A row is Running when one of its services isn't stopped or one of its programs runs, Stopped when a service or a startup entry is found, otherwise Not installed. Stopped doesn't look at the startup entries: a stopped G HUB whose own start-with-Windows setting is on will still start at sign-in.
 
 ## Stop and Start
 
@@ -34,6 +34,6 @@ So G-Lite keeps nothing: Start puts back what the installers set. A service its 
 
 ## Administrator
 
-Services and the all-users startup entries need an administrator. G-Lite runs itself elevated (`GLite.exe --services stop|start <ids>`, the Windows prompt), which does them and ends the programs, and returns 0 when everything worked; errors go to the log. The ids pick from `LogitechSoftware.All`, so the elevated G-Lite can't be pointed at other services. The user's own startup entries are changed by the G-Lite that runs as the user afterwards, since an elevated G-Lite can run as another account. One prompt per click: Stop all takes one; stopping three rows one by one takes three. A row whose software has nothing needing an administrator (no service, no all-users entry) asks for nothing.
+Services and the all-users startup entries need an administrator. G-Lite runs itself elevated (`GLite.exe --services stop|start <ids>`, the Windows prompt), which does them and ends the programs, and returns a bit for each software that failed (in `All`'s order), 0 when everything worked; the G-Lite that started it logs which. The elevated G-Lite doesn't log or read settings itself: an administrator can write next to the exe where the user's G-Lite couldn't, so it could find another `log.txt`. When it partly fails, the user's own startup entries are still turned off and the programs ended. The ids pick from `LogitechSoftware.All`, so the elevated G-Lite can't be pointed at other services. The user's own startup entries are changed by the G-Lite that runs as the user afterwards, since an elevated G-Lite can run as another account. One prompt per click: Stop all takes one; stopping three rows one by one takes three. A row whose software has nothing needing an administrator (no service, no all-users entry) asks for nothing.
 
 The demo shows made-up states and changes nothing.
