@@ -18,18 +18,18 @@ class G300Mouse : IMouse
     static readonly int[] RateByCode = { 1000, 125, 250, 500 };
 
     // Each of red, green and blue is on or off: Off, or Static in one of eight colours.
-    public EffectInfo[] Effects
-    {
-        get { return MouseProtocol.Effects.Where(effect => effect.Id == 0x00 || effect.Id == 0x01).ToArray(); }
-    }
+    static readonly EffectInfo[] OffAndStatic = MouseProtocol.Effects.Where(effect => effect.Id == 0x00 || effect.Id == 0x01).ToArray();
+    public EffectInfo[] Effects { get { return OffAndStatic; } }
     public bool HasFactory { get { return false; } }
 
+    // F0 also gives the level in use (bits 1-2), which isn't shown: the stage on the screen is the profile's default level, the one
+    // Save writes, so a save doesn't move the default to whatever level the DPI buttons left the mouse on.
     public MouseProtocol.State Read(Hidpp hidpp)
     {
         var active = hidpp.GetFeature(ActiveReport);
-        int profile = active[1] >> 4, level = active[1] >> 1 & 3;
+        int profile = active[1] >> 4;
         if (profile >= ProfileCount) throw new IOException("The G300 reported profile " + (profile + 1) + " of " + ProfileCount);
-        return Decode(ReadReport(hidpp, profile), level);
+        return Decode(ReadReport(hidpp, profile));
     }
 
     static byte[] ReadReport(Hidpp hidpp, int profile)
@@ -40,10 +40,10 @@ class G300Mouse : IMouse
         return report.Take(ReportLength).ToArray();
     }
 
-    public static MouseProtocol.State Decode(byte[] report, int level)
+    public static MouseProtocol.State Decode(byte[] report)
     {
         var stages = Enumerable.Range(0, LevelCount).Select(i => (report[LevelsAt + i] & 0x7F) * DpiUnit).ToArray();
-        int stage = level < LevelCount ? level : DefaultStageOf(report);
+        int stage = DefaultStageOf(report);
         int rate = report[RateAt] < RateByCode.Length ? RateByCode[report[RateAt]] : 0;
         var state = new MouseProtocol.State
         {
@@ -55,6 +55,7 @@ class G300Mouse : IMouse
             ButtonCount = ButtonCount,
             Buttons = Enumerable.Range(0, ButtonCount).Select(i => Binding(report, ButtonsAt + ButtonLength * i)).ToArray(),
             Light = Light(report[LightAt]),
+            Effects = OffAndStatic,
         };
         state.Zones[0] = new Dictionary<int, int>();
         return state;
@@ -68,7 +69,7 @@ class G300Mouse : IMouse
 
     static MouseLight Light(byte bits)
     {
-        if ((bits & 7) == 0) return new MouseLight { Effect = 0x00, Color = 0 };
+        if ((bits & 7) == 0) return new MouseLight { Effect = 0x00, Color = 0xFFFFFF };
         return new MouseLight
         {
             Effect = 0x01,
@@ -76,14 +77,15 @@ class G300Mouse : IMouse
         };
     }
 
-    // A channel is on from half its full value, after brightness.
+    // The nearest of the eight: a channel is on from half the brightest one, so a dark red stays red. Brightness has no say (the
+    // screen turns it off for this mouse); black, which has no hue, is white.
     public static int ColorBits(MouseLight light)
     {
         if (light.Effect == 0x00) return 0;
-        Func<int, bool> on = shift => (light.Color >> shift & 0xFF) * light.Bright / 100 >= 0x80;
-        int bits = (on(16) ? 1 : 0) | (on(8) ? 2 : 0) | (on(0) ? 4 : 0);
-        // A colour too dark for any channel stays lit in white rather than turning off, which Off is for.
-        return bits == 0 ? 7 : bits;
+        int red = light.Color >> 16 & 0xFF, green = light.Color >> 8 & 0xFF, blue = light.Color & 0xFF;
+        int brightest = Math.Max(red, Math.Max(green, blue));
+        if (brightest == 0) return 7;
+        return (red * 2 >= brightest ? 1 : 0) | (green * 2 >= brightest ? 2 : 0) | (blue * 2 >= brightest ? 4 : 0);
     }
 
     // A button is a function, then a modifier and a key that count when the function is 0. Shown as the HID++ binding that does the
@@ -115,15 +117,19 @@ class G300Mouse : IMouse
         }
         if (binding[0] == 0x80 && binding[1] == 0x02) return new byte[] { 0x00, binding[2], binding[3] };
         if (binding[0] == 0x90)
-            foreach (var pair in Specials) if (pair.Value == binding[1]) return new byte[] { (byte)pair.Key, 0, 0 };
+        {
+            // Cycle profile does what Next profile does with three profiles.
+            int special = binding[1] == 0x0A ? 0x08 : binding[1];
+            foreach (var pair in Specials) if (pair.Value == special) return new byte[] { (byte)pair.Key, 0, 0 };
+        }
         if (binding[0] == 0xA6) return new byte[] { binding[1], binding[2], binding[3] };
         return null;
     }
 
-    // DPI up, down, cycle; next profile (like Cycle profile); DPI shift; default DPI.
+    // DPI up, down, cycle; next profile; DPI shift; default DPI (not in the Bindings list, so kept but not offered).
     static readonly Dictionary<int, int> Specials = new Dictionary<int, int>
     {
-        { 0x0A, 0x03 }, { 0x0B, 0x04 }, { 0x0C, 0x05 }, { 0x0D, 0x0A }, { 0x0E, 0x07 }, { 0x0F, 0x06 },
+        { 0x0A, 0x03 }, { 0x0B, 0x04 }, { 0x0C, 0x05 }, { 0x0D, 0x08 }, { 0x0E, 0x07 }, { 0x0F, 0x06 },
     };
 
     // The profile with what's wanted: the stage's DPI, that stage as the default (the one used after a profile change), the rate,
@@ -146,10 +152,11 @@ class G300Mouse : IMouse
         }
         if (want.Light != null) built[LightAt] = (byte)(built[LightAt] & ~7 | ColorBits(want.Light));
         if (want.Buttons != null)
-            for (int i = 2; i < Math.Min(ButtonCount, want.Buttons.Length); i++)
+            for (int i = 0; i < Math.Min(ButtonCount, want.Buttons.Length); i++)
             {
                 int at = ButtonsAt + ButtonLength * i;
                 if (Binding(old, at).SequenceEqual(want.Buttons[i])) continue;
+                if (i < 2) throw new RefusedException("The G300's left and right buttons keep what they do");
                 var entry = Entry(want.Buttons[i]);
                 if (entry == null) throw new RefusedException("Button " + (i + 1) + ": the G300 can't do that");
                 entry.CopyTo(built, at);

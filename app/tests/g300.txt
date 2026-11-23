@@ -1,23 +1,23 @@
 open
   get feature F0
   get feature F3
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=1000 <Your color> DPI=3 Report rate=1k Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=1000 <Your color> DPI=3 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert (off)] [Save to mouse (off)]
 pick DPI stage 1500
-  = status "DPI changes when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=1500 <Your color> DPI=5 Report rate=1k Brightness=100 Speed=0 (off) [Revert] [Save to mouse]
+  = status "DPI changes when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=1500 <Your color> DPI=5 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
 pick Report rate 500
-  = status "DPI and report rate change when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=1500 <Your color> DPI=5 Report rate=500 Brightness=100 Speed=0 (off) [Revert] [Save to mouse]
+  = status "DPI and report rate change when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=1500 <Your color> DPI=5 Report rate=500 Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
 press Color FFD000
-  = status "DPI, lighting and report rate change when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=1500 <Color FFD000> DPI=5 Report rate=500 Brightness=100 Speed=0 (off) [Revert] [Save to mouse]
+  = status "DPI, lighting and report rate change when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=1500 <Color FFD000> DPI=5 Report rate=500 Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
 pick View Bindings
-  = status "DPI, lighting and report rate change when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings Left button=Left click Right button=Right click Wheel click=Middle click Button 4=DPI up Button 5=DPI down Button 6=DPI cycle Button 7=Back Button 8=Forward Button 9=Cycle profile [Revert] [Save to mouse]
+  = status "DPI, lighting and report rate change when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings Left button=Left click Right button=Right click Wheel click=Middle click Button 4=DPI up Button 5=DPI down Button 6=DPI cycle Button 7=Back Button 8=Forward Button 9=Next profile [Revert] [Save to mouse]
 pick View Settings
-  = status "DPI, lighting and report rate change when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=1500 <Color FFD000> DPI=5 Report rate=500 Brightness=100 Speed=0 (off) [Revert] [Save to mouse]
+  = status "DPI, lighting and report rate change when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=1500 <Color FFD000> DPI=5 Report rate=500 Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
 press Save to mouse
   get feature F3
   set feature  F3 03 03 02 04 86 0A 40 01 00 00 02 00 00 03
   get feature F3
   get feature F0
   get feature F3
-  = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=1000 <Your color> DPI=3 Report rate=500 Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=1500 <Your color> DPI=5 Report rate=500 Brightness=100 (off) Speed=0 (off) [Revert (off)] [Save to mouse (off)]
 check profile 1 as saved: yellow, 500 Hz, the 1500 DPI level the default, the buttons as they were
-  = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=1000 <Your color> DPI=3 Report rate=500 Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=1500 <Your color> DPI=5 Report rate=500 Brightness=100 (off) Speed=0 (off) [Revert (off)] [Save to mouse (off)]

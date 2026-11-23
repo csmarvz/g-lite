@@ -291,7 +291,9 @@ class MousePage : DevicePage
         var light = current.Light;
         var effect = light == null ? null : Effects.FirstOrDefault(info => info.Id == light.Effect);
         bool lit = ready && state.Zones.Count > 0, known = lit && effect != null, live = ready && !state.ReadOnly;
-        bool color = known && effect.Color, hasSpeed = known && effect.Speed, hasBrightness = known && light.Effect != 0x00;
+        // The G300 (SaveOnly) has no brightness: each colour is on or off.
+        bool color = known && effect.Color, hasSpeed = known && effect.Speed,
+            hasBrightness = known && light.Effect != 0x00 && !state.SaveOnly;
         lightHead.Text = !ready || lit
             ? (light == null && lit ? "Lighting (as saved on the mouse)"
                 : found.LightIsLiveOnly ? "Lighting (live only)"
@@ -607,7 +609,9 @@ class MousePage : DevicePage
 
     public override void Shown()
     {
-        base.Shown();
+        // A mouse with nothing live (the G300) has its unsaved changes only here, so coming back to it keeps them.
+        if (state != null && state.SaveOnly && dirty) ClearStatus();
+        else base.Shown();
         if (showingButtons) StartSpy();
     }
 

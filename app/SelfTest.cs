@@ -571,7 +571,7 @@ static class SelfTest
                 + "one whose rate bytes aren't 0x8061 indexes, whose default stage isn't one of its stages or whose stages are out of "
                 + "the mouse's range, and isn't offered when the mouse has no factory profile");
         var g300Report = new FakeG300().Profiles[1];
-        var g300 = G300Mouse.Decode(g300Report, 1);
+        var g300 = G300Mouse.Decode(g300Report);
         Check(!g300.ReadOnly && g300.SaveOnly && g300.Writable && g300.Stages.SequenceEqual(new[] { 1000, 2000, 2500, 2000 })
             && g300.Stage == 1 && g300.Dpi == 2000 && g300.Rate == 500 && g300.Light.Effect == 0x01 && g300.Light.Color == 0x0000FF
             && g300.Buttons.Length == 9 && g300.Buttons[5].SequenceEqual(FakeHidpp.Hex("80020106"))
@@ -585,12 +585,23 @@ static class SelfTest
             && G300Mouse.Entry(FakeHidpp.Hex("80020106")).SequenceEqual(FakeHidpp.Hex("000106"))
             && G300Mouse.Entry(FakeHidpp.Hex("90010000")) == null
             && G300Mouse.ColorBits(new MouseLight { Color = 0xFFD000 }) == 3 && G300Mouse.ColorBits(new MouseLight { Color = 0x202020 }) == 7
-            && G300Mouse.ColorBits(new MouseLight { Effect = 0x00 }) == 0,
+            && G300Mouse.ColorBits(new MouseLight { Color = 0x7F0000, Bright = 40 }) == 1
+            && G300Mouse.ColorBits(new MouseLight { Effect = 0x00 }) == 0
+            && G300Mouse.Entry(FakeHidpp.Hex("90080000")).SequenceEqual(FakeHidpp.Hex("0D0000"))
+            && G300Mouse.Binding(FakeHidpp.Hex("0D0000"), 0).SequenceEqual(FakeHidpp.Hex("90080000"))
+            && g300.Effects.Select(effect => effect.Id).SequenceEqual(new byte[] { 0x00, 0x01 })
+            && G300Mouse.Decode(FakeHidpp.Hex("F302000284060A40" + new string('0', 54))).Stage == 1,
             "G300: the profile report decodes (DPI × 250, the 0x80 default, rate codes, colour bits, buttons), builds back to the "
                 + "same bytes, and maps bindings both ways");
         bool g300Refused = false;
         try { G300Mouse.Build(g300Report, new MouseSettings { Dpi = 2600, Stage = 0 }); }
         catch (RefusedException) { g300Refused = true; }
+        var rightChanged = g300.Buttons.Select(binding => (byte[])binding.Clone()).ToArray();
+        rightChanged[1] = FakeHidpp.Hex("80010008");
+        bool rightRefused = false;
+        try { G300Mouse.Build(g300Report, new MouseSettings { Dpi = g300.Dpi, Stage = g300.Stage, Buttons = rightChanged }); }
+        catch (RefusedException) { rightRefused = true; }
+        Check(rightRefused, "G300: a change to the right button is refused, not dropped");
         Check(g300Refused, "G300: a DPI it can't take is refused");
         var g600Report = new FakeG600().Modes[2];
         var g600 = G600Mouse.Decode(g600Report, 3);
