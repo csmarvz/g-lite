@@ -46,11 +46,20 @@ class KeyboardKinds
     {
         string file = File(found.Name);
         var keys = LoadLayout(file, found.ShortName);
+        // The G515's top strip and the G512 X 75's knobs are theirs: a keyboard that borrows the picture shows neither.
+        if (file == "g515-tkl.json")
+        {
+            keys.Rows = keys.Rows.Skip(2).ToArray();
+            keys.Ids = keys.Ids.Skip(2).ToArray();
+        }
         if (file == "g512-x-75.json")
         {
             keys.Rows = keys.Rows.Take(7).ToArray();
             keys.Ids = keys.Ids.Take(7).ToArray();
+            keys.Rows[0] = keys.Rows[0].Substring(0, keys.Rows[0].IndexOf("|_.4|Knob"));
+            keys.Ids[0] = keys.Ids[0].Replace(" -- --", "");
         }
+        if (file == "g515-tkl.json" || file == "g512-x-75.json") keys.Shaped = null;
         // The G915 X's pictures come from projects that lit every id on the keyboard (docs/G915X.md), so they aren't a guess.
         bool known = file.StartsWith("g915-x");
         return new KeyboardKinds

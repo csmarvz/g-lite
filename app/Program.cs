@@ -424,9 +424,9 @@ class MainWindow : Form
     {
         if (report[0] == 0x10 && report[2] == 0x41)
         {
-            // Bit 6 of byte 3 set: the link went down (as Solaar reads it). A device that connects again may have been off too briefly
-            // for the scan to see it gone (a G515 turned off and on), so its page sends again what it forgot.
-            if ((report[3] & 0x40) == 0) BeginInvoke((Action)(() => Reconnected(path, report[1])));
+            // A device that connects again may have been off too briefly for the scan to see it gone (a G515 turned off and on), so
+            // its page sends again what it forgot.
+            if (Devices.LinkUp(report)) BeginInvoke((Action)(() => Reconnected(path, report[1])));
             BeginInvoke((Action)RescanSoon);
             return;
         }

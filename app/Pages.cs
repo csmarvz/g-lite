@@ -20,6 +20,8 @@ abstract class DevicePage : Control, IPage
     protected FoundDevice found;
     readonly Hidpp fake;
     Hidpp connection;
+    // Whether the work running on the queue opened the connection, so Opened has just run.
+    bool openedNow;
     // Set when a call failed and the connection was dropped, until a scan finds the device again (SetFound).
     volatile bool lost;
     Task queue = Task.FromResult(0);
@@ -197,14 +199,13 @@ abstract class DevicePage : Control, IPage
         if (lost && ReopensWhenFound) RunOnDevice(hidpp => { });
     }
 
-    // The receiver says the device connected again (0x41), which a scan misses when it was off only for a moment. A G515 sends two
-    // notices about a second apart and may not answer after the first: a failure stays off the status line, since the next notice
-    // or the scan that follows (a lost connection reopens) sends it again.
+    // The receiver says the device connected again (0x41), which a scan misses when it was off only for a moment. A device just
+    // connected may not answer yet: the failure stays off the status line, since the lost connection reopens at the next scan.
     public void Reconnected()
     {
         if (!ReopensWhenFound) return;
         Log.Add(DeviceLabel, "found", "connected again");
-        RunOnDevice(Opened, null, message => { });
+        RunOnDevice(hidpp => { if (!openedNow) Opened(hidpp); }, null, message => { });
     }
 
     void ShowSub()
@@ -304,6 +305,7 @@ abstract class DevicePage : Control, IPage
         {
             try
             {
+                openedNow = connection == null;
                 if (connection == null)
                 {
                     connection = fake ?? new Hidpp(found.Path, found.Index, found.ShortPath);
@@ -324,8 +326,8 @@ abstract class DevicePage : Control, IPage
                     lost = true;
                     Lost();
                 }
-                if (failed != null && IsHandleCreated) BeginInvoke((Action)(() => failed(ex.Message)));
-                else ShowStatusLater(ex.Message, true);
+                if (failed == null) ShowStatusLater(ex.Message, true);
+                else if (IsHandleCreated) BeginInvoke((Action)(() => failed(ex.Message)));
             }
         });
     }

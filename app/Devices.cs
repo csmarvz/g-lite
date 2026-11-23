@@ -9,6 +9,10 @@ using Microsoft.Win32.SafeHandles;
 
 static class Devices
 {
+    // A receiver's 0x41 notice, 10 <index> 41 <protocol> <flags> <wireless id LE>: flags bit 6 is set while the link is down (Solaar
+    // reads the byte after the protocol type; MyHUB, docs/research/more-references.md).
+    public static bool LinkUp(byte[] report) { return report.Length > 4 && (report[4] & 0x40) == 0; }
+
     const string HidClass = "#{4d1e55b2-f16f-11cf-88cb-001111000030}";
     public static readonly string[] Kinds = { "keyboard", "device", "device", "mouse", "mouse", "mouse", "device", "device", "headset" };
 

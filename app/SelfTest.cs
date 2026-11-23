@@ -1061,6 +1061,15 @@ static class SelfTest
                 == GameModeSupport.Experimental
             && KeyboardKinds.For(new FoundDevice { Name = "PRO X 60", Kind = "keyboard" }).GameMode == GameModeSupport.None,
             "Game mode: set on the G815 and the G515, experimental on the G915s, the G915 X models and the G512 X 75, none elsewhere");
+        var borrowedTkl = KeyboardKinds.For(new FoundDevice { Name = "G515 RAPID TKL", Kind = "keyboard" }).Keys;
+        var borrowed75 = KeyboardKinds.For(new FoundDevice { Name = "G316 X 75", Kind = "keyboard" }).Keys;
+        Check(borrowedTkl.Shaped == null && borrowedTkl.Rows[0].StartsWith("Esc|") && borrowedTkl.Rows.Length == 7
+            && borrowed75.Shaped == null && borrowed75.Rows[0].EndsWith("|F12") && !borrowed75.Ids[0].Contains("--")
+            && borrowed75.KeyNames().Count == borrowed75.KeyIds().Count && borrowedTkl.KeyNames().Count == borrowedTkl.KeyIds().Count,
+            "a keyboard that borrows the G515's or the G512 X 75's picture shows neither the top strip nor the knobs");
+        Check(Devices.LinkUp(FakeHidpp.Hex("1001411001B440")) && !Devices.LinkUp(FakeHidpp.Hex("1001411041B440"))
+            && Devices.LinkUp(FakeHidpp.Hex("1001414001B440")),
+            "0x41: the link is down when bit 6 of the flags byte (after the protocol type) is set, whatever the protocol byte holds");
         Check(!KeyLayout.IsIso(-1) && !KeyLayout.IsIso(0) && !KeyLayout.IsIso(1) && KeyLayout.IsIso(2) && KeyLayout.IsIso(0x0D)
             && KeyLayout.IsIso(0x3E), "0x4540: 1 is ANSI, 2 and up have ISO's shape (Solaar), unknown stays ANSI");
         var turnedOff = LogitechSoftware.ApprovedValue(false, new DateTime(2026, 11, 23, 0, 0, 0, DateTimeKind.Utc));
