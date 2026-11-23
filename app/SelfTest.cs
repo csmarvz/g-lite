@@ -570,6 +570,28 @@ static class SelfTest
             "a format 7 factory restore copies the factory profile (which has no CRC) with the profile's name and a new CRC; it refuses "
                 + "one whose rate bytes aren't 0x8061 indexes, whose default stage isn't one of its stages or whose stages are out of "
                 + "the mouse's range, and isn't offered when the mouse has no factory profile");
+        var g300Report = new FakeG300().Profiles[1];
+        var g300 = G300Mouse.Decode(g300Report, 1);
+        Check(!g300.ReadOnly && g300.SaveOnly && g300.Writable && g300.Stages.SequenceEqual(new[] { 1000, 2000, 2500, 2000 })
+            && g300.Stage == 1 && g300.Dpi == 2000 && g300.Rate == 500 && g300.Light.Effect == 0x01 && g300.Light.Color == 0x0000FF
+            && g300.Buttons.Length == 9 && g300.Buttons[5].SequenceEqual(FakeHidpp.Hex("80020106"))
+            && g300.Buttons[8].SequenceEqual(FakeHidpp.Hex("90070000")) && new G300Mouse().DefaultStage(g300Report) == 1
+            && G300Mouse.Build(g300Report, new MouseSettings
+                {
+                    Dpi = g300.Dpi, Stage = g300.Stage, Rate = g300.Rate, Light = g300.Light, Buttons = g300.Buttons
+                }).SequenceEqual(g300Report)
+            && G300Mouse.Entry(FakeHidpp.Hex("80010010")).SequenceEqual(FakeHidpp.Hex("050000"))
+            && G300Mouse.Entry(FakeHidpp.Hex("900A0000")).SequenceEqual(FakeHidpp.Hex("0D0000"))
+            && G300Mouse.Entry(FakeHidpp.Hex("80020106")).SequenceEqual(FakeHidpp.Hex("000106"))
+            && G300Mouse.Entry(FakeHidpp.Hex("90010000")) == null
+            && G300Mouse.ColorBits(new MouseLight { Color = 0xFFD000 }) == 3 && G300Mouse.ColorBits(new MouseLight { Color = 0x202020 }) == 7
+            && G300Mouse.ColorBits(new MouseLight { Effect = 0x00 }) == 0,
+            "G300: the profile report decodes (DPI × 250, the 0x80 default, rate codes, colour bits, buttons), builds back to the "
+                + "same bytes, and maps bindings both ways");
+        bool g300Refused = false;
+        try { G300Mouse.Build(g300Report, new MouseSettings { Dpi = 2600, Stage = 0 }); }
+        catch (RefusedException) { g300Refused = true; }
+        Check(g300Refused, "G300: a DPI it can't take is refused");
         var g600Report = new FakeG600().Modes[2];
         var g600 = G600Mouse.Decode(g600Report, 3);
         Check(g600.ReadOnly && !g600.Writable && g600.Stages.SequenceEqual(new[] { 400, 1200, 2000, 3200 }) && g600.Stage == 3
@@ -807,6 +829,10 @@ static class SelfTest
         var g915 = new FakeG915();
         var clusters = G915Lighting.Clusters(g915);
         Check(clusters.Count == 2 && G915Lighting.Keys(clusters) == 1, "the G915's keys are the cluster with the most effects");
+        bool g515Vertical, g915Vertical;
+        G915Lighting.Clusters(new FakeHidpp(), out g515Vertical);
+        G915Lighting.Clusters(new FakeG915(), out g915Vertical);
+        Check(g515Vertical && !g915Vertical, "Wave goes up and down when its capabilities say so (the G515's DC E1), not otherwise");
         G915Lighting.Claim(g915);
         G915Lighting.Preview(g915, clusters, new Lighting { Effect = 0x15, Period = 3000 });
         Check(g915.Claimed == 3 && g915.Live[1][1] == 3
@@ -1009,6 +1035,8 @@ static class SelfTest
                 == GameModeSupport.NotImplemented
             && KeyboardKinds.For(new FoundDevice { Name = "PRO X 60", Kind = "keyboard" }).GameMode == GameModeSupport.None,
             "Game mode: set on the G815, experimental on the G915s, shown without picking on the G915 X models, none elsewhere");
+        Check(!KeyLayout.IsIso(-1) && !KeyLayout.IsIso(0) && !KeyLayout.IsIso(1) && KeyLayout.IsIso(2) && KeyLayout.IsIso(0x0D)
+            && KeyLayout.IsIso(0x3E), "0x4540: 1 is ANSI, 2 and up have ISO's shape (Solaar), unknown stays ANSI");
         var turnedOff = LogitechSoftware.ApprovedValue(false, new DateTime(2026, 11, 23, 0, 0, 0, DateTimeKind.Utc));
         Check(LogitechSoftware.ApprovedValue(true, DateTime.UtcNow).SequenceEqual(new byte[] { 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 })
             && turnedOff.Length == 12 && turnedOff[0] == 3

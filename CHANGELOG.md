@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+
+- G300 and G300s: the active profile's four DPI levels (250 to 2500), report rate, colour (one of eight) and buttons, saved to the mouse with a backup and read back. Nothing changes until you save, since the G300 can't take a change live. Built from PeriHub's notes, which saved on a G300 (MIT); not yet tried by a G-Lite owner.
+- G515, G915 TKL, G512 X 75 and other keyboards with RGB effects: Wave goes Up and Down when the keyboard says it can (its effect info's direction bits), as on the G815. Not yet tried on these keyboards.
+
+### Changed
+
+- Keyboards that report layout code 2 (Solaar reads it as ISO) get the ISO picture; JIS codes too, whose Enter has ISO's shape. G-Lite's reports so far have only 01 (ANSI) and 0D (ISO).
+- A device that answers "busy" (error 8) to a setting is asked again after 30, 60 and 90 ms, as Solaar does.
+- Mice: after restoring a backup or the factory profile, the mouse leaves its onboard mode and comes back, which drops live changes the restored profile doesn't hold (seen by PeriHub on a G502 HERO).
+- Bluetooth devices that answer at index 0x00 are understood (per Solaar; not yet tried).
+
 ## [0.0.38-alpha] - 2026-11-23
 
 ### Added

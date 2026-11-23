@@ -60,7 +60,7 @@ More G500/G9x facts:
 | [efaraz27/g502x-control](https://github.com/efaraz27/g502x-control) | GPL-2.0 | G502 X PLUS C095 / 4099 | Live lighting needs host mode. 0x8071 fn5 `01 03 05`, fn1 effect, release `01 00 00`. 0x8081 per-LED |
 | [leodbc/g502x-onboard](https://github.com/leodbc/g502x-onboard) | GPL-3.0 | G502 X LIGHTSPEED | The write-end ack isn't proof; read back. Last read window at offset 239. G HUB's "launch app" and "text" become no-ops onboard |
 | [dukaci/driver-mouse-g502x](https://github.com/dukaci/driver-mouse-g502x) | none | G502 X C099, format 4 | One enabled but corrupt slot makes the mouse ignore every user slot. Current profile bit 0x100 means factory |
-| [hex-dump/perihub](https://github.com/hex-dump/perihub) | check | G502 HERO tested | Windows/Linux app. Format 2 layout in `crates/perihub-core/src/hidpp/profile.rs`, device list with PIDs and WPIDs in `docs/devices.md`, G300 support |
+| [hex-dump/perihub](https://github.com/hex-dump/perihub) | MIT | G502 HERO, G502 X, G502 HERO Wireless, G300 saved; G915 X LS lit | Windows/Linux app for several brands. See [PeriHub](#perihub) below |
 | [Vex9th/mouse-control](https://github.com/Vex9th/mouse-control) | none | Offline tests only | Windows Go tool. `docs/LOGITECH_PROTOCOL.md`: 0x2202 fn6 `sensor X Y LOD` keeping LOD, 0x8061 mask BE16, software ids used by other tools (Linux 1, OpenRGB 7, libratbag 8, Solaar B, G HUB D) |
 | [Roritharr/logitech-g502-led-off](https://github.com/Roritharr/logitech-g502-led-off) | MIT | Untested | Persistent off: 0x8070 fn3 per zone with persistence 1 |
 | [xrfc/gpw-battery-tray](https://github.com/xrfc/gpw-battery-tray) | MIT | G Pro Wireless on C539 | C# tray app, 0x1001 voltage curve in `source/curves.txt` |
@@ -145,7 +145,7 @@ The rest of what the reads found, by topic. Same licence rules as above.
 
 From omm.py (GPL-3.0, facts only), which reads and writes them on the G502 HERO. The same opcodes as g502-hub's `docs/protocol.md` §3.8.
 
-- A button record `00 <sector> 00 <offset>` (two BE16) points to a macro. Macro sectors have no CRC.
+- A button record `00 <sector> 00 <offset>` (two BE16) points to a macro. omm.py writes macro sectors without a CRC; PeriHub writes one, as the G815's macro sectors have ([G815-G915.md](../G815-G915.md)), and its macros were checked on a G502 HERO.
 - Opcode length from the top three bits: 0x00–0x1F 1 byte, 0x20–0x3F 2, 0x40–0x5F 3, 0x60–0x7F 5. FF ends the macro.
 - 00 no-op. 01 wait for release (the rest runs on release). 02 repeat while held. 03 repeat until another profile is picked.
 - 20 `<signed>` wheel, 21 `<signed>` horizontal wheel.
@@ -237,6 +237,35 @@ From lomm (MIT), read and written on a PRO X 2 DEX over LIGHTSPEED and cable, ev
 ### Not useful
 
 hakangit/g512-keyboard-controller (OpenRGB client), geromet/g502-linux-control (ratbagd client), grumpybollocks/g910-control (keyledsctl wrapper), swylem/gpro-control (one constant), aubymori/LogiFadeFix (plays silence), szympik/logitech-gpro-x-battery-tray (G HUB websocket), mafik/logitech-g600-linux (evdev mapping), softmaxe/gbat (mouse battery only), pschmitt/aur-g9xled (0x57 only), aron-w/logi-omm-wine and zzoko/Onboard-Memory-Manager-macOS-workaround (run OMM under Wine). AI-built but with dated hardware logs: MyHUB, gnexus, g502x-onboard.
+
+## PeriHub
+
+[hex-dump/perihub](https://github.com/hex-dump/perihub) (MIT, Rust, Windows and Linux, many brands), read 2026-11-23 at commit 9202683. Its `docs/protocols/` has a page per protocol; its issues hold the owners' reports. Tested on hardware: saves on a G502 HERO (C08B, format 2, 256-byte sectors), a G502 X (C098, format 3), a G502 HERO Wireless over a POWERPLAY (407F, issue #28) and a G300 (C246, #21); reads of a PRO X 2 DEX (#32), PRO 2 LIGHTSPEED (#33), G303 Shroud Edition (#34) and G903 HERO (#115); lighting on one G915 X LS (#30). Written from docs, untried: the G213, the G600, HID++ 1.0 mice, format 4 and 7 saves. Nothing on the G413, G512, G513, PRO X 60 or 0x8080.
+
+Mice:
+
+- Format 7's layout matches G-Lite's (`logitech-onboard-profiles.md`, from libratbag #1676 and #1806), with 16 button slots at 0x30–0x6F and the G-shift layer at 0x70; format 6 is 7 without the BHOP byte. Timeouts at 0x2C and 0x2E are little endian ([newer-mice.md](../newer-mice.md)). Its PRO X 2 DEX transcript is a simulation built from reports without bytes, so it can't check `BuildWide`.
+- The G903 HERO has 0x8071 and no 0x8070, and its format 4 fn 0 reply is confirmed (#115).
+- On a G502 HERO, profile LED block 0 (0xD0) lights the logo (0x8070 zone 1, location 2) and block 1 the DPI lights (zone 0), not zone n in block n as libratbag has it. G-Lite writes one light to both.
+- Reselecting the active profile (fn 3) keeps live changes it doesn't hold; fn 1 `02` then `01` drops them (G502 HERO).
+- The G303 Shroud Edition (C097, WPID 409E) is format 3 with 255-byte sectors; CLAUDE.md's format 2 G303 is the original.
+- Macro format 1, checked on a G502 HERO: `01` waits for release, `02` repeats while held, `03` repeats until the profile changes, `20` wheel, `40` delay BE16, `41`/`42` mouse buttons, `43`/`44` keys, `45`/`46` consumer keys, `60` a 5-byte jump that can cross sectors, `FF` end. Macro sectors get a CRC. It stores macros in unused sectors past the profiles, written before the profile, never over one in use.
+- G300 (tested): feature reports on FF80 as the G600; one 35-byte F3–F5 report saves a profile (byte 1 colour bits, byte 2 rate code 00 1000 Hz / 01 125 / 02 250 / 03 500, bytes 3–6 DPI × 250 with 0x80 the default, byte 7 shift, nine 3-byte buttons from 8). G-Lite does the same ([G300.md](../G300.md)).
+- G600: writes F3–F5 for the active profile after reading it again, then sets the slot back with `F0`; untried.
+- Ids: real 409E/C097, 40A8/C09A, 40B8/C0A0, 4087/C091, 407F/C08D; libratbag's G703 4070/C087, G703 HERO 4086/C090, G705 409D/C096, G900 4053/C081, G903 4067/C086, G403 Wireless 405D/C082, G Pro Wireless 4079/C088, PRO X SUPERLIGHT 4093/C094, G502 X PLUS 4099/C095. Receiver slot errors: 0x08 empty, 0x09 or 0x04 asleep, 0x01 HID++ 1.0.
+- Over Bluetooth a device may answer at index 0x00 (Solaar); G-Lite drops replies from another index. Untried.
+
+Keyboards (`logitech-keyboard-lighting.md`, from Logitech's x8040, x8071 and x8081 specs as found in logirgb, and the G915 X LS):
+
+- 0x8040 fn 0: byte 2 the brightness key's level count, byte 3 0x04 on/off apart, 0x10 transient, bytes 4–5 the minimum ([G815-G915.md](../G815-G915.md)).
+- 0x8071 fn 3 is the startup and shutdown effect (`<0 get, 1 set> <capability BE16>`, 0x0001 and 0x0040). fn 9 plays the shutdown effect and takes the device offline: never send it. fn 14 answers error 7: there's no read of the running effect.
+- 0x8071 fn 1 parameters: Static byte 3 is the transition (0 default, 1 ramp, 2 at once); Breathe byte 5 the waveform, 6 intensity; Cycle and Wave byte 1 saturation (G-Lite's 0xFF); Ripple byte 3 saturation, byte 4 = 1 skips the start animation. Wave direction capability bits: 0x0020 horizontal, 0x0040 vertical, 0x0080 centre out, 0x0100 inward, 0x0200 outward, 0x0400 reverse horizontal, 0x0800 reverse vertical, 0x1000 centre in. The G515's `DC E1` has the vertical bits, so its Up and Down could come from them rather than `KeyboardKinds.VerticalWave`.
+- Host mode on the G915 X LS: 0x8101 fn 6 `05`, fn 5 `01 03 06`, then fn 8 `01 01 00` (without it the keys stayed dark the first time). Wave centre in (8) stuck on every later effect until the lights were released and claimed again (one user).
+- 0x8081: a key never written shows white; per-key colours show only while the zone runs a fixed colour; the logo shows key 210's colour while a frame is shown (G915 X LS).
+- Busy (error 8): retried after 30, 60 and 90 ms, as Solaar does; never seen by PeriHub.
+- 0x4523 fn 0 is a write (a 16-byte bitmap, from G HUB captures): never call it to read. `Report.Reads` leaves it out.
+- 0x4540: Solaar reads 1 ANSI; 2, 5, 8, 0x0B, 0x0D–0x0F ISO; 9 and 0x3E JIS ([screen.md](../screen.md)).
+- The G213 and the G PRO keyboard (C339) have a 64-byte report 0x12 on interface 1 (FF43/0604) besides the 20-byte one, so the G512's 14-keys-a-report path is likely there too.
 
 ## Found on 2026-11-22
 

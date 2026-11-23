@@ -372,15 +372,28 @@ static class G915Lighting
 
     public static List<byte[]> Clusters(Hidpp hidpp)
     {
+        bool verticalWave;
+        return Clusters(hidpp, out verticalWave);
+    }
+
+    // verticalWave: a Wave (0x0016) lists a vertical direction among its capabilities (bytes 4-5): 0x0040 vertical (direction 2,
+    // Down) or 0x0800 reverse vertical (7, Up), per Logitech's x8071 spec as PeriHub reads it. The G815 lists both and goes up and
+    // down (tried); the G515, G915 TKL and G512 X 75 list them too (their reports: DC E1); the G213 and G560 don't.
+    public static List<byte[]> Clusters(Hidpp hidpp, out bool verticalWave)
+    {
         byte feature = hidpp.FeatureIndex(0x8071);
         var all = new List<byte[]>();
+        verticalWave = false;
         for (int cluster = 0; cluster < 8; cluster++)
         {
             var ids = new List<byte>();
             for (int effectIndex = 0; effectIndex < 32; effectIndex++)
             {
-                try { ids.Add(hidpp.CallUnlogged(feature, 0, (byte)cluster, (byte)effectIndex, 0)[3]); }
+                byte[] info;
+                try { info = hidpp.CallUnlogged(feature, 0, (byte)cluster, (byte)effectIndex, 0); }
                 catch (HidppError) { break; }
+                ids.Add(info[3]);
+                if (info[2] == 0x00 && info[3] == 0x16 && ((info[4] << 8 | info[5]) & 0x0840) != 0) verticalWave = true;
             }
             if (ids.Count == 0) break;
             all.Add(ids.ToArray());

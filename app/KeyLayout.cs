@@ -15,7 +15,11 @@ class KeyLayout
     // buttons with their icon or name.
     public string[] Shaped { get; set; }
 
-    // The ISO picture, built from the ANSI one, for a keyboard whose 0x4540 layout is above 2: \ goes and Enter becomes an L from
+    // Whether a 0x4540 layout code has ISO's shape: 1 is ANSI, 2 and up ISO (Solaar: 2, 5, 8, 0x0B, 0x0D–0x0F ISO; 3 and 7 ISO
+    // QWERTZ; 4 AZERTY), JIS (9, 0x3E) included, whose Enter is ISO's L. 0, unknown, stays ANSI. Seen: 01 and 0D only.
+    public static bool IsIso(int layoutCode) { return layoutCode >= 2; }
+
+    // The ISO picture, built from the ANSI one, for a keyboard whose 0x4540 layout is ISO (IsIso): \ goes and Enter becomes an L from
     // the Tab row (it keeps its id), the Caps row's Enter becomes #, the left Shift shortens for <>, the right Alt is AltGr.
     // # and <> are lighting ids 2F and 61 (USB codes minus 3), or on a layout of zones the zone of the key they replace or sit by.
     // Null for a layout without these keys.

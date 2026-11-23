@@ -25,6 +25,8 @@ static class MouseProtocol
         public bool Onboard, ProfileOk = true, Flash, Fresh, CanInvert, Inverted, Wired;
         // Shown, not changed: the G600, whose writes aren't tried yet.
         public bool ReadOnly;
+        // Nothing is set live: every change waits for Save to mouse, which writes the whole profile (the G300's report).
+        public bool SaveOnly;
         public byte ProfilesFeature;
         public MouseLight Light;
         public EffectInfo[] Effects = MouseProtocol.Effects;
@@ -39,6 +41,7 @@ static class MouseProtocol
         {
             get
             {
+                if (SaveOnly) return Profile != null;
                 // Pages 1–16 are the flash; 17 and up hold the G500's and G700s's factory profiles (cvuchener's g500 doc/memory.md).
                 if (Flash) return Sector >= 2 && Sector <= 16 && SectorSize == G9xRegisters.PageSize && Current != null;
                 return Onboard && (ClassicFormat(Format) || WideFormat(Format)) && SectorSize >= 0xF0

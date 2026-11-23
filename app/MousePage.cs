@@ -381,11 +381,15 @@ class MousePage : DevicePage
         if (!Keepable) { ShowStatus("No button is set to Left click. Set one to save.", true); return; }
         bool buttons = stored != null && !Bindings.Same(current.Buttons, stored.Buttons);
         bool rate = stored != null && state.Onboard && current.Rate > 0 && current.Rate != stored.Rate;
-        // A format 6 to 8 mouse only takes its stages' DPI, so an edited stage waits for the save (HidppMouse.SendDpi).
-        bool dpi = MouseProtocol.State.WideFormat(state.Format) && state.Savable && current.Stage >= 0
-            && current.Stage < state.Stages.Length && current.Dpi != state.Stages[current.Stage];
+        // A format 6 to 8 mouse only takes its stages' DPI, so an edited stage waits for the save (HidppMouse.SendDpi). On a mouse
+        // with nothing live (the G300, SaveOnly) everything does, the picked stage and the lighting too.
+        bool dpi = (MouseProtocol.State.WideFormat(state.Format) || state.SaveOnly) && state.Savable && current.Stage >= 0
+            && current.Stage < state.Stages.Length
+            && (current.Dpi != state.Stages[current.Stage] || (state.SaveOnly && stored != null && current.Stage != stored.Stage));
+        bool lighting = state.SaveOnly && stored != null && current.Light != null && !current.Light.Same(stored.Light);
         var waiting = new List<string>();
         if (dpi) waiting.Add("DPI");
+        if (lighting) waiting.Add("lighting");
         if (buttons) waiting.Add("buttons");
         if (rate) waiting.Add("report rate");
         if (dirty && waiting.Count > 0)
@@ -396,7 +400,8 @@ class MousePage : DevicePage
             return;
         }
         // Only formats 2 and 3 (and the G9x pages) get their LED records written; on formats 4 to 8 a light set stays live.
-        bool liveLight = state.Savable && !state.Flash && state.Zones.Count > 0 && !MouseProtocol.State.KnownFormat(state.Format)
+        bool liveLight = state.Savable && !state.Flash && !state.SaveOnly && state.Zones.Count > 0
+            && !MouseProtocol.State.KnownFormat(state.Format)
             && stored != null && current.Light != null && !current.Light.Same(stored.Light);
         ShowStatus(!dirty ? "Matches the mouse"
             : liveLight ? "Lighting applied to the mouse; Save to mouse doesn't keep it on this mouse"
@@ -409,7 +414,14 @@ class MousePage : DevicePage
     byte[] Usable(Backups.Entry entry)
     {
         var data = state == null ? null : entry.Get(state.Key);
-        return data != null && state.Writable && data.Length == state.SectorSize && MouseProtocol.Valid(data) ? data : null;
+        return data != null && state.Writable && data.Length == state.SectorSize && Intact(state, data) ? data : null;
+    }
+
+    // A profile G-Lite may write over: a sector whose CRC checks, or on a mouse with nothing live (the G300's report, no CRC) one of
+    // the right size.
+    static bool Intact(MouseProtocol.State profileState, byte[] data)
+    {
+        return profileState.SaveOnly ? data != null && data.Length == profileState.SectorSize : MouseProtocol.Valid(data);
     }
 
     void ShowBroken()
@@ -448,7 +460,7 @@ class MousePage : DevicePage
         {
             if (deviceState.Fresh) { mouse.Setup(hidpp, deviceState, want); return; }
             var now = mouse.ReadProfile(hidpp, deviceState);
-            if (!MouseProtocol.Valid(now)) throw new RefusedException("The profile on the mouse is damaged, not touching it");
+            if (!Intact(deviceState, now)) throw new RefusedException("The profile on the mouse is damaged, not touching it");
             Backups.Save(BackupId, new Dictionary<string, byte[]> { { deviceState.Key, now } }, DeviceLabel);
             mouse.Save(hidpp, deviceState, now, want);
         }, () =>

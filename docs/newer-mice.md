@@ -25,7 +25,7 @@ The PRO X SUPERLIGHT 2 (Featherweight's fn 0 reply: `01 07 01 05 01 05 10 00 FF 
 | 0x03 | DPI shift stage |
 | 0x04 | Five stages of 5 bytes: X LE16, Y LE16, lift-off (1 low, 2 medium, 3 high) |
 | 0x25 | Bunny-hop prevention timeout in 10 ms units, 0 or FF off (lomm-web, GFlick) |
-| 0x2C, 0x2E | Sleep and power-off timeouts in seconds, big endian per OMM's builders (lomm reads LE16) |
+| 0x2C, 0x2E | Sleep and power-off timeouts in seconds, little endian: a PRO X 2 DEX and a PRO 2 LIGHTSPEED read 60/300 and 65535/300 that way (PeriHub issues #32, #33). OMM's builders write them big endian; lomm reads LE16. G-Lite doesn't write them |
 | 0x30 | 12 buttons of 4 bytes |
 | 0x70 | The G-shift layer |
 | 0xA0 | Name, UTF-16LE |
@@ -49,7 +49,7 @@ Not one of the newer mice: it has 0x2201, 0x8060 and a hidden 0x8070 (Solaar's r
 - Lighting: the SUPERLIGHT's 0x8070 is flagged internal and hidden (root fn 0, byte 1 bits 5 and 6) and refuses fn 1 with error 5. It's the status light. G-Lite shows no lighting for a 0x8070 flagged both (`Hidpp.Hidden`).
 - Kept as on formats 2 and 3: backup first, read back, fn 3 to reload, a bad CRC counts as damaged, Restore the factory profile copies 0x0101 whole, its LED records too (its layout is the same, per onboard-lite, which builds a blank profile from it). Not kept: setting up a mouse that runs its factory profile (`MouseProtocol.Setup` stays on formats 2 and 3: OMM marks a profile on with 00 in the Superlight's directory, where G-Lite writes 01).
 - A G502 X wired (C099) reports format 4 in dukaci/driver-mouse-g502x and format 3 in omalogi (see [research/more-references.md](research/more-references.md)). Either way it gets this save; no source has written format 4 on one.
-- A G903 reports format 4 too, with 12 buttons (fn 0 `01 04 01 05 01 0C 10 00 FF 0A 04`, from shefben/open_logitech_GHUB's test vectors, unchecked; see [research/more-references.md](research/more-references.md#profile-format-7)). It gets this save as well, and its lighting stays live only. No source has written its profile; the layout is the one GFlick, onboard-lite, g502-hub and libratbag give for formats 1 to 5. A report from an owner would check it.
+- A G903 HERO reports format 4 too, with 12 buttons (fn 0 `01 04 01 05 01 0C 10 00 FF 0A 04`, from shefben/open_logitech_GHUB's test vectors, confirmed on a real G903 HERO in PeriHub issue #115: WPID 4087, USB C091, MPM 23.01.0013, its directory in G HUB's form `00 01 01 FF`, `00 02 00 FF`; see [research/more-references.md](research/more-references.md#profile-format-7)). It gets this save as well. It lights through 0x8071 and has no 0x8070 (PeriHub #115, libratbag #774), so G-Lite shows it no lighting, like the G502 X PLUS. Whether the original G903 (C086) has 0x8070 isn't known. No source has written its profile; the layout is the one GFlick, onboard-lite, g502-hub and libratbag give for formats 1 to 5. A report from an owner would check it.
 
 ## Format 5: the G502 X PLUS
 
@@ -62,7 +62,7 @@ Format 3's layout up to 0xD0, with a write counter at 0x12 (2 bytes) and the pow
 
 ## Later
 
-- **Format 4 lighting, saved** (the G903, a G502 X wired on format 4): OMM's builders confirm what onboard-lite writes, 0x8070 records at 0xD0 and 0xDB and power-save copies at 0xE6 and 0xF1, which was the missing second source. It needs the save to build those records, as `Build` does on formats 2 and 3, plus the power-save copies.
+- **Format 4 lighting, saved** (a G502 X wired on format 4; the G903 HERO lights through 0x8071 instead): OMM's builders confirm what onboard-lite writes, 0x8070 records at 0xD0 and 0xDB and power-save copies at 0xE6 and 0xF1, which was the missing second source. It needs the save to build those records, as `Build` does on formats 2 and 3, plus the power-save copies.
 - **Format 10** (a G502 X after its firmware update; OMM calls it ARTANIS_POST_DFU): format 1's layout with byte 0 FF, the rate indexes at 0x14 (receiver) and 0x15 (cable), 13 buttons from 0x20, a Y table at 0x56 and the G-shift layer at 0x60 (see [research/omm/README.md](research/omm/README.md)). G-Lite shows no stages or buttons for it: read at format 7's offsets, bytes of two neighbouring stages can make a value inside the mouse's range. First read its stages (X from 3, as on format 1) and buttons; writing waits for a report from a mouse with that firmware, since OMM migrates format 10 profiles and writes them back as soon as it opens the mouse.
 
 ## Next

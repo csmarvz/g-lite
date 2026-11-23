@@ -24,7 +24,7 @@ The G515 reports 96 ids: 00–4F, 61–6F and FE. Checked by lighting them:
 - 2F is the ISO key next to Enter (`$` on Swiss), 61 the ISO `<>` key, 62 Menu.
 - 00, 2E (the US `\`), 63–67 and FE have no LED on this keyboard.
 
-0x4540 fn 0 byte 0 gives the layout: 0D on this Swiss keyboard. G-Lite treats 0–2 as ANSI and anything above as ISO.
+0x4540 fn 0 byte 0 gives the layout: 0D on this Swiss keyboard. G-Lite treats 0 and 1 as ANSI and anything above as ISO (`KeyLayout.IsIso`): Solaar reads 2 as ISO, and 9 and 0x3E as JIS, whose Enter has ISO's shape (PeriHub's `docs/protocols/keyboard-layouts.md`). A German G915 X LS answers 04, which Solaar calls AZERTY, so only the shape can be trusted. G-Lite's reports have only 01 (ANSI) and 0D (ISO).
 
 The G915 ids in `g915.json` and `g915-tkl.json` follow the same rule. The Screen effect worked on an owner's G915 TKL (Swiss, also 0D); the full-size G915's are untested.
 

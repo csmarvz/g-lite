@@ -142,11 +142,22 @@ class HidppMouse : IMouse
     {
         MouseProtocol.Store(hidpp, state, Build(now, want, state));
     }
-    // Reloading the active profile (fn 3) leaves a G305's DPI as it was set live, so the restored default stage is set too.
+    // Reloading the active profile (fn 3) leaves a G305's DPI as it was set live, so the restored default stage is set too. Live
+    // changes the restored profile doesn't hold (a light, a DPI) stay too: leaving onboard mode and coming back drops them (fn 1
+    // `02` then `01`, tried by PeriHub on a G502 HERO), done only when the mouse runs its onboard profiles.
     public void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data)
     {
         var restored = data ?? MouseProtocol.Factory(MouseProtocol.ReadSector(hidpp, MouseProtocol.RomSector, state.SectorSize), now, state);
         MouseProtocol.Store(hidpp, state, restored);
+        if (state.Onboard)
+        {
+            byte profiles = hidpp.FeatureIndex(0x8100);
+            bool left = false;
+            try { hidpp.Call(profiles, 1, 0x02); left = true; }
+            catch (HidppError) { }
+            // Not swallowed: a mouse left out of onboard mode would ignore its profiles.
+            if (left) hidpp.Call(profiles, 1, 0x01);
+        }
         int stage = DefaultStage(restored);
         if (stage < (Wide ? MouseProtocol.WideStagesOf(restored) : MouseProtocol.StagesOf(restored)).Length)
             try { MouseProtocol.SetStage(hidpp, stage); }

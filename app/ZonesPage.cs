@@ -864,7 +864,7 @@ class ZonesPage : DevicePage
     {
         if (picture == null || !Visible) return;
         var listed = zones;
-        if (!isoShown && iso != null && listed != null && layout > 2)
+        if (!isoShown && iso != null && listed != null && KeyLayout.IsIso(layout))
         {
             isoShown = true;
             picture.SetModel(iso);

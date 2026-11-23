@@ -77,8 +77,10 @@ class FakeHidpp : Hidpp
         {
             if (fn == 0)
             {
-                if (parameters[1] >= EffectIds.Length) throw new HidppError(2, "invalid argument");
+                // One cluster, its Wave with the capabilities of the G515's report (DC E1: Up and Down among them).
+                if (parameters[0] > 0 || parameters[1] >= EffectIds.Length) throw new HidppError(2, "invalid argument");
                 reply[1] = parameters[1]; reply[3] = EffectIds[parameters[1]];
+                if (reply[3] == 0x16) { reply[4] = 0xDC; reply[5] = 0xE1; }
             }
             if (fn == 1) Live = parameters.Take(12).ToArray();
             if (fn == 5 && parameters[0] == 1) { control[0] = parameters[1]; control[1] = parameters[2]; }
@@ -495,6 +497,41 @@ class FakeG600 : Hidpp
     protected override void WriteFeature(byte[] report)
     {
         throw new System.IO.IOException("Couldn't set feature report " + report[0].ToString("X2") + " (error 31)");
+    }
+}
+
+// A G300: three profiles like those PeriHub's owner read (issue #16), green, blue and off; a DPI shift button on profile 2, Ctrl
+// alone on profile 3's G7. Profile writes are kept, so a save reads back.
+class FakeG300 : Hidpp
+{
+    public int Profile, Level = 1;
+    public readonly byte[][] Profiles =
+    {
+        FakeHidpp.Hex("F302000284060A40" + "010000020000030000" + "0A00000B00000C0000" + "040000050000" + "0D0000"),
+        FakeHidpp.Hex("F4040304880A0804" + "010000020000030000" + "0A00000B0000000106" + "040000050000" + "0E0000"),
+        FakeHidpp.Hex("F500020204860A40" + "010000020000030000" + "0C00000D00000F0000" + "000100050000" + "040000"),
+    };
+
+    public FakeG300() : base(false) { }
+
+    public override void Dispose() { }
+
+    protected override byte[] ReadFeature(byte id)
+    {
+        Latency.Pause();
+        if (id == G300Mouse.ActiveReport) return new byte[] { id, (byte)(Profile << 4 | Level << 1), 0, 0 };
+        if (id < G300Mouse.FirstProfileReport || id >= G300Mouse.FirstProfileReport + G300Mouse.ProfileCount)
+            throw new System.IO.IOException("Couldn't read feature report " + id.ToString("X2") + " (error 31)");
+        return (byte[])Profiles[id - G300Mouse.FirstProfileReport].Clone();
+    }
+
+    protected override void WriteFeature(byte[] report)
+    {
+        Latency.Pause();
+        if (report.Length != G300Mouse.ReportLength || report[0] < G300Mouse.FirstProfileReport
+            || report[0] >= G300Mouse.FirstProfileReport + G300Mouse.ProfileCount)
+            throw new System.IO.IOException("Couldn't set feature report " + report[0].ToString("X2") + " (error 87)");
+        Profiles[report[0] - G300Mouse.FirstProfileReport] = (byte[])report.Clone();
     }
 }
 

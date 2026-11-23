@@ -59,6 +59,11 @@ class FoundDevice
     {
         get { return PlainHid && HasVendorCollection && Path != null && Regex.IsMatch(Path, @"PID_C24A", RegexOptions.IgnoreCase); }
     }
+    // The G300 too, on the same FF80 collection (G300.cs).
+    public bool IsG300
+    {
+        get { return PlainHid && HasVendorCollection && Path != null && Regex.IsMatch(Path, @"PID_C246", RegexOptions.IgnoreCase); }
+    }
     public bool IsG9 { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_C048", RegexOptions.IgnoreCase); } }
     public G9xModel G500Model
     {

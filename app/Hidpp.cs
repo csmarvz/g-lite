@@ -185,17 +185,30 @@ class Hidpp : IDisposable
     public byte[] Call(byte featureIndex, int fn, params byte[] parameters)
     {
         Record(featureIndex, fn, parameters);
-        if (DeviceLabel == null || featureIndex == 0) return Send(featureIndex, fn, parameters);
+        if (DeviceLabel == null || featureIndex == 0) return SendRetryingBusy(featureIndex, fn, parameters);
         int id = features.Where(pair => pair.Value == featureIndex).Select(pair => pair.Key).FirstOrDefault();
         bool read = Log.Reads(id, fn);
         try
         {
-            var reply = Send(featureIndex, fn, parameters);
+            var reply = SendRetryingBusy(featureIndex, fn, parameters);
             if (!read) Log.Sent(DeviceLabel, id, fn, parameters, "ok");
             return reply;
         }
         catch (HidppError ex) { Log.Sent(DeviceLabel, id, fn, parameters, "error " + ex.Code.ToString("X2")); throw; }
         catch (TimeoutException) { Log.Sent(DeviceLabel, id, fn, parameters, "no answer"); throw; }
+    }
+
+    // Error 8, busy, is tried again after 30, 60 and 90 ms, as Solaar does (PeriHub). Not for CallUnlogged: live frames have their
+    // own pacing (KeyLights.ShowFrame).
+    byte[] SendRetryingBusy(byte featureIndex, int fn, byte[] parameters)
+    {
+        for (int attempt = 1; ; attempt++)
+            try { return Send(featureIndex, fn, parameters); }
+            catch (HidppError ex)
+            {
+                if (ex.Code != 8 || attempt > 3) throw;
+                System.Threading.Thread.Sleep(30 * attempt);
+            }
     }
 
     public byte[] CallUnlogged(byte featureIndex, int fn, params byte[] parameters)
@@ -242,7 +255,9 @@ class Hidpp : IDisposable
         {
             var reply = Read(deadline);
             if (reply == null) throw new TimeoutException("The device didn't answer. Is it on?");
-            if (reply[1] != DeviceIndex) continue;
+            // Over Bluetooth a device may answer a request to 0xFF at index 0x00 (Solaar, via PeriHub; untried). The feature and
+            // software id below still have to match.
+            if (reply[1] != DeviceIndex && !(Direct && reply[1] == 0x00)) continue;
             if (reply[2] == 0xFF && reply[3] == featureIndex && reply[4] == message[3])
                 throw new HidppError(reply[5], string.Format("HID++ error 0x{0:x2} (feature {1}, fn {2})", reply[5], featureIndex, fn));
             if (reply[2] == featureIndex && reply[3] == message[3]) return reply.Skip(4).ToArray();

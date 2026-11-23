@@ -981,6 +981,33 @@ static class Traces
         }
     }
 
+    // Nothing live: the stage, rate and colour wait for Save to mouse, which writes profile 1's report in one go and reads it back.
+    static string G300()
+    {
+        var device = new FakeG300();
+        var found = new FoundDevice
+        {
+            Key = "trace|g300", Name = "G300 Gaming Mouse", Kind = "mouse", Models = "USB C246", Link = "USB", Index = 0xFF,
+            PlainHid = true, HasVendorCollection = true, Path = @"\\?\hid#vid_046d&pid_c246&mi_01&col03"
+        };
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device, null)))
+        {
+            script.Pick("DPI stage", "1500");
+            script.Pick("Report rate", "500");
+            script.Press("Color FFD000");
+            script.Pick("View", "Bindings");
+            script.Pick("View", "Settings");
+            script.Press("Save to mouse");
+            script.Do("check profile 1 as saved: yellow, 500 Hz, the 1500 DPI level the default, the buttons as they were", () =>
+            {
+                var want = FakeHidpp.Hex("F303030204860A40" + "010000020000030000" + "0A00000B00000C0000" + "040000050000" + "0D0000");
+                if (!device.Profiles[0].SequenceEqual(want))
+                    throw new InvalidOperationException("profile 1 holds " + BitConverter.ToString(device.Profiles[0]));
+            });
+            return script.Text;
+        }
+    }
+
     // Read only: feature reports F0 and the active mode's, every control off, 20 buttons in the Bindings view.
     static string G600()
     {
@@ -1124,6 +1151,7 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("superlight2", TraceWideDpiMouse);
         yield return new KeyValuePair<string, Func<string>>("dex", Dex);
         yield return new KeyValuePair<string, Func<string>>("g600", G600);
+        yield return new KeyValuePair<string, Func<string>>("g300", G300);
         yield return new KeyValuePair<string, Func<string>>("gpro", () => Mouse("G Pro Wireless Gaming Mouse", new FakeMouse(),
             new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 }));
         yield return new KeyValuePair<string, Func<string>>("g305", () => Mouse("G305 Lightspeed Wireless Gaming Mouse", FakeMouse.G305(),

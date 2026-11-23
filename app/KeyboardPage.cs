@@ -17,10 +17,12 @@ class KeyboardPage : DevicePage
     static readonly string[] DimText = { "Dark", "10%", "25%", "50%", "75%" };
     static readonly int[] SleepSecs = { 0, 60, 120, 300, 600, 900, 1800 };
     static readonly string[] SleepText = { "Never", "1 min", "2 min", "5 min", "10 min", "15 min", "30 min" };
-    static readonly int[] Directions = { 6, 1, 3, 8 }, VerticalDirections = { 6, 1, 7, 2, 3, 8, 0 };
+    static readonly int[] Directions = { 6, 1, 3, 8 }, VerticalDirections = { 6, 1, 7, 2, 3, 8, 0 },
+        UpDownDirections = { 6, 1, 7, 2, 3, 8 };
     static readonly string[] DirText = { "Left", "Right", "Center out", "Center in" },
-        VerticalDirText = { "Left", "Right", "Up", "Down", "Center out", "Center in", "All" };
-    readonly int[] directionValues;
+        VerticalDirText = { "Left", "Right", "Up", "Down", "Center out", "Center in", "All" },
+        UpDownDirText = { "Left", "Right", "Up", "Down", "Center out", "Center in" };
+    int[] directionValues;
     readonly Label intensityHead, intensityValue;
     readonly Slider intensity;
     readonly Toggle livePause, liveBattery, solidToggle;
@@ -67,6 +69,8 @@ class KeyboardPage : DevicePage
     readonly Timer screenTimer = new Timer { Interval = 100 }, snapTimer = new Timer { Interval = 1000 },
         watchTimer = new Timer { Interval = 500 };
     volatile bool sending, failing, statusDirty, layoutDirty, capturing, snapping, watching, claimed;
+    // Whether the keyboard's Wave lists Up and Down (G915Lighting.Clusters): -1 until read, then 0 or 1 (ApplyWaveDirections).
+    volatile int verticalWave = -1;
     // A G515 twice kept answering every per-key frame with busy until it was turned off and on, though claimed again every 6 s
     // (2026-11-22): after a busy frame, the lighting is given back to the keyboard before the next claim, until a release goes
     // through. Untried on a stuck one.
@@ -899,9 +903,19 @@ class KeyboardPage : DevicePage
         charging = reply[2] != 0;
     }
 
+    // Up and Down in the Direction row once the keyboard's Wave says it has them. Not All (0): no capability bit lists it, and it
+    // was only tried on the G815, whose kind.VerticalWave gives all of them from the start.
+    void ApplyWaveDirections()
+    {
+        if (verticalWave != 1 || kind.VerticalWave || directionValues == UpDownDirections) return;
+        directionValues = UpDownDirections;
+        directions.Items = UpDownDirText;
+        directions.Invalidate();
+    }
+
     void ApplyLayout()
     {
-        if (iso || layoutCode <= 2) return;
+        if (iso || !KeyLayout.IsIso(layoutCode)) return;
         var model = kind.Iso;
         if (model == null) return;
         iso = true;
@@ -1728,7 +1742,9 @@ class KeyboardPage : DevicePage
         RunOnDevice(hidpp =>
         {
             if (readLayout) layoutCode = hidpp.Call(hidpp.FeatureIndex(0x4540), 0)[0];
-            clusters = G915Lighting.Clusters(hidpp);
+            bool vertical;
+            clusters = G915Lighting.Clusters(hidpp, out vertical);
+            verticalWave = vertical ? 1 : 0;
             if (slotPicker != null)
                 try
                 {
@@ -1786,6 +1802,7 @@ class KeyboardPage : DevicePage
                 if (lighting != null && !Screening) { current = lighting; bar = barLighting; part = barLighting == null ? 0 : 1; }
             }
             ApplyLayout();
+            ApplyWaveDirections();
             RefreshControls();
             Loaded();
         });
@@ -1801,9 +1818,13 @@ class KeyboardPage : DevicePage
         Lighting lighting = null;
         int level = 100;
         bool unknown = false, half = false, readLayout = layoutCode < 0 && found.Has(0x4540);
+        bool readWave = verticalWave < 0 && !kind.VerticalWave && found.Has(0x8071);
         RunOnDevice(hidpp =>
         {
             if (readLayout) layoutCode = hidpp.Call(hidpp.FeatureIndex(0x4540), 0)[0];
+            if (readWave)
+                try { bool vertical; G915Lighting.Clusters(hidpp, out vertical); verticalWave = vertical ? 1 : 0; }
+                catch (NotSupportedException) { verticalWave = 0; }
             brightnessFeature = hidpp.FeatureIndex(0x8040);
             G515Profile.Files files;
             try { files = G515Profile.Snapshot(hidpp); }
@@ -1815,6 +1836,7 @@ class KeyboardPage : DevicePage
         }, () =>
         {
             ApplyLayout();
+            ApplyWaveDirections();
             broken = half;
             fix = half ? Backups.List(BackupId).FirstOrDefault(entry => G515Profile.FilesAreValid(entry.Files)) : null;
             storedBrightness = level;

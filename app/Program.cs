@@ -607,6 +607,8 @@ class MainWindow : Form
                 Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2202, 0x8061, 0x8100 } },
             new FoundDevice { Key = "demo|g600", Name = "G600 Gaming Mouse", Kind = "mouse", Models = "USB C24A",
                 Link = "USB", Index = 0xFF, PlainHid = true, HasVendorCollection = true, Path = @"\\?\hid#vid_046d&pid_c24a&mi_01&col03" },
+            new FoundDevice { Key = "demo|g300", Name = "G300 Gaming Mouse", Kind = "mouse", Models = "USB C246",
+                Link = "USB", Index = 0xFF, PlainHid = true, HasVendorCollection = true, Path = @"\\?\hid#vid_046d&pid_c246&mi_01&col03" },
             new FoundDevice { Key = "demo|g9x", Name = "G9x Laser Mouse", Kind = "mouse",
                 Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04", Firmware = "58.02, build 0018" },
             new FoundDevice { Key = "demo|g560", Name = "G560 Gaming Speaker", Kind = "device",
