@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
     paths: ["site/**", ".github/workflows/pages.yml"]
+  # A new release puts its version under the download button.
+  workflow_run:
+    workflows: [release]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -17,12 +21,22 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      # Written here rather than fetched by the page: GitHub's API allows a visitor 60 calls an hour, then answers 403.
+      - name: Latest release's version under the download button
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName || true)
+          if [ -n "$tag" ]; then
+            sed -i "s|<p class=\"meta\" id=\"meta\">For Windows</p>|<p class=\"meta\" id=\"meta\">$tag for Windows</p>|" site/index.html
+          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

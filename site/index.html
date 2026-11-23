@@ -409,11 +409,5 @@ footer p { max-width: 460px; }
   </div>
 </footer>
 
-<script>
-fetch("https://api.github.com/repos/csmarvz/g-lite/releases/latest").then(function (r) { return r.ok ? r.json() : null; }).then(function (release) {
-  if (!release) return;
-  document.getElementById("meta").textContent = release.tag_name + " for Windows";
-}).catch(function () {});
-</script>
 </body>
 </html>

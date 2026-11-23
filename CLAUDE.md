@@ -77,7 +77,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `backup-*/` and `lighting-backup.reg` stay untracked.
 - Comments only for what the code can't say: why, a decision and what it ruled out, or the source of a fact (a report, a doc in `docs/`, another project). Short, and kept up to date: change or remove them with the code. No comments that repeat what the code does.
 - The version is set by the three assembly attributes at the top of `app/Program.cs`. Change all three together.
-- To release: set the version, add its section to `CHANGELOG.md`, commit, then push a tag `v<version>`. `.github/workflows/release.yml` checks the tag matches the version, builds and publishes `GLite.exe` with `checksums.txt`. Releases are not marked as pre-releases, so `/releases/latest` finds them.
+- To release: set the version, add its section to `CHANGELOG.md`, commit, then push a tag `v<version>`. `.github/workflows/release.yml` checks the tag matches the version, builds and publishes `GLite.exe` with `checksums.txt`. Releases are not marked as pre-releases, so `/releases/latest` finds them. When it succeeds, `.github/workflows/pages.yml` publishes the site again with the release's tag written under the download button (the page doesn't ask GitHub's API, which refuses a visitor after 60 calls an hour).
 - Keep every device report in `docs/reports/`, as sent: saved from the clipboard or copied from the message, never retyped (long hex lines get miscounted). One file per device (`<model>-<id>.txt`), the latest replacing an older one, with its row in `docs/reports/README.md`.
 - Never commit unless explicitly asked.
 - Keep the binary small. Prefer the simplest thing that works.
