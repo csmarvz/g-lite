@@ -773,9 +773,13 @@ class MainWindow : Form
         if (message.Msg == 0x0024)
         {
             base.WndProc(ref message);
-            // The smallest window holds the layout at its scale, with the frame it has now.
-            Marshal.WriteInt32(message.LParam, 24, S(WindowWidth) + Width - ClientSize.Width);
-            Marshal.WriteInt32(message.LParam, 28, S(WindowHeight) + Height - ClientSize.Height);
+            // The smallest window holds the layout at its scale, with the frame it has now. Minimized, the window has no client area
+            // to measure the frame from, so Windows' own limit stays.
+            if (ClientSize.Width > 0)
+            {
+                Marshal.WriteInt32(message.LParam, 24, S(WindowWidth) + Width - ClientSize.Width);
+                Marshal.WriteInt32(message.LParam, 28, S(WindowHeight) + Height - ClientSize.Height);
+            }
             return;
         }
         // Windows' suggested bounds keep the client size scaled, with the frame at the new DPI.

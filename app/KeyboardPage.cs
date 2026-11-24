@@ -21,7 +21,9 @@ class KeyboardPage : DevicePage
         UpDownDirections = { 6, 1, 7, 2, 3, 8 };
     static readonly string[] DirText = { "Left", "Right", "Center out", "Center in" },
         VerticalDirText = { "Left", "Right", "Up", "Down", "Center out", "Center in", "All" },
-        UpDownDirText = { "Left", "Right", "Up", "Down", "Center out", "Center in" };
+        ShortVerticalDirText = { "Left", "Right", "Up", "Down", "Out", "In", "All" },
+        UpDownDirText = { "Left", "Right", "Up", "Down", "Center out", "Center in" },
+        ShortUpDownDirText = { "Left", "Right", "Up", "Down", "Out", "In" };
     int[] directionValues;
     readonly Label intensityHead, intensityValue;
     readonly Slider intensity;
@@ -252,7 +254,7 @@ class KeyboardPage : DevicePage
 
         directionHead = Ui.Text(light, "Direction", 14, 156, () => Theme.Dim, 9f);
         directionValues = kind.VerticalWave ? VerticalDirections : Directions;
-        directions = Ui.Add(light, new SegmentedPicker { Items = kind.VerticalWave ? VerticalDirText : DirText, AccessibleName = "Direction" },
+        directions = Ui.Add(light, new SegmentedPicker { Items = DirectionNames(), AccessibleName = "Direction" },
             14, 174, 352, 32);
         directions.Picked += i => { Target().Direction = directionValues[i]; Changed(true); };
 
@@ -910,8 +912,16 @@ class KeyboardPage : DevicePage
     {
         if (verticalWave != 1 || kind.VerticalWave || directionValues == UpDownDirections) return;
         directionValues = UpDownDirections;
-        directions.Items = UpDownDirText;
+        directions.Items = DirectionNames();
         directions.Invalidate();
+    }
+
+    // "Center out" fits only the wide box's cells once Up and Down are there too; the narrow one says Out and In.
+    string[] DirectionNames()
+    {
+        if (directionValues == VerticalDirections) return wide ? VerticalDirText : ShortVerticalDirText;
+        if (directionValues == UpDownDirections) return wide ? UpDownDirText : ShortUpDownDirText;
+        return DirText;
     }
 
     void ApplyLayout()
@@ -1216,6 +1226,7 @@ class KeyboardPage : DevicePage
         int change = on ? extra : -extra, half = on ? extra / 2 : -(extra / 2);
         lightBox.Width += change;
         directions.Width += change;
+        directions.Items = DirectionNames();
         bright.Width += half;
         brightValue.Width += half;
         if (intensity != null) { intensity.Width += half; intensityValue.Width += half; }

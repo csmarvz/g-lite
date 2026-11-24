@@ -14,6 +14,7 @@ pick View Settings
   = status "DPI, lighting and report rate change when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=1500 <Color FFD000> DPI=5 Report rate=500 Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
 press Save to mouse
   get feature F3
+  get feature F0
   set feature  F3 03 03 02 04 86 0A 40 01 00 00 02 00 00 03
   get feature F3
   get feature F0

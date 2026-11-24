@@ -4,20 +4,29 @@
 
 ### Added
 
-- G300 and G300s: the active profile's four DPI levels (250 to 2500), report rate, colour (one of eight) and buttons, saved to the mouse with a backup and read back. Nothing changes until you save, since the G300 can't take a change live. Built from PeriHub's notes, which saved on a G300 (MIT); not yet tried by a G-Lite owner.
+- G300 and G300s: the active profile's four DPI levels (250 to 2500), report rate, colour (one of eight) and buttons, saved to the mouse with a backup and read back. Nothing changes until you save, since the G300 can't take a change live; if the mouse's profile button switched profiles in the meantime, Save refuses rather than write the wrong one. Built from PeriHub's notes, which saved on a G300 (MIT); not yet tried by a G-Lite owner.
 - G515: a Game view to pick the keys the Game button turns off, as on the G815. Unlike the G815, the G515 leaves Windows and Menu on in Game mode, so they can be picked too. The keyboard forgets the list when turned off, so G-Lite sends it again whenever it connects, even after a quick off and on. Presets keep it. Tried on an owner's G515 TKL.
 - G915 X and G915 X TKL: their Game view can now pick keys, the G515's way. Experimental: not tried on one yet.
 - G512 X 75: a Game view to pick the keys Game mode turns off, the G515's way. Experimental: not tried on one yet. Its picture shows the two knobs right of F12, greyed out.
 - G515: its picture shows the LIGHTSPEED, Bluetooth and Game buttons and the two status lights above the F keys.
 - G515, G915 TKL, G512 X 75 and other keyboards with RGB effects: Wave goes Up and Down when the keyboard says it can (its effect info's direction bits), as on the G815. Not yet tried on these keyboards.
+- The window can be resized and maximized, down to its usual size. Each screen keeps its width, centred beside the sidebar.
+- Settings: an accent colour, G-Lite's green, your Windows accent (in the shade Windows uses for light or dark) or a colour you pick. Click Custom again to pick another.
+- Settings' scroll bar can be dragged, and a click beside it jumps there.
 
 ### Changed
 
 - Sliders feel live on every device: while you drag one, G-Lite sends the change at most every 120 ms, where it used to wait until you stopped moving. On the keyboard screens, a drag updates only the values beside the sliders, and the key picture follows with each send, so the slider itself moves smoothly.
+- The window has Windows' own title bar, in the sidebar's colour on Windows 11 (dark or light on Windows 10), with Windows' minimize, maximize and close buttons and snapping.
+- Report and Backups sit next to the device's name. The line above a screen's footer is gone, and the sidebar lists the devices without a DEVICES heading, saying "Scanning devices…" while it looks.
+- Every row in Settings has the same height, Services' too.
+- Scrolling Settings and the device list is smoother: the content moves in one piece.
 
 ### Fixed
 
 - G515 and the other RGB keyboards: moving Speed or Intensity during a live effect no longer flashes Save to keyboard on.
+- Opening G-Lite from the tray no longer flashes white while the screen draws.
+- Clicking Logs while it's open no longer reloads the whole log.
 - Speed sliders show the speed they set: a period read back could show one percent lower, and Ripple's speed couldn't go past 50% with the arrow keys.
 - G515: each preview no longer looks up the effect's index again (up to 16 calls), so a drag sends faster.
 - Keyboards that report layout code 2 (Solaar reads it as ISO) get the ISO picture; JIS codes too, whose Enter has ISO's shape. G-Lite's reports so far have only 01 (ANSI) and 0D (ISO).

@@ -140,9 +140,13 @@ class G300Mouse : IMouse
         var built = (byte[])old.Clone();
         int stage = want.Stage >= 0 && want.Stage < LevelCount ? want.Stage : DefaultStageOf(built);
         int units = want.Dpi / DpiUnit;
-        if (units < 1 || units > MaxUnits || units * DpiUnit != want.Dpi)
-            throw new RefusedException("The G300 takes 250 to 2500 DPI in steps of 250");
-        built[LevelsAt + stage] = (byte)units;
+        // A level's DPI as read stays, even outside 250 to 2500, so a save that changes something else isn't refused.
+        if (want.Dpi != (old[LevelsAt + stage] & 0x7F) * DpiUnit)
+        {
+            if (units < 1 || units > MaxUnits || units * DpiUnit != want.Dpi)
+                throw new RefusedException("The G300 takes 250 to 2500 DPI in steps of 250");
+            built[LevelsAt + stage] = (byte)units;
+        }
         for (int i = 0; i < LevelCount; i++) built[LevelsAt + i] = (byte)(built[LevelsAt + i] & 0x7F | (i == stage ? DefaultFlag : 0));
         if (want.Rate > 0)
         {
@@ -185,7 +189,14 @@ class G300Mouse : IMouse
     public void SetInvert(Hidpp hidpp, bool on) { throw new NotSupportedException(); }
     public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state) { return ReadReport(hidpp, state.Profile[0] - FirstProfileReport); }
     public void Setup(Hidpp hidpp, MouseProtocol.State state, MouseSettings want) { throw new RefusedException("The G300 needs no setup"); }
-    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSettings want) { Write(hidpp, Build(now, want)); }
+    // The mouse's profile button may have moved it to another profile since the screen read this one, and Save is for the one in use.
+    public void Save(Hidpp hidpp, MouseProtocol.State state, byte[] now, MouseSettings want)
+    {
+        int active = hidpp.GetFeature(ActiveReport)[1] >> 4;
+        if (FirstProfileReport + active != now[0])
+            throw new RefusedException("The G300 is on profile " + (active + 1) + " now, not the one shown: nothing was saved");
+        Write(hidpp, Build(now, want));
+    }
     public void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data)
     {
         if (data == null) throw new RefusedException("The G300 has no factory profile to restore");

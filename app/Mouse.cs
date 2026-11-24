@@ -152,13 +152,17 @@ class HidppMouse : IMouse
         if (state.Onboard)
         {
             byte profiles = hidpp.FeatureIndex(0x8100);
-            bool left = false;
-            try { hidpp.Call(profiles, 1, 0x02); left = true; }
-            catch (HidppError) { }
-            // Tried twice and not swallowed: a mouse left out of onboard mode would ignore its profiles.
-            if (left)
-                try { hidpp.Call(profiles, 1, 0x01); }
-                catch (HidppError) { hidpp.Call(profiles, 1, 0x01); }
+            bool refused = false;
+            // `01` follows unless `02` was refused, even when `02` timed out and may have been taken: tried twice and not swallowed,
+            // since a mouse left out of onboard mode would ignore its profiles.
+            try { hidpp.Call(profiles, 1, 0x02); }
+            catch (HidppError) { refused = true; }
+            finally
+            {
+                if (!refused)
+                    try { hidpp.Call(profiles, 1, 0x01); }
+                    catch (HidppError) { hidpp.Call(profiles, 1, 0x01); }
+            }
         }
         int stage = DefaultStage(restored);
         if (stage < (Wide ? MouseProtocol.WideStagesOf(restored) : MouseProtocol.StagesOf(restored)).Length)

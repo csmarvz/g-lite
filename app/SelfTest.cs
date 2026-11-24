@@ -603,6 +603,16 @@ static class SelfTest
         catch (RefusedException) { rightRefused = true; }
         Check(rightRefused, "G300: a change to the right button is refused, not dropped");
         Check(g300Refused, "G300: a DPI it can't take is refused");
+        var unreadLevel = (byte[])g300Report.Clone();
+        // Byte 4 is level 2, the default: 0x80 alone reads as 0 DPI.
+        unreadLevel[4] = 0x80;
+        Check(G300Mouse.Build(unreadLevel, new MouseSettings { Dpi = 0, Stage = 1, Light = new MouseLight { Effect = 0x01, Color = 0xFF0000 } })[4]
+                == 0x80,
+            "G300: a level read outside 250 to 2500 DPI stays as it was when a save changes something else");
+        bool otherProfileRefused = false;
+        try { new G300Mouse().Save(new FakeG300 { Profile = 0 }, g300, g300Report, new MouseSettings { Dpi = g300.Dpi, Stage = g300.Stage }); }
+        catch (RefusedException) { otherProfileRefused = true; }
+        Check(otherProfileRefused, "G300: Save refuses when the mouse's profile button moved it off the profile shown");
         var g600Report = new FakeG600().Modes[2];
         var g600 = G600Mouse.Decode(g600Report, 3);
         Check(g600.ReadOnly && !g600.Writable && g600.Stages.SequenceEqual(new[] { 400, 1200, 2000, 3200 }) && g600.Stage == 3
