@@ -616,12 +616,14 @@ class Slider : DrawnControl
         var graphics = Begin(e);
         var color = Enabled ? Theme.Accent : Theme.Border;
         float mid = Height / 2f;
+        // Off, a slider sits at 0, like the row's empty value; Value stays for when it's on again.
+        int shown = Enabled ? Value : 0;
         using (var track = new SolidBrush(Theme.Track))
             graphics.FillRectangle(track, 7 * DpiScale, mid - 2 * DpiScale, Width - 14 * DpiScale, 4 * DpiScale);
         using (var brush = new SolidBrush(color))
         {
-            graphics.FillRectangle(brush, 7 * DpiScale, mid - 2 * DpiScale, X(Value) - 7 * DpiScale, 4 * DpiScale);
-            graphics.FillEllipse(brush, X(Value) - 7 * DpiScale, mid - 7 * DpiScale, 14 * DpiScale, 14 * DpiScale);
+            graphics.FillRectangle(brush, 7 * DpiScale, mid - 2 * DpiScale, X(shown) - 7 * DpiScale, 4 * DpiScale);
+            graphics.FillEllipse(brush, X(shown) - 7 * DpiScale, mid - 7 * DpiScale, 14 * DpiScale, 14 * DpiScale);
         }
         if (Focused && ShowFocusCues && Enabled)
             using (var pen = new Pen(Theme.Text, 2 * DpiScale))
@@ -668,9 +670,9 @@ class ScrollPanel : Control
             | ControlStyles.ResizeRedraw, true);
         glide.Tick += (s, e) => Glide();
         Controls.Add(Sheet);
-        Sheet.ControlAdded += (s, e) => e.Control.Enter += (sender, args) => Reveal((Control)sender);
-        // The sheet's empty parts act as the panel's, which a page can drag the window by.
-        Sheet.MouseDown += (s, e) => OnMouseDown(new MouseEventArgs(e.Button, e.Clicks, e.X + Sheet.Left, e.Y + Sheet.Top, e.Delta));
+        // Focus coming into the content scrolls the focused control itself into view, not the box it's in: a box taller than the view
+        // made the first click in it scroll, under a press that then dragged what it was on (a zone of the Screen effect).
+        Sheet.ControlAdded += (s, e) => e.Control.Enter += (sender, args) => RevealFocused((Control)sender);
     }
 
     protected override void OnBackColorChanged(EventArgs e)
@@ -692,7 +694,7 @@ class ScrollPanel : Control
 
     public int Offset { get { return offset; } }
 
-    protected int Content { get { return content; } }
+    public int Content { get { return content; } }
 
     public void Watch(Control item) { item.GotFocus += (s, e) => Reveal(item); }
 
@@ -704,10 +706,26 @@ class ScrollPanel : Control
     }
 
     // item is on the sheet.
-    public void Reveal(Control item)
+    // item is on the sheet.
+    public void Reveal(Control item) { Reveal(item.Bounds); }
+
+    // area is in the sheet's coordinates; the view moves only as far as it takes.
+    void Reveal(Rectangle area)
     {
-        if (item.Top < offset) ScrollTo(item.Top);
-        else if (item.Bottom > offset + Height) ScrollTo(item.Bottom - Height);
+        if (area.Top < offset) ScrollTo(area.Top);
+        else if (area.Bottom > offset + Height) ScrollTo(area.Bottom - Height);
+    }
+
+    void RevealFocused(Control entered)
+    {
+        var focused = entered;
+        while (true)
+        {
+            var inner = focused.Controls.Cast<Control>().FirstOrDefault(child => child.ContainsFocus);
+            if (inner == null) break;
+            focused = inner;
+        }
+        Reveal(Sheet.RectangleToClient(focused.RectangleToScreen(focused.ClientRectangle)));
     }
 
     void Wheel(int delta)

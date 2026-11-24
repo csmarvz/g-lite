@@ -73,7 +73,7 @@ open
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8040 fn1
-  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Cycle Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=80 Speed=53 Intensity=100 (off) Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Cycle Solid color=off (off) Direction=- (off) Brightness=80 Speed=53 Onboard profile=M1 [Revert (off)] [Save to M1 (off)] Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off) Dim after=1 min Dim to=50% Turn off after=5 min
 pick View Game
   = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Game Game mode keys=- [Clear (off)] Onboard profile=M1 [Revert (off)] [Save to M1 (off)]
 click W

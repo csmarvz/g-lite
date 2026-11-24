@@ -1137,6 +1137,13 @@ static class SelfTest
         Check(ScreenSettings.FromText("garbage;zones:x").Zones.Count == 4 && ScreenSettings.FromText("ms:5000").Interval == 1000,
             "bad screen setup text falls back to defaults");
         Check(screen.Add() == -1, "at most five zones");
+        var stripes = new ScreenSettings();
+        stripes.Zones[1].Area = new System.Drawing.RectangleF(0.3f, 0.1f, 0.4f, 0.2f);
+        stripes.Add();
+        Check(Enumerable.Range(0, 5).All(i => Math.Abs(stripes.Zones[i].Area.X - i * 0.2f) < 0.001f
+                && Math.Abs(stripes.Zones[i].Area.Width - 0.2f) < 0.001f)
+            && Math.Abs(stripes.Zones[1].Area.Y - 0.1f) < 0.001f && Math.Abs(stripes.Zones[4].Area.Height - 0.35f) < 0.001f,
+            "an added zone makes every zone an equal strip, left to right with the new one at the right, each keeping its height");
         screen.Remove(3);
         Check(screen.Zones.Count == 4 && screen.Keys[0x26] == 2, "removing a zone moves its keys to the zone before");
         Check(screen.ZoneOf(0x01, 0.1f) == 0 && screen.ZoneOf(0x01, 0.99f) == 3 && screen.ZoneOf(0x26, 0.1f) == 2,

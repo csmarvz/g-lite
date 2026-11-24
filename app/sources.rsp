@@ -45,6 +45,7 @@ Logo.cs
 Theme.cs
 Ui.cs
 Controls.cs
+Rows.cs
 DeviceList.cs
 Tray.cs
 Screen.cs

@@ -32,8 +32,8 @@ class OtherDevicePage : DevicePage
 
     string Noun { get { return found.Kind == "mouse" || found.Kind == "keyboard" ? found.Kind : "device"; } }
 
-    public OtherDevicePage(FoundDevice found, Hidpp fake, MouseEventHandler drag)
-        : base(found, fake, drag, found.ShortName, "device", "profile." + found.SettingsKey + ".")
+    public OtherDevicePage(FoundDevice found, Hidpp fake)
+        : base(found, fake, found.ShortName, "device", "profile." + found.SettingsKey + ".")
     {
         debounce.Tick += (sender, e) => { debounce.Stop(); Send(); };
         remembered = OtherSettings.FromText(Settings.Get(Remembered));

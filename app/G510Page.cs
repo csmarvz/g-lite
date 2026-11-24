@@ -22,8 +22,8 @@ class G510Page : DevicePage
 
     string Remembered { get { return "lighting." + found.SettingsKey; } }
 
-    public G510Page(FoundDevice found, Hidpp fake, MouseEventHandler drag)
-        : base(found, fake, drag, found.ShortName, "keyboard", "profile." + found.SettingsKey + ".")
+    public G510Page(FoundDevice found, Hidpp fake)
+        : base(found, fake, found.ShortName, "keyboard", "profile." + found.SettingsKey + ".")
     {
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };
         animationTimer.Tick += (s, e) => Animate();

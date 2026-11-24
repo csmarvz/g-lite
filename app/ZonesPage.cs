@@ -89,8 +89,8 @@ class ZonesPage : DevicePage
     string Saved { get { return "screen." + found.SettingsKey; } }
     string Active { get { return "screen.on." + found.SettingsKey; } }
 
-    public ZonesPage(FoundDevice found, Hidpp fake, MouseEventHandler drag)
-        : base(found, fake, drag, found.ShortName, found.Kind == "keyboard" ? "keyboard" : "device",
+    public ZonesPage(FoundDevice found, Hidpp fake)
+        : base(found, fake, found.ShortName, found.Kind == "keyboard" ? "keyboard" : "device",
             "profile." + found.SettingsKey + ".")
     {
         keyboard = found.Kind == "keyboard";

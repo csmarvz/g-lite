@@ -36,7 +36,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/Log.cs`, `LogsPage.cs`: `log.txt` and its screen
 - `app/Backups.cs`: copies of a device's memory before every write
 - `app/Updater.cs`, `UpdatePage.cs`: updates
-- The window and its look: `app/Settings.cs`, `Theme.cs`, `Ui.cs`, `Controls.cs`, `DeviceList.cs`, `Tray.cs`, `WindowHelpers.cs`, `Logo.cs`
+- The window and its look: `app/Settings.cs`, `Theme.cs`, `Ui.cs`, `Controls.cs`, `Rows.cs` (the rows layout of Settings and the device screens), `DeviceList.cs`, `Tray.cs`, `WindowHelpers.cs`, `Logo.cs`
 - The demo: `app/Fake.cs` (in-memory devices, also used by the tests), `KeyboardView.cs`, `Game.cs`
 - Tests: `app/SelfTest.cs` (golden bytes: add a check whenever the encoding or rules change), `app/Traces.cs` and `app/tests/` (each screen driven on a fake device, every message compared). A change meant to change what's sent: run `build\selftest.exe --record` from `app`, check the diff of `app/tests` and commit it with the change. Run it too after changing a layout in `app/models/`.
 - `site/`: the website, g-lite.org, published by `.github/workflows/pages.yml`

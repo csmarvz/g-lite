@@ -21,7 +21,7 @@ open
   8101 fn8  00 08 00 63
   8101 fn8  00 00 00 10
   8040 fn1
-  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=0 (off) Intensity=100 (off) [Revert (off)] [Save to keyboard (off)]
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- Solid color=off (off) Direction=- (off) Brightness=100 Speed=0 (off) [Revert (off)] [Save to keyboard (off)] Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=on (off) Dim after=1 min Dim to=50% Turn off after=5 min
 pick View Game
   = status "Matches the keyboard" [Report] [Backups] G-Lite preset=– [New…] […] View=Game Game mode keys=- [Clear (off)] [Revert (off)] [Save to keyboard (off)]
 click A
@@ -109,6 +109,6 @@ open
   8101 fn8  00 08 00 63
   8101 fn8  00 00 00 10
   8040 fn1
-  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=Shooter [Update (off)] […] View=Settings Effect=- Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=0 (off) Intensity=100 (off) [Revert (off)] [Save to keyboard (off)]
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=Shooter [Update (off)] […] View=Settings Effect=- Solid color=off (off) Direction=- (off) Brightness=100 Speed=0 (off) [Revert (off)] [Save to keyboard (off)] Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=on (off) Dim after=1 min Dim to=50% Turn off after=5 min
 check the bitmap is sent again
-  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=Shooter [Update (off)] […] View=Settings Effect=- Dim after=1 min Dim to=50% Direction=- (off) Turn off after=5 min Brightness=100 Speed=0 (off) Intensity=100 (off) [Revert (off)] [Save to keyboard (off)]
+  = status "Matches the keyboard" [Report] [Backups] G-Lite preset=Shooter [Update (off)] […] View=Settings Effect=- Solid color=off (off) Direction=- (off) Brightness=100 Speed=0 (off) [Revert (off)] [Save to keyboard (off)] Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=on (off) Dim after=1 min Dim to=50% Turn off after=5 min

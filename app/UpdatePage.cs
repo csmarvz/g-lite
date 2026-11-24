@@ -28,13 +28,12 @@ class UpdatePage : Control
     public Action<string> InstallClicked;
     public Func<string, string> Fetch = Updater.Changelog;
 
-    public UpdatePage(MouseEventHandler drag)
+    public UpdatePage()
     {
         Visible = false;
         Size = Ui.PageSize;
         Ui.Style(this, () => BackColor = Theme.Background);
-        MouseDown += drag;
-        Ui.Text(this, "Update", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += drag;
+        Ui.Text(this, "Update", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold);
 
         var hero = Ui.Add(this, new RoundedBox(), 20, 64, 616, 92);
         heading = Ui.Text(hero, "", 18, 12, () => Theme.Text, 12.75f, Ui.Semibold);

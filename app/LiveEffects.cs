@@ -39,8 +39,7 @@ static class LiveEffects
     // Directions use Wave's numbers: 7 up, 2 down, 6 left, 1 right, 3 centre out, 8 centre in (both along the rows, mirrored about the
     // middle, as Wave's). Rain falls, Fire and Audio rise.
     public static readonly int[] Directions = { 7, 2, 6, 1, 3, 8 };
-    public static readonly string[] DirectionNames = { "Up", "Down", "Left", "Right", "Center out", "Center in" },
-        ShortDirectionNames = { "Up", "Down", "Left", "Right", "Out", "In" };
+    public static readonly string[] ShortDirectionNames = { "Up", "Down", "Left", "Right", "Out", "In" };
     public static int DefaultDirection(byte id) { return id == 0xE3 ? 2 : 7; }
 
     public static EffectInfo Info(byte id) { return All.FirstOrDefault(effect => effect.Id == id); }

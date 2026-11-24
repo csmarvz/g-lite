@@ -52,7 +52,14 @@ class ScreenSettings
     {
         if (Zones.Count >= MaxZones) return -1;
         int mark = MarkColors.First(color => Zones.All(zone => zone.MarkColor != color));
-        Zones.Add(new Zone { Name = "Zone " + (Zones.Count + 1), MarkColor = mark, Area = new RectangleF(0.375f, 0.3f, 0.25f, 0.3f) });
+        var right = Zones.Count > 0 ? Zones[Zones.Count - 1].Area : new RectangleF(0, 0.5f, 1, 0.35f);
+        Zones.Add(new Zone { Name = "Zone " + (Zones.Count + 1), MarkColor = mark, Area = right });
+        // The zones become equal strips left to right, the new one at the right, each keeping its height.
+        for (int i = 0; i < Zones.Count; i++)
+        {
+            var area = Zones[i].Area;
+            Zones[i].Area = new RectangleF((float)i / Zones.Count, area.Y, 1f / Zones.Count, area.Height);
+        }
         return Zones.Count - 1;
     }
 

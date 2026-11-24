@@ -60,8 +60,6 @@ class MainWindow : Form
     FormWindowState shownState = FormWindowState.Normal;
     bool built;
 
-    [DllImport("user32.dll")] static extern bool ReleaseCapture();
-    [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
 
     public MainWindow(FakeHidpp fake)
     {
@@ -75,23 +73,14 @@ class MainWindow : Form
         Ui.Style(this, () => BackColor = Theme.Background);
         Ui.Font(this, 9.75f, Ui.Regular);
         FormClosing += (s, e) => { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; ToTray(); } };
-        MouseDown += Drag;
 
         side = Ui.Add(this, new Control(), 0, 0, SidebarWidth, WindowHeight);
         Ui.Style(side, () => side.BackColor = Theme.Sidebar);
-        side.MouseDown += Drag;
         Ui.Add(side, new TitleLogo(), 10, 0, SidebarInnerWidth, 24).MouseDown += (s, e) =>
         {
-            if (e.Button != MouseButtons.Left) return;
-            var at = Location;
-            bool was = moved;
-            Drag(s, e);
-            if (Location != at) return;
-            moved = was;
-            if (e.X < 60 * Ui.DpiScale) ToggleView();
+            if (e.Button == MouseButtons.Left && e.X < 60 * Ui.DpiScale) ToggleView();
         };
         deviceList = Ui.Add(side, new DeviceList(), 0, ListTop, SidebarWidth - 1, 400);
-        deviceList.MouseDown += Drag;
         noneText = Ui.Text(deviceList.Sheet, "Scanning devices…", 18, 4, () => Theme.Dim, 9f);
 
         int bottom = WindowHeight - 14 - 36;
@@ -145,7 +134,7 @@ class MainWindow : Form
         readyText.Click += (s, e) => ShowUpdatePage(false);
         FitList();
 
-        empty = Ui.Add(this, new EmptyPage(Drag, Rescan), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
+        empty = Ui.Add(this, new EmptyPage(Rescan), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         rescanSoon.Tick += (s, e) => { rescanSoon.Stop(); Rescan(); };
         sleepers.Tick += (s, e) => { if (Visible) Rescan(); };
         batteries.Tick += (s, e) => ReadBatteries();
@@ -153,14 +142,12 @@ class MainWindow : Form
 
         settingsPage = Ui.Add(this, new Control { Visible = false }, SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         Ui.Style(settingsPage, () => settingsPage.BackColor = Theme.Background);
-        settingsPage.MouseDown += Drag;
         // The title stays while the rest scrolls.
         var settings = Ui.Add(settingsPage, new ScrollPanel(), 0, SettingsHeader, WindowWidth - SidebarWidth, WindowHeight - SettingsHeader);
         settings.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         Ui.Style(settings, () => settings.BackColor = Theme.Background);
-        settings.MouseDown += Drag;
-        logsPage = Ui.Add(this, new LogsPage(Drag), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
-        updatePage = Ui.Add(this, new UpdatePage(Drag), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
+        logsPage = Ui.Add(this, new LogsPage(), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
+        updatePage = Ui.Add(this, new UpdatePage(), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         if (demo) updatePage.Fetch = DemoChangelog;
         updatePage.BackClicked = ShowSettings;
         updatePage.CheckClicked = () => CheckUpdates(true);
@@ -174,46 +161,43 @@ class MainWindow : Form
             ShowUpdate(null);
             if (updatePage.FromSettings) ShowSettings(); else Pick(selected);
         };
-        Ui.Text(settingsPage, "Settings", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += Drag;
+        Ui.Text(settingsPage, "Settings", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold);
 
         const int rowHeight = Ui.RowHeight;
         int sectionTop = 12;
-        var look = Section(settings.Sheet, "Appearance", ref sectionTop, new RoundedBox(), 2 * rowHeight);
-        themeHint = Row(look, 0, "Theme", "");
+        var look = Rows.Section(settings.Sheet, "Appearance", ref sectionTop, new RoundedBox(), 2 * rowHeight);
+        themeHint = Rows.Row(look, 0, "Theme", "").Hint;
         themePicker = Ui.Add(look, new SegmentedPicker { Items = new[] { "System", "Dark", "Light" }, AccessibleName = "Theme" },
             616 - 14 - 240, 16, 240, 32);
         themePicker.Picked += i => { Theme.Mode = Theme.Modes[i]; ShowThemeHint(); };
-        Rule(look, rowHeight);
-        accentHint = Row(look, rowHeight, "Accent color", "");
+        accentHint = Rows.Row(look, rowHeight, "Accent color", "").Hint;
         accentPicker = Ui.Add(look, new SegmentedPicker { Items = new[] { "G-Lite", "Windows", "Custom" }, AccessibleName = "Accent color" },
             616 - 14 - 240, rowHeight + 16, 240, 32);
         // Custom opens the colour dialog, again when it's already picked.
         accentPicker.Picked += i => { if (i == 2) ChooseAccent(); else Theme.AccentMode = Theme.Accents[i]; ShowThemeHint(); };
 
-        var updatesBox = Section(settings.Sheet, "Updates", ref sectionTop, new RoundedBox(), 3 * rowHeight);
-        Row(updatesBox, 0, "Check for updates", "Looks for a new release on GitHub when G-Lite starts");
+        var updatesBox = Rows.Section(settings.Sheet, "Updates", ref sectionTop, new RoundedBox(), 3 * rowHeight);
+        Rows.Row(updatesBox, 0, "Check for updates", "Looks for a new release on GitHub when G-Lite starts");
         checkToggle = Ui.Add(updatesBox, new Toggle { Checked = Updater.CheckForUpdates, AccessibleName = "Check for updates" },
             616 - 14 - 40, 21, 40, 22);
         checkToggle.Changed += () => Updater.CheckForUpdates = checkToggle.Checked;
-        Rule(updatesBox, rowHeight);
-        Row(updatesBox, rowHeight, "Install updates automatically", "Otherwise G-Lite asks first");
+        Rows.Row(updatesBox, rowHeight, "Install updates automatically", "Otherwise G-Lite asks first");
         autoToggle = Ui.Add(updatesBox, new Toggle { Checked = Updater.Auto, AccessibleName = "Install updates automatically" },
             616 - 14 - 40, rowHeight + 21, 40, 22);
         autoToggle.Changed += () => Updater.Auto = autoToggle.Checked;
-        Rule(updatesBox, 2 * rowHeight);
-        checkText = Row(updatesBox, 2 * rowHeight, "Version " + Application.ProductVersion, "");
+        checkText = Rows.Row(updatesBox, 2 * rowHeight, "Version " + Application.ProductVersion, "").Hint;
         checkText.AutoSize = false;
         checkText.AutoEllipsis = true;
         checkText.Size = new Size(616 - 14 - 180 - 14 - 14, 18);
         var checkNow = Ui.Add(updatesBox, new FlatButton { Text = "Check for updates" }, 616 - 14 - 180, 2 * rowHeight + 16, 180, 32);
         checkNow.Click += (s, e) => { ShowUpdatePage(true); CheckUpdates(true); };
 
-        var start = Section(settings.Sheet, "Startup", ref sectionTop, new RoundedBox(), rowHeight);
-        Row(start, 0, "Run on startup", "Starts in the tray when you sign in to Windows");
+        var start = Rows.Section(settings.Sheet, "Startup", ref sectionTop, new RoundedBox(), rowHeight);
+        Rows.Row(start, 0, "Run on startup", "Starts in the tray when you sign in to Windows");
         runToggle = Ui.Add(start, new Toggle { AccessibleName = "Run on startup" }, 616 - 14 - 40, 21, 40, 22);
         runToggle.Changed += () => SetStartup(runToggle.Checked);
 
-        Section(settings.Sheet, "Services", ref sectionTop, new ServicesBox(demo), ServicesBox.DesignHeight);
+        Rows.Section(settings.Sheet, "Services", ref sectionTop, new ServicesBox(demo), ServicesBox.DesignHeight);
         settings.Fit(sectionTop);
 
         foreach (var page in new Control[] { empty, settingsPage, logsPage, updatePage }) Watch(page);
@@ -225,7 +209,6 @@ class MainWindow : Form
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             using (var brush = new SolidBrush(Theme.Background)) e.Graphics.FillEllipse(brush, 0, 0, 2 * corner.Width, 2 * corner.Height);
         };
-        corner.MouseDown += Drag;
         Theme.Changed += Restyle;
         ShowThemeHint();
         ShowUpdate(null);
@@ -233,26 +216,6 @@ class MainWindow : Form
         Rescale(WindowHelpers.At(Point.Empty));
     }
 
-    // A titled box of Settings, below the one before; top moves past it.
-    static T Section<T>(Control settings, string title, ref int top, T box, int height) where T : Control
-    {
-        Ui.Text(settings, title, 20, top, () => Theme.Dim, 9f, Ui.Semibold);
-        Ui.Add(settings, box, 20, top + 22, 616, height);
-        top += 22 + height + 20;
-        return box;
-    }
-
-    static Label Row(Control box, int y, string title, string hint)
-    {
-        Ui.Text(box, title, 14, y + 12, () => Theme.Text, 9.75f, Ui.Semibold);
-        return Ui.Text(box, hint, 14, y + 33, () => Theme.Dim, 9f);
-    }
-
-    static void Rule(Control box, int y)
-    {
-        var line = Ui.Add(box, new Control(), 14, y, box.Width - 28, 1);
-        Ui.Style(line, () => line.BackColor = Theme.Border);
-    }
 
     void Restyle()
     {
@@ -581,11 +544,11 @@ class MainWindow : Form
     Control MakePage(FoundDevice found, Type type)
     {
         var support = DeviceTable.For(found);
-        if (support == null || support.Screen != type) return new InfoPage(found, Drag, Rescan);
+        if (support == null || support.Screen != type) return new InfoPage(found, Rescan);
         Hidpp demoDevice = null;
         if (demo && !demoDevs.TryGetValue(found.Key, out demoDevice))
             demoDevs[found.Key] = demoDevice = support.Fake != null ? support.Fake(found) : fake;
-        return support.Make(found, demoDevice, Drag);
+        return support.Make(found, demoDevice);
     }
 
     void Remove(string key)
@@ -770,6 +733,8 @@ class MainWindow : Form
 
     protected override void WndProc(ref Message message)
     {
+        // WM_EXITSIZEMOVE: moved or resized by hand, so ShowPanel leaves the window where it is from then on.
+        if (message.Msg == 0x0232) moved = true;
         if (message.Msg == 0x0024)
         {
             base.WndProc(ref message);
@@ -789,14 +754,6 @@ class MainWindow : Form
         Presence.Power(message);
         if (message.Msg == 0x0219 && !demo) RescanSoon();
         base.WndProc(ref message);
-    }
-
-    void Drag(object s, MouseEventArgs e)
-    {
-        if (e.Button != MouseButtons.Left) return;
-        ReleaseCapture();
-        SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero);
-        moved = true;
     }
 
     protected override void OnActivated(EventArgs e)

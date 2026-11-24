@@ -139,8 +139,8 @@ class MousePage : DevicePage
     Backups.Entry fix;
     readonly IMouse mouse;
 
-    public MousePage(FoundDevice found, Hidpp fake, MouseEventHandler drag, IMouse mouse)
-        : base(found, fake, drag, found.ShortName, "mouse", "profile." + found.SettingsKey + ".")
+    public MousePage(FoundDevice found, Hidpp fake, IMouse mouse)
+        : base(found, fake, found.ShortName, "mouse", "profile." + found.SettingsKey + ".")
     {
         this.mouse = mouse;
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };

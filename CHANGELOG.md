@@ -20,13 +20,18 @@
 - The window has Windows' own title bar, in the sidebar's colour on Windows 11 (dark or light on Windows 10), with Windows' minimize, maximize and close buttons and snapping.
 - Report and Backups sit next to the device's name. The line above a screen's footer is gone, and the sidebar lists the devices without a DEVICES heading, saying "Scanning devices…" while it looks.
 - Every row in Settings has the same height, Services' too.
+- The device list scrolls without fading its edges.
 - Scrolling Settings and the device list is smoother: the content moves in one piece.
+- The keyboard screens (G515, G915, G815, G512 X 75, PRO X 60 and the other RGB keyboards) follow Settings' layout: one setting per row with a short hint, under section titles, the key picture without a box, a scroll bar when the window is too short, and the footer right after the last row. A setting that doesn't apply is greyed. The Screen effect's settings come right after Effect while it runs, its Intensity is now called Color boost, and its monitor preview is larger.
+- Controls look the same everywhere: one size for toggles, dropdowns, pickers and sliders, and a disabled slider sits at 0.
+- Screen effect: adding a zone makes every zone an equal strip, the new one at the right.
 
 ### Fixed
 
 - G515 and the other RGB keyboards: moving Speed or Intensity during a live effect no longer flashes Save to keyboard on.
 - Opening G-Lite from the tray no longer flashes white while the screen draws.
 - Clicking Logs while it's open no longer reloads the whole log.
+- The window is moved by its title bar only: dragging inside it, even a slider pulled too far, no longer moves it. Where you put it is kept when it opens from the tray.
 - Speed sliders show the speed they set: a period read back could show one percent lower, and Ripple's speed couldn't go past 50% with the arrow keys.
 - G515: each preview no longer looks up the effect's index again (up to 16 calls), so a drag sends faster.
 - Keyboards that report layout code 2 (Solaar reads it as ISO) get the ISO picture; JIS codes too, whose Enter has ISO's shape. G-Lite's reports so far have only 01 (ANSI) and 0D (ISO).

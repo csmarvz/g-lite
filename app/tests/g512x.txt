@@ -34,35 +34,35 @@ open
   8071 fn0  01 06
   8071 fn0  02
   8040 fn1
-  = status "" [Report] G-Lite preset=– [New…] […] Part=- (off) Lighting per zone=off (off) Effect=- Direction=- (off) Brightness=80 Speed=0 (off) Intensity=100 (off) [Revert (off)]
+  = status "" [Report] G-Lite preset=– [New…] […] Lighting per zone=off (off) Part=- (off) Effect=- Solid color=off (off) Direction=- (off) [Revert (off)] Brightness=80 Speed=0 (off) Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 pick Effect Static
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 01 FF FF FF 02 00 00 00 00 00 00 01
   8071 fn1  01 01 FF FF FF 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=- (off) Lighting per zone=off Effect=Static <Color FFFFFF> Direction=- (off) Brightness=80 Speed=0 (off) Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Lighting per zone=off Part=- (off) Effect=Static <Color FFFFFF> Solid color=off (off) Direction=- (off) [Revert] Brightness=80 Speed=0 (off) Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 press Color 30D050
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 01 30 D0 50 02 00 00 00 00 00 00 01
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=- (off) Lighting per zone=off Effect=Static <Color 30D050> Direction=- (off) Brightness=80 Speed=0 (off) Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Lighting per zone=off Part=- (off) Effect=Static <Color 30D050> Solid color=off (off) Direction=- (off) [Revert] Brightness=80 Speed=0 (off) Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 pick Effect Wave
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 04 00 FF 00 00 00 00 13 88 64 01 01
   8071 fn1  01 04 00 FF 00 00 00 00 13 88 64 01 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=- (off) Lighting per zone=off Effect=Wave Direction=Right Brightness=80 Speed=79 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Lighting per zone=off Part=- (off) Effect=Wave Solid color=off (off) Direction=Right [Revert] Brightness=80 Speed=79 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 pick Effect Ripple
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 05 30 D0 50 FF 00 00 00 14 00 00 01
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=- (off) Lighting per zone=off Effect=Ripple <Color 30D050> Direction=- (off) Brightness=80 Speed=91 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Lighting per zone=off Part=- (off) Effect=Ripple <Color 30D050> Solid color=off (off) Direction=- (off) [Revert] Brightness=80 Speed=91 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 slide Brightness 50
   8040 fn1
   8040 fn2  00 32
@@ -70,46 +70,46 @@ slide Brightness 50
   8071 fn5  01 03 04
   8071 fn1  00 05 30 D0 50 FF 00 00 00 14 00 00 01
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=- (off) Lighting per zone=off Effect=Ripple <Color 30D050> Direction=- (off) Brightness=50 Speed=91 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Lighting per zone=off Part=- (off) Effect=Ripple <Color 30D050> Solid color=off (off) Direction=- (off) [Revert] Brightness=50 Speed=91 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 press Lighting per zone
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 05 30 D0 50 FF 00 00 00 14 00 00 01
   8071 fn1  01 01 30 D0 50 02 00 00 00 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Keys Lighting per zone=on Effect=Ripple <Color 30D050> Direction=- (off) Brightness=50 Speed=91 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Lighting per zone=on Part=Keys Effect=Ripple <Color 30D050> Solid color=off (off) Direction=- (off) [Revert] Brightness=50 Speed=91 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 pick Part Light bar
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Light bar Lighting per zone=on Effect=Static (no Ripple) <Color 30D050> Direction=- (off) Brightness=50 Speed=91 (off) Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Lighting per zone=on Part=Light bar Effect=Static (no Ripple) <Color 30D050> Solid color=off (off) Direction=- (off) [Revert] Brightness=50 Speed=91 (off) Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 pick Effect Breathe
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 05 30 D0 50 FF 00 00 00 14 00 00 01
   8071 fn1  01 02 30 D0 50 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Light bar Lighting per zone=on Effect=Breathe (no Ripple) <Color 30D050> Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Lighting per zone=on Part=Light bar Effect=Breathe (no Ripple) <Color 30D050> Solid color=off (off) Direction=- (off) [Revert] Brightness=50 Speed=79 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 press Color FF2020
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 05 30 D0 50 FF 00 00 00 14 00 00 01
   8071 fn1  01 02 FF 20 20 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Light bar Lighting per zone=on Effect=Breathe (no Ripple) <Color FF2020> Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Lighting per zone=on Part=Light bar Effect=Breathe (no Ripple) <Color FF2020> Solid color=off (off) Direction=- (off) [Revert] Brightness=50 Speed=79 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 pick Part Keys
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Keys Lighting per zone=on Effect=Ripple <Color 30D050> Direction=- (off) Brightness=50 Speed=91 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Lighting per zone=on Part=Keys Effect=Ripple <Color 30D050> Solid color=off (off) Direction=- (off) [Revert] Brightness=50 Speed=91 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 pick Effect Cycle
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 03 00 FF 00 00 00 00 13 88 64 00 01
   8071 fn1  01 02 FF 20 20 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Lighting per zone=on Part=Keys Effect=Cycle Solid color=off (off) Direction=- (off) [Revert] Brightness=50 Speed=79 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 menu More preset actions > Save as new preset…
   menu: Save as new preset… | Rename… (off) | Delete (off)
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Save] [Cancel] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Save] [Cancel] Lighting per zone=on Part=Keys Effect=Cycle Solid color=off (off) Direction=- (off) [Revert] Brightness=50 Speed=79 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 type Split
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Save] [Cancel] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Save] [Cancel] Lighting per zone=on Part=Keys Effect=Cycle Solid color=off (off) Direction=- (off) [Revert] Brightness=50 Speed=79 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 press Save
-  = status "Saved the preset Split" [Report] G-Lite preset=Split [Update (off)] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert (off)]
+  = status "Saved the preset Split" [Report] G-Lite preset=Split [Update (off)] […] Lighting per zone=on Part=Keys Effect=Cycle Solid color=off (off) Direction=- (off) [Revert (off)] Brightness=50 Speed=79 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 slide Brightness 70
   8040 fn1
   8040 fn2  00 46
@@ -117,7 +117,7 @@ slide Brightness 70
   8071 fn5  01 03 04
   8071 fn1  00 03 00 FF 00 00 00 00 13 88 64 00 01
   8071 fn1  01 02 FF 20 20 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split • [Update] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=70 Speed=79 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split • [Update] […] Lighting per zone=on Part=Keys Effect=Cycle Solid color=off (off) Direction=- (off) [Revert] Brightness=70 Speed=79 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 press Revert changes
   8040 fn1
   8040 fn2  00 32
@@ -125,20 +125,20 @@ press Revert changes
   8071 fn5  01 03 04
   8071 fn1  00 03 00 FF 00 00 00 00 13 88 64 00 01
   8071 fn1  01 02 FF 20 20 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split [Update (off)] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split [Update (off)] […] Lighting per zone=on Part=Keys Effect=Cycle Solid color=off (off) Direction=- (off) [Revert (off)] Brightness=50 Speed=79 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 press Lighting per zone
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 03 00 FF 00 00 00 00 13 88 64 00 01
   8071 fn1  01 03 00 FF 00 00 00 00 13 88 64 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split • [Update] […] Part=- (off) Lighting per zone=off Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split • [Update] […] Lighting per zone=off Part=- (off) Effect=Cycle Solid color=off (off) Direction=- (off) [Revert] Brightness=50 Speed=79 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 press Revert changes
   8040 fn1
   8101 fn6  05
   8071 fn5  01 03 04
   8071 fn1  00 03 00 FF 00 00 00 00 13 88 64 00 01
   8071 fn1  01 02 FF 20 20 13 88 00 64 00 00 00 01
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split [Update (off)] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split [Update (off)] […] Lighting per zone=on Part=Keys Effect=Cycle Solid color=off (off) Direction=- (off) [Revert (off)] Brightness=50 Speed=79 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)
 quit
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split [Update (off)] […] Part=Keys Lighting per zone=on Effect=Cycle Direction=- (off) Brightness=50 Speed=79 Intensity=100 (off) [Revert (off)]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Split [Update (off)] […] Lighting per zone=on Part=Keys Effect=Cycle Solid color=off (off) Direction=- (off) [Revert (off)] Brightness=50 Speed=79 Intensity=100 (off) Pause when screen off or locked=on (off) Pause on low battery=off (off)

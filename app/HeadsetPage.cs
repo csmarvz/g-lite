@@ -87,8 +87,8 @@ class HeadsetPage : DevicePage
     readonly Dropdown offBox;
     readonly HeadsetPicture picture;
 
-    public HeadsetPage(FoundDevice found, Hidpp fake, MouseEventHandler drag)
-        : base(found, fake, drag, found.ShortName, "headset", "profile." + found.SettingsKey + ".")
+    public HeadsetPage(FoundDevice found, Hidpp fake)
+        : base(found, fake, found.ShortName, "headset", "profile." + found.SettingsKey + ".")
     {
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };
 

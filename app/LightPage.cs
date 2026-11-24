@@ -142,8 +142,8 @@ class LightPage : DevicePage
     string Saved { get { return "screen." + found.SettingsKey; } }
     string Active { get { return "screen.on." + found.SettingsKey; } }
 
-    public LightPage(FoundDevice found, Hidpp fake, MouseEventHandler drag)
-        : base(found, fake, drag, found.ShortName, "light", "profile." + found.SettingsKey + ".")
+    public LightPage(FoundDevice found, Hidpp fake)
+        : base(found, fake, found.ShortName, "light", "profile." + found.SettingsKey + ".")
     {
         back = found.Has(0x8081);
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };

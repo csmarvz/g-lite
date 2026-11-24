@@ -20,13 +20,12 @@ class LogsPage : Control
     System.Collections.Generic.List<Log.Line> shown = new System.Collections.Generic.List<Log.Line>();
     int version = -1;
 
-    public LogsPage(MouseEventHandler drag)
+    public LogsPage()
     {
         Visible = false;
         Size = Ui.PageSize;
         Ui.Style(this, () => BackColor = Theme.Background);
-        MouseDown += drag;
-        Ui.Text(this, "Logs", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += drag;
+        Ui.Text(this, "Logs", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold);
 
         var body = Ui.Add(this, new RoundedBox(), 20, 56, 616, 605);
         body.Anchor = Ui.Tall;

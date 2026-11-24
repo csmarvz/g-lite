@@ -234,8 +234,27 @@ class Script : IDisposable
         return Regex.Replace(text, @"\b\d{2}:\d{2}\b", "<time>");
     }
 
+    // GLITE_SHOTS names a folder for a picture of each script's screen as it ends, tall enough for every row: to look at a layout
+    // without the window (ShotName, set by Traces.Run, then a count).
+    public static string ShotFolder, ShotName;
+    static int shotCount;
+
+    void SaveShot()
+    {
+        if (ShotFolder == null || Page == null) return;
+        host.ClientSize = new Size(656, 1500);
+        Page.Bounds = new Rectangle(0, 0, 656, 1500);
+        Application.DoEvents();
+        using (var image = new Bitmap(Page.Width, Page.Height))
+        {
+            Page.DrawToBitmap(image, new Rectangle(Point.Empty, Page.Size));
+            image.Save(Path.Combine(ShotFolder, ShotName + "-" + ++shotCount + ".png"));
+        }
+    }
+
     public void Dispose()
     {
+        try { SaveShot(); } catch (Exception ex) { Console.WriteLine("shot " + ShotName + ": " + ex.Message); }
         Hidpp.Tap = null;
         Ui.Popped = null;
         host.Close();
@@ -277,7 +296,7 @@ static class Traces
             Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40B4, Features = Keyboard
         };
         KeyboardPage page = null;
-        using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, device, null)))
+        using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, device)))
         {
             script.Pick("Effect", "Static");
             script.Press("Color FF2020");
@@ -326,7 +345,7 @@ static class Traces
         };
         KeyboardPage page = null;
         var keyboard = new FakeG915();
-        using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, keyboard, null)))
+        using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, keyboard)))
         {
             script.Pick("Effect", "Static");
             script.Press("Color 30D050");
@@ -368,7 +387,7 @@ static class Traces
         KeyboardPage page = null;
         var keyboard = new FakeG915();
         string text;
-        using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, keyboard, null)))
+        using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, keyboard)))
         {
             script.Pick("View", "Bindings");
             script.Pick("G1", "Mute");
@@ -416,7 +435,7 @@ static class Traces
             text = script.Text;
         }
         var pluggedAgain = new FakeG915();
-        using (var script = Begin(() => (KeyboardPage)DeviceTable.For(found).Make(found, pluggedAgain, null)))
+        using (var script = Begin(() => (KeyboardPage)DeviceTable.For(found).Make(found, pluggedAgain)))
         {
             script.Do("check the Game mode list is sent again", () => CheckGameKeys(pluggedAgain, 0x0E));
             return text + script.Text;
@@ -439,7 +458,7 @@ static class Traces
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x8071, 0x8081, 0x8040, 0x8101, 0x4540 }
         };
         KeyboardPage page = null;
-        using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, FakeG915.G512X(), null)))
+        using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, FakeG915.G512X())))
         {
             script.Pick("Effect", "Static");
             script.Press("Color 30D050");
@@ -472,7 +491,7 @@ static class Traces
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 }
         };
         KeyboardPage page = null;
-        using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, FakeG915.G512X(), null)))
+        using (var script = Begin(() => page = (KeyboardPage)DeviceTable.For(found).Make(found, FakeG915.G512X())))
         {
             script.Pick("Effect", "Static");
             script.Press("Color 30D050");
@@ -491,7 +510,7 @@ static class Traces
             Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x4540, 0x8060, 0x8080, 0x8070 }
         };
         var keyboard = FakeSpeaker.G512();
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard)))
         {
             script.Pick("Effect", "Rain");
             script.Pick("Effect", "Static");
@@ -523,7 +542,7 @@ static class Traces
         };
         var keyboard = FakeSpeaker.G413Silver();
         string text;
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard)))
         {
             script.Pick("Effect", "Static");
             script.Slide("Brightness", 50);
@@ -540,7 +559,7 @@ static class Traces
             text = script.Text;
         }
         var pluggedAgain = FakeSpeaker.G413Silver();
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, pluggedAgain, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, pluggedAgain)))
         {
             script.Do("check the Game mode list is sent again", () => CheckGameKeys(pluggedAgain.GameKeys, 0x1A));
             script.Pick("View", "Game");
@@ -560,7 +579,7 @@ static class Traces
                 0x0001, 0x0003, 0x4522, 0x0005, 0x1E00, 0x4540, 0x1EB0, 0x8060, 0x00C2, 0x1801, 0x1802, 0x8070, 0x1821, 0x1BC0, 0x1806
             }
         };
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeSpeaker { Count = 6, G213 = true }, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeSpeaker { Count = 6, G213 = true })))
         {
             script.Pick("Effect", "Static");
             script.Press("Color 30D050");
@@ -598,7 +617,7 @@ static class Traces
             Key = "trace|g510", Name = "G510s Gaming Keyboard", Kind = "keyboard", Link = "USB", Index = 0xFF,
             PlainHid = true, HasVendorCollection = true, Path = @"\\?\hid#vid_046d&pid_c22d&mi_01&col02"
         };
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeG510(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeG510())))
         {
             script.Press("Color FF2020");
             script.Slide("Brightness", 50);
@@ -625,7 +644,7 @@ static class Traces
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 }
         };
         string text;
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeSpeaker(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeSpeaker())))
         {
             script.Pick("Effect", "Static");
             script.Press("Color 30D050");
@@ -661,13 +680,13 @@ static class Traces
     static string Restart(FoundDevice found, Func<Hidpp> device)
     {
         string text;
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, device(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device())))
         {
             script.Pick("Effect", "Static");
             script.Press("Update");
             text = "restart\n" + script.Text;
         }
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, device(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device())))
             return text + "restart\n" + script.Text;
     }
 
@@ -679,7 +698,7 @@ static class Traces
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1990, 0x8040, 0x8071, 0x8081 }
         };
         string text;
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeLight(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeLight())))
         {
             script.Press("Front light on");
             script.Slide("Front brightness", 50);
@@ -723,7 +742,7 @@ static class Traces
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x2110, 0x2121, 0x2150, 0x2201 }
         };
         string first;
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeOther(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeOther())))
         {
             script.Slide("Speed", 36);
             script.Slide("Switch to free spin at", 19);
@@ -740,7 +759,7 @@ static class Traces
             script.Press("Switch");
             first = script.Text;
         }
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeOther(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeOther())))
             return first + "reopen on a device that forgot\n" + script.Text;
     }
 
@@ -751,7 +770,7 @@ static class Traces
             Key = "trace|mxkeys", Name = "MX Keys S", Kind = "keyboard", Link = "Bolt receiver", Index = 3,
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x1982, 0x40A3 }
         };
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeOther(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeOther())))
         {
             script.Slide("Level", 5);
             script.Press("Automatic");
@@ -772,7 +791,7 @@ static class Traces
             Key = "trace|keypad", Name = "MX Creative Keypad", Kind = "device", Link = "USB", Index = 0xFF,
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1B04, 0x8040 }
         };
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeOther(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeOther())))
         {
             script.Slide("Brightness", 40);
             script.Press("Revert changes");
@@ -787,7 +806,7 @@ static class Traces
             Key = "trace|" + name, Name = name, Kind = "mouse",
             Link = "LIGHTSPEED", Index = 1, WirelessId = 0x4079, Features = features
         };
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, device, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device)))
         {
             script.Slide("DPI", 20);
             script.Pick("DPI stage", "400");
@@ -827,7 +846,7 @@ static class Traces
         var device = FakeMouse.G305();
         var factoryLight = device.Sectors[MouseProtocol.RomSector]
             .Skip(MouseProtocol.LightRecordsAt).Take(MouseProtocol.LightRecordLength).ToArray();
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, device, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device)))
         {
             script.Pick("Effect", "Static");
             script.Press("Color FFD000");
@@ -854,7 +873,7 @@ static class Traces
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2202, 0x8061, 0x8100 }
         };
         var device = FakeMouse.ProX2();
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, device, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device)))
         {
             script.Slide("DPI", 20);
             script.Pick("DPI stage", "1600");
@@ -882,7 +901,7 @@ static class Traces
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x4522, 0x8040, 0x8071, 0x8081, 0x8100 }
         };
         var keyboard = new FakeG915();
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard)))
         {
             script.Pick("View", "Game");
             script.Click("W");
@@ -903,7 +922,7 @@ static class Traces
         };
         var keyboard = new FakeG915();
         string text;
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard)))
         {
             script.Pick("View", "Bindings");
             script.Pick("F1", "Disabled");
@@ -917,7 +936,7 @@ static class Traces
             Link = "LIGHTSPEED", Index = 1, WirelessId = 0x407C,
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x8040, 0x8071, 0x8081, 0x8100 }
         };
-        using (var script = Begin(() => DeviceTable.For(full).Make(full, new FakeG915 { ButtonSlots = 15 }, null)))
+        using (var script = Begin(() => DeviceTable.For(full).Make(full, new FakeG915 { ButtonSlots = 15 })))
             return text + "a G915 counting 15 slots:\n" + script.Text;
     }
 
@@ -932,7 +951,7 @@ static class Traces
         };
         var keyboard = new FakeHidpp();
         string text;
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard)))
         {
             script.Pick("View", "Game");
             script.Click("A");
@@ -949,7 +968,7 @@ static class Traces
             text = script.Text;
         }
         var pluggedAgain = new FakeHidpp();
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, pluggedAgain, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, pluggedAgain)))
         {
             script.Do("check the bitmap is sent again", () => CheckBitmap(pluggedAgain.GameBitmap, 7, 0x41));
             return text + script.Text;
@@ -971,7 +990,7 @@ static class Traces
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1B10, 0x4523, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 }
         };
         var keyboard = FakeG915.G512X();
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, keyboard)))
         {
             script.Pick("View", "Game");
             script.Click("W");
@@ -995,7 +1014,7 @@ static class Traces
         // A preset with a light, as one saved on a mouse that has lighting: nothing to send here, so the status doesn't mention it.
         Settings.Set("profile." + found.SettingsKey + ".Lit", "800,1,FF0000,5000,100,1000");
         var lightRecords = device.Sectors[1].Skip(MouseProtocol.LightRecordsAt).Take(0xFD - MouseProtocol.LightRecordsAt).ToArray();
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, device, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device)))
         {
             script.Pick("DPI stage", "800");
             script.Slide("DPI", 20);
@@ -1018,7 +1037,7 @@ static class Traces
             Key = "trace|dex", Name = "PRO X 2 DEX", Kind = "mouse", Link = "LIGHTSPEED", Index = 1, WirelessId = 0x40B8,
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2202, 0x8061, 0x8100 }
         };
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, FakeMouse.Dex(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, FakeMouse.Dex())))
         {
             script.Pick("View", "Bindings");
             return script.Text;
@@ -1034,7 +1053,7 @@ static class Traces
             Key = "trace|g300", Name = "G300 Gaming Mouse", Kind = "mouse", Models = "USB C246", Link = "USB", Index = 0xFF,
             PlainHid = true, HasVendorCollection = true, Path = @"\\?\hid#vid_046d&pid_c246&mi_01&col03"
         };
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, device, null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device)))
         {
             script.Pick("DPI stage", "1500");
             script.Pick("Report rate", "500");
@@ -1062,7 +1081,7 @@ static class Traces
             PlainHid = true, HasVendorCollection = true, Path = @"\\?\hid#vid_046d&pid_c24a&mi_01&col03"
         };
         MousePage page = null;
-        using (var script = Begin(() => page = (MousePage)DeviceTable.For(found).Make(found, device, null)))
+        using (var script = Begin(() => page = (MousePage)DeviceTable.For(found).Make(found, device)))
         {
             script.Pick("View", "Bindings");
             script.Pick("View", "Settings");
@@ -1082,7 +1101,7 @@ static class Traces
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2121, 0x2201, 0x8060, 0x8070, 0x8100 }
         };
         MousePage page = null;
-        using (var script = Begin(() => page = (MousePage)DeviceTable.For(found).Make(found, device, null)))
+        using (var script = Begin(() => page = (MousePage)DeviceTable.For(found).Make(found, device)))
         {
             script.Do("watch, off", () => page.Watch());
             script.Press("Invert scrolling");
@@ -1104,7 +1123,7 @@ static class Traces
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2121, 0x2201, 0x8060, 0x8070, 0x8100, 0x8110 }
         };
         MousePage page = null;
-        using (var script = Begin(() => page = (MousePage)DeviceTable.For(found).Make(found, device, null)))
+        using (var script = Begin(() => page = (MousePage)DeviceTable.For(found).Make(found, device)))
         {
             script.Pick("View", "Bindings");
             script.Do("G7 pressed on the mouse", () => page.Pressed(0x0040));
@@ -1140,7 +1159,7 @@ static class Traces
             Key = "trace|g9x", Name = "G9x Laser Mouse", Kind = "mouse",
             Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04"
         };
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeG9x(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeG9x())))
         {
             script.Slide("DPI", 30);
             script.Pick("Effect", "Static");
@@ -1161,7 +1180,7 @@ static class Traces
             Link = "LIGHTSPEED", Index = 0xFF, Path = @"\\?\hid#vid_046d&pid_0aba&mi_03&col01",
             Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300 }
         };
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeHeadset(), null)))
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeHeadset())))
         {
             script.Slide("Sidetone", 40);
             script.Pick("Turn off after", "30 min");
@@ -1221,11 +1240,14 @@ static class Traces
     public static List<string> Run(string folder, bool record)
     {
         Script.Timing = Environment.GetEnvironmentVariable("GLITE_TIMING") == "1";
+        Script.ShotFolder = Environment.GetEnvironmentVariable("GLITE_SHOTS");
+        if (Script.ShotFolder != null) Directory.CreateDirectory(Script.ShotFolder);
         var failures = new List<string>();
         Directory.CreateDirectory(folder);
         foreach (var trace in All())
         {
             Fresh();
+            Script.ShotName = trace.Key;
             var began = DateTime.UtcNow;
             string text;
             try { text = trace.Value(); }
