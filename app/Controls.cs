@@ -646,7 +646,8 @@ class Slider : DrawnControl
 }
 
 // A view whose children can be taller than it: they scroll with the mouse wheel, easing to where the wheel points, and a thin bar at
-// the right shows where the view is when there's more than fits (ShowBar; the device list fades its edges instead). Fit says how
+// the right shows where the view is when there's more than fits (ShowBar; the device list fades its edges instead); its thumb
+// drags, and a click beside it jumps there. Fit says how
 // tall the children are; focus moving into a child scrolls it into view. Wheel turns over a child reach it through the child's
 // parent chain (Windows passes an unhandled WM_MOUSEWHEEL up), except over a control that takes the wheel itself, like Slider.
 class ScrollPanel : Control
@@ -654,6 +655,9 @@ class ScrollPanel : Control
     int offset, content, target;
     readonly Timer glide = new Timer { Interval = 15 };
     public bool ShowBar = true;
+    // A drag of the bar: the pointer's height and the offset when it started, -1 when there's none.
+    int grabbedAt = -1, grabbedOffset;
+    bool overBar;
 
     public ScrollPanel()
     {
@@ -737,15 +741,73 @@ class ScrollPanel : Control
         foreach (Control control in Controls) control.Invalidate();
     }
 
+    bool HasBar { get { return ShowBar && content > Height; } }
+
+    // The bar takes the panel's right 14 pixels (at 100%), wider than it's drawn, so it's easy to grab.
+    bool OnBar(Point point) { return HasBar && point.X >= Width - 14 * Ui.DpiScale; }
+
+    // The thumb's top and height, and how far it can move.
+    void Thumb(out float top, out float height, out float travel)
+    {
+        float margin = 6 * Ui.DpiScale, track = Height - 2 * margin;
+        height = Math.Max(24 * Ui.DpiScale, track * Height / content);
+        travel = track - height;
+        top = margin + travel * offset / (content - Height);
+    }
+
+    // A press on the bar doesn't reach MouseDown's handlers, which move the window. Off the thumb, the thumb jumps there first.
+    protected override void OnMouseDown(MouseEventArgs e)
+    {
+        if (e.Button != MouseButtons.Left || !OnBar(e.Location)) { base.OnMouseDown(e); return; }
+        float top, height, travel;
+        Thumb(out top, out height, out travel);
+        if (e.Y < top || e.Y > top + height)
+        {
+            ScrollTo((int)Math.Round((e.Y - 6 * Ui.DpiScale - height / 2) * (content - Height) / travel));
+        }
+        grabbedAt = e.Y;
+        grabbedOffset = offset;
+        Invalidate();
+    }
+
+    protected override void OnMouseMove(MouseEventArgs e)
+    {
+        base.OnMouseMove(e);
+        if (grabbedAt >= 0)
+        {
+            float top, height, travel;
+            Thumb(out top, out height, out travel);
+            if (travel > 0) ScrollTo(grabbedOffset + (int)Math.Round((e.Y - grabbedAt) * (content - Height) / travel));
+            // Moves keep coming while dragging, and Windows paints only when none is waiting: the moved controls would show stale
+            // pixels until the drag stops.
+            WindowHelpers.PaintNow(this);
+            return;
+        }
+        bool over = OnBar(e.Location);
+        if (over != overBar) { overBar = over; Invalidate(); }
+    }
+
+    protected override void OnMouseUp(MouseEventArgs e)
+    {
+        base.OnMouseUp(e);
+        if (grabbedAt >= 0) { grabbedAt = -1; Invalidate(); }
+    }
+
+    protected override void OnMouseLeave(EventArgs e)
+    {
+        base.OnMouseLeave(e);
+        if (overBar) { overBar = false; Invalidate(); }
+    }
+
     protected override void OnPaint(PaintEventArgs e)
     {
         e.Graphics.Clear(BackColor);
-        if (!ShowBar || content <= Height) return;
-        float scale = Ui.DpiScale, margin = 6 * scale, track = Height - 2 * margin;
-        float thumb = Math.Max(24 * scale, track * Height / content);
-        float top = margin + (track - thumb) * offset / (content - Height);
+        if (!HasBar) return;
+        float scale = Ui.DpiScale, top, height, travel;
+        Thumb(out top, out height, out travel);
+        var color = overBar || grabbedAt >= 0 ? Theme.Dim : Theme.Track;
         e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-        Ui.Fill(e.Graphics, new RectangleF(Width - 9 * scale, top, 4 * scale, thumb), 2 * scale, Theme.Track, Theme.Track);
+        Ui.Fill(e.Graphics, new RectangleF(Width - 9 * scale, top, 4 * scale, height), 2 * scale, color, color);
     }
 }
 

@@ -168,6 +168,9 @@ static class Ui
     // Pages are laid out at this size before they're scaled and placed, so their anchors measure from it.
     public static readonly Size PageSize = new Size(656, 730);
 
+    // A row of a Settings box: a title at 12 and a hint at 33, or a 32 high control at 16.
+    public const int RowHeight = 64;
+
     // A page's footer stays at the bottom of the window, and a box that ends above it grows down to it.
     public const AnchorStyles Footer = AnchorStyles.Bottom | AnchorStyles.Left;
     public const AnchorStyles Tall = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;

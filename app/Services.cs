@@ -250,7 +250,7 @@ class LogitechSoftware
 class ServicesBox : RoundedBox
 {
     public const int DesignHeight = RowHeight * (Rows + 1);
-    const int RowHeight = 44, BoxWidth = 616, ButtonX = BoxWidth - 14 - 96, StatusX = ButtonX - 12 - 84, Rows = 4;
+    const int RowHeight = Ui.RowHeight, BoxWidth = 616, ButtonX = BoxWidth - 14 - 96, StatusX = ButtonX - 12 - 84, Rows = 4;
     readonly bool demo;
     readonly Timer timer = new Timer { Interval = 3000 };
     readonly Label[] detailLabels = new Label[Rows], stateLabels = new Label[Rows];
@@ -267,21 +267,22 @@ class ServicesBox : RoundedBox
     public ServicesBox(bool demo)
     {
         this.demo = demo;
-        Ui.Text(this, "Name", 14, 13, () => Theme.Dim, 9f, Ui.Semibold);
-        Ui.Text(this, "Status", StatusX, 13, () => Theme.Dim, 9f, Ui.Semibold);
-        allButton = Ui.Add(this, new FlatButton { Text = "Stop all", Icon = "shield", Visible = false }, ButtonX, 8, 96, 28);
+        var nameHead = Ui.Text(this, "Name", 14, 0, () => Theme.Dim, 9f, Ui.Semibold);
+        nameHead.Top = (RowHeight - nameHead.Height) / 2;
+        Ui.Text(this, "Status", StatusX, nameHead.Top, () => Theme.Dim, 9f, Ui.Semibold);
+        allButton = Ui.Add(this, new FlatButton { Text = "Stop all", Icon = "shield", Visible = false }, ButtonX, 16, 96, 32);
         allButton.Click += (s, e) => ChangeAll();
         for (int row = 0; row < Rows; row++)
         {
             int y = RowHeight * (row + 1), picked = row;
-            Ui.Text(this, row < Rows - 1 ? LogitechSoftware.All[row].Name : "Windows Dynamic Lighting", 14, y + 4, () => Theme.Text,
+            Ui.Text(this, row < Rows - 1 ? LogitechSoftware.All[row].Name : "Windows Dynamic Lighting", 14, y + 12, () => Theme.Text,
                 9.75f, Ui.Semibold);
-            detailLabels[row] = Ui.Text(this, "", 14, y + 23, () => DetailColor(picked), 8.25f);
+            detailLabels[row] = Ui.Text(this, "", 14, y + 33, () => DetailColor(picked), 9f);
             stateLabels[row] = Ui.Text(this, "", StatusX + 13, y, () => Theme.Text, 9f);
             stateLabels[row].Top = y + (RowHeight - stateLabels[row].Height) / 2;
             buttons[row] = Ui.Add(this,
                 new FlatButton { Text = row < Rows - 1 ? "Stop" : "Settings", Icon = row < Rows - 1 ? "shield" : null, Visible = false },
-                ButtonX, y + 8, 96, 28);
+                ButtonX, y + 16, 96, 32);
             buttons[row].Click += (s, e) => Clicked(picked);
         }
         timer.Tick += (s, e) => Read();

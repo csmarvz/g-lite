@@ -90,6 +90,27 @@ static class WindowHelpers
         return new Font(face, points * 96f / 72f * scale, FontStyle.Regular, GraphicsUnit.Pixel);
     }
 
+    [DllImport("user32.dll")] static extern bool RedrawWindow(IntPtr window, IntPtr area, IntPtr region, int flags);
+
+    // Shows a window once it's painted: cloaked (DWMWA_CLOAK), shown, every control painted at once (RDW_INVALIDATE, RDW_ERASE,
+    // RDW_ALLCHILDREN, RDW_UPDATENOW), then uncloaked. Shown straight from the tray, its controls flash white while they paint,
+    // slower since Trim handed their memory back.
+    public static void ShowPainted(Form form)
+    {
+        int on = 1, off = 0;
+        bool cloaked = false;
+        try { cloaked = DwmSetWindowAttribute(form.Handle, 13, ref on, 4) == 0; } catch (DllNotFoundException) { }
+        form.Show();
+        PaintNow(form);
+        if (cloaked) DwmSetWindowAttribute(form.Handle, 13, ref off, 4);
+    }
+
+    // Paints a control and everything in it now, not when the input queue is empty.
+    public static void PaintNow(Control control)
+    {
+        RedrawWindow(control.Handle, IntPtr.Zero, IntPtr.Zero, 0x1 | 0x4 | 0x80 | 0x100);
+    }
+
     public static void Border(Form form, Color color)
     {
         if (!form.IsHandleCreated) return;

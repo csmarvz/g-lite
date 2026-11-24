@@ -19,7 +19,7 @@ class MainWindow : Form
 {
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-    const int SettingsHeader = 52, WindowWidth = 868, WindowHeight = 730, SidebarWidth = 212, SidebarInnerWidth = SidebarWidth - 20, ListTop = 54;
+    const int SettingsHeader = 52, WindowWidth = 868, WindowHeight = 730, SidebarWidth = 212, SidebarInnerWidth = SidebarWidth - 20, ListTop = 32;
 
     public NotifyIcon Tray;
     readonly FakeHidpp fake;
@@ -47,8 +47,8 @@ class MainWindow : Form
         batteries = new System.Windows.Forms.Timer { Interval = 60000 };
     readonly FlatButton updateButton;
     readonly UpdatePage updatePage;
-    readonly Label checkText, themeHint;
-    readonly SegmentedPicker themePicker;
+    readonly Label checkText, themeHint, accentHint;
+    readonly SegmentedPicker themePicker, accentPicker;
     readonly Toggle runToggle, checkToggle, autoToggle;
     KeyboardView view;
     readonly bool demo;
@@ -80,7 +80,7 @@ class MainWindow : Form
         side = Ui.Add(this, new Control(), 0, 0, SidebarWidth, WindowHeight);
         Ui.Style(side, () => side.BackColor = Theme.Sidebar);
         side.MouseDown += Drag;
-        Ui.Add(side, new TitleLogo(), 10, 12, SidebarInnerWidth, 34).MouseDown += (s, e) =>
+        Ui.Add(side, new TitleLogo(), 10, 0, SidebarInnerWidth, 24).MouseDown += (s, e) =>
         {
             if (e.Button != MouseButtons.Left) return;
             var at = Location;
@@ -176,41 +176,45 @@ class MainWindow : Form
         };
         Ui.Text(settingsPage, "Settings", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += Drag;
 
-        Ui.Text(settings, "Appearance", 20, 12, () => Theme.Dim, 9f, Ui.Semibold);
-        var look = Ui.Add(settings, new RoundedBox(), 20, 34, 616, 64);
+        const int rowHeight = Ui.RowHeight;
+        int sectionTop = 12;
+        var look = Section(settings, "Appearance", ref sectionTop, new RoundedBox(), 2 * rowHeight);
         themeHint = Row(look, 0, "Theme", "");
         themePicker = Ui.Add(look, new SegmentedPicker { Items = new[] { "System", "Dark", "Light" }, AccessibleName = "Theme" },
             616 - 14 - 240, 16, 240, 32);
         themePicker.Picked += i => { Theme.Mode = Theme.Modes[i]; ShowThemeHint(); };
+        Rule(look, rowHeight);
+        accentHint = Row(look, rowHeight, "Accent color", "");
+        accentPicker = Ui.Add(look, new SegmentedPicker { Items = new[] { "G-Lite", "Windows", "Custom" }, AccessibleName = "Accent color" },
+            616 - 14 - 240, rowHeight + 16, 240, 32);
+        // Custom opens the colour dialog, again when it's already picked.
+        accentPicker.Picked += i => { if (i == 2) ChooseAccent(); else Theme.AccentMode = Theme.Accents[i]; ShowThemeHint(); };
 
-        Ui.Text(settings, "Updates", 20, 118, () => Theme.Dim, 9f, Ui.Semibold);
-        var updatesBox = Ui.Add(settings, new RoundedBox(), 20, 140, 616, 192);
+        var updatesBox = Section(settings, "Updates", ref sectionTop, new RoundedBox(), 3 * rowHeight);
         Row(updatesBox, 0, "Check for updates", "Looks for a new release on GitHub when G-Lite starts");
         checkToggle = Ui.Add(updatesBox, new Toggle { Checked = Updater.CheckForUpdates, AccessibleName = "Check for updates" },
             616 - 14 - 40, 21, 40, 22);
         checkToggle.Changed += () => Updater.CheckForUpdates = checkToggle.Checked;
-        Rule(updatesBox, 64);
-        Row(updatesBox, 64, "Install updates automatically", "Otherwise G-Lite asks first");
+        Rule(updatesBox, rowHeight);
+        Row(updatesBox, rowHeight, "Install updates automatically", "Otherwise G-Lite asks first");
         autoToggle = Ui.Add(updatesBox, new Toggle { Checked = Updater.Auto, AccessibleName = "Install updates automatically" },
-            616 - 14 - 40, 64 + 21, 40, 22);
+            616 - 14 - 40, rowHeight + 21, 40, 22);
         autoToggle.Changed += () => Updater.Auto = autoToggle.Checked;
-        Rule(updatesBox, 128);
-        checkText = Row(updatesBox, 128, "Version " + Application.ProductVersion, "");
+        Rule(updatesBox, 2 * rowHeight);
+        checkText = Row(updatesBox, 2 * rowHeight, "Version " + Application.ProductVersion, "");
         checkText.AutoSize = false;
         checkText.AutoEllipsis = true;
         checkText.Size = new Size(616 - 14 - 180 - 14 - 14, 18);
-        var checkNow = Ui.Add(updatesBox, new FlatButton { Text = "Check for updates" }, 616 - 14 - 180, 128 + 16, 180, 32);
+        var checkNow = Ui.Add(updatesBox, new FlatButton { Text = "Check for updates" }, 616 - 14 - 180, 2 * rowHeight + 16, 180, 32);
         checkNow.Click += (s, e) => { ShowUpdatePage(true); CheckUpdates(true); };
 
-        Ui.Text(settings, "Startup", 20, 352, () => Theme.Dim, 9f, Ui.Semibold);
-        var start = Ui.Add(settings, new RoundedBox(), 20, 374, 616, 64);
+        var start = Section(settings, "Startup", ref sectionTop, new RoundedBox(), rowHeight);
         Row(start, 0, "Run on startup", "Starts in the tray when you sign in to Windows");
         runToggle = Ui.Add(start, new Toggle { AccessibleName = "Run on startup" }, 616 - 14 - 40, 21, 40, 22);
         runToggle.Changed += () => SetStartup(runToggle.Checked);
 
-        Ui.Text(settings, "Services", 20, 456, () => Theme.Dim, 9f, Ui.Semibold);
-        var services = Ui.Add(settings, new ServicesBox(demo), 20, 478, 616, ServicesBox.DesignHeight);
-        settings.Fit(services.Bottom + 20);
+        Section(settings, "Services", ref sectionTop, new ServicesBox(demo), ServicesBox.DesignHeight);
+        settings.Fit(sectionTop);
 
         foreach (var page in new Control[] { empty, settingsPage, logsPage, updatePage }) Watch(page);
         // The pages' top left corner is rounded into the sidebar and the title bar, which share a colour.
@@ -227,6 +231,15 @@ class MainWindow : Form
         ShowUpdate(null);
         built = true;
         Rescale(WindowHelpers.At(Point.Empty));
+    }
+
+    // A titled box of Settings, below the one before; top moves past it.
+    static T Section<T>(Control settings, string title, ref int top, T box, int height) where T : Control
+    {
+        Ui.Text(settings, title, 20, top, () => Theme.Dim, 9f, Ui.Semibold);
+        Ui.Add(settings, box, 20, top + 22, 616, height);
+        top += 22 + height + 20;
+        return box;
     }
 
     static Label Row(Control box, int y, string title, string hint)
@@ -258,6 +271,22 @@ class MainWindow : Form
         themeHint.Text = mode == "system"
             ? "Follows Windows, which uses " + (Theme.SystemLight() ? "light" : "dark") + " mode right now"
             : "Always " + mode;
+        var accent = Theme.AccentMode;
+        accentPicker.Index = Array.IndexOf(Theme.Accents, accent);
+        accentHint.Text = accent == "windows" ? "Follows Windows' accent color" : accent == "custom" ? "Your color, in both themes" : "G-Lite's green";
+    }
+
+    // Cancelled, the accent stays as it was.
+    void ChooseAccent()
+    {
+        using (var dialog = new ColorDialog { FullOpen = true, Color = Theme.Accent })
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                Theme.CustomAccent = dialog.Color.ToArgb() & 0xFFFFFF;
+                Theme.AccentMode = "custom";
+            }
+        Activate();
+        ShowThemeHint();
     }
 
     Control Current
@@ -1010,7 +1039,7 @@ class MainWindow : Form
         if (!moved && WindowState == FormWindowState.Normal)
             Location = new Point(Math.Max(workArea.Left, workArea.Right - Width - S(12)),
                 Math.Max(workArea.Top, workArea.Bottom - Height - S(12)));
-        Show();
+        WindowHelpers.ShowPainted(this);
         if (view != null && wantView) ShowView();
         Activate();
         Pick(selected);
