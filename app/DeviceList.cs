@@ -12,6 +12,9 @@ class DeviceList : ScrollPanel
         Ui.Style(this, () => BackColor = Theme.Sidebar);
     }
 
+    // The fades follow the view, so every row is drawn again at each step.
+    protected override void Scrolled() { foreach (Control item in Sheet.Controls) item.Invalidate(); }
+
     public void Fade(Graphics graphics, Control item)
     {
         float zone = 32 * Ui.DpiScale, ramp = 46 * Ui.DpiScale;
@@ -19,10 +22,11 @@ class DeviceList : ScrollPanel
         DrawEdgeFade(graphics, item, 0, zone, true, Offset / ramp);
     }
 
-    static void DrawEdgeFade(Graphics graphics, Control item, float top, float height, bool fromTop, float strength)
+    // item is on the sheet; top is in the view.
+    void DrawEdgeFade(Graphics graphics, Control item, float top, float height, bool fromTop, float strength)
     {
         strength = Math.Min(1, strength);
-        var area = new RectangleF(0, top - item.Top, item.Width, height);
+        var area = new RectangleF(0, top - (item.Top - Offset), item.Width, height);
         if (strength <= 0 || area.Bottom <= 0 || area.Top >= item.Height) return;
         Color clear = Color.FromArgb(0, Theme.Sidebar), solid = Color.FromArgb((int)Math.Round(255 * strength), Theme.Sidebar);
         using (var brush = new LinearGradientBrush(new RectangleF(0, area.Top - 1, 1, area.Height + 2),
@@ -73,7 +77,7 @@ class DeviceListItem : DrawnControl
         }
         Ui.Draw(graphics, Subtitle, font, new RectangleF(x, top, right - x, Height / 2f), Theme.Dim,
             TextFormatFlags.Top | TextFormatFlags.EndEllipsis);
-        var list = Parent as DeviceList;
+        var list = Parent == null ? null : Parent.Parent as DeviceList;
         if (list != null) list.Fade(graphics, this);
     }
 }

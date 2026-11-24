@@ -101,14 +101,15 @@ static class WindowHelpers
         bool cloaked = false;
         try { cloaked = DwmSetWindowAttribute(form.Handle, 13, ref on, 4) == 0; } catch (DllNotFoundException) { }
         form.Show();
-        PaintNow(form);
+        RedrawWindow(form.Handle, IntPtr.Zero, IntPtr.Zero, 0x1 | 0x4 | 0x80 | 0x100);
         if (cloaked) DwmSetWindowAttribute(form.Handle, 13, ref off, 4);
     }
 
-    // Paints a control and everything in it now, not when the input queue is empty.
-    public static void PaintNow(Control control)
+    // Paints what's waiting to be painted in a control and everything in it (RDW_UPDATENOW, RDW_ALLCHILDREN) now, not once the input
+    // queue is empty.
+    public static void PaintPending(Control control)
     {
-        RedrawWindow(control.Handle, IntPtr.Zero, IntPtr.Zero, 0x1 | 0x4 | 0x80 | 0x100);
+        RedrawWindow(control.Handle, IntPtr.Zero, IntPtr.Zero, 0x80 | 0x100);
     }
 
     public static void Border(Form form, Color color)

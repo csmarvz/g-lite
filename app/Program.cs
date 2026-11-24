@@ -92,7 +92,7 @@ class MainWindow : Form
         };
         deviceList = Ui.Add(side, new DeviceList(), 0, ListTop, SidebarWidth - 1, 400);
         deviceList.MouseDown += Drag;
-        noneText = Ui.Text(deviceList, "Scanning devices…", 18, 4, () => Theme.Dim, 9f);
+        noneText = Ui.Text(deviceList.Sheet, "Scanning devices…", 18, 4, () => Theme.Dim, 9f);
 
         int bottom = WindowHeight - 14 - 36;
         var quit = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "power", Text = "Quit" },
@@ -178,7 +178,7 @@ class MainWindow : Form
 
         const int rowHeight = Ui.RowHeight;
         int sectionTop = 12;
-        var look = Section(settings, "Appearance", ref sectionTop, new RoundedBox(), 2 * rowHeight);
+        var look = Section(settings.Sheet, "Appearance", ref sectionTop, new RoundedBox(), 2 * rowHeight);
         themeHint = Row(look, 0, "Theme", "");
         themePicker = Ui.Add(look, new SegmentedPicker { Items = new[] { "System", "Dark", "Light" }, AccessibleName = "Theme" },
             616 - 14 - 240, 16, 240, 32);
@@ -190,7 +190,7 @@ class MainWindow : Form
         // Custom opens the colour dialog, again when it's already picked.
         accentPicker.Picked += i => { if (i == 2) ChooseAccent(); else Theme.AccentMode = Theme.Accents[i]; ShowThemeHint(); };
 
-        var updatesBox = Section(settings, "Updates", ref sectionTop, new RoundedBox(), 3 * rowHeight);
+        var updatesBox = Section(settings.Sheet, "Updates", ref sectionTop, new RoundedBox(), 3 * rowHeight);
         Row(updatesBox, 0, "Check for updates", "Looks for a new release on GitHub when G-Lite starts");
         checkToggle = Ui.Add(updatesBox, new Toggle { Checked = Updater.CheckForUpdates, AccessibleName = "Check for updates" },
             616 - 14 - 40, 21, 40, 22);
@@ -208,12 +208,12 @@ class MainWindow : Form
         var checkNow = Ui.Add(updatesBox, new FlatButton { Text = "Check for updates" }, 616 - 14 - 180, 2 * rowHeight + 16, 180, 32);
         checkNow.Click += (s, e) => { ShowUpdatePage(true); CheckUpdates(true); };
 
-        var start = Section(settings, "Startup", ref sectionTop, new RoundedBox(), rowHeight);
+        var start = Section(settings.Sheet, "Startup", ref sectionTop, new RoundedBox(), rowHeight);
         Row(start, 0, "Run on startup", "Starts in the tray when you sign in to Windows");
         runToggle = Ui.Add(start, new Toggle { AccessibleName = "Run on startup" }, 616 - 14 - 40, 21, 40, 22);
         runToggle.Changed += () => SetStartup(runToggle.Checked);
 
-        Section(settings, "Services", ref sectionTop, new ServicesBox(demo), ServicesBox.DesignHeight);
+        Section(settings.Sheet, "Services", ref sectionTop, new ServicesBox(demo), ServicesBox.DesignHeight);
         settings.Fit(sectionTop);
 
         foreach (var page in new Control[] { empty, settingsPage, logsPage, updatePage }) Watch(page);
@@ -544,7 +544,7 @@ class MainWindow : Form
             if (!items.TryGetValue(device.Key, out item))
             {
                 var key = device.Key;
-                item = Place(deviceList, new DeviceListItem(), 10, y, SidebarInnerWidth, 46);
+                item = Place(deviceList.Sheet, new DeviceListItem(), 10, y, SidebarInnerWidth, 46);
                 deviceList.Watch(item);
                 item.Click += (s, e) => Pick(key);
                 items[key] = item;
@@ -558,7 +558,7 @@ class MainWindow : Form
                 : device.Kind == "light" || device.Kind == "keyboard" || device.Kind == "mouse" || device.Kind == "headset" ? device.Kind
                 : "device";
             item.AccessibleName = device.ShortName;
-            item.Location = new Point(S(10), S(y) - deviceList.Offset);
+            item.Location = new Point(S(10), S(y));
             item.Invalidate();
             y += 50;
         }
