@@ -31,6 +31,7 @@ class UpdatePage : Control
     public UpdatePage(MouseEventHandler drag)
     {
         Visible = false;
+        Size = Ui.PageSize;
         Ui.Style(this, () => BackColor = Theme.Background);
         MouseDown += drag;
         Ui.Text(this, "Update", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += drag;
@@ -55,24 +56,28 @@ class UpdatePage : Control
 
         whatsNew = Ui.Text(this, "What's new", 20, 172, () => Theme.Dim, 9f, Ui.Semibold);
         notesBox = Ui.Add(this, new RoundedBox(), 20, 194, 616, 463);
+        notesBox.Anchor = Ui.Tall;
         notes = Ui.Add(notesBox, new RichTextBox
         {
             ReadOnly = true, WordWrap = true, ScrollBars = RichTextBoxScrollBars.Vertical, BorderStyle = BorderStyle.None,
             DetectUrls = false, AccessibleName = "Changelog"
         }, 18, 10, 594, 443);
+        notes.Anchor = Ui.Tall;
         Ui.Style(notes, () => { notes.BackColor = Theme.Card; Dark(); Render(); });
         notes.HandleCreated += (s, e) => { Dark(); Later(Render); };
         notes.Resize += (s, e) => { if (notes.Width != renderedWidth) { renderedWidth = notes.Width; Later(Render); } };
         VisibleChanged += (s, e) => { if (Visible) { Arrange(); Render(); } };
 
-        var line = Ui.Add(this, new Control(), 0, 673, 656, 1);
-        Ui.Style(line, () => line.BackColor = Theme.Border);
         status = Ui.Add(this, new StatusLine(), 20, 683, 330, 36);
+        status.Anchor = Ui.Footer;
         back = Ui.Add(this, new FlatButton { Text = "Back" }, 284, 685, 76, 32);
+        back.Anchor = Ui.Footer;
         back.Click += (s, e) => { if (BackClicked != null) BackClicked(); };
         skip = Ui.Add(this, new FlatButton { Text = "Skip this version" }, 368, 685, 140, 32);
+        skip.Anchor = Ui.Footer;
         skip.Click += (s, e) => { if (SkipClicked != null) SkipClicked(); };
         primary = Ui.Add(this, new FlatButton { Style = ButtonStyle.Primary, Text = "Update now" }, 516, 685, 120, 32);
+        primary.Anchor = Ui.Footer;
         primary.Click += (s, e) => Primary();
     }
 

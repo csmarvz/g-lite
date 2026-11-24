@@ -23,7 +23,7 @@ static class Ui
 
     public static T Font<T>(T control, float points, string face) where T : Control
     {
-        control.Font = WindowHelpers.PixelFont(points, DpiScale, face);
+        control.Font = Get(points, face);
         fonts.Add(Tuple.Create((Control)control, points, face));
         return control;
     }
@@ -33,7 +33,7 @@ static class Ui
     public static void Refont()
     {
         fonts.RemoveAll(entry => entry.Item1.IsDisposed);
-        foreach (var entry in fonts) entry.Item1.Font = WindowHelpers.PixelFont(entry.Item2, DpiScale, entry.Item3);
+        foreach (var entry in fonts) entry.Item1.Font = Get(entry.Item2, entry.Item3);
     }
 
     public static Font Get(float points, string face)
@@ -165,6 +165,13 @@ static class Ui
         graphics.SmoothingMode = smoothing;
     }
 
+    // Pages are laid out at this size before they're scaled and placed, so their anchors measure from it.
+    public static readonly Size PageSize = new Size(656, 730);
+
+    // A page's footer stays at the bottom of the window, and a box that ends above it grows down to it.
+    public const AnchorStyles Footer = AnchorStyles.Bottom | AnchorStyles.Left;
+    public const AnchorStyles Tall = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+
     public static T Add<T>(Control parent, T control, int x, int y, int width, int height) where T : Control
     {
         control.Bounds = new Rectangle(x, y, width, height);
@@ -232,7 +239,6 @@ static class Icons
                     graphics.DrawArc(pen, 4, 4, 16, 16, -10, -305);
                     graphics.DrawLines(pen, new[] { new PointF(20, 4), new PointF(20, 10.5f), new PointF(13.5f, 10.5f) });
                     break;
-                case "minus": graphics.DrawLine(pen, 6, 12, 18, 12); break;
                 case "lines":
                     graphics.DrawLine(pen, 5, 7, 19, 7); graphics.DrawLine(pen, 5, 12, 19, 12); graphics.DrawLine(pen, 5, 17, 13, 17);
                     break;

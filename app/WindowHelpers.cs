@@ -97,6 +97,27 @@ static class WindowHelpers
         try { DwmSetWindowAttribute(form.Handle, 34, ref colorRef, 4); } catch (DllNotFoundException) { }
     }
 
+    struct ThemeOptions { public int Flags, Mask; }
+    [DllImport("uxtheme.dll")] static extern int SetWindowThemeAttribute(IntPtr window, int attribute, ref ThemeOptions options, int size);
+
+    // DWMWA_USE_IMMERSIVE_DARK_MODE is 20, or 19 before Windows 10 20H1; the caption and text colours (35, 36) need Windows 11.
+    // WTNCA_NODRAWCAPTION and WTNCA_NODRAWICON leave the title and icon out of the title bar only: the taskbar and Alt+Tab keep
+    // them (ShowIcon = false can lose the taskbar's icon too).
+    public static void TitleBar(Form form, Color caption, Color text, bool dark)
+    {
+        if (!form.IsHandleCreated) return;
+        var empty = new ThemeOptions { Flags = 3, Mask = 3 };
+        try { SetWindowThemeAttribute(form.Handle, 1, ref empty, 8); } catch (DllNotFoundException) { }
+        int on = dark ? 1 : 0, captionColor = caption.R | caption.G << 8 | caption.B << 16, textColor = text.R | text.G << 8 | text.B << 16;
+        try
+        {
+            if (DwmSetWindowAttribute(form.Handle, 20, ref on, 4) != 0) DwmSetWindowAttribute(form.Handle, 19, ref on, 4);
+            DwmSetWindowAttribute(form.Handle, 35, ref captionColor, 4);
+            DwmSetWindowAttribute(form.Handle, 36, ref textColor, 4);
+        }
+        catch (DllNotFoundException) { }
+    }
+
     public static bool Corners(IntPtr handle, Color border)
     {
         int round = 2, color = border.R | border.G << 8 | border.B << 16;

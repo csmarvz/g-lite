@@ -19,7 +19,7 @@ class MainWindow : Form
 {
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-    const int SettingsHeader = 52, WindowWidth = 868, WindowHeight = 730, SidebarWidth = 212, SidebarInnerWidth = SidebarWidth - 20;
+    const int SettingsHeader = 52, WindowWidth = 868, WindowHeight = 730, SidebarWidth = 212, SidebarInnerWidth = SidebarWidth - 20, ListTop = 54;
 
     public NotifyIcon Tray;
     readonly FakeHidpp fake;
@@ -39,8 +39,8 @@ class MainWindow : Form
     int navTop;
     bool rowShown, labelShown;
     string ready;
-    readonly Control side, settingsPage;
-    readonly FlatButton settingsButton, logsButton, scanButton, minimize, close;
+    readonly Control side, settingsPage, corner;
+    readonly FlatButton settingsButton, logsButton, scanButton;
     readonly LogsPage logsPage;
     readonly System.Windows.Forms.Timer rescanSoon = new System.Windows.Forms.Timer { Interval = 1500 },
         sleepers = new System.Windows.Forms.Timer { Interval = 15000 },
@@ -57,6 +57,8 @@ class MainWindow : Form
     int traySize, bigSize;
     bool trayLight;
     float scale = 1;
+    FormWindowState shownState = FormWindowState.Normal;
+    bool built;
 
     [DllImport("user32.dll")] static extern bool ReleaseCapture();
     [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
@@ -66,8 +68,7 @@ class MainWindow : Form
         this.fake = fake;
         demo = fake != null;
         WindowHelpers.Round(this);
-        HandleCreated += (s, e) => { WindowHelpers.Border(this, Theme.Border); Presence.Watch(Handle); };
-        FormBorderStyle = FormBorderStyle.None;
+        HandleCreated += (s, e) => { StyleFrame(); Presence.Watch(Handle); };
         Text = "G-Lite";
         StartPosition = FormStartPosition.Manual;
         ClientSize = new Size(WindowWidth, WindowHeight);
@@ -78,10 +79,6 @@ class MainWindow : Form
 
         side = Ui.Add(this, new Control(), 0, 0, SidebarWidth, WindowHeight);
         Ui.Style(side, () => side.BackColor = Theme.Sidebar);
-        side.Paint += (s, e) =>
-        {
-            using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, side.Width - 1, 0, side.Width - 1, side.Height);
-        };
         side.MouseDown += Drag;
         Ui.Add(side, new TitleLogo(), 10, 12, SidebarInnerWidth, 34).MouseDown += (s, e) =>
         {
@@ -93,29 +90,32 @@ class MainWindow : Form
             moved = was;
             if (e.X < 60 * Ui.DpiScale) ToggleView();
         };
-        Ui.Text(side, "DEVICES", 18, 58, () => Theme.Dim, 8.25f, Ui.Semibold).MouseDown += Drag;
-        deviceList = Ui.Add(side, new DeviceList(), 0, 78, SidebarWidth - 1, 400);
+        deviceList = Ui.Add(side, new DeviceList(), 0, ListTop, SidebarWidth - 1, 400);
         deviceList.MouseDown += Drag;
-        noneText = Ui.Text(deviceList, "Looking…", 18, 4, () => Theme.Dim, 9f);
+        noneText = Ui.Text(deviceList, "Scanning devices…", 18, 4, () => Theme.Dim, 9f);
 
         int bottom = WindowHeight - 14 - 36;
         var quit = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "power", Text = "Quit" },
             10, bottom, SidebarInnerWidth, 36);
+        quit.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         quit.Click += (s, e) => { HidePanel(); WaitAll(); Application.Exit(); };
         quit.TabIndex = 103;
         bottom -= 40;
         settingsButton = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "gear", Text = "Settings" },
             10, bottom, SidebarInnerWidth, 36);
+        settingsButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         settingsButton.Click += (s, e) => ShowSettings();
         settingsButton.TabIndex = 102;
         bottom -= 40;
         logsButton = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "lines", Text = "Logs" },
             10, bottom, SidebarInnerWidth, 36);
+        logsButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         logsButton.Click += (s, e) => ShowLogs();
         logsButton.TabIndex = 101;
         bottom -= 40;
         scanButton = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "refresh", Text = "Scan for devices" },
             10, bottom, SidebarInnerWidth, 36);
+        scanButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         scanButton.Click += (s, e) => Rescan();
         scanButton.TabIndex = 100;
         if (demo)
@@ -124,12 +124,14 @@ class MainWindow : Form
             view = new KeyboardView(fake, KeyLayout.Load("g515-tkl.json"));
             var show = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "keyboard", Text = "Show keyboard" },
                 10, bottom, SidebarInnerWidth, 36);
+            show.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             show.Click += (s, e) => { if (view.Visible) view.Hide(); else ShowView(); };
             view.VisibleChanged += (s, e) => { show.Text = view.Visible ? "Hide keyboard" : "Show keyboard"; wantView = view.Visible; };
         }
         updateButton = Ui.Add(side,
             new FlatButton { Style = ButtonStyle.Solid, Icon = "download", Text = "Update available", Visible = false },
             10, bottom - 40, SidebarInnerWidth, 36);
+        updateButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         updateButton.Click += (s, e) => { if (ready != null) Restart(); else ShowUpdatePage(false); };
         updateButton.TabIndex = 99;
         navTop = bottom;
@@ -139,6 +141,7 @@ class MainWindow : Form
         readyText.Size = new Size(SidebarInnerWidth - 8, 16);
         readyText.Cursor = Cursors.Hand;
         readyText.Visible = false;
+        readyText.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
         readyText.Click += (s, e) => ShowUpdatePage(false);
         FitList();
 
@@ -153,6 +156,7 @@ class MainWindow : Form
         settingsPage.MouseDown += Drag;
         // The title stays while the rest scrolls.
         var settings = Ui.Add(settingsPage, new ScrollPanel(), 0, SettingsHeader, WindowWidth - SidebarWidth, WindowHeight - SettingsHeader);
+        settings.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         Ui.Style(settings, () => settings.BackColor = Theme.Background);
         settings.MouseDown += Drag;
         logsPage = Ui.Add(this, new LogsPage(Drag), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
@@ -208,18 +212,20 @@ class MainWindow : Form
         var services = Ui.Add(settings, new ServicesBox(demo), 20, 478, 616, ServicesBox.DesignHeight);
         settings.Fit(services.Bottom + 20);
 
-        minimize = Ui.Add(this, new FlatButton { Style = ButtonStyle.Ghost, Icon = "minus", AccessibleName = "Minimize" },
-            WindowWidth - 12 - 72, 10, 36, 28);
-        minimize.Click += (s, e) => WindowState = FormWindowState.Minimized;
-        minimize.TabIndex = 1000;
-        close = Ui.Add(this, new FlatButton { Style = ButtonStyle.Ghost, Icon = "close", AccessibleName = "Close to tray" },
-            WindowWidth - 12 - 36, 10, 36, 28);
-        close.Click += (s, e) => ToTray();
-        close.TabIndex = 1001;
-
+        foreach (var page in new Control[] { empty, settingsPage, logsPage, updatePage }) Watch(page);
+        // The pages' top left corner is rounded into the sidebar and the title bar, which share a colour.
+        corner = Ui.Add(this, new Control(), SidebarWidth, 0, 8, 8);
+        corner.Paint += (s, e) =>
+        {
+            e.Graphics.Clear(Theme.Sidebar);
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            using (var brush = new SolidBrush(Theme.Background)) e.Graphics.FillEllipse(brush, 0, 0, 2 * corner.Width, 2 * corner.Height);
+        };
+        corner.MouseDown += Drag;
         Theme.Changed += Restyle;
         ShowThemeHint();
         ShowUpdate(null);
+        built = true;
         Rescale(WindowHelpers.At(Point.Empty));
     }
 
@@ -239,7 +245,7 @@ class MainWindow : Form
     {
         Ui.Restyle();
         foreach (var page in pages.Values.OfType<DevicePage>()) page.Restyle();
-        WindowHelpers.Border(this, Theme.Border);
+        StyleFrame();
         ShowThemeHint();
         Invalidate(true);
         if (Tray != null && Tray.ContextMenuStrip != null) Tray.ContextMenuStrip.BackColor = Theme.Card;
@@ -307,6 +313,7 @@ class MainWindow : Form
 
     void ShowLogs()
     {
+        if (logsPage.Visible) return;
         foreach (var page in pages.Values) page.Visible = false;
         empty.Visible = false;
         settingsPage.Visible = false;
@@ -496,6 +503,7 @@ class MainWindow : Form
             {
                 page = MakePage(device, type);
                 Place(this, page, SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
+                Watch(page);
                 page.Visible = false;
                 pages[device.Key] = page;
                 if (page is KeyboardPage && note != null) { ((KeyboardPage)page).Note = note; note = null; }
@@ -528,8 +536,7 @@ class MainWindow : Form
         deviceList.Fit(S(Math.Max(0, y - 4)));
         noneText.Text = "None found";
         noneText.Visible = list.Count == 0;
-        minimize.BringToFront();
-        close.BringToFront();
+        corner.BringToFront();
         sleepers.Enabled = list.Any(device => device.Asleep && !Devices.Shorts.ContainsKey(device.Path ?? ""));
         if (!demo) Listen(list);
         if (!settingsPage.Visible && !logsPage.Visible && !updatePage.Visible) Pick(selected);
@@ -666,17 +673,24 @@ class MainWindow : Form
 
     int S(float value) { return (int)Math.Round(value * scale); }
 
-    void Rescale(float newScale)
+    bool Rescale(float newScale)
     {
-        if (newScale == scale) return;
+        if (newScale == scale) return false;
+        float ratio = newScale / scale;
+        var client = ClientSize;
         SuspendLayout();
-        Scale(new SizeF(newScale / scale, newScale / scale));
+        Scale(new SizeF(ratio, ratio));
         scale = newScale;
         Ui.DpiScale = newScale;
         Ui.Refont();
         ResumeLayout();
+        // WinForms sizes the frame at the system's DPI, so the client size is set from the frame the window has.
+        if (WindowState == FormWindowState.Normal)
+            Size += new Size((int)Math.Round(client.Width * ratio) - ClientSize.Width,
+                (int)Math.Round(client.Height * ratio) - ClientSize.Height);
         Invalidate(true);
         RefreshIcons();
+        return true;
     }
 
     public void RefreshIcons()
@@ -690,9 +704,55 @@ class MainWindow : Form
         if (bigPixels != bigSize) { bigSize = bigPixels; Icon = Logo.MakeIcon(bigPixels); }
     }
 
+    // A page keeps its width, centred right of the sidebar, and takes the window's height.
+    Rectangle PageBounds
+    {
+        get
+        {
+            int width = S(WindowWidth - SidebarWidth);
+            return new Rectangle(side.Width + (ClientSize.Width - side.Width - width) / 2, 0, width, ClientSize.Height);
+        }
+    }
+
+    protected override void OnResize(EventArgs e)
+    {
+        base.OnResize(e);
+        if (!built || WindowState == FormWindowState.Minimized) return;
+        shownState = WindowState;
+        side.Height = ClientSize.Height;
+        FitList();
+        foreach (var page in pages.Values.Concat(new Control[] { empty, settingsPage, logsPage, updatePage }))
+            if (page.Visible) page.Bounds = PageBounds;
+    }
+
+    // Only the shown page follows the window's size; a hidden one is sized when it's shown.
+    void Watch(Control page)
+    {
+        page.VisibleChanged += (s, e) => { if (page.Visible) page.Bounds = PageBounds; };
+        page.Bounds = PageBounds;
+    }
+
+    // The title bar takes the sidebar's colour (Windows 11) or Windows' dark or light one (Windows 10).
+    void StyleFrame()
+    {
+        WindowHelpers.Border(this, Theme.Border);
+        WindowHelpers.TitleBar(this, Theme.Sidebar, Theme.Text, !Theme.Light);
+    }
+
     protected override void WndProc(ref Message message)
     {
-        if (message.Msg == WindowHelpers.DpiChanged) Rescale(WindowHelpers.FromMessage(message));
+        if (message.Msg == 0x0024)
+        {
+            base.WndProc(ref message);
+            // The smallest window holds the layout at its scale, with the frame it has now.
+            Marshal.WriteInt32(message.LParam, 24, S(WindowWidth) + Width - ClientSize.Width);
+            Marshal.WriteInt32(message.LParam, 28, S(WindowHeight) + Height - ClientSize.Height);
+            return;
+        }
+        // Windows' suggested bounds keep the client size scaled, with the frame at the new DPI.
+        if (message.Msg == WindowHelpers.DpiChanged && Rescale(WindowHelpers.FromMessage(message)) && WindowState == FormWindowState.Normal)
+            Bounds = Rectangle.FromLTRB(Marshal.ReadInt32(message.LParam, 0), Marshal.ReadInt32(message.LParam, 4),
+                Marshal.ReadInt32(message.LParam, 8), Marshal.ReadInt32(message.LParam, 12));
         Presence.Power(message);
         if (message.Msg == 0x0219 && !demo) RescanSoon();
         base.WndProc(ref message);
@@ -710,11 +770,6 @@ class MainWindow : Form
     {
         base.OnActivated(e);
         if (shown is KeyboardPage) ((KeyboardPage)shown).CheckKeyboard();
-    }
-
-    protected override void OnPaint(PaintEventArgs e)
-    {
-        if (!WindowHelpers.Rounded) using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
     }
 
     void SetStartup(bool on)
@@ -822,7 +877,7 @@ class MainWindow : Form
     void FitList()
     {
         int bottom = labelShown ? navTop - 40 - 24 : rowShown ? navTop - 40 - 8 : navTop - 8;
-        deviceList.Height = S(bottom - 78);
+        deviceList.Height = side.Height - S(WindowHeight - bottom + ListTop);
     }
 
     void Ready(string version)
@@ -949,10 +1004,10 @@ class MainWindow : Form
 
     public void ShowPanel()
     {
-        if (WindowState == FormWindowState.Minimized) { Show(); WindowState = FormWindowState.Normal; }
+        if (WindowState == FormWindowState.Minimized) { Show(); WindowState = shownState; }
         var workArea = Screen.FromPoint(Cursor.Position).WorkingArea;
         Rescale(WindowHelpers.At(moved ? Location : Cursor.Position));
-        if (!moved)
+        if (!moved && WindowState == FormWindowState.Normal)
             Location = new Point(Math.Max(workArea.Left, workArea.Right - Width - S(12)),
                 Math.Max(workArea.Top, workArea.Bottom - Height - S(12)));
         Show();

@@ -298,7 +298,7 @@ class KeyboardPage : DevicePage
         liveBattery = SideOption(light, "Low battery", "Pause on low battery", 194, 310, 132,
             on => { setup.PauseOnBattery = on; ScreenChanged(); });
         liveControls.Add(pauseHead);
-        // Room for Low battery below, ending above the footer's line at 673.
+        // Room for Low battery below, ending above the footer at 673.
         if (intensity != null) light.Height += 6;
         // Beside the colours, for Audio: the colour as it is, not turning with height.
         // Placed after the colour row's + in RefreshControls, which moves right once a custom colour is kept.

@@ -31,6 +31,8 @@ abstract class DevicePage : Control, IPage
     readonly Dropdown profiles;
     readonly TextField nameField;
     readonly FlatButton updateButton, moreButton, undoButton, reportButton;
+    FlatButton headerBackupsButton;
+    readonly Label heading;
     readonly StatusLine status;
     readonly FlatButton actionButton;
     Action actDo;
@@ -49,13 +51,16 @@ abstract class DevicePage : Control, IPage
         found = device;
         this.fake = fake;
         this.prefix = prefix;
+        Size = Ui.PageSize;
         Ui.Style(this, () => BackColor = Theme.Background);
         MouseDown += drag;
-        Ui.Text(this, title, 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += drag;
+        heading = Ui.Text(this, title, 20, 14, () => Theme.Text, 13.5f, Ui.Semibold);
+        heading.MouseDown += drag;
+        heading.SizeChanged += (s, e) => PlaceHeaderButtons();
         subtitle = Ui.Add(this, new DeviceSubtitle(), 21, 42, 540, 20);
         subtitle.MouseDown += drag;
         reportButton = Ui.Add(this, new FlatButton { Style = ButtonStyle.Ghost, Text = "Report", AccessibleName = "Report of the " + noun },
-            572 - 80, 10, 80, 28);
+            20, 10, 80, 28);
 
         Ui.Text(this, "G-Lite preset", 20, 79, () => Theme.Dim, 9.75f);
         profiles = Ui.Add(this, new Dropdown { AccessibleName = "G-Lite preset" }, 108, 72, 160, 32);
@@ -77,8 +82,6 @@ abstract class DevicePage : Control, IPage
         moreButton = Ui.Add(this, new FlatButton { Text = "…", AccessibleName = "More preset actions" }, 360, 72, 36, 32);
         moreButton.Click += (s, e) => { if (naming) EndName(); else PresetMenu(); };
 
-        var line = Ui.Add(this, new Control(), 0, 673, 656, 1);
-        Ui.Style(line, () => line.BackColor = Theme.Border);
         status = Ui.Add(this, new StatusLine(), 20, 683, 460, 36);
         undoButton = Ui.Add(this, new FlatButton { Text = "Revert", Enabled = false, AccessibleName = "Revert changes" }, 416, 685, 72, 32);
         undoButton.Click += (s, e) => Undo();
@@ -86,6 +89,7 @@ abstract class DevicePage : Control, IPage
         actionButton.TabIndex = 1000;
         actionButton.Click += (s, e) => { if (actDo != null) actDo(); };
         report = Ui.Add(this, new ReportView(noun, () => ReportView.TitleFor(found), Collect), 0, 72, 656, 658);
+        report.Anchor = Ui.Tall;
         report.Closed += () => { reportButton.On = false; reportButton.Invalidate(); reportButton.Focus(); };
         reportButton.Click += (s, e) =>
         {
@@ -104,9 +108,26 @@ abstract class DevicePage : Control, IPage
 
     protected FlatButton BackupsButton(string noun)
     {
-        reportButton.Left = 572 - 80 - 4 - 80;
-        return Ui.Add(this, new FlatButton { Style = ButtonStyle.Ghost, Text = "Backups", AccessibleName = "Backups of the " + noun },
-            572 - 80, 10, 80, 28);
+        headerBackupsButton = Ui.Add(this,
+            new FlatButton { Style = ButtonStyle.Ghost, Text = "Backups", AccessibleName = "Backups of the " + noun }, 104, 10, 80, 28);
+        PlaceHeaderButtons();
+        return headerBackupsButton;
+    }
+
+    protected override void OnLayout(LayoutEventArgs e)
+    {
+        base.OnLayout(e);
+        PlaceHeaderButtons();
+    }
+
+    // Report and Backups follow the device's name, as far as the page's width lets them.
+    void PlaceHeaderButtons()
+    {
+        if (reportButton == null) return;
+        int gap = (int)Math.Round(4 * Ui.DpiScale);
+        int width = reportButton.Width + (headerBackupsButton != null ? gap + headerBackupsButton.Width : 0);
+        reportButton.Left = Math.Min(heading.Right + 3 * gap, Width - 5 * gap - width);
+        if (headerBackupsButton != null) headerBackupsButton.Left = reportButton.Right + gap;
     }
 
     public static string When(Backups.Entry entry)
@@ -658,10 +679,12 @@ class InfoPage : Control
 
     public InfoPage(FoundDevice device, MouseEventHandler drag, Action rescan)
     {
+        Size = Ui.PageSize;
         Ui.Style(this, () => BackColor = Theme.Background);
         MouseDown += drag;
         title = Ui.Text(this, "", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold);
         title.MouseDown += drag;
+        title.SizeChanged += (s, e) => PlaceReportButton();
         subtitle = Ui.Add(this, new DeviceSubtitle(), 21, 42, 540, 20);
         subtitle.MouseDown += drag;
 
@@ -688,8 +711,9 @@ class InfoPage : Control
         features.AutoSize = false;
         features.Size = new Size(470, 60);
         reportButton = Ui.Add(this, new FlatButton { Style = ButtonStyle.Ghost, Text = "Report", AccessibleName = "Report of this device" },
-            536 - 4 - 80, 10, 80, 28);
+            20, 10, 80, 28);
         report = Ui.Add(this, new ReportView("device", () => ReportView.TitleFor(found), Collect), 0, 72, 656, 658);
+        report.Anchor = Ui.Tall;
         report.Closed += () => { reportButton.On = false; reportButton.Invalidate(); reportButton.Focus(); };
         reportButton.Click += (s, e) => { if (report.Visible) report.Close(); else Open(); };
         create.Click += (s, e) => Open();
@@ -743,6 +767,19 @@ class InfoPage : Control
         return Ui.Text(box, "", 120, y, () => Theme.Text, 9.75f);
     }
 
+    protected override void OnLayout(LayoutEventArgs e)
+    {
+        base.OnLayout(e);
+        PlaceReportButton();
+    }
+
+    // Report follows the device's name, as far as the page's width lets it.
+    void PlaceReportButton()
+    {
+        if (reportButton == null) return;
+        reportButton.Left = Math.Min(title.Right + (int)Math.Round(12 * Ui.DpiScale), Width - (int)Math.Round(20 * Ui.DpiScale) - reportButton.Width);
+    }
+
     public void SetFound(FoundDevice device)
     {
         found = device;
@@ -782,6 +819,7 @@ class EmptyPage : Control
 
     public EmptyPage(MouseEventHandler drag, Action rescan)
     {
+        Size = Ui.PageSize;
         Ui.Style(this, () => BackColor = Theme.Background);
         MouseDown += drag;
         title = Centered(Ui.Text(this, "", 0, 150, () => Theme.Text, 15f, Ui.Semibold), 36);

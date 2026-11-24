@@ -42,6 +42,7 @@ class ReportView : Control
         this.title = title;
         this.read = read;
         Visible = false;
+        Size = new Size(Ui.PageSize.Width, Ui.PageSize.Height - 72);
         Ui.Style(this, () => BackColor = Theme.Background);
 
         var head = Ui.Add(this, new RoundedBox(), 20, 8, 616, 84);
@@ -55,12 +56,14 @@ class ReportView : Control
         again.Click += (s, e) => Read();
 
         var body = Ui.Add(this, new RoundedBox(), 20, 104, 616, 485);
+        body.Anchor = Ui.Tall;
         Ui.Text(body, "Report", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         size = Ui.Text(body, "", 300, 12, () => Theme.Dim, 9f);
         size.AutoSize = false;
         size.Size = new Size(302, 18);
         size.TextAlign = ContentAlignment.TopRight;
         var inset = Ui.Add(body, new Control(), 14, 38, 588, 433);
+        inset.Anchor = Ui.Tall;
         Ui.Style(inset, () => inset.BackColor = Theme.Background);
         box = Ui.Add(inset,
             new TextBox
@@ -69,18 +72,21 @@ class ReportView : Control
                 BorderStyle = BorderStyle.None, AccessibleName = "Device report"
             },
             8, 6, 576, 423);
+        box.Anchor = Ui.Tall;
         Ui.Font(box, 9f, "Consolas");
         Ui.Style(box, () => { box.BackColor = Theme.Background; box.ForeColor = Theme.Text; Dark(); });
         box.HandleCreated += (s, e) => Dark();
 
-        var line = Ui.Add(this, new Control(), 0, 601, 656, 1);
-        Ui.Style(line, () => line.BackColor = Theme.Border);
         status = Ui.Add(this, new StatusLine(), 20, 611, 256, 36);
+        status.Anchor = Ui.Footer;
         var back = Ui.Add(this, new FlatButton { Text = "Back" }, 284, 614, 76, 32);
+        back.Anchor = Ui.Footer;
         back.Click += (s, e) => Close();
         issue = Ui.Add(this, new FlatButton { Text = "Open GitHub issue" }, 368, 614, 160, 32);
+        issue.Anchor = Ui.Footer;
         issue.Click += (s, e) => OpenIssue();
         copy = Ui.Add(this, new FlatButton { Style = ButtonStyle.Primary, Text = "Copy" }, 536, 614, 100, 32);
+        copy.Anchor = Ui.Footer;
         copy.Click += (s, e) => { if (CopyToClipboard(text)) status.Set("Copied to the clipboard", false, null); };
     }
 

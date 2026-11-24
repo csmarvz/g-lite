@@ -23,17 +23,20 @@ class LogsPage : Control
     public LogsPage(MouseEventHandler drag)
     {
         Visible = false;
+        Size = Ui.PageSize;
         Ui.Style(this, () => BackColor = Theme.Background);
         MouseDown += drag;
         Ui.Text(this, "Logs", 20, 14, () => Theme.Text, 13.5f, Ui.Semibold).MouseDown += drag;
 
         var body = Ui.Add(this, new RoundedBox(), 20, 56, 616, 605);
+        body.Anchor = Ui.Tall;
         Ui.Text(body, "log.txt, newest last", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
         count = Ui.Text(body, "", 300, 12, () => Theme.Dim, 9f);
         count.AutoSize = false;
         count.Size = new Size(302, 18);
         count.TextAlign = ContentAlignment.TopRight;
         var inset = Ui.Add(body, new Control(), 14, 38, 588, 553);
+        inset.Anchor = Ui.Tall;
         Ui.Style(inset, () => inset.BackColor = Theme.Background);
         box = Ui.Add(inset,
             new RichTextBox
@@ -42,18 +45,21 @@ class LogsPage : Control
                 BorderStyle = BorderStyle.None, DetectUrls = false, AccessibleName = "Log"
             },
             8, 6, 576, 543);
+        box.Anchor = Ui.Tall;
         Ui.Font(box, 9f, "Consolas");
         Ui.Style(box, () => { box.BackColor = Theme.Background; Dark(); if (Visible) Render(); });
         box.HandleCreated += (s, e) => Dark();
 
-        var line = Ui.Add(this, new Control(), 0, 673, 656, 1);
-        Ui.Style(line, () => line.BackColor = Theme.Border);
         status = Ui.Add(this, new StatusLine(), 20, 683, 280, 36);
+        status.Anchor = Ui.Footer;
         var clear = Ui.Add(this, new FlatButton { Text = "Clear" }, 314, 686, 76, 32);
+        clear.Anchor = Ui.Footer;
         clear.Click += (s, e) => { Log.Clear(); Render(); status.Set("Log cleared", false, null); };
         var folder = Ui.Add(this, new FlatButton { Text = "Open folder" }, 398, 686, 130, 32);
+        folder.Anchor = Ui.Footer;
         folder.Click += (s, e) => OpenFolder();
         var copy = Ui.Add(this, new FlatButton { Style = ButtonStyle.Primary, Text = "Copy" }, 536, 686, 100, 32);
+        copy.Anchor = Ui.Footer;
         copy.Click += (s, e) => Copy();
         timer.Tick += (s, e) => { if (Visible && Log.Version != version) Render(); };
     }
