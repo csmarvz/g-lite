@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>G-Lite: a lightweight G HUB alternative for Logitech G devices</title>
-<meta name="description" content="A free, open-source G HUB alternative for Windows. Lighting, DPI, buttons and sidetone for Logitech G keyboards, mice, headsets and lights.">
+<meta name="description" content="A free, open-source G HUB alternative for Windows. Lighting, DPI, buttons and sidetone for Logitech G keyboards, mice, headsets and lights, and G HUB stopped in a click.">
 <link rel="canonical" href="https://g-lite.org/">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -14,8 +14,8 @@
 <meta property="og:title" content="G-Lite: a lightweight G HUB alternative">
 <meta property="og:description" content="Lighting, DPI, buttons and sidetone for Logitech G devices, without G HUB. One file, nothing to install.">
 <meta property="og:image" content="https://g-lite.org/img/keyboard.png">
-<meta property="og:image:width" content="868">
-<meta property="og:image:height" content="730">
+<meta property="og:image:width" content="950">
+<meta property="og:image:height" content="1077">
 <meta property="og:image:alt" content="G-Lite showing a G515 TKL keyboard with the Wave effect">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">
@@ -71,8 +71,8 @@ nav .wrap { display: flex; align-items: center; gap: 28px; height: 60px; }
 .hero-actions { align-items: flex-start; }
 .download { display: flex; flex-direction: column; align-items: center; }
 .meta { color: var(--dim); font-size: 14px; margin-top: 10px; }
-.shot { display: block; width: 100%; height: auto; border-radius: var(--radius); border: 1px solid var(--border); }
-.hero .shot { max-width: 868px; margin: 56px auto 0; box-shadow: 0 0 0 1px #000, 0 30px 80px -20px rgba(63,169,138,0.28), 0 20px 50px rgba(0,0,0,0.5); }
+.shot { display: block; width: 100%; height: auto; }
+.hero .shot { max-width: 950px; margin: 16px auto 0; filter: drop-shadow(0 30px 60px rgba(63,169,138,0.2)); }
 
 /* Facts */
 .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #262626; border: 1px solid #262626; border-radius: var(--radius); overflow: hidden; margin-top: 72px; }
@@ -91,7 +91,6 @@ section > .wrap > h2 { font-size: clamp(28px, 4vw, 38px); }
 .card svg { width: 26px; height: 26px; stroke: var(--accent); fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 14px; }
 .card h3 { font-size: 18px; margin-bottom: 6px; }
 .card p { color: var(--dim); font-size: 15px; }
-.card.wide { grid-column: 1 / -1; }
 
 /* Split */
 .split { display: grid; grid-template-columns: 1fr 1.35fr; gap: 56px; align-items: center; margin-top: 72px; }
@@ -189,7 +188,7 @@ footer p { max-width: 460px; }
   <header class="hero wrap">
     <div class="badge"><img src="img/logo.svg" alt="">G-Lite</div>
     <h1>Lightweight control for Logitech&nbsp;G devices. <span>No&nbsp;G&nbsp;HUB.</span></h1>
-    <p class="lead">Lighting, DPI, report rate, buttons and sidetone for your Logitech G keyboard, mouse, headset or light. One file, nothing to install, next to no CPU when idle.</p>
+    <p class="lead">Lighting, DPI, report rate, buttons and sidetone for your Logitech G keyboard, mouse, headset or light. One file, nothing to install, next to no CPU when idle. It stops G HUB and Logitech Gaming Software for you, and starts them again.</p>
     <div class="actions hero-actions">
       <div class="download">
         <a class="button primary" href="https://github.com/csmarvz/g-lite/releases/latest/download/GLite.exe">
@@ -200,7 +199,7 @@ footer p { max-width: 460px; }
       </div>
       <a class="button" href="https://github.com/csmarvz/g-lite">View on GitHub</a>
     </div>
-    <img class="shot" src="img/keyboard.png" width="868" height="730" fetchpriority="high" alt="G-Lite showing a G515 LIGHTSPEED TKL with the Wave effect on its live key picture, and the other devices in the sidebar">
+    <img class="shot" src="img/keyboard.png" width="950" height="1077" fetchpriority="high" alt="G-Lite showing a G515 LIGHTSPEED TKL with the Wave effect on its live key picture, and the other devices in the sidebar">
 
     <div class="facts">
       <div class="fact"><b>Lightweight</b><span>Low RAM and low CPU</span></div>
@@ -246,11 +245,6 @@ footer p { max-width: 460px; }
           <h3>Backups</h3>
           <p>A copy of the device is kept before every save. The factory profile is never written.</p>
         </div>
-        <div class="card wide">
-          <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9.5 9.5v5M14.5 9.5v5"/></svg>
-          <h3>Keep G HUB out of the way</h3>
-          <p>Settings shows whether G HUB, Logitech Gaming Software or Logitech's Dynamic Lighting service is running, and stops them in a click, so they don't undo your settings or start with Windows. Nothing is uninstalled: Start brings them back.</p>
-        </div>
       </div>
 
       <div class="split">
@@ -263,7 +257,7 @@ footer p { max-width: 460px; }
             <li>Separate effects for the keys and the light bar</li>
           </ul>
         </div>
-        <img class="shot" src="img/keyboard.png" width="868" height="730" loading="lazy" alt="The G515 TKL screen with its effects, colours and idle settings">
+        <img class="shot" src="img/keyboard.png" width="950" height="1077" loading="lazy" alt="The G515 TKL screen with its effects, colours and idle settings">
       </div>
 
       <div class="split flip">
@@ -276,7 +270,7 @@ footer p { max-width: 460px; }
             <li>Button bindings, invert scrolling</li>
           </ul>
         </div>
-        <img class="shot" src="img/mouse.png" width="868" height="730" loading="lazy" alt="The G Pro Wireless screen with its DPI stages, report rate and lighting">
+        <img class="shot" src="img/mouse.png" width="950" height="999" loading="lazy" alt="The G Pro Wireless screen with its DPI stages, report rate and lighting">
       </div>
 
       <div class="split">
@@ -288,7 +282,20 @@ footer p { max-width: 460px; }
             <li>MX mice and keyboards: pointer speed, SmartShift, backlight, Easy-Switch</li>
           </ul>
         </div>
-        <img class="shot" src="img/light.png" width="868" height="730" loading="lazy" alt="The Litra Beam LX screen with its front light and back light zones">
+        <img class="shot" src="img/light.png" width="950" height="1173" loading="lazy" alt="The Litra Beam LX screen with its front light and back light zones">
+      </div>
+
+      <div class="split flip">
+        <div>
+          <h3>G HUB out of the way.</h3>
+          <p>Settings shows whether G HUB, Logitech Gaming Software or Logitech's Dynamic Lighting service is running, and stops them in a click, so they don't undo your settings or start with Windows.</p>
+          <ul>
+            <li>Nothing is uninstalled: Start brings them back</li>
+            <li>Windows' Dynamic Lighting settings, a click away</li>
+            <li>Light or dark, and your accent colour</li>
+          </ul>
+        </div>
+        <img class="shot" src="img/settings.png" width="950" height="984" loading="lazy" alt="G-Lite's Settings: theme, accent colour, updates, startup, and G HUB, Logitech Gaming Software, the LampArray service and Dynamic Lighting with Stop buttons">
       </div>
     </div>
   </section>
