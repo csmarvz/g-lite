@@ -543,6 +543,8 @@ class Slider : DrawnControl
     public int Max = 100, Value, Step = 5;
     // The only values the slider takes, in order, unmarked (ticks under the track were dropped at the owner's request); null for any.
     public int[] Stops;
+    // Off, drawn at 0, for a row whose setting doesn't apply and whose value is blank (Rows.Slider); a read-only slider shows its value.
+    public bool ZeroWhenOff;
     public event EventHandler Changed;
     int wheel, grab;
 
@@ -576,9 +578,11 @@ class Slider : DrawnControl
     protected override void OnMouseWheel(MouseEventArgs e)
     {
         base.OnMouseWheel(e);
+        // Only once picked (clicked or tabbed to), as Windows' own sliders: otherwise the wheel scrolls the screen it's on, and a
+        // slider passing under the pointer would change, and send its value.
+        if (!Enabled || !Focused) return;
         var handled = e as HandledMouseEventArgs;
         if (handled != null) handled.Handled = true;
-        if (!Enabled) return;
         wheel += e.Delta;
         int notches = wheel / 120;
         if (notches == 0) return;
@@ -616,8 +620,7 @@ class Slider : DrawnControl
         var graphics = Begin(e);
         var color = Enabled ? Theme.Accent : Theme.Border;
         float mid = Height / 2f;
-        // Off, a slider sits at 0, like the row's empty value; Value stays for when it's on again.
-        int shown = Enabled ? Value : 0;
+        int shown = Enabled || !ZeroWhenOff ? Value : 0;
         using (var track = new SolidBrush(Theme.Track))
             graphics.FillRectangle(track, 7 * DpiScale, mid - 2 * DpiScale, Width - 14 * DpiScale, 4 * DpiScale);
         using (var brush = new SolidBrush(color))
@@ -648,10 +651,9 @@ class Slider : DrawnControl
 }
 
 // A view whose content can be taller than it. The content goes on Sheet, which scrolls with the mouse wheel, easing to where the
-// wheel points; a thin bar at the right shows where the view is when there's more than fits (ShowBar; the device list fades its
-// edges instead), its thumb drags, and a click beside it jumps there. Fit says how tall the content is; focus moving into it
-// scrolls it into view. Wheel turns over the content reach the panel through the parent chain (Windows passes an unhandled
-// WM_MOUSEWHEEL up), except over a control that takes the wheel itself, like Slider.
+// wheel points; a thin bar at the right shows where the view is when there's more than fits (ShowBar; the device list has none),
+// its thumb drags, and a click beside it jumps there. Fit says how tall the content is. Wheel turns over the content reach the
+// panel through the parent chain (Windows passes an unhandled WM_MOUSEWHEEL up), except over a focused Slider, which takes them.
 // Scrolling moves Sheet alone, so Windows copies what's on it in one go and paints only the strip that comes into view: moving each
 // control, and repainting it, was slow with a whole page on it.
 class ScrollPanel : Control
@@ -670,9 +672,7 @@ class ScrollPanel : Control
             | ControlStyles.ResizeRedraw, true);
         glide.Tick += (s, e) => Glide();
         Controls.Add(Sheet);
-        // Focus coming into the content scrolls the focused control itself into view, not the box it's in: a box taller than the view
-        // made the first click in it scroll, under a press that then dragged what it was on (a zone of the Screen effect).
-        Sheet.ControlAdded += (s, e) => e.Control.Enter += (sender, args) => RevealFocused((Control)sender);
+        Sheet.ControlAdded += (s, e) => WatchFocus(e.Control);
     }
 
     protected override void OnBackColorChanged(EventArgs e)
@@ -696,8 +696,6 @@ class ScrollPanel : Control
 
     public int Content { get { return content; } }
 
-    public void Watch(Control item) { item.GotFocus += (s, e) => Reveal(item); }
-
     public void Fit(int height)
     {
         content = height;
@@ -705,7 +703,6 @@ class ScrollPanel : Control
         ScrollTo(offset);
     }
 
-    // item is on the sheet.
     // item is on the sheet.
     public void Reveal(Control item) { Reveal(item.Bounds); }
 
@@ -716,16 +713,14 @@ class ScrollPanel : Control
         else if (area.Bottom > offset + Height) ScrollTo(area.Bottom - Height);
     }
 
-    void RevealFocused(Control entered)
+    // Each control on the sheet, at any depth, scrolls into view when it gets focus (a click or Tab): the control itself, not the box
+    // it's in, since a box taller than the view made the first click in it scroll, under a press that then dragged what it was on
+    // (a zone of the Screen effect); and Tab moves between controls inside one box.
+    void WatchFocus(Control control)
     {
-        var focused = entered;
-        while (true)
-        {
-            var inner = focused.Controls.Cast<Control>().FirstOrDefault(child => child.ContainsFocus);
-            if (inner == null) break;
-            focused = inner;
-        }
-        Reveal(Sheet.RectangleToClient(focused.RectangleToScreen(focused.ClientRectangle)));
+        control.GotFocus += (s, e) => Reveal(Sheet.RectangleToClient(control.RectangleToScreen(control.ClientRectangle)));
+        control.ControlAdded += (s, e) => WatchFocus(e.Control);
+        foreach (Control child in control.Controls) WatchFocus(child);
     }
 
     void Wheel(int delta)
@@ -781,11 +776,7 @@ class ScrollPanel : Control
         offset = to;
         Sheet.Top = -offset;
         if (ShowBar) Invalidate();
-        Scrolled();
     }
-
-    // After each step: for what draws differently by where it's scrolled, like the device list's fades.
-    protected virtual void Scrolled() { }
 
     bool HasBar { get { return ShowBar && content > Height; } }
 
@@ -801,7 +792,7 @@ class ScrollPanel : Control
         top = margin + travel * offset / (content - Height);
     }
 
-    // A press on the bar doesn't reach MouseDown's handlers, which move the window. Off the thumb, the thumb jumps there first.
+    // A press on the bar is the bar's, not the panel's MouseDown. Off the thumb, the thumb jumps there first.
     protected override void OnMouseDown(MouseEventArgs e)
     {
         if (e.Button != MouseButtons.Left || !OnBar(e.Location)) { base.OnMouseDown(e); return; }

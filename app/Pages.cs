@@ -720,7 +720,8 @@ class ColorRow
         custom.Enabled = on && editable;
         custom.On = on && isCustom;
         custom.Invalidate();
-        int step = (int)Math.Round(36 * Ui.DpiScale);
+        // From the swatch's own size, as the page may not be scaled yet (RefreshControls from a constructor), where Ui.DpiScale already is.
+        int step = (int)Math.Round(custom.Width * 36f / Size);
         if (rightAligned)
             for (int i = 0; i < swatches.Length; i++) swatches[i].Left = custom.Left - (swatches.Length - i - (custom.Visible ? 0 : 1)) * step;
         else more.Left = custom.Left + (custom.Visible ? step : 0);

@@ -54,6 +54,7 @@ class MainWindow : Form
     readonly bool demo;
     string available;
     bool wantView, moved;
+    Rectangle movingFrom;
     int traySize, bigSize;
     bool trayLight;
     float scale = 1;
@@ -508,7 +509,6 @@ class MainWindow : Form
             {
                 var key = device.Key;
                 item = Place(deviceList.Sheet, new DeviceListItem(), 10, y, SidebarInnerWidth, 46);
-                deviceList.Watch(item);
                 item.Click += (s, e) => Pick(key);
                 items[key] = item;
             }
@@ -733,8 +733,10 @@ class MainWindow : Form
 
     protected override void WndProc(ref Message message)
     {
-        // WM_EXITSIZEMOVE: moved or resized by hand, so ShowPanel leaves the window where it is from then on.
-        if (message.Msg == 0x0232) moved = true;
+        // Moved or resized by hand (between WM_ENTERSIZEMOVE and WM_EXITSIZEMOVE, which a click on the title bar sends too), so ShowPanel
+        // leaves the window where it is from then on.
+        if (message.Msg == 0x0231) movingFrom = Bounds;
+        if (message.Msg == 0x0232 && Bounds != movingFrom) moved = true;
         if (message.Msg == 0x0024)
         {
             base.WndProc(ref message);

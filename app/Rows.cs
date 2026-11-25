@@ -42,7 +42,7 @@ static class Rows
     }
 
     // Every kind of control has one size in a row, so the same control looks the same on every screen.
-    public const int ControlWidth = 240, ControlHeight = 32, ToggleWidth = 40, ToggleHeight = 22, SliderHeight = 24, ValueWidth = 48;
+    public const int ControlWidth = 240, ControlHeight = 32, ToggleWidth = 40, ToggleHeight = 22, SliderHeight = 24, ValueWidth = 64;
 
     public static Toggle Toggle(Control box, int y, string name)
     {
@@ -67,7 +67,7 @@ static class Rows
         value.AutoSize = false;
         value.Size = new System.Drawing.Size(ValueWidth, 18);
         value.TextAlign = System.Drawing.ContentAlignment.TopRight;
-        return Place(box, y, new Slider { AccessibleName = name }, ControlWidth, SliderHeight);
+        return Place(box, y, new Slider { AccessibleName = name, ZeroWhenOff = true }, ControlWidth, SliderHeight);
     }
 }
 
