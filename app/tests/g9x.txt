@@ -67,16 +67,16 @@ open
   register 83 A2  02 E8
   register 83 A2  02 F0
   register 83 A2  02 F8
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static DPI stage=800 <Your color> DPI=12 Report rate=500 Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] DPI stage=800 DPI=12 Report rate=500 Effect=Static <Your color> [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=0 (off)
 slide DPI 30
   register 83 63
   register 82 63  48 00 48 00 80 01
-  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static DPI stage=1700 <Your color> DPI=30 Report rate=500 Brightness=100 Speed=0 (off) [Revert] [Save to mouse]
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] DPI stage=1700 DPI=30 Report rate=500 Effect=Static <Your color> [Revert] [Save to mouse] Brightness=100 Speed=0 (off)
 pick Effect Static
-  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static DPI stage=1700 <Your color> DPI=30 Report rate=500 Brightness=100 Speed=0 (off) [Revert] [Save to mouse]
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] DPI stage=1700 DPI=30 Report rate=500 Effect=Static <Your color> [Revert] [Save to mouse] Brightness=100 Speed=0 (off)
 press Color 3080FF
   register 80 57  30 80 FF
-  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static DPI stage=1700 <Color 3080FF> DPI=30 Report rate=500 Brightness=100 Speed=0 (off) [Revert] [Save to mouse]
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] DPI stage=1700 DPI=30 Report rate=500 Effect=Static <Color 3080FF> [Revert] [Save to mouse] Brightness=100 Speed=0 (off)
 pick Report rate 500
   register 80 64  02
   register 83 63
@@ -147,7 +147,7 @@ pick Report rate 500
   register 83 A2  02 E8
   register 83 A2  02 F0
   register 83 A2  02 F8
-  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static DPI stage=1700 <Color 3080FF> DPI=30 Report rate=500 Brightness=100 Speed=0 (off) [Revert] [Save to mouse]
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] DPI stage=1700 DPI=30 Report rate=500 Effect=Static <Color 3080FF> [Revert] [Save to mouse] Brightness=100 Speed=0 (off)
 press Save to mouse
   register 83 A2  02
   register 83 A2  02 08
@@ -322,10 +322,10 @@ press Save to mouse
   register 83 A2  02 E8
   register 83 A2  02 F0
   register 83 A2  02 F8
-  = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static DPI stage=1700 <Color 3080FF> DPI=30 Report rate=500 Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] DPI stage=1700 DPI=30 Report rate=500 Effect=Static <Color 3080FF> [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=0 (off)
 pick Effect Off
   register 80 57
-  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Off DPI stage=1700 DPI=30 Report rate=500 Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] DPI stage=1700 DPI=30 Report rate=500 Effect=Off [Revert] [Save to mouse] Brightness=100 (off) Speed=0 (off)
 press Revert changes
   register 80 57  30 80 FF
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] Effect=Static DPI stage=1700 <Color 3080FF> DPI=30 Report rate=500 Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] DPI stage=1700 DPI=30 Report rate=500 Effect=Static <Color 3080FF> [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=0 (off)

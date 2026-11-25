@@ -705,7 +705,9 @@ class ColorRow
             swatches[i].On = on && Swatches[i] == newColor;
             swatches[i].Invalidate();
         }
-        custom.Visible = lastCustom >= 0;
+        // Kept in a local: Visible reads false while the page is hidden.
+        bool customShown = lastCustom >= 0;
+        custom.Visible = customShown;
         custom.Fill = Color.FromArgb(lastCustom | unchecked((int)0xFF000000));
         custom.Enabled = on && editable;
         custom.On = on && isCustom;
@@ -713,8 +715,8 @@ class ColorRow
         // From the swatch's own size, as the page may not be scaled yet (RefreshControls from a constructor), where Ui.DpiScale already is.
         int step = (int)Math.Round(custom.Width * 36f / Size);
         if (rightAligned)
-            for (int i = 0; i < swatches.Length; i++) swatches[i].Left = custom.Left - (swatches.Length - i - (custom.Visible ? 0 : 1)) * step;
-        else more.Left = custom.Left + (custom.Visible ? step : 0);
+            for (int i = 0; i < swatches.Length; i++) swatches[i].Left = custom.Left - (swatches.Length - i - (customShown ? 0 : 1)) * step;
+        else more.Left = custom.Left + (customShown ? step : 0);
         more.Enabled = on && editable;
     }
 

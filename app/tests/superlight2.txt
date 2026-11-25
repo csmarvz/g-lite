@@ -23,19 +23,19 @@ open
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8100 fnB
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=800 DPI=14 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=800 DPI=14 Report rate=1k [Revert (off)] [Save to mouse (off)]
 slide DPI 20
-  = status "DPI changes when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=1100 DPI=20 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
+  = status "DPI changes when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1100 DPI=20 Report rate=1k [Revert] [Save to mouse]
 pick DPI stage 1600
   8100 fnC  02
-  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=1600 DPI=30 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k [Revert] [Save to mouse]
 pick DPI stage 400
   8100 fnC
-  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=400 DPI=6 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=400 DPI=6 Report rate=1k [Revert] [Save to mouse]
 slide DPI 20
-  = status "DPI changes when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=1100 DPI=20 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
+  = status "DPI changes when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1100 DPI=20 Report rate=1k [Revert] [Save to mouse]
 pick Report rate 2k
-  = status "DPI and report rate change when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=1100 DPI=20 Report rate=2k Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
+  = status "DPI and report rate change when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1100 DPI=20 Report rate=2k [Revert] [Save to mouse]
 pick View Bindings
   = status "DPI and report rate change when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings Left button=Left click Right button=Right click Wheel click=Middle click Button 4=Back Button 5=Forward [Revert] [Save to mouse]
 pick Button 4 DPI cycle

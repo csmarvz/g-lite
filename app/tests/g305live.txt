@@ -30,16 +30,16 @@ open
   8100 fn5  01 01 00 EF
   8100 fn5
   8100 fnB
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Off DPI stage=800 DPI=14 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=800 DPI=14 Report rate=1k Effect=Off [Revert (off)] [Save to mouse (off)] Brightness=100 (off) Speed=0 (off)
 pick Effect Static
   8070 fn3  00 01 FF FF FF
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=800 <Color FFFFFF> DPI=14 Report rate=1k Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=800 DPI=14 Report rate=1k Effect=Static <Color FFFFFF> [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=0 (off)
 press Color FFD000
   8070 fn3  00 01 FF D0
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=800 <Color FFD000> DPI=14 Report rate=1k Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=800 DPI=14 Report rate=1k Effect=Static <Color FFD000> [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=0 (off)
 pick DPI stage 400
   8100 fnC
-  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=400 <Color FFD000> DPI=6 Report rate=1k Brightness=100 Speed=0 (off) [Revert] [Save to mouse]
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=400 DPI=6 Report rate=1k Effect=Static <Color FFD000> [Revert] [Save to mouse] Brightness=100 Speed=0 (off)
 press Save to mouse
   8100 fn5  01 01
   8100 fn5  01 01 00 10
@@ -157,10 +157,10 @@ press Save to mouse
   8100 fn5  00 01 00 EF
   8100 fnB
   8070 fn3  00 01 FF D0
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=400 <Color FFD000> DPI=6 Report rate=1k Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=400 DPI=6 Report rate=1k Effect=Static <Color FFD000> [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=0 (off)
 the mouse reconnects, switched off and on
   8070 fn3  00 01 FF D0
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=400 <Color FFD000> DPI=6 Report rate=1k Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=400 DPI=6 Report rate=1k Effect=Static <Color FFD000> [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=0 (off)
 the screen loads again
   2201 fn1
   2201 fn2
@@ -193,9 +193,9 @@ the screen loads again
   8100 fn5  00 01 00 EF
   8100 fnB
   8070 fn3  00 01 FF D0
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=400 <Color FFD000> DPI=6 Report rate=1k Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=400 DPI=6 Report rate=1k Effect=Static <Color FFD000> [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=0 (off)
 the mouse's DPI button
   2201 fn2
   8100 fnB
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Static DPI stage=800 <Color FFD000> DPI=14 Report rate=1k Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=800 DPI=14 Report rate=1k Effect=Static <Color FFD000> [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=0 (off)
 lighting record after the save: unchanged

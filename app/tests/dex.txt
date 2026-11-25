@@ -23,6 +23,6 @@ open
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8100 fnB
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=800 DPI=14 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=800 DPI=14 Report rate=1k [Revert (off)] [Save to mouse (off)]
 pick View Bindings
   = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings Left button=Left click Right button=Right click Wheel click=Middle click Button 4=Forward Button 5=Back [Revert (off)] [Save to mouse (off)]

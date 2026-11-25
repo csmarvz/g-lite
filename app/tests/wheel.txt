@@ -36,23 +36,23 @@ open
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8100 fnB
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Invert scrolling=off Effect=Cycle [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=63
 watch, off
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Invert scrolling=off Effect=Cycle [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=63
 press Invert scrolling
   2121 fn1
   2121 fn2  04
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 Invert scrolling=on [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Invert scrolling=on Effect=Cycle [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=63
 watch, on
   2121 fn1
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 Invert scrolling=on [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Invert scrolling=on Effect=Cycle [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=63
 power cycle, then watch
   2121 fn1
   2121 fn2  04
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 Invert scrolling=on [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Invert scrolling=on Effect=Cycle [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=63
 press Invert scrolling
   2121 fn1
   2121 fn2
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Invert scrolling=off Effect=Cycle [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=63
 watch, off
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=Cycle DPI stage=1600 DPI=30 Report rate=1k Brightness=100 Speed=63 Invert scrolling=off [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Invert scrolling=off Effect=Cycle [Revert (off)] [Save to mouse (off)] Brightness=100 Speed=63

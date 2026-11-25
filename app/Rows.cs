@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 
 // The layout Settings and the device screens share: titled boxes, one below the other, of rows Ui.RowHeight high, each a title and
@@ -92,6 +95,95 @@ static class Rows
         value.Size = new System.Drawing.Size(ValueWidth, 18);
         value.TextAlign = System.Drawing.ContentAlignment.TopRight;
         return Place(box, y, new Slider { AccessibleName = name, ZeroWhenOff = true }, ControlWidth, SliderHeight);
+    }
+}
+
+// Sections of rows that come and go, for a screen whose rows depend on the device (a mouse without lighting or Invert scrolling).
+// Built in design units like the rest: Section starts a titled box, Row gives the y of its next row, where the row's controls go. Place
+// stacks the shown rows and sections, moving their controls from where they were built, and returns the height they take; it's
+// called first from the page's constructor, while everything is still where it was built. A row that shows again makes all its
+// controls visible: a page that keeps one of them hidden (a swatch not in use) sets it after Place. (Remembering each control's
+// Visible doesn't work: it reads false while the page itself is hidden, as it is when it loads in the tray.)
+class RowLayout
+{
+    class RowSlot { public int Top, Height; public bool Shown = true, Placed = true; public readonly List<Control> Controls = new List<Control>(); }
+    class SectionSlot { public Label Heading; public Control Box; public int Height; public bool Shown = true; public readonly List<RowSlot> Rows = new List<RowSlot>(); }
+    readonly Control sheet;
+    readonly List<SectionSlot> sections = new List<SectionSlot>();
+    readonly Dictionary<Control, int> builtTop = new Dictionary<Control, int>();
+    // A row's rule is hidden while it's its box's first shown row.
+    readonly HashSet<Control> rules = new HashSet<Control>();
+    bool collected;
+
+    public RowLayout(Control sheet) { this.sheet = sheet; }
+
+    public RoundedBox Section(string title, out Label heading)
+    {
+        int top = 0;
+        var box = Rows.Section(sheet, title, ref top, new RoundedBox(), 0, out heading);
+        sections.Add(new SectionSlot { Heading = heading, Box = box });
+        return box;
+    }
+
+    public int Row(Control box, int height = Ui.RowHeight)
+    {
+        var section = SectionOf(box);
+        int y = section.Height;
+        section.Rows.Add(new RowSlot { Top = y, Height = height });
+        section.Height += height;
+        return y;
+    }
+
+    public void ShowRow(Control box, int y, bool on) { SectionOf(box).Rows.First(row => row.Top == y).Shown = on; }
+
+    public void ShowSection(Control box, bool on) { SectionOf(box).Shown = on; }
+
+    SectionSlot SectionOf(Control box) { return sections.First(section => section.Box == box); }
+
+    // scaled turns design units into the sheet's pixels; shown false hides every section (another view in their place).
+    public int Place(Func<int, int> scaled, bool shown)
+    {
+        Collect();
+        int top = 0;
+        foreach (var section in sections)
+        {
+            bool sectionShown = shown && section.Shown && section.Rows.Any(row => row.Shown);
+            section.Heading.Visible = section.Box.Visible = sectionShown;
+            if (!sectionShown) continue;
+            section.Heading.Top = scaled(top);
+            int y = 0;
+            foreach (var row in section.Rows)
+            {
+                if (row.Shown != row.Placed)
+                {
+                    foreach (var control in row.Controls.Where(control => !rules.Contains(control))) control.Visible = row.Shown;
+                    row.Placed = row.Shown;
+                }
+                foreach (var control in row.Controls.Where(control => rules.Contains(control))) control.Visible = row.Shown && y > 0;
+                if (!row.Shown) continue;
+                foreach (var control in row.Controls) control.Top = scaled(y + builtTop[control] - row.Top);
+                y += row.Height;
+            }
+            section.Box.Top = scaled(top + Rows.TitleGap);
+            section.Box.Height = scaled(y);
+            top += Rows.TitleGap + y + Rows.SectionGap;
+        }
+        return top;
+    }
+
+    void Collect()
+    {
+        if (collected) return;
+        collected = true;
+        foreach (var section in sections)
+            foreach (Control control in section.Box.Controls)
+            {
+                var row = section.Rows.LastOrDefault(candidate => candidate.Top <= control.Top);
+                if (row == null) continue;
+                row.Controls.Add(control);
+                builtTop[control] = control.Top;
+                if (control.Top == row.Top && control.Height <= 1) rules.Add(control);
+            }
     }
 }
 

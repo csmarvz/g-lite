@@ -200,47 +200,34 @@ static class Bindings
 // The mouse and keyboard screens share it; the screen keeps the bindings and gets each change through Assigned.
 class ButtonRows
 {
-    // The G600 has 20 buttons: past 16 rows, they're packed closer to fit the box.
-    const int Max = 20, Roomy = 16, Pitch = 28, CompactPitch = 25;
+    // A row each, in the rows layout (Rows): up to 20, the G600's.
+    const int Max = 20;
     readonly Control parent;
     readonly ButtonAction[] actions;
     public readonly Label Hint;
     readonly Label[] rowNames = new Label[Max];
     readonly Dropdown[] rowDropdowns = new Dropdown[Max];
-    // In the rows layout (Rows): a row each, Ui.RowHeight high, with the rules between them; otherwise the compact list of a box.
-    readonly bool rows;
     readonly Control[] rules = new Control[Max];
     readonly TextField keyField;
     string[] names = new string[0];
     byte[][] bindings;
     bool editable;
-    int pitch = Pitch;
-    float scale;
     string idleHint = "";
     public int Recording = -1, Pressed = -1;
     public event Action<int, byte[]> Assigned;
 
-    public ButtonRows(Control parent, ButtonAction[] actions, Label hint, bool asRows = false)
+    public ButtonRows(Control parent, ButtonAction[] actions, Label hint)
     {
         this.parent = parent;
         this.actions = actions;
         Hint = hint;
-        rows = asRows;
         var actionNames = actions.Select(action => action.Name).Concat(new[] { "Keystroke…" }).ToList();
         for (int i = 0; i < Max; i++)
         {
             int row = i, y = i * Ui.RowHeight;
-            if (rows)
-            {
-                rowNames[i] = Ui.Text(parent, "", Rows.Inset, y + 22, () => Theme.Text, 9.75f, Ui.Semibold);
-                rowDropdowns[i] = Rows.Place(parent, y, new Dropdown(), Rows.ControlWidth, Rows.ControlHeight);
-                if (i > 0) rules[i] = Rows.Rule(parent, y);
-            }
-            else
-            {
-                rowNames[i] = Ui.Text(parent, "", 14, 45 + 28 * i, () => Theme.Text, 9.75f);
-                rowDropdowns[i] = Ui.Add(parent, new Dropdown(), 380, 40 + 28 * i, 222, 26);
-            }
+            rowNames[i] = Ui.Text(parent, "", Rows.Inset, y + 22, () => Theme.Text, 9.75f, Ui.Semibold);
+            rowDropdowns[i] = Rows.Place(parent, y, new Dropdown(), Rows.ControlWidth, Rows.ControlHeight);
+            if (i > 0) rules[i] = Rows.Rule(parent, y);
             rowNames[i].Visible = rowDropdowns[i].Visible = false;
             if (rules[i] != null) rules[i].Visible = false;
             rowDropdowns[i].Items.AddRange(actionNames);
@@ -250,17 +237,12 @@ class ButtonRows
         {
             if (Pressed < 0 || Pressed >= Max || !rowNames[Pressed].Visible) return;
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            var band = rows
-                ? new RectangleF(6, Pressed * Ui.RowHeight + 6, Rows.Width - 12, Ui.RowHeight - 12)
-                : new RectangleF(6, 40 + pitch * Pressed, 360, pitch - 2);
-            // The rows' parent is scaled with its page; the compact list draws at the screen's scale, as it always has.
-            float scale = rows ? parent.Width / (float)Rows.Width : Ui.DpiScale;
-            Ui.Fill(e.Graphics, new RectangleF(band.X * scale, band.Y * scale, band.Width * scale, band.Height * scale), 6 * scale,
-                Theme.AccentBackground, Theme.AccentBackground);
+            // The parent is scaled with its page.
+            float scale = parent.Width / (float)Rows.Width;
+            Ui.Fill(e.Graphics, new RectangleF(6 * scale, (Pressed * Ui.RowHeight + 6) * scale, (Rows.Width - 12) * scale,
+                (Ui.RowHeight - 12) * scale), 6 * scale, Theme.AccentBackground, Theme.AccentBackground);
         };
-        keyField = rows
-            ? Rows.Place(parent, 0, new TextField { Visible = false }, Rows.ControlWidth, Rows.ControlHeight)
-            : Ui.Add(parent, new TextField { Visible = false }, 380, 40, 222, 26);
+        keyField = Rows.Place(parent, 0, new TextField { Visible = false }, Rows.ControlWidth, Rows.ControlHeight);
         keyField.Box.KeyDown += (s, e) => { e.Handled = e.SuppressKeyPress = true; Recorded(e.KeyData); };
     }
 
@@ -277,7 +259,6 @@ class ButtonRows
     void Sync()
     {
         int count = bindings == null ? 0 : Math.Min(Max, Math.Min(names.Length, bindings.Length));
-        Space(count > Roomy ? CompactPitch : Pitch);
         for (int i = 0; i < Max; i++)
         {
             bool on = i < count;
@@ -293,25 +274,10 @@ class ButtonRows
             rowDropdowns[i].Enabled = editable && Recording < 0;
         }
         parent.Invalidate(true);
-        keyField.Visible = Recording >= 0 && Recording < count;
-        if (keyField.Visible) keyField.Top = rowDropdowns[Recording].Top;
+        bool recording = Recording >= 0 && Recording < count;
+        keyField.Visible = recording;
+        if (recording) keyField.Top = rowDropdowns[Recording].Top;
         Hint.Text = Recording >= 0 ? "Press the keys, or Esc to cancel." : idleHint;
-    }
-
-    // The page is scaled as a whole once placed, so rows moved later take its scale from a dropdown's width (222 when built).
-    void Space(int newPitch)
-    {
-        if (rows || newPitch == pitch) return;
-        if (scale == 0) scale = rowDropdowns[0].Width / 222f;
-        pitch = newPitch;
-        Func<int, int> scaled = units => (int)Math.Round(units * scale);
-        for (int i = 0; i < Max; i++)
-        {
-            rowDropdowns[i].Top = scaled(40 + pitch * i);
-            rowDropdowns[i].Height = scaled(pitch - 2);
-            rowNames[i].Top = scaled(40 + pitch * i + (pitch - 18) / 2);
-        }
-        keyField.Height = scaled(pitch - 2);
     }
 
     void Pick(int row, int actionIndex)

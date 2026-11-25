@@ -23,6 +23,7 @@
 - The device list scrolls without fading its edges.
 - Scrolling Settings and the device list is smoother: the content moves in one piece.
 - The keyboard screens (G515, G915, G815, G512 X 75, PRO X 60 and the other RGB keyboards) follow Settings' layout: one setting per row with a short hint, under section titles, the key picture without a box, a scroll bar when the window is too short, and the footer right after the last row. A setting that doesn't apply is greyed. The Screen effect's settings come right after Effect while it runs, its Intensity is now called Color boost, and its monitor preview is larger. The Bindings view lists the G keys a row each, and the Game view picks its keys on the picture at the top, with the count and Clear below.
+- The mouse screens follow the same layout: the mouse picture at the top, then Sensitivity (DPI stage, DPI, Report rate, Invert scrolling) and Lighting, one setting per row, with only the rows the mouse has. The Bindings view lists the buttons a row each.
 - Controls look the same everywhere: one size for toggles, dropdowns, pickers and sliders, and a disabled slider sits at 0.
 - Screen effect: adding a zone makes every zone an equal strip, the new one at the right.
 

@@ -1,14 +1,14 @@
 open
   get feature F0
   get feature F3
-  = status "Read only: G-Lite shows this mouse's settings but can't change them yet" [Report] G-Lite preset=– [New… (off)] […] View=Settings Effect=Cycle (off) DPI stage=1200 (off) DPI=20 (off) Report rate=1k (off) Brightness=100 (off) Speed=74 (off) [Revert (off)]
+  = status "Read only: G-Lite shows this mouse's settings but can't change them yet" [Report] G-Lite preset=– [New… (off)] […] View=Settings DPI stage=1200 (off) DPI=20 (off) Report rate=1k (off) Effect=Cycle (off) [Revert (off)] Brightness=100 (off) Speed=74 (off)
 pick View Bindings
-  = status "Read only: G-Lite shows this mouse's settings but can't change them yet" [Report] G-Lite preset=– [New… (off)] […] View=Bindings Left button=Left click (off) Right button=Right click (off) Wheel click=Middle click (off) Wheel tilt left=Back (off) Wheel tilt right=Forward (off) Ring finger (G6)=G-shift (off) G7=Shift + B (off) G8=Cycle profile (off) G9=1 (off) G10=2 (off) G11=3 (off) G12=4 (off) G13=5 (off) G14=6 (off) G15=7 (off) G16=8 (off) G17=9 (off) G18=0 (off) G19=- (off) G20== (off) [Revert (off)]
+  = status "Read only: G-Lite shows this mouse's settings but can't change them yet" [Report] G-Lite preset=– [New… (off)] […] View=Bindings Left button=Left click (off) Right button=Right click (off) Wheel click=Middle click (off) Wheel tilt left=Back (off) Wheel tilt right=Forward (off) Ring finger (G6)=G-shift (off) [Revert (off)] G7=Shift + B (off) G8=Cycle profile (off) G9=1 (off) G10=2 (off) G11=3 (off) G12=4 (off) G13=5 (off) G14=6 (off) G15=7 (off) G16=8 (off) G17=9 (off) G18=0 (off) G19=- (off) G20== (off)
 pick View Settings
-  = status "Read only: G-Lite shows this mouse's settings but can't change them yet" [Report] G-Lite preset=– [New… (off)] […] View=Settings Effect=Cycle (off) DPI stage=1200 (off) DPI=20 (off) Report rate=1k (off) Brightness=100 (off) Speed=74 (off) [Revert (off)]
+  = status "Read only: G-Lite shows this mouse's settings but can't change them yet" [Report] G-Lite preset=– [New… (off)] […] View=Settings DPI stage=1200 (off) DPI=20 (off) Report rate=1k (off) Effect=Cycle (off) [Revert (off)] Brightness=100 (off) Speed=74 (off)
 mode 3 picked on the mouse, then the screen loads again
   get feature F0
   get feature F5
-  = status "Read only: G-Lite shows this mouse's settings but can't change them yet" [Report] G-Lite preset=– [New… (off)] […] View=Settings Effect=Breathe (off) DPI stage=3200 (off) <Your color> DPI=60 (off) Report rate=1k (off) Brightness=100 (off) Speed=84 (off) [Revert (off)]
+  = status "Read only: G-Lite shows this mouse's settings but can't change them yet" [Report] G-Lite preset=– [New… (off)] […] View=Settings DPI stage=3200 (off) DPI=60 (off) Report rate=1k (off) Effect=Breathe (off) <Your color> [Revert (off)] Brightness=100 (off) Speed=84 (off)
 pick View Bindings
-  = status "Read only: G-Lite shows this mouse's settings but can't change them yet" [Report] G-Lite preset=– [New… (off)] […] View=Bindings Left button=Left click (off) Right button=Right click (off) Wheel click=Middle click (off) Wheel tilt left=Back (off) Wheel tilt right=Forward (off) Ring finger (G6)=DPI shift (off) G7=DPI cycle (off) G8=Cycle profile (off) G9=1 (off) G10=2 (off) G11=3 (off) G12=4 (off) G13=5 (off) G14=6 (off) G15=DPI up (off) G16=Default DPI (off) G17=Forward (off) G18=DPI down (off) G19=E (off) G20=Back (off) [Revert (off)]
+  = status "Read only: G-Lite shows this mouse's settings but can't change them yet" [Report] G-Lite preset=– [New… (off)] […] View=Bindings Left button=Left click (off) Right button=Right click (off) Wheel click=Middle click (off) Wheel tilt left=Back (off) Wheel tilt right=Forward (off) Ring finger (G6)=DPI shift (off) [Revert (off)] G7=DPI cycle (off) G8=Cycle profile (off) G9=1 (off) G10=2 (off) G11=3 (off) G12=4 (off) G13=5 (off) G14=6 (off) G15=DPI up (off) G16=Default DPI (off) G17=Forward (off) G18=DPI down (off) G19=E (off) G20=Back (off)

@@ -28,7 +28,7 @@ class KeyboardPage : DevicePage
         NotePadding = 14;
     int[] directionValues;
     readonly Label intensityValue;
-    readonly RowText colorRow, solidRow, directionRow, speedRow, intensityRow, pauseRow, batteryRow, partRow;
+    readonly RowText effectText, colorRow, solidRow, directionRow, speedRow, intensityRow, pauseRow, batteryRow, partRow;
     readonly Slider intensity;
     readonly Toggle livePause, liveBattery, solidToggle;
     readonly SegmentedPicker liveDirections;
@@ -201,7 +201,12 @@ class KeyboardPage : DevicePage
         if (Parts)
         {
             picture.Bar = new HashSet<int>(kind.Bar);
-            picture.PartPicked += onBar => { if (Screening || !Known() || bar == null) return; part = onBar ? 2 : 1; RefreshControls(); };
+            picture.PartPicked += onBar =>
+            {
+                if (Screening || !Known() || bar == null || openView != SettingsView) return;
+                part = onBar ? 2 : 1;
+                RefreshControls();
+            };
         }
 
         canScreen = found.Has(0x8081);
@@ -235,7 +240,7 @@ class KeyboardPage : DevicePage
             partPicker.Picked += i => { part = i + 1; RefreshControls(); };
             y += rowHeight;
         }
-        Rows.Row(light, y, "Effect", "What the lighting does");
+        effectText = Rows.Row(light, y, "Effect", "What the lighting does");
         effects = Rows.Dropdown(light, y, "Effect");
         effects.Items.AddRange(names);
         effects.Badge = i => effectIds[i] == ScreenEffect || LiveEffects.Is(effectIds[i]) ? "Live" : null;
@@ -413,9 +418,10 @@ class KeyboardPage : DevicePage
                 else if (control.Top >= screenTop) screenRows.Add(control);
             }
 
+        // The picture stays in the Bindings view, where what a click would change isn't shown, so clicks count in Settings only.
         picture.KeysPicked += picked =>
         {
-            if (!Sampling) return;
+            if (!Sampling || openView != SettingsView) return;
             foreach (int key in picked) if (picture.IdOf(key) >= 0) setup.Keys[picture.IdOf(key)] = selectedZone;
             ScreenChanged();
         };
@@ -501,7 +507,7 @@ class KeyboardPage : DevicePage
             buttonsBox = Rows.Section(sheet, "G keys", ref buttonsTop, new RoundedBox(), kind.GKeys.Length * rowHeight, out buttonsHeading);
             buttonsHeight = buttonsTop;
             // The hint (saved on Save, or the keys to press while one is recorded) on the title's line, at its right.
-            buttonRows = new ButtonRows(buttonsBox, Bindings.KeyboardActions, Value(sheet, 220, 0, Rows.Width - 200), true);
+            buttonRows = new ButtonRows(buttonsBox, Bindings.KeyboardActions, Value(sheet, 220, 0, Rows.Width - 200));
             buttonRows.Assigned += (row, binding) =>
             {
                 if (gKeys == null || Screening) return;
@@ -1137,6 +1143,11 @@ class KeyboardPage : DevicePage
             hasSpeed = known && effect != null && effect.Speed,
             hasIntensity = known && effect != null && effect.Intensity && (kind.Intensity || LiveEffects.Is(effect.Id));
         effects.Index = known ? effectIds.IndexOf(view.Effect) : -1;
+        // With nothing known, the dropdown is blank: the row says what runs instead.
+        effectText.Hint.Text = known || screening ? "What the lighting does"
+            : broken ? "Half written on the keyboard"
+            : live ? "The keyboard's own lighting, until you pick one"
+            : "The keyboard's factory animation";
         effects.Off = part == 2 ? new[] { effectIds.IndexOf(Ripple) } : new int[0];
         effects.Invalidate();
         if (partPicker != null)
@@ -1270,8 +1281,8 @@ class KeyboardPage : DevicePage
     {
         gamePicture.PickedIds = new HashSet<int>(gameKeys.Select(GameModeKeys.LightingId));
         gamePicture.Invalidate();
-        gameKeysCount.Text = gameKeys.Count == 0 ? "None" : gameKeys.Count + (gameKeys.Count == 1 ? " key" : " keys")
-            + (gameBitmap ? "" : ", besides Windows and Menu");
+        gameKeysCount.Text = gameKeys.Count == 0 ? (gameBitmap ? "None" : "Only Windows and Menu")
+            : gameKeys.Count + (gameKeys.Count == 1 ? " key" : " keys") + (gameBitmap ? "" : ", besides Windows and Menu");
         gameClear.Enabled = gameKeys.Count > 0;
     }
 

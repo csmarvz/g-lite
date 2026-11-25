@@ -23,15 +23,15 @@ open
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
   8100 fnB
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=1600 DPI=30 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k [Revert (off)] [Save to mouse (off)]
 pick DPI stage 800
   8100 fnC  01
-  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=800 DPI=14 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=800 DPI=14 Report rate=1k [Revert] [Save to mouse]
 slide DPI 20
   2201 fn3  00 04 4C
-  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=1100 DPI=20 Report rate=1k Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1100 DPI=20 Report rate=1k [Revert] [Save to mouse]
 pick Report rate 500
-  = status "Report rate changes when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings Effect=- (off) DPI stage=1100 DPI=20 Report rate=500 Brightness=100 (off) Speed=0 (off) [Revert] [Save to mouse]
+  = status "Report rate changes when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1100 DPI=20 Report rate=500 [Revert] [Save to mouse]
 pick View Bindings
   = status "Report rate changes when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings Left button=Left click Right button=Right click Wheel click=Middle click Button 4=Back Button 5=Forward [Revert] [Save to mouse]
 pick Button 4 DPI cycle
