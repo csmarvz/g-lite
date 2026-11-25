@@ -29,10 +29,11 @@ static class Rows
             Ui.Text(box, hint, Inset, y + 33, () => Theme.Dim, 9f));
     }
 
-    public static void Rule(Control box, int y)
+    public static Control Rule(Control box, int y)
     {
         var line = Ui.Add(box, new Control(), Inset, y, Width - 2 * Inset, 1);
         Ui.Style(line, () => line.BackColor = Theme.Border);
+        return line;
     }
 
     // A control at the right of the row at y, centred in its height.
@@ -42,7 +43,30 @@ static class Rows
     }
 
     // Every kind of control has one size in a row, so the same control looks the same on every screen.
-    public const int ControlWidth = 240, ControlHeight = 32, ToggleWidth = 40, ToggleHeight = 22, SliderHeight = 24, ValueWidth = 64;
+    public const int ControlWidth = 240, ControlHeight = 32, ToggleWidth = 40, ToggleHeight = 22, SliderHeight = 24, ValueWidth = 64,
+        ButtonWidth = 120;
+
+    public static FlatButton Button(Control box, int y, string text, string name)
+    {
+        return Place(box, y, new FlatButton { Text = text, AccessibleName = name }, ButtonWidth, ControlHeight);
+    }
+
+    // A paragraph across a box, as tall as its lines. Measured at 100% by a label like the one drawn (the page is built at 100% and
+    // scaled after, while its fonts are already at the screen's scale).
+    public static int NoteHeight(string text)
+    {
+        using (var font = WindowHelpers.PixelFont(9f, 1))
+        using (var measure = new Label { Font = font, Text = text, UseMnemonic = false })
+            return measure.GetPreferredSize(new System.Drawing.Size(Width - 2 * Inset, 0)).Height;
+    }
+
+    public static Label Note(Control box, int y, string text)
+    {
+        var label = Ui.Text(box, text, Inset, y, () => Theme.Dim, 9f);
+        label.AutoSize = false;
+        label.Size = new System.Drawing.Size(Width - 2 * Inset, NoteHeight(text));
+        return label;
+    }
 
     public static Toggle Toggle(Control box, int y, string name)
     {

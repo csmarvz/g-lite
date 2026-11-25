@@ -49,7 +49,6 @@ abstract class DevicePage : Control, IPage
     // footer follows it; when they don't fit the window, Body scrolls and the footer stays at the bottom.
     protected ScrollPanel Body;
     readonly List<Control> footer = new List<Control>();
-    bool bodyShown;
     // Design units: Body starts under the preset row; the footer's status line sits 10 below Body, the footer 57 high in all.
     protected const int BodyTop = 118;
     const int FooterGap = 10, FooterHeight = 730 - 673;
@@ -132,7 +131,6 @@ abstract class DevicePage : Control, IPage
         Body = Ui.Add(this, new ScrollPanel(), 0, top, Ui.PageSize.Width, Ui.PageSize.Height - FooterHeight - top);
         Ui.Style(Body, () => Body.BackColor = Theme.Background);
         footer.AddRange(new Control[] { status, undoButton, actionButton });
-        bodyShown = true;
         return Body;
     }
 
@@ -142,14 +140,6 @@ abstract class DevicePage : Control, IPage
     {
         control.Top += status.Top - 683;
         footer.Add(control);
-    }
-
-    // Off while a screen shows another view in Body's place (the keyboard's Game view): the footer goes back to its own place then.
-    protected void ShowBody(bool on)
-    {
-        Body.Visible = on;
-        bodyShown = on;
-        PlaceFooter();
     }
 
     // How tall the rows are, in design units.
@@ -167,7 +157,7 @@ abstract class DevicePage : Control, IPage
         if (Body == null) return;
         int bottom = Height - Scaled(FooterHeight);
         Body.Height = Math.Max(0, Math.Min(Body.Content, bottom - Body.Top));
-        int top = (bodyShown ? Body.Bottom : bottom) + Scaled(FooterGap);
+        int top = Body.Bottom + Scaled(FooterGap);
         int shift = top - status.Top;
         if (shift != 0) foreach (var control in footer) control.Top += shift;
     }

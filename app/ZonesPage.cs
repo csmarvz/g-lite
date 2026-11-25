@@ -768,7 +768,6 @@ class ZonesPage : DevicePage
         lightHead.Text = listed != null && listed.Count == 0
             ? "Lighting (not found on " + (keyboard ? "this keyboard" : "these speakers") + ")"
             : screening ? "Lighting"
-            : !known ? "Lighting (as on the " + noun + ")"
             : mixed ? "Lighting (zones differ, a change sets all of them)"
             : "Lighting";
         zonePicker.Enabled = ready && !screening;

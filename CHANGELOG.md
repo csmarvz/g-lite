@@ -19,10 +19,10 @@
 - Sliders feel live on every device: while you drag one, G-Lite sends the change at most every 120 ms, where it used to wait until you stopped moving. On the keyboard screens, a drag updates only the values beside the sliders, and the key picture follows with each send, so the slider itself moves smoothly.
 - The window has Windows' own title bar, in the sidebar's colour on Windows 11 (dark or light on Windows 10), with Windows' minimize, maximize and close buttons and snapping.
 - Report and Backups sit next to the device's name. The line above a screen's footer is gone, and the sidebar lists the devices without a DEVICES heading, saying "Scanning devices…" while it looks.
-- Every row in Settings has the same height, Services' too.
+- Every row in Settings has the same height, Services' too, and Services lists the software without a heading row or Stop all: each row has its own Stop or Start.
 - The device list scrolls without fading its edges.
 - Scrolling Settings and the device list is smoother: the content moves in one piece.
-- The keyboard screens (G515, G915, G815, G512 X 75, PRO X 60 and the other RGB keyboards) follow Settings' layout: one setting per row with a short hint, under section titles, the key picture without a box, a scroll bar when the window is too short, and the footer right after the last row. A setting that doesn't apply is greyed. The Screen effect's settings come right after Effect while it runs, its Intensity is now called Color boost, and its monitor preview is larger.
+- The keyboard screens (G515, G915, G815, G512 X 75, PRO X 60 and the other RGB keyboards) follow Settings' layout: one setting per row with a short hint, under section titles, the key picture without a box, a scroll bar when the window is too short, and the footer right after the last row. A setting that doesn't apply is greyed. The Screen effect's settings come right after Effect while it runs, its Intensity is now called Color boost, and its monitor preview is larger. The Bindings view lists the G keys a row each, and the Game view picks its keys on the picture at the top, with the count and Clear below.
 - Controls look the same everywhere: one size for toggles, dropdowns, pickers and sliders, and a disabled slider sits at 0.
 - Screen effect: adding a zone makes every zone an equal strip, the new one at the right.
 

@@ -245,17 +245,16 @@ class LogitechSoftware
     }
 }
 
-// The Settings page's Services box: a heading row (Name, Status, Stop all or Start all), a row for each of LogitechSoftware.All and
-// one for Windows Dynamic Lighting, read every 3 s while shown.
+// The Settings page's Services box: a row for each of LogitechSoftware.All, with its own Stop or Start, and one for Windows Dynamic
+// Lighting, read every 3 s while shown.
 class ServicesBox : RoundedBox
 {
-    public const int DesignHeight = RowHeight * (Rows + 1);
+    public const int DesignHeight = RowHeight * Rows;
     const int RowHeight = Ui.RowHeight, BoxWidth = 616, ButtonX = BoxWidth - 14 - 96, StatusX = ButtonX - 12 - 84, Rows = 4;
     readonly bool demo;
     readonly Timer timer = new Timer { Interval = 3000 };
     readonly Label[] detailLabels = new Label[Rows], stateLabels = new Label[Rows];
     readonly FlatButton[] buttons = new FlatButton[Rows];
-    readonly FlatButton allButton;
     readonly string[] problems = new string[Rows];
     readonly SoftwareState[] demoStates = { SoftwareState.Running, SoftwareState.NotInstalled, SoftwareState.Running };
     SoftwareState[] shown;
@@ -267,14 +266,9 @@ class ServicesBox : RoundedBox
     public ServicesBox(bool demo)
     {
         this.demo = demo;
-        var nameHead = Ui.Text(this, "Name", 14, 0, () => Theme.Dim, 9f, Ui.Semibold);
-        nameHead.Top = (RowHeight - nameHead.Height) / 2;
-        Ui.Text(this, "Status", StatusX, nameHead.Top, () => Theme.Dim, 9f, Ui.Semibold);
-        allButton = Ui.Add(this, new FlatButton { Text = "Stop all", Icon = "shield", Visible = false }, ButtonX, 16, 96, 32);
-        allButton.Click += (s, e) => ChangeAll();
         for (int row = 0; row < Rows; row++)
         {
-            int y = RowHeight * (row + 1), picked = row;
+            int y = RowHeight * row, picked = row;
             Ui.Text(this, row < Rows - 1 ? LogitechSoftware.All[row].Name : "Windows Dynamic Lighting", 14, y + 12, () => Theme.Text,
                 9.75f, Ui.Semibold);
             detailLabels[row] = Ui.Text(this, "", 14, y + 33, () => DetailColor(picked), 9f);
@@ -349,10 +343,7 @@ class ServicesBox : RoundedBox
         stateLabels[Rows - 1].Text = lighting ? "On" : "Off";
         detailLabels[Rows - 1].Text = lighting ? "May override G-Lite's lighting" : "Windows' own control of RGB devices";
         buttons[Rows - 1].Visible = true;
-        bool anyRunning = states.Contains(SoftwareState.Running);
-        allButton.Text = anyRunning ? "Stop all" : "Start all";
-        allButton.Visible = anyRunning || states.Contains(SoftwareState.Stopped);
-        foreach (var button in buttons.Concat(new[] { allButton })) { button.Enabled = !busy; button.Invalidate(); }
+        foreach (var button in buttons) { button.Enabled = !busy; button.Invalidate(); }
         for (int row = 0; row < Rows; row++) detailLabels[row].ForeColor = DetailColor(row);
         Invalidate();
     }
@@ -363,14 +354,6 @@ class ServicesBox : RoundedBox
         if (shown != null) Change(new[] { row }, shown[row] == SoftwareState.Running);
     }
 
-    void ChangeAll()
-    {
-        if (shown == null) return;
-        bool stop = shown.Contains(SoftwareState.Running);
-        var wanted = stop ? SoftwareState.Running : SoftwareState.Stopped;
-        Change(Enumerable.Range(0, Rows - 1).Where(row => shown[row] == wanted).ToArray(), stop);
-    }
-
     void Change(int[] rows, bool stop)
     {
         var software = rows.Select(row => LogitechSoftware.All[row]).ToList();
@@ -379,7 +362,7 @@ class ServicesBox : RoundedBox
         busy = true;
         sequence++;
         foreach (var row in rows) { stateLabels[row].Text = stop ? "Stopping…" : "Starting…"; problems[row] = null; }
-        foreach (var button in buttons.Concat(new[] { allButton })) button.Enabled = false;
+        foreach (var button in buttons) button.Enabled = false;
         if (demo)
         {
             foreach (var row in rows) demoStates[row] = stop ? SoftwareState.Stopped : SoftwareState.Running;
@@ -414,7 +397,7 @@ class ServicesBox : RoundedBox
         var graphics = e.Graphics;
         float scale = Width / (float)BoxWidth;
         using (var pen = new Pen(Theme.Border, Math.Max(1, scale)))
-            for (int row = 1; row <= Rows; row++)
+            for (int row = 1; row < Rows; row++)
                 graphics.DrawLine(pen, 14 * scale, row * RowHeight * scale, Width - 14 * scale, row * RowHeight * scale);
         if (shown == null) return;
         graphics.SmoothingMode = SmoothingMode.AntiAlias;

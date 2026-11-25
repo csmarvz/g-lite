@@ -24,7 +24,8 @@ class KeyboardPage : DevicePage
         VerticalDirText = { "Left", "Right", "Up", "Down", "Out", "In", "All" },
         UpDownDirText = { "Left", "Right", "Up", "Down", "Out", "In" };
     // Design units: the key picture's height, the Direction row's picker (seven cells), the Screen section's zones row.
-    const int PictureHeight = 168, DirectionWidth = 336, ZonesHeight = 176, ScreenHeight = ZonesHeight + 4 * Ui.RowHeight;
+    const int PictureHeight = 168, DirectionWidth = 336, ZonesHeight = 176, ScreenHeight = ZonesHeight + 4 * Ui.RowHeight,
+        NotePadding = 14;
     int[] directionValues;
     readonly Label intensityValue;
     readonly RowText colorRow, solidRow, directionRow, speedRow, intensityRow, pauseRow, batteryRow, partRow;
@@ -93,7 +94,7 @@ class KeyboardPage : DevicePage
     readonly Control lightBox, lastBox;
     readonly Label lastHeading;
     readonly int screenTop, lightHeight, lastTop, contentHeight;
-    int placedLift = -1;
+    int placedLift = -1, placedView = -1;
     readonly Dropdown monitorDropdown;
     readonly ScreenPreview preview;
     readonly ZoneList zoneList;
@@ -130,8 +131,13 @@ class KeyboardPage : DevicePage
     Backups.Entry fix;
     readonly SegmentedPicker slotPicker;
     readonly SegmentedPicker viewPick;
-    readonly RoundedBox buttonsBox;
-    readonly GameModeBox gameBox;
+    // The Bindings and Game views' sections, on the same sheet as Settings', shown one view at a time (PlaceSections); in design units,
+    // their heights. The Game view picks its keys on its own picture, in the lighting picture's place.
+    readonly Label buttonsHeading, gameHeading, gameKeysCount;
+    readonly RoundedBox buttonsBox, gameBox;
+    readonly int buttonsHeight, gameHeight;
+    readonly KeyPicture gamePicture;
+    readonly FlatButton gameClear;
     readonly ButtonRows buttonRows;
     // Settings, Bindings (the G keys) or Game mode; views holds the ones this keyboard has, in the picker's order.
     const int SettingsView = 0, ButtonsView = 1, GameView = 2;
@@ -429,12 +435,11 @@ class KeyboardPage : DevicePage
         lastTop = sectionTop;
         if (note)
         {
-            var noteText = Ui.Text(Rows.Section(sheet, "Saving", ref sectionTop, new RoundedBox(), 96, out lastHeading), "G-Lite can't save to this keyboard yet. It keeps your lighting and sets it again when G-Lite starts and when you open this screen. Picking – as the G-Lite preset gives the keyboard its own lighting back."
-                + (kind.Guessed ? " The key picture is a guess for this model." : ""),
-                Rows.Inset, 12, () => Theme.Dim, 9f);
-            noteText.AutoSize = false;
-            noteText.Size = new Size(Rows.Width - 2 * Rows.Inset, 72);
-            lastBox = noteText.Parent;
+            string noteText = "G-Lite can't save to this keyboard yet. It keeps your lighting and sets it again when G-Lite starts and when you open this screen. Picking – as the G-Lite preset gives the keyboard its own lighting back."
+                + (kind.Guessed ? " The key picture is a guess for this model." : "");
+            lastBox = Rows.Section(sheet, "Saving", ref sectionTop, new RoundedBox(), Rows.NoteHeight(noteText) + 2 * NotePadding,
+                out lastHeading);
+            Rows.Note(lastBox, NotePadding, noteText);
         }
         var idle = new RoundedBox();
         if (!note && !kind.NoIdleTimes)
@@ -473,20 +478,30 @@ class KeyboardPage : DevicePage
                 + "Changes apply immediately and can be saved in your G-Lite presets, but not in the keyboard's on-board memory.";
             if (kind.GameMode == GameModeSupport.Experimental)
                 gameText = "Experimental, not tried on this keyboard yet. " + gameText;
-            gameBox = Ui.Add(this, new GameModeBox(kind.Keys, gameText, gameBitmap), 20, 118, 616, 543);
-            gameBox.Picked += usage =>
+            gamePicture = Ui.Add(this, GameModeKeys.Picture(kind.Keys, gameBitmap), 20, BodyTop, Rows.Width, PictureHeight);
+            gamePicture.Visible = false;
+            gamePicture.IdPicked += id =>
             {
                 var keys = gameKeys.ToList();
+                int usage = GameModeKeys.Usage(id);
                 if (!keys.Remove(usage)) keys.Add(usage);
                 SetGameKeys(keys);
             };
-            gameBox.Cleared += () => SetGameKeys(new int[0]);
+            int gameTop = 0, noteHeight = Rows.NoteHeight(gameText) + 2 * NotePadding;
+            gameBox = Rows.Section(sheet, "Game mode", ref gameTop, new RoundedBox(), noteHeight + rowHeight, out gameHeading);
+            gameHeight = gameTop;
+            Rows.Note(gameBox, NotePadding, gameText);
+            gameKeysCount = Rows.Row(gameBox, noteHeight, "Keys turned off", "").Hint;
+            gameClear = Rows.Button(gameBox, noteHeight, "Clear", "Clear the Game mode keys");
+            gameClear.Click += (s, e) => SetGameKeys(new int[0]);
         }
         if (kind.GKeys != null)
         {
-            buttonsBox = Ui.Add(this, new RoundedBox { Visible = false }, 20, 118, 616, 543);
-            Ui.Text(buttonsBox, "G keys", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
-            buttonRows = new ButtonRows(buttonsBox, Bindings.KeyboardActions, Value(buttonsBox, 200, 12, 402));
+            int buttonsTop = 0;
+            buttonsBox = Rows.Section(sheet, "G keys", ref buttonsTop, new RoundedBox(), kind.GKeys.Length * rowHeight, out buttonsHeading);
+            buttonsHeight = buttonsTop;
+            // The hint (saved on Save, or the keys to press while one is recorded) on the title's line, at its right.
+            buttonRows = new ButtonRows(buttonsBox, Bindings.KeyboardActions, Value(sheet, 220, 0, Rows.Width - 200), true);
             buttonRows.Assigned += (row, binding) =>
             {
                 if (gKeys == null || Screening) return;
@@ -926,7 +941,7 @@ class KeyboardPage : DevicePage
         if (model == null) return;
         iso = true;
         picture.SetModel(model);
-        if (gameBox != null) gameBox.SetModel(model);
+        if (gamePicture != null) gamePicture.SetModel(model);
         keyField = null;
         force = true;
         if (Sampling) SyncScreen();
@@ -1113,8 +1128,6 @@ class KeyboardPage : DevicePage
         loading = true;
         if (gKeys == null && openView == ButtonsView) openView = SettingsView;
         bool screening = Screening, sampling = Sampling, settings = openView == SettingsView;
-        ShowBody(settings);
-        picture.Visible = settings;
         PlaceSections();
         if (picture.Live != screening) picture.Live = screening;
         var view = Viewed;
@@ -1123,10 +1136,6 @@ class KeyboardPage : DevicePage
         bool color = known && effect != null && effect.Color, hasDirection = known && effect != null && effect.Direction,
             hasSpeed = known && effect != null && effect.Speed,
             hasIntensity = known && effect != null && effect.Intensity && (kind.Intensity || LiveEffects.Is(effect.Id));
-        lightHead.Text = known ? "Lighting"
-            : broken ? "Lighting (half written on the keyboard)"
-            : live ? "Lighting (as on the keyboard)"
-            : "Lighting (factory animation)";
         effects.Index = known ? effectIds.IndexOf(view.Effect) : -1;
         effects.Off = part == 2 ? new[] { effectIds.IndexOf(Ripple) } : new int[0];
         effects.Invalidate();
@@ -1195,19 +1204,31 @@ class KeyboardPage : DevicePage
         {
             effects.Index = effectIds.IndexOf(current.Effect);
             effects.Invalidate();
-            lightHead.Text = "Lighting";
             saveButton.Enabled = false;
             if (sampling) SyncScreen();
         }
         loading = false;
     }
 
-    // Screen's rows show only with its effect; while they're hidden, the rows under them, the box and the section after it move up.
+    // One view's sections at a time, on the same sheet. In Settings, Screen's rows show only with its effect; while they're hidden, the
+    // rows under them, the box and the section after it move up.
     void PlaceSections()
     {
         int lift = screenRows.Count > 0 && !Sampling ? ScreenHeight : 0;
-        if (lift == placedLift) return;
+        if (lift == placedLift && openView == placedView) return;
         placedLift = lift;
+        placedView = openView;
+        bool settings = openView == SettingsView;
+        lightHead.Visible = lightBox.Visible = settings;
+        if (lastHeading != null) lastHeading.Visible = lastBox.Visible = settings;
+        if (buttonsBox != null) buttonsHeading.Visible = buttonsBox.Visible = buttonRows.Hint.Visible = openView == ButtonsView;
+        if (gameBox != null) gameHeading.Visible = gameBox.Visible = gamePicture.Visible = openView == GameView;
+        picture.Visible = openView != GameView;
+        if (!settings)
+        {
+            FitBody(openView == ButtonsView ? buttonsHeight : gameHeight);
+            return;
+        }
         foreach (var control in screenRows) control.Visible = lift == 0;
         foreach (var pair in belowScreen) pair.Key.Top = Scaled(pair.Value - lift);
         lightBox.Height = Scaled(lightHeight - lift);
@@ -1233,21 +1254,25 @@ class KeyboardPage : DevicePage
         viewPick.Index = views.IndexOf(openView);
         viewPick.Off = gKeys == null && views.Contains(ButtonsView) ? new[] { views.IndexOf(ButtonsView) } : new int[0];
         viewPick.Invalidate();
-        if (buttonsBox != null)
+        if (buttonRows != null)
         {
-            buttonsBox.Visible = openView == ButtonsView;
-            // The Screen effect stops Save, and its box is hidden here: the G keys wait until it's off.
+            // The Screen effect stops Save, and its rows are hidden here: the G keys wait until it's off.
             bool screening = Screening;
             buttonRows.Show(kind.GKeys, gKeys, !broken && !screening,
                 screening ? "Turn off the " + EffectName + " effect to change the G keys."
                     : kind.GKeysExperimental ? "Experimental: changes take effect once saved to the keyboard."
                     : "Changes take effect once saved to the keyboard.");
         }
-        if (gameBox != null)
-        {
-            gameBox.Visible = openView == GameView;
-            gameBox.ShowKeys(gameKeys);
-        }
+        if (gameMode) ShowGameKeys();
+    }
+
+    void ShowGameKeys()
+    {
+        gamePicture.PickedIds = new HashSet<int>(gameKeys.Select(GameModeKeys.LightingId));
+        gamePicture.Invalidate();
+        gameKeysCount.Text = gameKeys.Count == 0 ? "None" : gameKeys.Count + (gameKeys.Count == 1 ? " key" : " keys")
+            + (gameBitmap ? "" : ", besides Windows and Menu");
+        gameClear.Enabled = gameKeys.Count > 0;
     }
 
     void SetGameKeys(IEnumerable<int> keys)
@@ -1260,7 +1285,7 @@ class KeyboardPage : DevicePage
         LogUserAction(text == "" ? "Game mode keys cleared" : "Game mode keys " + string.Join(" ", list.Select(usage => usage.ToString("X2"))));
         RunOnDevice(hidpp => GameModeKeys.Send(hidpp, list, gameBitmap));
         Edited();
-        gameBox.ShowKeys(gameKeys);
+        ShowGameKeys();
     }
 
     // The G keys aren't in presets, so Revert with a preset picked brings them back too.
