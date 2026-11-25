@@ -13,6 +13,7 @@
 - The window can be resized and maximized, down to its usual size. Each screen keeps its width, centred beside the sidebar.
 - Settings: an accent colour, G-Lite's green, your Windows accent (in the shade Windows uses for light or dark) or a colour you pick. Click Custom again to pick another.
 - Settings' scroll bar can be dragged, and a click beside it jumps there.
+- PRO X Wireless: an equalizer, experimental. The headset's ten bands (32 Hz to 16 kHz, 12 dB up or down) as it stores them, each on its own slider, and Flat. The headset hasn't been heard to play its stored equalizer yet; G-Lite now writes it the way Logitech's spec says applies it too. Presets keep it.
 
 ### Changed
 
@@ -27,6 +28,7 @@
 - The zone keyboards (G213, G413, G512, G513, G PRO, G810, G910, G410) and the G560 speakers follow the same layout: the key picture at the top where there is one, then Zone, Effect, Color, Direction, Brightness and Speed a row each, with only the rows the device has. The speakers pick their effect from a list like the keyboards, and the Screen effect's settings come right after Effect while it runs, sharing Brightness; its Intensity is now called Color boost. The Game view works as on the RGB keyboards.
 - The demo has the G213, G513, G PRO, G810, G910 and G410 keyboards.
 - G510 and G510s: the same layout, with a picture of the keyboard lit in its colour, and two new views. M1, M2 and M3 each have their own lighting and G key bindings, as in Logitech Gaming Software: pick one in the footer and its light comes on. Bindings sets what G1 to G18 do; G-Lite keeps them but doesn't act on the G keys yet, nor on the keyboard's M keys. Game shows whether the keyboard's Game mode switch is on.
+- The headset screen follows the same layout: the headset at the top (its battery shows under its name), then Sound (Sidetone, Test sidetone) and Power (Turn off after), a row each. The firmware line is gone (it's in the report).
 - Controls look the same everywhere: one size for toggles, dropdowns, pickers and sliders, and a disabled slider sits at 0.
 - Screen effect: adding a zone makes every zone an equal strip, the new one at the right.
 

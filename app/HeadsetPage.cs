@@ -5,12 +5,9 @@ using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 
+// The headset, centred. Its battery shows under the device's name, so the picture doesn't repeat it.
 class HeadsetPicture : DrawnControl
 {
-    int battery = -1, millivolts;
-    bool approx, charging;
-    string line = "";
-
     public HeadsetPicture()
     {
         Cursor = Cursors.Default;
@@ -19,20 +16,10 @@ class HeadsetPicture : DrawnControl
         AccessibleName = "Headset";
     }
 
-    public void Display(int percent, bool estimated, int newMillivolts, bool isCharging, string text)
-    {
-        battery = percent;
-        approx = estimated;
-        millivolts = newMillivolts;
-        charging = isCharging;
-        line = text;
-        Invalidate();
-    }
-
     protected override void OnPaint(PaintEventArgs e)
     {
         var graphics = Begin(e);
-        float height = Height - 16 * DpiScale, width = height * 0.9f, x = 62 * DpiScale, y = 8 * DpiScale;
+        float height = Height - 16 * DpiScale, width = height * 0.9f, y = 8 * DpiScale, x = (Width - width) / 2;
         float cupW = width * 0.26f, cupH = height * 0.42f, cupY = y + height * 0.5f;
         using (var band = new Pen(Theme.KeyOff, 9 * DpiScale) { StartCap = LineCap.Round, EndCap = LineCap.Round })
             graphics.DrawArc(band, x + cupW / 2, y + 4 * DpiScale, width - cupW, height * 1.05f, 180, 180);
@@ -47,24 +34,6 @@ class HeadsetPicture : DrawnControl
         }
         using (var brush = new SolidBrush(Theme.Accent))
             graphics.FillEllipse(brush, x + width * 0.4f - 4 * DpiScale, y + height * 0.96f - 4 * DpiScale, 8 * DpiScale, 8 * DpiScale);
-
-        float textX = x + width + 70 * DpiScale, top = Height / 2f - 46 * DpiScale;
-        var bigFont = Ui.Get(27f, Ui.Semibold);
-        var text = battery < 0 ? "–" : battery + "%";
-        Ui.Draw(graphics, text, bigFont, new RectangleF(textX, top, Width - textX, 48 * DpiScale),
-            Theme.Text, TextFormatFlags.Left | TextFormatFlags.Bottom);
-        float percentWidth = TextRenderer.MeasureText(graphics, text, bigFont, Size.Empty, TextFormatFlags.NoPadding).Width;
-        Ui.Draw(graphics, charging ? "charging" : "battery", Ui.Get(11f, Ui.Semibold),
-            new RectangleF(textX + percentWidth + 8 * DpiScale, top, 120 * DpiScale, 44 * DpiScale),
-            Theme.Dim, TextFormatFlags.Left | TextFormatFlags.Bottom);
-        var small = Ui.Get(9.75f, Ui.Regular);
-        var volts = millivolts > 0
-            ? (millivolts / 1000.0).ToString("0.00", CultureInfo.InvariantCulture) + " V" + (approx ? ", estimated from the voltage" : "")
-            : "";
-        Ui.Draw(graphics, volts, small, new RectangleF(textX, top + 58 * DpiScale, Width - textX, 20 * DpiScale),
-            Theme.Dim, TextFormatFlags.Left);
-        Ui.Draw(graphics, line, small, new RectangleF(textX, top + 80 * DpiScale, Width - textX, 20 * DpiScale),
-            Theme.Dim, TextFormatFlags.Left);
     }
 }
 
@@ -81,33 +50,42 @@ class HeadsetPage : DevicePage
     MicrophoneCapture microphone;
     DateTime testEnd;
 
-    readonly Label sideHead, sideValue, offHead, firmware;
-    readonly FlatButton testButton;
-    readonly Slider sidetone;
-    readonly Dropdown offBox;
     readonly HeadsetPicture picture;
+    readonly Slider sidetone;
+    readonly Label sideValue;
+    readonly FlatButton testButton, flatButton;
+    readonly Dropdown offBox;
+    // Sound, Power and the equalizer (experimental), in design units; rows the headset doesn't have go once it's read. The equalizer
+    // has a row for each band up to MaxBands, those past the headset's count left out, and shows only once read.
+    readonly RowLayout rows;
+    readonly RoundedBox sound, power, equalizer;
+    readonly int sideRow, testRow;
+    readonly RowText sideText, testText, offText;
+    const int PictureHeight = 168, NotePadding = 14, MaxBands = 16;
+    readonly int[] bandRows = new int[MaxBands];
+    readonly RowText[] bandTexts = new RowText[MaxBands];
+    readonly Slider[] bandSliders = new Slider[MaxBands];
+    readonly Label[] bandValues = new Label[MaxBands];
 
     public HeadsetPage(FoundDevice found, Hidpp fake)
         : base(found, fake, found.ShortName, "headset", "profile." + found.SettingsKey + ".")
     {
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };
 
-        var pictureBox = Ui.Add(this, new RoundedBox(), 20, 118, 616, 209);
-        Ui.Text(pictureBox, "Headset", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
-        picture = Ui.Add(pictureBox, new HeadsetPicture(), 14, 36, 588, 161);
+        // The picture stays above the rows, which scroll under it.
+        picture = Ui.Add(this, new HeadsetPicture(), 20, BodyTop, Rows.Width, PictureHeight);
+        var sheet = UseBody(BodyTop + PictureHeight + 12).Sheet;
+        rows = new RowLayout(sheet);
 
-        var sound = Ui.Add(this, new RoundedBox(), 20, 339, 380, 272);
-        Ui.Text(sound, "Sound", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
-        sideHead = Ui.Text(sound, "Sidetone", 14, 40, () => Theme.Dim, 9f);
-        sideValue = Value(sound, 14, 40, 352);
-        sidetone = Ui.Add(sound, new Slider { AccessibleName = "Sidetone" }, 14, 60, 352, 24);
+        Label heading;
+        sound = rows.Section("Sound", out heading);
+        sideRow = rows.Row(sound);
+        sideText = Rows.Row(sound, sideRow, "Sidetone", "Your own voice, while an app uses the microphone");
+        sidetone = Rows.Slider(sound, sideRow, "Sidetone", out sideValue);
         sidetone.Changed += (s, e) => { current.Sidetone = sidetone.Value; Changed(false); };
-        var hint = Ui.Text(sound,
-            "How much of your own voice you hear while you talk. It works while an app is using the microphone, like a call or a voice chat.",
-            14, 92, () => Theme.Dim, 9f);
-        hint.AutoSize = false;
-        hint.Size = new Size(352, 54);
-        testButton = Ui.Add(sound, new FlatButton { Text = "Test sidetone", Icon = "headset" }, 14, 150, 150, 32);
+        testRow = rows.Row(sound);
+        testText = Rows.Row(sound, testRow, "Test sidetone", "Hear yourself for 30 s");
+        testButton = Rows.Button(sound, testRow, "Test", "Test sidetone");
         testButton.Click += (s, e) => { if (microphone == null) StartTest(); else StopTest(); };
         testing.Tick += (s, e) =>
         {
@@ -116,24 +94,56 @@ class HeadsetPage : DevicePage
             microphone.RequeueBuffers();
         };
 
-        var power = Ui.Add(this, new RoundedBox(), 412, 339, 224, 272);
-        Ui.Text(power, "Power", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
-        offHead = Ui.Text(power, "Turn off after", 14, 40, () => Theme.Dim, 9f);
-        offBox = Ui.Add(power, new Dropdown { AccessibleName = "Turn off after" }, 14, 58, 196, 32);
+        power = rows.Section("Power", out heading);
+        int offRow = rows.Row(power);
+        offText = Rows.Row(power, offRow, "Turn off after", "When the headset isn't used");
+        offBox = Rows.Dropdown(power, offRow, "Turn off after");
         offBox.Picked += i => { current.AutoOffMinutes = offMinutes[i]; Changed(true); };
-        Ui.Text(power, "Firmware", 14, 98, () => Theme.Dim, 9f);
-        firmware = Ui.Text(power, "", 14, 116, () => Theme.Text, 9.75f);
-        firmware.AutoSize = false;
-        firmware.AutoEllipsis = true;
-        firmware.Size = new Size(196, 22);
-        var note = Ui.Text(power, "Changes apply right away.", 14, 156, () => Theme.Dim, 9f);
-        note.AutoSize = false;
-        note.Size = new Size(196, 48);
+
+        equalizer = rows.Section("Equalizer", out heading);
+        string note = "Experimental. The headset stores these bands, but it hasn't been heard to play them yet: G HUB applies its "
+            + "equalizer on the PC. Changes are sent to the headset right away.";
+        int noteRow = rows.Row(equalizer, Rows.NoteHeight(note) + 2 * NotePadding);
+        Rows.Note(equalizer, noteRow + NotePadding, note);
+        for (int i = 0; i < MaxBands; i++)
+        {
+            int band = i;
+            bandRows[i] = rows.Row(equalizer);
+            bandTexts[i] = Rows.Row(equalizer, bandRows[i], "", "");
+            bandSliders[i] = Rows.Slider(equalizer, bandRows[i], "Band " + (i + 1), out bandValues[i]);
+            bandSliders[i].Step = 1;
+            bandSliders[i].Changed += (s, e) =>
+            {
+                if (loading || current.Bands == null || band >= current.Bands.Length) return;
+                current.Bands[band] = bandSliders[band].Value - state.Range;
+                Changed(false);
+            };
+        }
+        int flatRow = rows.Row(equalizer);
+        Rows.Row(equalizer, flatRow, "Flat", "Every band back to 0 dB");
+        flatButton = Rows.Button(equalizer, flatRow, "Flat", "Set every band to 0 dB");
+        flatButton.Click += (s, e) =>
+        {
+            if (current.Bands == null) return;
+            current.Bands = new int[current.Bands.Length];
+            Changed(true);
+        };
 
         RefreshControls();
     }
 
     static string OffText(int minutes) { return minutes == 0 ? "Never" : minutes + " min"; }
+
+    static string FrequencyText(int hertz)
+    {
+        return hertz >= 1000 ? (hertz / 1000.0).ToString("0.#", CultureInfo.InvariantCulture) + " kHz" : hertz + " Hz";
+    }
+
+    static string RangeText(int hertz)
+    {
+        return hertz < 50 ? "Deep bass" : hertz < 200 ? "Bass" : hertz < 400 ? "Low mids" : hertz < 1500 ? "Mids"
+            : hertz < 3000 ? "Upper mids" : hertz < 6000 ? "Presence" : hertz < 12000 ? "Treble" : "Air";
+    }
 
     void StartTest()
     {
@@ -143,7 +153,7 @@ class HeadsetPage : DevicePage
         catch (Exception ex) { ShowStatus(ex.Message, true); return; }
         testEnd = DateTime.UtcNow.AddSeconds(30);
         testing.Start();
-        testButton.Text = "Stop the test";
+        testButton.Text = "Stop";
         testButton.Style = ButtonStyle.Primary;
         testButton.Invalidate();
         ShowStatus("Talk now. You hear yourself at the sidetone level. The test stops after 30 s.");
@@ -153,7 +163,7 @@ class HeadsetPage : DevicePage
     {
         testing.Stop();
         if (microphone != null) { microphone.Dispose(); microphone = null; }
-        testButton.Text = "Test sidetone";
+        testButton.Text = "Test";
         testButton.Style = ButtonStyle.Normal;
         testButton.Invalidate();
         ClearStatus();
@@ -173,10 +183,15 @@ class HeadsetPage : DevicePage
 
     protected override string Current() { return current.ToText(); }
 
+    // A preset's bands count only on a headset with as many; otherwise the bands stay as they are.
     protected override void ApplyPreset(string text)
     {
         var settings = HeadsetSettings.FromText(text);
         settings.Sidetone = Math.Max(0, Math.Min(100, settings.Sidetone));
+        int range = state != null ? state.Range : 0;
+        if (settings.Bands == null || current.Bands == null || settings.Bands.Length != current.Bands.Length)
+            settings.Bands = current.Bands == null ? null : (int[])current.Bands.Clone();
+        else settings.Bands = settings.Bands.Select(band => Math.Max(-range, Math.Min(range, band))).ToArray();
         current = settings;
         Changed(true);
     }
@@ -193,13 +208,24 @@ class HeadsetPage : DevicePage
     void RefreshControls()
     {
         loading = true;
-        bool ready = state != null, hasSide = ready && state.HasSidetone, hasOff = ready && state.HasOff;
-        SetDimmed(sideHead, hasSide);
+        bool ready = state != null, hasSide = ready && state.HasSidetone, hasOff = ready && state.HasOff,
+            hasBands = ready && state.Frequencies != null && current.Bands != null;
+        int bandCount = hasBands ? Math.Min(MaxBands, state.Frequencies.Length) : 0;
+        // Before the headset is read every row shows but the equalizer's, whose bands it says.
+        rows.ShowRow(sound, sideRow, !ready || hasSide);
+        rows.ShowRow(sound, testRow, !ready || hasSide);
+        rows.ShowSection(power, !ready || hasOff);
+        rows.ShowSection(equalizer, hasBands);
+        for (int i = 0; i < MaxBands; i++) rows.ShowRow(equalizer, bandRows[i], i < bandCount);
+        FitBody(rows.Place(Scaled, true));
+
+        sideText.Enable(hasSide);
         sidetone.Enabled = hasSide;
-        testButton.Enabled = hasSide;
         sidetone.Value = current.Sidetone;
         sideValue.Text = hasSide ? current.Sidetone + "%" : "";
         sidetone.Invalidate();
+        testText.Enable(hasSide);
+        testButton.Enabled = hasSide;
         offMinutes = current.AutoOffMinutes >= 0 && !HeadsetProtocol.OffMinutes.Contains(current.AutoOffMinutes)
             ? HeadsetProtocol.OffMinutes.Concat(new[] { current.AutoOffMinutes }).OrderBy(minutes => minutes).ToArray()
             : HeadsetProtocol.OffMinutes;
@@ -208,15 +234,19 @@ class HeadsetPage : DevicePage
         offBox.Index = hasOff ? Array.IndexOf(offMinutes, current.AutoOffMinutes) : -1;
         offBox.Enabled = hasOff;
         offBox.Invalidate();
-        SetDimmed(offHead, hasOff);
-        firmware.Text = found.Firmware == "" ? "–" : found.Firmware;
-        int readMillivolts = ready && state.Millivolts > 0 ? state.Millivolts : found.Millivolts;
-        bool charging = ready && state.Charging;
-        int percent = !charging ? (readMillivolts > 0 ? FoundDevice.FromVolts(readMillivolts) : found.Battery)
-            : found.Battery >= 0 ? found.Battery
-            : FoundDevice.FromChargingVolts(readMillivolts);
-        picture.Display(percent, readMillivolts > 0 || found.BatteryFromVoltage, readMillivolts, ready && state.Charging,
-            hasOff ? (current.AutoOffMinutes == 0 ? "Stays on when idle" : "Turns off after " + current.AutoOffMinutes + " min idle") : "");
+        offText.Enable(hasOff);
+        for (int i = 0; i < bandCount; i++)
+        {
+            int hertz = state.Frequencies[i], band = current.Bands[i];
+            bandTexts[i].Title.Text = FrequencyText(hertz);
+            bandTexts[i].Hint.Text = RangeText(hertz);
+            bandSliders[i].AccessibleName = FrequencyText(hertz);
+            bandSliders[i].Max = 2 * state.Range;
+            if (!bandSliders[i].Capture) bandSliders[i].Value = band + state.Range;
+            bandValues[i].Text = (band > 0 ? "+" : "") + band + " dB";
+            bandSliders[i].Invalidate();
+        }
+        flatButton.Enabled = hasBands && current.Bands.Any(band => band != 0);
         loading = false;
     }
 
@@ -257,6 +287,8 @@ class HeadsetPage : DevicePage
                 HeadsetProtocol.SetSidetone(hidpp, want.Sidetone);
             if (deviceState.HasOff && want.AutoOffMinutes >= 0 && (sent == null || want.AutoOffMinutes != sent.AutoOffMinutes))
                 HeadsetProtocol.SetOff(hidpp, want.AutoOffMinutes);
+            if (deviceState.Frequencies != null && want.Bands != null && (sent == null || !want.SameBands(sent)))
+                HeadsetProtocol.SetEqualizer(hidpp, want.Bands);
             sent = want;
         }, () => { if (startedAt == sequence) ClearStatus(); });
     }

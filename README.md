@@ -71,7 +71,7 @@ The preset you picked on each device is picked again when G-Lite starts, and set
 
 | Device | Connection | Status | What G-Lite can do |
 |---|---|---|---|
-| PRO X Wireless | Its own LIGHTSPEED receiver | Works | Sidetone, turning off when idle, battery, profiles |
+| PRO X Wireless | Its own LIGHTSPEED receiver | Works | Sidetone, turning off when idle, battery, profiles. Equalizer: experimental |
 | G735, PRO X 2 LIGHTSPEED, G522, A50 X and other G headsets | USB | Report only | Listed in the sidebar so their owner can send a report. Nothing can be changed yet. |
 
 ### Speakers

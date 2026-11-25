@@ -1,26 +1,41 @@
 open
   8300 fn0
   1F20 fn0
+  8310 fn0
+  8310 fn1
+  8310 fn1  07
+  8310 fn2
   1F20 fn1
-  = status "Matches the headset" [Report] G-Lite preset=– [New…] […] Turn off after=30 min Sidetone=30 [Test sidetone] [Revert (off)]
+  = status "Matches the headset" [Report] G-Lite preset=– [New…] […] Sidetone=30 [Test] Turn off after=30 min 32 Hz=12 [Revert (off)] 64 Hz=12 125 Hz=12 250 Hz=12 500 Hz=12 1 kHz=13 2 kHz=15 4 kHz=17 8 kHz=18 16 kHz=18 [Flat]
 slide Sidetone 40
   8300 fn1  28
-  = status "Applied to the headset" [Report] G-Lite preset=– [New…] […] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert]
+  = status "Applied to the headset" [Report] G-Lite preset=– [New…] […] Sidetone=40 [Test] Turn off after=30 min 32 Hz=12 [Revert] 64 Hz=12 125 Hz=12 250 Hz=12 500 Hz=12 1 kHz=13 2 kHz=15 4 kHz=17 8 kHz=18 16 kHz=18 [Flat]
+slide 4 kHz 16
+  8310 fn3  01 00 00 00 00 00 01 03 04 06 06
+  = status "Applied to the headset" [Report] G-Lite preset=– [New…] […] Sidetone=40 [Test] Turn off after=30 min 32 Hz=12 [Revert] 64 Hz=12 125 Hz=12 250 Hz=12 500 Hz=12 1 kHz=13 2 kHz=15 4 kHz=16 8 kHz=18 16 kHz=18 [Flat]
+check the headset's bands
+  = status "Applied to the headset" [Report] G-Lite preset=– [New…] […] Sidetone=40 [Test] Turn off after=30 min 32 Hz=12 [Revert] 64 Hz=12 125 Hz=12 250 Hz=12 500 Hz=12 1 kHz=13 2 kHz=15 4 kHz=16 8 kHz=18 16 kHz=18 [Flat]
+press Flat
+  8310 fn3  01
+  = status "Applied to the headset" [Report] G-Lite preset=– [New…] […] Sidetone=40 [Test] Turn off after=30 min 32 Hz=12 [Revert] 64 Hz=12 125 Hz=12 250 Hz=12 500 Hz=12 1 kHz=12 2 kHz=12 4 kHz=12 8 kHz=12 16 kHz=12 [Flat (off)]
+check the bands are flat
+  = status "Applied to the headset" [Report] G-Lite preset=– [New…] […] Sidetone=40 [Test] Turn off after=30 min 32 Hz=12 [Revert] 64 Hz=12 125 Hz=12 250 Hz=12 500 Hz=12 1 kHz=12 2 kHz=12 4 kHz=12 8 kHz=12 16 kHz=12 [Flat (off)]
 pick Turn off after 30 min
-  = status "Applied to the headset" [Report] G-Lite preset=– [New…] […] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert]
+  = status "Applied to the headset" [Report] G-Lite preset=– [New…] […] Sidetone=40 [Test] Turn off after=30 min 32 Hz=12 [Revert] 64 Hz=12 125 Hz=12 250 Hz=12 500 Hz=12 1 kHz=12 2 kHz=12 4 kHz=12 8 kHz=12 16 kHz=12 [Flat (off)]
 menu More preset actions > Save as new preset…
   menu: Save as new preset… | Rename… (off) | Delete (off)
-  = status "Applied to the headset" [Report] [Save] [Cancel] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert]
+  = status "Applied to the headset" [Report] [Save] [Cancel] Sidetone=40 [Test] Turn off after=30 min 32 Hz=12 [Revert] 64 Hz=12 125 Hz=12 250 Hz=12 500 Hz=12 1 kHz=12 2 kHz=12 4 kHz=12 8 kHz=12 16 kHz=12 [Flat (off)]
 type Calls
-  = status "Applied to the headset" [Report] [Save] [Cancel] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert]
+  = status "Applied to the headset" [Report] [Save] [Cancel] Sidetone=40 [Test] Turn off after=30 min 32 Hz=12 [Revert] 64 Hz=12 125 Hz=12 250 Hz=12 500 Hz=12 1 kHz=12 2 kHz=12 4 kHz=12 8 kHz=12 16 kHz=12 [Flat (off)]
 press Save
-  = status "Saved the preset Calls" [Report] G-Lite preset=Calls [Update (off)] […] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert (off)]
+  = status "Saved the preset Calls" [Report] G-Lite preset=Calls [Update (off)] […] Sidetone=40 [Test] Turn off after=30 min 32 Hz=12 [Revert (off)] 64 Hz=12 125 Hz=12 250 Hz=12 500 Hz=12 1 kHz=12 2 kHz=12 4 kHz=12 8 kHz=12 16 kHz=12 [Flat (off)]
 slide Sidetone 10
   8300 fn1  0A
-  = status "Applied to the headset" [Report] G-Lite preset=Calls • [Update] […] Turn off after=30 min Sidetone=10 [Test sidetone] [Revert]
+  = status "Applied to the headset" [Report] G-Lite preset=Calls • [Update] […] Sidetone=10 [Test] Turn off after=30 min 32 Hz=12 [Revert] 64 Hz=12 125 Hz=12 250 Hz=12 500 Hz=12 1 kHz=12 2 kHz=12 4 kHz=12 8 kHz=12 16 kHz=12 [Flat (off)]
 press Revert changes
   8300 fn1  28
-  = status "Applied to the headset" [Report] G-Lite preset=Calls [Update (off)] […] Turn off after=30 min Sidetone=40 [Test sidetone] [Revert (off)]
+  = status "Applied to the headset" [Report] G-Lite preset=Calls [Update (off)] […] Sidetone=40 [Test] Turn off after=30 min 32 Hz=12 [Revert (off)] 64 Hz=12 125 Hz=12 250 Hz=12 500 Hz=12 1 kHz=12 2 kHz=12 4 kHz=12 8 kHz=12 16 kHz=12 [Flat (off)]
 pick G-Lite preset –
   8300 fn1  1E
-  = status "Matches the headset" [Report] G-Lite preset=– [New…] […] Turn off after=30 min Sidetone=30 [Test sidetone] [Revert (off)]
+  8310 fn3  01 00 00 00 00 00 01 03 05 06 06
+  = status "Matches the headset" [Report] G-Lite preset=– [New…] […] Sidetone=30 [Test] Turn off after=30 min 32 Hz=12 [Revert (off)] 64 Hz=12 125 Hz=12 250 Hz=12 500 Hz=12 1 kHz=13 2 kHz=15 4 kHz=17 8 kHz=18 16 kHz=18 [Flat]

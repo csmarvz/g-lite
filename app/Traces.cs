@@ -444,6 +444,12 @@ static class Traces
 
     static void CheckGameKeys(FakeG915 keyboard, params int[] usages) { CheckGameKeys(keyboard.GameKeys, usages); }
 
+    static void CheckBands(FakeHeadset headset, params int[] bands)
+    {
+        if (headset.Persistence != 1 || !headset.Bands.Select(band => (int)band).SequenceEqual(bands))
+            throw new InvalidOperationException("the headset holds " + string.Join(" ", headset.Bands) + ", persistence " + headset.Persistence);
+    }
+
     static void CheckGameKeys(IEnumerable<int> listed, params int[] usages)
     {
         if (!listed.SequenceEqual(usages))
@@ -1189,11 +1195,17 @@ static class Traces
         {
             Key = "trace|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset",
             Link = "LIGHTSPEED", Index = 0xFF, Path = @"\\?\hid#vid_046d&pid_0aba&mi_03&col01",
-            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300 }
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x8310, 0x8300, 0x1F20 }
         };
-        using (var script = Begin(() => DeviceTable.For(found).Make(found, new FakeHeadset())))
+        var headset = new FakeHeadset();
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, headset)))
         {
             script.Slide("Sidetone", 40);
+            // The equalizer (experimental): 4 kHz at +4 dB, written with persistence 1, then every band flat.
+            script.Slide("4 kHz", 16);
+            script.Do("check the headset's bands", () => CheckBands(headset, 0, 0, 0, 0, 0, 1, 3, 4, 6, 6));
+            script.Press("Flat");
+            script.Do("check the bands are flat", () => CheckBands(headset, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
             script.Pick("Turn off after", "30 min");
             script.Menu("More preset actions", "Save as new preset…");
             script.Type("Calls");

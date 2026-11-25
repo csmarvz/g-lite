@@ -918,6 +918,10 @@ class FakeG9x : Hidpp
 class FakeHeadset : Hidpp
 {
     public int Sidetone = 30, AutoOffMinutes = 30;
+    // The PRO X's equalizer, from its report: ten bands from 32 Hz to 16 kHz, 12 dB up or down, stored as below.
+    public sbyte[] Bands = { 0, 0, 0, 0, 0, 1, 3, 5, 6, 6 };
+    public int Persistence = -1;
+    static readonly int[] Frequencies = { 32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 };
 
     public FakeHeadset() : base(false) { }
 
@@ -927,7 +931,26 @@ class FakeHeadset : Hidpp
     {
         Latency.Pause();
         var reply = new byte[16];
-        if (featureIndex == 0) { int id = parameters[0] << 8 | parameters[1]; reply[0] = (byte)(id == 0x8300 ? 1 : id == 0x1F20 ? 2 : 0); }
+        if (featureIndex == 0)
+        {
+            int id = parameters[0] << 8 | parameters[1];
+            reply[0] = (byte)(id == 0x8300 ? 1 : id == 0x1F20 ? 2 : id == 0x8310 ? 3 : 0);
+        }
+        else if (featureIndex == 3)
+        {
+            if (fn == 0) { reply[0] = (byte)Bands.Length; reply[1] = 12; reply[2] = 1; }
+            if (fn == 1)
+            {
+                reply[0] = parameters[0];
+                for (int i = 0; i < 7 && parameters[0] + i < Frequencies.Length; i++)
+                {
+                    reply[1 + 2 * i] = (byte)(Frequencies[parameters[0] + i] >> 8);
+                    reply[2 + 2 * i] = (byte)Frequencies[parameters[0] + i];
+                }
+            }
+            if (fn == 2) for (int i = 0; i < Bands.Length; i++) reply[i] = (byte)Bands[i];
+            if (fn == 3) { Persistence = parameters[0]; for (int i = 0; i < Bands.Length; i++) Bands[i] = (sbyte)parameters[1 + i]; }
+        }
         else if (featureIndex == 1) { if (fn == 0) reply[0] = (byte)Sidetone; if (fn == 1) Sidetone = parameters[0]; }
         else if (featureIndex == 2)
         {

@@ -678,7 +678,7 @@ class MainWindow : Form
             new FoundDevice { Key = "demo|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset",
                 Link = "LIGHTSPEED", Index = 0xFF, Battery = 71, BatteryFromVoltage = true, Millivolts = 3926,
                 Firmware = "U1 12.01, build 0203",
-                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1F20, 0x8300 } },
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x8310, 0x8300, 0x1F20 } },
         };
     }
 
