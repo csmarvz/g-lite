@@ -5,7 +5,7 @@ using System.Collections.Generic;
 static class SelfTest
 {
     static readonly string[] LayoutFiles =
-        { "g515-tkl.json", "g915-tkl.json", "g915.json", "g915-x.json", "g915-x-tkl.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json", "g413.json", "g510.json" };
+        { "g515-tkl.json", "g915-tkl.json", "g915.json", "g915-x.json", "g915-x-tkl.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json", "g413.json", "g510.json", "g-pro.json", "g410.json", "g810.json", "g910.json" };
 
     static bool LightsM3(FakeG510 keyboard)
     {

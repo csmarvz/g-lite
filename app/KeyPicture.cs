@@ -89,6 +89,7 @@ class KeyPicture : DrawnControl
 
     public int Count { get { return keys.Count; } }
     public int IdOf(int key) { return ids[key]; }
+    public string NameOf(int key) { return names[key]; }
     public float XOf(int key) { return (keys[key].X + keys[key].Width / 2) / widthInKeys; }
     public float YOf(int key) { return (keys[key].Y + Math.Min(keys[key].Height, 1) / 2) / heightInKeys; }
     public float WidthInKeys { get { return widthInKeys; } }

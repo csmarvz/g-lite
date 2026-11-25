@@ -1,10 +1,93 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
+
+// The G560 from the front, drawn from its photos: two round speakers, each with a light under its grille on the inner side (the
+// front zone: bottom left, bottom right) and a glow behind it on the wall (the back zone: top left, top right). Zones 0 to 3 are
+// bottom left, bottom right, top left and top right (an owner's check, docs/G560.md); a click on a light picks its zone.
+class SpeakerPicture : DrawnControl
+{
+    Color[] colors = new Color[4];
+    int selected = -1;
+    public event Action<int> Picked;
+
+    public SpeakerPicture()
+    {
+        TabStop = false;
+        AccessibleRole = AccessibleRole.Graphic;
+        AccessibleName = "Speakers";
+    }
+
+    public void Display(Color[] zoneColors, int pick)
+    {
+        colors = zoneColors;
+        selected = pick;
+        Cursor = pick >= 0 ? Cursors.Hand : Cursors.Default;
+        Invalidate();
+    }
+
+    float Radius { get { return (Height - 24 * DpiScale) * 0.36f; } }
+
+    PointF Center(int speaker)
+    {
+        float radius = Radius, gap = radius * 1.6f;
+        return new PointF(Width / 2f + (speaker == 0 ? -1 : 1) * (gap + radius), Height / 2f + radius * 0.18f);
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        var graphics = Begin(e);
+        float radius = Radius;
+        for (int speaker = 0; speaker < 2; speaker++)
+        {
+            var center = Center(speaker);
+            Color back = colors[2 + speaker], front = colors[speaker];
+            // The glow behind, up the wall, kept inside the picture.
+            float reach = Math.Min(center.Y, Height - center.Y) - 1;
+            using (var path = new GraphicsPath())
+            {
+                path.AddEllipse(center.X - radius * 1.7f, center.Y - reach, radius * 3.4f, reach * 2);
+                using (var brush = new PathGradientBrush(path))
+                {
+                    brush.CenterPoint = new PointF(center.X, center.Y - radius * 0.3f);
+                    brush.CenterColor = Color.FromArgb(back == Theme.KeyOff ? 0 : 150, back);
+                    brush.SurroundColors = new[] { Color.FromArgb(0, back) };
+                    graphics.FillPath(brush, path);
+                }
+            }
+            // The housing's curve on the inner side, lit along its bottom.
+            float inner = speaker == 0 ? 1 : -1;
+            var housing = new RectangleF(center.X - radius * 1.08f + inner * radius * 0.1f, center.Y - radius * 1.02f, radius * 2.16f, radius * 2.12f);
+            Ui.Fill(graphics, housing, radius * 1.08f, Color.FromArgb(28, 28, 30), Color.FromArgb(28, 28, 30));
+            using (var pen = new Pen(front, radius * 0.11f) { StartCap = LineCap.Round, EndCap = LineCap.Round })
+                graphics.DrawArc(pen, housing.X + radius * 0.05f, housing.Y + radius * 0.05f, housing.Width - radius * 0.1f,
+                    housing.Height - radius * 0.1f, speaker == 0 ? -10 : 90, 100);
+            Ui.Fill(graphics, new RectangleF(center.X - radius, center.Y - radius, radius * 2, radius * 2), radius,
+                Theme.KeyOff, Theme.Border);
+            // The picked zone: a mark under its speaker (front) or above it (back).
+            if (selected == speaker || selected == 2 + speaker)
+            {
+                float markY = selected == speaker ? center.Y + radius * 1.02f + 6 * DpiScale : center.Y - radius * 1.02f - 9 * DpiScale;
+                using (var pen = new Pen(Theme.Accent, 2 * DpiScale))
+                using (var mark = Ui.Round(new RectangleF(center.X - radius * 0.5f, markY, radius, 3 * DpiScale), 1.5f * DpiScale))
+                    graphics.DrawPath(pen, mark);
+            }
+        }
+    }
+
+    protected override void OnMouseDown(MouseEventArgs e)
+    {
+        base.OnMouseDown(e);
+        if (selected < 0 || e.Button != MouseButtons.Left || Picked == null) return;
+        int speaker = e.X < Width / 2 ? 0 : 1;
+        Picked(e.Y > Center(speaker).Y ? speaker : 2 + speaker);
+    }
+}
 
 class ZonesPage : DevicePage
 {
@@ -24,6 +107,8 @@ class ZonesPage : DevicePage
         snapTimer = new Timer { Interval = 1000 }, frameTimer = new Timer { Interval = 50 };
     readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
     readonly KeyPicture picture;
+    // The G560's, in the keyboards' picture place.
+    readonly SpeakerPicture speakers;
     readonly KeyLayout iso;
     bool isoShown;
     volatile bool wholeAgain;
@@ -114,7 +199,8 @@ class ZonesPage : DevicePage
             iso = ansi.Iso();
             picture = Ui.Add(this, new KeyPicture(ansi) { Live = true }, 20, BodyTop, Rows.Width, PictureHeight);
         }
-        var sheet = (picture != null ? UseBody(BodyTop + PictureHeight + 12) : UseBody()).Sheet;
+        if (!keyboard) speakers = Ui.Add(this, new SpeakerPicture(), 20, BodyTop, Rows.Width, PictureHeight);
+        var sheet = (picture != null || speakers != null ? UseBody(BodyTop + PictureHeight + 12) : UseBody()).Sheet;
         rows = new RowLayout(sheet);
 
         // Before the device is read every row it may have shows; once read, the zone row goes with one zone, the colour row on a
@@ -287,6 +373,16 @@ class ZonesPage : DevicePage
                 picked = at + 1;
                 RefreshControls();
             };
+        }
+        if (speakers != null)
+            speakers.Picked += zone =>
+            {
+                if (!zonePicker.Enabled) return;
+                picked = segZones.IndexOf(zone) + 1;
+                RefreshControls();
+            };
+        if (picture != null || speakers != null)
+        {
             frameTimer.Tick += (s, e) => ShowFrame();
             frameTimer.Start();
         }
@@ -559,9 +655,15 @@ class ZonesPage : DevicePage
         gameClear.Enabled = gameKeys.Count > 0;
     }
 
+    // On a lighting-id picture every key is zone 0 but the logo, which has no id: it shows the zone at the logo (0x8070 location 2,
+    // the G512's second zone) once the keyboard is read.
     List<int> KeyZones()
     {
-        return Enumerable.Range(0, picture.Count).Select(key => zonesModel ? picture.IdOf(key) : picture.IdOf(key) >= 0 ? 0 : -1).ToList();
+        var listed = zones;
+        int logo = listed == null ? -1 : listed.FindIndex(zone => zone[ZoneLighting.Place] == 2);
+        return Enumerable.Range(0, picture.Count)
+            .Select(key => zonesModel ? picture.IdOf(key) : picture.IdOf(key) >= 0 ? 0 : picture.NameOf(key) == "Logo" ? logo : -1)
+            .ToList();
     }
 
     // The loudest of eight bands, 30% to 90% of AudioLoopback's range spread over the whole level.
@@ -774,7 +876,8 @@ class ZonesPage : DevicePage
 
         zonePicker.Enabled = ready && !screening;
         zoneText.Enable(ready && !screening);
-        zoneText.Hint.Text = mixed && !screening ? "Zones differ" : picture != null ? "Click a key to pick its zone" : "The lights to set";
+        zoneText.Hint.Text = mixed && !screening ? "Zones differ" : picture != null ? "Click a key to pick its zone"
+            : speakers != null ? "Click a light to pick it" : "The lights to set";
         zonePicker.Index = picked;
         zonePicker.Invalidate();
         // Audio is sent as Static, so it's listed where Static is; Screen and the live effects cover every zone, so only on All.
@@ -825,7 +928,7 @@ class ZonesPage : DevicePage
         pauseText.Enable(screening);
         lockToggle.Enabled = screening;
         lockToggle.Checked = setup.PauseWhenLocked;
-        if (picture != null) ShowFrame();
+        if (picture != null || speakers != null) ShowFrame();
         if (gameMode)
         {
             ShowGameKeys();
@@ -878,9 +981,36 @@ class ZonesPage : DevicePage
         if (speed.Enabled) speedValue.Text = speed.Value + "%";
     }
 
+    // A light's colour as the pictures draw it: at its brightness over an unlit key.
+    static Color Shown(Color color)
+    {
+        int max = Math.Max(color.R, Math.Max(color.G, color.B));
+        return max == 0 ? Theme.KeyOff
+            : Ui.Mix(Theme.KeyOff, Color.FromArgb(color.R * 255 / max, color.G * 255 / max, color.B * 255 / max), max / 255.0);
+    }
+
+    // The speakers' four lights: what each zone runs, or the screen's colours while the Screen effect does.
+    void ShowSpeakers()
+    {
+        var listed = zones;
+        var sampled = framed;
+        double seconds = clock.Elapsed.TotalSeconds;
+        var lit = new Color[4];
+        for (int zone = 0; zone < 4; zone++)
+        {
+            int frame = screening && sampled != null && zone < sampled.Length ? sampled[zone] : -1;
+            lit[zone] = frame >= 0 ? Shown(Color.FromArgb(frame >> 16 & 0xFF, frame >> 8 & 0xFF, frame & 0xFF))
+                : current != null && listed != null && !screening ? Shown(ZoneLighting.ColorAt(LightOfZone(zone), 0.5f, seconds))
+                : Theme.KeyOff;
+        }
+        speakers.Display(lit, picked > 0 && zonePicker.Enabled ? Zone : -1);
+    }
+
     void ShowFrame()
     {
-        if (picture == null || !Visible) return;
+        if (!Visible) return;
+        if (speakers != null) { ShowSpeakers(); return; }
+        if (picture == null) return;
         var listed = zones;
         if (!isoShown && iso != null && listed != null && KeyLayout.IsIso(layout))
         {
@@ -1010,6 +1140,7 @@ class ZonesPage : DevicePage
         {
             zones = read;
             framed = null;
+            if (picture != null) keyZones = KeyZones();
             if (keyboard)
             {
                 var listed = read.Take(Count).ToList();

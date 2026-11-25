@@ -58,9 +58,14 @@ static class ZoneLighting
     {
         if (found.Kind != "keyboard") return null;
         string name = found.ShortName.ToUpper();
-        // The G512 and G513 have the G413's layout, from their photos (docs/keyboards-8070.md).
+        // The G512 and G513 have the G413's layout, from their photos (docs/keyboards-8070.md); the G PRO keyboard, G410, G810 and
+        // G910 are drawn from theirs.
         return name == "G213" ? "g213.json"
             : name.StartsWith("G413") || name.StartsWith("G512") || name.StartsWith("G513") ? "g413.json"
+            : name.StartsWith("G PRO") ? "g-pro.json"
+            : name.StartsWith("G410") ? "g410.json"
+            : name.StartsWith("G810") ? "g810.json"
+            : name.StartsWith("G910") ? "g910.json"
             : null;
     }
 
