@@ -67,6 +67,7 @@ class LightPicture : DrawnControl
                 if (zones[zone] < 0) continue;
                 // Around the housing, no further than the picture's edges.
                 float middle = housing.Y + housing.Height / 2, reach = Math.Min(middle, Height - middle);
+                if (reach <= 1) continue;
                 var glow = new RectangleF(housing.X + zone * zoneWidth - zoneWidth * 0.2f, middle - reach, zoneWidth * 1.4f, 2 * reach);
                 using (var path = new GraphicsPath())
                 {

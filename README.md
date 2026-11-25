@@ -2,7 +2,7 @@
 
 A small Windows app that controls the lighting, DPI and other settings of Logitech G keyboards, mice, headsets and lights, without G HUB. One file, nothing to install, and next to no CPU when idle.
 
-[![Download alpha version](https://img.shields.io/badge/Download-alpha%20version-2ea44f?style=for-the-badge)](https://github.com/csmarvz/g-lite/releases/latest)
+[![Download beta version](https://img.shields.io/badge/Download-beta%20version-2ea44f?style=for-the-badge)](https://github.com/csmarvz/g-lite/releases/latest)
 
 > [!WARNING]
 > **G-Lite is experimental.** It writes to your device's onboard memory, and a bug could leave a device in a bad state or brick it. It never touches the factory profile, checks every write and backs up what's on a device before each save, but it has only been tested on a few devices. Use it at your own risk.
@@ -28,8 +28,8 @@ If Windows says it protected your PC, click **More info**, then **Run anyway**. 
 **How long your changes last.** The line at the bottom of each screen tells you. There are three cases:
 
 - **Saved to the device** (the G515 and mice, with **Save to keyboard** or **Save to mouse**): stays on the device, even without G-Lite or on another PC.
-- **Set on the device, not saved** (the G915, G915 TKL and G815 until you save, the G560, the Litra colours and the untested keyboards): stays until the device sleeps or turns off. G-Lite sets it again when it starts.
-- **Run by G-Lite** (the effects marked Live: Screen, and on keyboards with per-key lighting Starlight, Echo, Audio, Rain, Fire and Aurora; the Litra's Breathe, Cycle and Wave): keeps going while G-Lite runs, in the tray too, and stops if you quit it.
+- **Set on the device, not saved** (the G915, G915 TKL and G815 until you save, the G213, G413, G512 X 75, G510 and the other keyboards G-Lite can't save to, the G560, the Litra colours): stays until the device sleeps or turns off. G-Lite sets it again when it starts.
+- **Run by G-Lite** (the effects marked Live: Screen, and on keyboards with per-key lighting Starlight, Echo, Audio, Rain, Fire and Aurora; Audio on the older keyboards; the G510's Breathe and Cycle; the Litra's Breathe, Cycle and Wave): keeps going while G-Lite runs, in the tray too, and stops if you quit it.
 
 The preset you picked on each device is picked again when G-Lite starts, and set on the device if it no longer has it, like a G515 or mouse whose preset wasn't saved to it.
 
@@ -45,10 +45,10 @@ The preset you picked on each device is picked again when G-Lite starts, and set
 | G413 | USB | Works | Off, Static and Breathe with brightness (one colour: G-Lite's brightness works within the keyboard's own level, Fn+F7), speed and profiles, an Audio effect (the lighting follows the PC's sound), a live key picture, and the Game mode keys. The keyboard's lighting is set again at each start. See [docs/G413.md](docs/G413.md). |
 | G515 LIGHTSPEED TKL | LIGHTSPEED receiver | Works | Lighting effects, colour, speed, direction, brightness, idle dimming and turn-off, profiles, saving to the keyboard, backups and restoring them, factory lighting, and the keys Game mode turns off (Windows and Menu too, if you pick them) |
 | G512 X 75 | USB | Partial | Lighting effects, colour, speed, direction, brightness, the Screen effect, the live effects and profiles, on the keys and the light bar, together or each with its own effect. Experimental: the keys Game mode turns off. Not yet: saving to the keyboard, the knobs and actuation. See [docs/G512X.md](docs/G512X.md). |
-| G512, G513, G PRO keyboard, G810, G910, G410 and other older G keyboards | USB | Untested | Off, Static, Breathe and Cycle with colour, speed and brightness, on all zones or each one (keys, logo), and profiles. An Audio effect (the lighting follows the PC's sound). On the G512 and G513, experimental: a key picture, G-Lite's live effects drawn key by key (Starlight, Echo, Audio, Rain, Fire, Aurora) and Game mode keys. Wave where the keyboard lists it. Not saved to the keyboard. Not yet: per-key colours except the G512's and G513's live effects, and a key picture except on the G213, G413, G512 and G513. See [docs/keyboards-8070.md](docs/keyboards-8070.md). |
+| G512, G513, G PRO keyboard, G810, G910, G410 and other older G keyboards | USB | Untested | Off, Static, Breathe and Cycle with colour, speed and brightness, on all zones or each one (keys, logo), and profiles. An Audio effect (the lighting follows the PC's sound). A key picture on the G512, G513, G PRO keyboard, G810, G910 and G410, and with it, experimental: G-Lite's live effects drawn key by key (Starlight, Echo, Audio, Rain, Fire, Aurora) where the keyboard has per-key colours, and the keys Game mode turns off where it has Game mode. Wave where the keyboard lists it. Not saved to the keyboard. Not yet: per-key colours of your own. See [docs/keyboards-8070.md](docs/keyboards-8070.md). |
 | G915 | LIGHTSPEED receiver | Untested | The same as the G915 TKL, with G1–G5 in place of F1–F12 for the bindings. |
 | G915 X, G713, G715, PRO X TKL, PRO X 60, G515 RAPID TKL, G512 X 98 and other newer G keyboards | LIGHTSPEED receiver or USB | Untested | Lighting effects, colour, speed, direction, brightness, the Screen effect and profiles. Not saved to the keyboard. The key picture is picked from the keyboard's name (TKL, 60%, 75%, full size) and may not match, except on the G915 X and G915 X TKL, which have their own (G1–G9, the media keys, the logo); picking their Game mode keys is experimental. See [docs/G915X.md](docs/G915X.md). |
-| G510 and G510s | USB | Untested | Backlight Off, Static, Breathe and Cycle, with colour, brightness and speed, and profiles. Breathe and Cycle are run by G-Lite, so they stop when it quits. Not saved to the keyboard. Not yet: the M-key lights, the G-keys and the LCD. See [docs/G510.md](docs/G510.md). |
+| G510 and G510s | USB | Untested | Backlight Off, Static, Breathe and Cycle, with colour, brightness and speed, and profiles, on a picture of the keyboard. M1–M3 each have their own lighting: pick one in G-Lite and its M key lights. Bindings for G1–G18 in each M set, kept but not acted on yet, and the Game mode switch's state. Breathe and Cycle are run by G-Lite, so they stop when it quits. Not saved to the keyboard. Not yet: acting on the keyboard's own M and G key presses, and the LCD. See [docs/G510.md](docs/G510.md). |
 
 ### Mice
 
@@ -71,14 +71,14 @@ The preset you picked on each device is picked again when G-Lite starts, and set
 
 | Device | Connection | Status | What G-Lite can do |
 |---|---|---|---|
-| PRO X Wireless | Its own LIGHTSPEED receiver | Works | Sidetone, turning off when idle, battery, profiles. Equalizer: experimental |
+| PRO X Wireless | Its own LIGHTSPEED receiver | Works | Sidetone, turning off when idle, battery, profiles. Equalizer: experimental. |
 | G735, PRO X 2 LIGHTSPEED, G522, A50 X and other G headsets | USB | Report only | Listed in the sidebar so their owner can send a report. Nothing can be changed yet. |
 
 ### Speakers
 
 | Device | Connection | Status | What G-Lite can do |
 |---|---|---|---|
-| G560 Gaming Speaker | USB | Untested | Lighting effects, colour, speed, brightness and profiles, on all four zones or each one (bottom left, bottom right, top left, top right). Not saved to the speaker. Not yet: the audio visualizer effect, the equalizer. See [docs/G560.md](docs/G560.md). |
+| G560 Gaming Speaker | USB | Untested | Lighting effects, colour, speed, brightness and profiles, on all four zones or each one (bottom left, bottom right, top left, top right), on a picture of the speakers, and the Screen effect. Not saved to the speaker. Not yet: the audio visualizer effect, the equalizer. See [docs/G560.md](docs/G560.md). |
 
 ### Lights
 
@@ -105,7 +105,7 @@ Not well. Both control the same devices, so each would undo the other's changes.
 No. In **Settings**, **Services** lists G HUB, Logitech Gaming Software and the Logitech LampArray Service (which hands Logitech devices to Windows Dynamic Lighting), and shows which are running. **Stop** ends their apps, stops their Windows services and keeps them from starting with Windows; Windows asks for administrator rights once per click. **Start** puts everything back, and so can Task Manager (Startup apps) and Services, even without G-Lite. G HUB still opens if you start it yourself. See [docs/services.md](docs/services.md).
 
 **What happens to my settings if I stop using G-Lite?**
-Whatever you saved to a keyboard or mouse stays on it, and works without any app. Settings that aren't saved to the device (the Untested keyboards, the G560, the Litra) go back to the device's own when it restarts.
+Whatever you saved to a keyboard or mouse stays on it, and works without any app. Settings that aren't saved to the device (the keyboards G-Lite can't save to, the G560, the Litra) go back to the device's own when it restarts.
 
 **What if a save goes wrong?**
 G-Lite backs up what's on the device before every save and reads back everything it writes. If a save stops halfway, the device's screen offers to restore the backup. You can also restore any backup, or the factory profile, from **Backups**.
@@ -136,7 +136,7 @@ G-Lite never sends your data or how you use it anywhere. There are no accounts, 
 
 ## Project status
 
-Alpha. The devices marked Works have been tried on real hardware; everything else needs owners to try it and send a report. What changed in each version is in the [changelog](CHANGELOG.md).
+Beta. The devices marked Works have been tried on real hardware; everything else needs owners to try it and send a report. What changed in each version is in the [changelog](CHANGELOG.md).
 
 ## Contributing
 

@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 class MousePicture : DrawnControl
@@ -17,9 +18,8 @@ class MousePicture : DrawnControl
     string stage = "", rate = "";
     // The PRO family's shape (the G Pro Wireless, the PRO X SUPERLIGHTs), from a photo: a dome at each end, nearly straight sides, the
     // buttons in grooves set in from the sides, the wheel in its slot, side buttons on both sides, the DPI dots and the light on the
-    // palm, drawn as G-Lite's logo. Dex: the PRO X 2 DEX,
-    // right-handed, from its photo: narrower at the front than at the rear, a slight waist on the left below the side buttons. Other mice
-    // get a plain rounded shape.
+    // palm, drawn as G-Lite's logo. Dex: the PRO X 2 DEX, right-handed, from its photo: narrower at the front than at the rear, a slight
+    // waist on the left below the side buttons. Other mice get a plain rounded shape.
     public bool Pro, Dex;
     // The G502 family's shape, traced from a schematic of the G502 LIGHTSPEED: the buttons as blades either side of a strip with the
     // wheel, the mode button and G9, G7 and G8 on the left, the thumb rest bulging at the left rear, the palm with the logo and the
@@ -59,7 +59,7 @@ class MousePicture : DrawnControl
         }
     }
 
-    // The outline in its box: the PRO family's, widest at the front, or a plain rounded one.
+    // The outline in its box: the G502's, the DEX's, the PRO family's (a little wider at the rear), or a plain rounded one.
     GraphicsPath Body(RectangleF box)
     {
         if (G502) return G502Body(box);
@@ -173,7 +173,6 @@ class MousePicture : DrawnControl
         if (!Pro)
             Ui.Fill(graphics, new RectangleF(x + width / 2 - 4 * DpiScale, y + height * 0.12f, 8 * DpiScale, height * 0.17f),
                 4 * DpiScale, Theme.PictureBackground, Theme.PictureBackground);
-
     }
 
     // The G502, in points across (0 left, 1 right) and down (0 front, 1 rear) its box, traced from the schematic.
@@ -259,8 +258,8 @@ class MousePicture : DrawnControl
         else fill = Pro || G502 ? Theme.Border : Theme.PictureBackground;
         if (G502)
             using (var pen = new Pen(fill, 1.5f * DpiScale) { StartCap = LineCap.Round, EndCap = LineCap.Round })
-                for (int light = 0; light < 3; light++)
-                    graphics.DrawLine(pen, x + width * 0.183f, y + height * (0.459f + light * 0.036f), x + width * 0.168f, y + height * (0.483f + light * 0.036f));
+                for (int dpiLight = 0; dpiLight < 3; dpiLight++)
+                    graphics.DrawLine(pen, x + width * 0.183f, y + height * (0.459f + dpiLight * 0.036f), x + width * 0.168f, y + height * (0.483f + dpiLight * 0.036f));
         if (Pro || G502) Logo.Paint(graphics, new RectangleF(centerX - radius, centerY - radius, 2 * radius, 2 * radius), fill, Theme.KeyOff);
         else using (var brush = new SolidBrush(fill)) graphics.FillEllipse(brush, centerX - radius, centerY - radius, 2 * radius, 2 * radius);
 
@@ -326,8 +325,8 @@ class MousePage : DevicePage
         // The picture stays above the rows, which scroll under it.
         picture = Ui.Add(this, new MousePicture(), 20, BodyTop, Rows.Width, PictureHeight);
         string upper = found.Name.ToUpperInvariant();
-        picture.Pro = upper.Contains("PRO");
-        picture.Dex = upper.Contains("DEX");
+        picture.Pro = Regex.IsMatch(upper, @"\bPRO\b");
+        picture.Dex = Regex.IsMatch(upper, @"\bDEX\b");
         picture.G502 = upper.Contains("G502");
         var sheet = UseBody(BodyTop + PictureHeight + 12).Sheet;
         layout = new RowLayout(sheet);

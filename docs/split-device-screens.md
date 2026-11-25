@@ -19,7 +19,7 @@ What `DevicePage` and its subclasses do while hidden (`app/Pages.cs`):
 - The found device and its battery (`SetFound`).
 - The device's events (`Heard` on `KeyboardPage` and `MousePage`).
 - Presets: what's saved, what's loaded, and applying one (`Current`, `ApplyPreset`, `Settings` keys).
-- What runs on its own: the keyboard's live effects and Screen effect, its idle watch, `Presence`.
+- What runs on its own: the keyboard's live effects and Screen effect, its idle watch, `Presence`; the zones screen's live, Audio and Screen effects; the G510's Breathe and Cycle; the Litra's animation and Screen effect.
 
 The rest is the screen: the controls, `RefreshControls`, the status line, menus, `Shown` and `Hidden`.
 
@@ -31,8 +31,8 @@ The rest is the screen: the controls, `RefreshControls`, the status line, menus,
 
 ## Order
 
-1. Start with the smallest screens (`G510Page`, `HeadsetPage`) to settle the shape of the device object and its events.
-2. Then `LightPage`, `OtherDevicePage`, `ZonesPage`, `MousePage`, and `KeyboardPage` last (the largest: live effects, Game mode, G keys, onboard profiles).
+1. Start with the smallest screens (`HeadsetPage`, `OtherDevicePage`) to settle the shape of the device object and its events.
+2. Then `LightPage`, `G510Page` (three views, the M keys), `ZonesPage`, `MousePage`, and `KeyboardPage` last (the largest: live effects, Game mode, G keys, onboard profiles).
 3. Each step keeps the traces in `app/tests/` identical: the messages sent can't change. The traces drive screens on fakes, so `Traces.cs` builds a device object and its screen together.
 
 ## What it doesn't change

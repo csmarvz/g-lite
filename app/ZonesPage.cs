@@ -14,6 +14,7 @@ class SpeakerPicture : DrawnControl
 {
     Color[] colors = new Color[4];
     int selected = -1;
+    bool pickable;
     public event Action<int> Picked;
 
     public SpeakerPicture()
@@ -23,11 +24,13 @@ class SpeakerPicture : DrawnControl
         AccessibleName = "Speakers";
     }
 
-    public void Display(Color[] zoneColors, int pick)
+    // pick: the zone to mark, -1 for none (All); canPick: whether a click picks a zone now.
+    public void Display(Color[] zoneColors, int pick, bool canPick)
     {
         colors = zoneColors;
         selected = pick;
-        Cursor = pick >= 0 ? Cursors.Hand : Cursors.Default;
+        pickable = canPick;
+        Cursor = canPick ? Cursors.Hand : Cursors.Default;
         Invalidate();
     }
 
@@ -43,6 +46,7 @@ class SpeakerPicture : DrawnControl
     {
         var graphics = Begin(e);
         float radius = Radius;
+        if (radius <= 1) return;
         for (int speaker = 0; speaker < 2; speaker++)
         {
             var center = Center(speaker);
@@ -83,7 +87,7 @@ class SpeakerPicture : DrawnControl
     protected override void OnMouseDown(MouseEventArgs e)
     {
         base.OnMouseDown(e);
-        if (selected < 0 || e.Button != MouseButtons.Left || Picked == null) return;
+        if (!pickable || e.Button != MouseButtons.Left || Picked == null) return;
         int speaker = e.X < Width / 2 ? 0 : 1;
         Picked(e.Y > Center(speaker).Y ? speaker : 2 + speaker);
     }
@@ -137,7 +141,7 @@ class ZonesPage : DevicePage
     int audioSent = -1;
     string audioProblem;
     // The effects go in a dropdown holding only those the picked zones list (shownEffects, out of effectIds), then Screen on the
-    // speakers, Audio on a keyboard. Per-key colours through 0x8080 (the G512 and G513, experimental) give G-Lite's live effects
+    // speakers, Audio on a keyboard. Per-key colours through 0x8080 on a keyboard with a lighting-id picture (the G512, G513, G PRO, G410, G810 and G910, experimental) give G-Lite's live effects
     // (LiveEffects) instead of Audio, drawn key by key every 40 ms like on KeyboardPage, with the keyboard's own effect set to Off
     // first, since a running 0x8070 effect would draw over them (OpenLogi). Intensity and direction stay at each effect's default.
     // Screen and the live effects cover every zone, so they're listed on All only.
@@ -655,14 +659,15 @@ class ZonesPage : DevicePage
         gameClear.Enabled = gameKeys.Count > 0;
     }
 
-    // On a lighting-id picture every key is zone 0 but the logo, which has no id: it shows the zone at the logo (0x8070 location 2,
-    // the G512's second zone) once the keyboard is read.
+    // On a lighting-id picture every key shows the zone at the keys (0x8070 location 1, else zone 0) but the logo, which has no id: it
+    // shows the zone at the logo (location 2, the G512's second zone) once the keyboard is read.
     List<int> KeyZones()
     {
         var listed = zones;
-        int logo = listed == null ? -1 : listed.FindIndex(zone => zone[ZoneLighting.Place] == 2);
+        int logo = listed == null ? -1 : listed.FindIndex(zone => zone[ZoneLighting.Place] == 2),
+            keys = listed == null ? 0 : Math.Max(0, listed.FindIndex(zone => zone[ZoneLighting.Place] == 1));
         return Enumerable.Range(0, picture.Count)
-            .Select(key => zonesModel ? picture.IdOf(key) : picture.IdOf(key) >= 0 ? 0 : picture.NameOf(key) == "Logo" ? logo : -1)
+            .Select(key => zonesModel ? picture.IdOf(key) : picture.IdOf(key) >= 0 ? keys : picture.NameOf(key) == "Logo" ? logo : -1)
             .ToList();
     }
 
@@ -1003,7 +1008,7 @@ class ZonesPage : DevicePage
                 : current != null && listed != null && !screening ? Shown(ZoneLighting.ColorAt(LightOfZone(zone), 0.5f, seconds))
                 : Theme.KeyOff;
         }
-        speakers.Display(lit, picked > 0 && zonePicker.Enabled ? Zone : -1);
+        speakers.Display(lit, picked > 0 && zonePicker.Enabled ? Zone : -1, zonePicker.Enabled);
     }
 
     void ShowFrame()

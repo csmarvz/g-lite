@@ -2,39 +2,44 @@
 
 ## [Unreleased]
 
+## [0.1.0-beta] - 2026-11-25
+
+G-Lite leaves alpha. Every screen is redesigned like Settings: the device's picture at the top, then its settings one per row, under section titles, with only the rows the device has. The window can be resized, has Windows' own title bar, and an accent colour.
+
 ### Added
 
+- The window can be resized and maximized, down to its usual size. Each screen keeps its width, centred beside the sidebar.
+- Settings: an accent colour, G-Lite's green, your Windows accent (in the shade Windows uses for light or dark) or a colour you pick. Click Custom again to pick another.
+- Settings' scroll bar can be dragged, and a click beside it jumps there. Every screen's scroll bar works the same.
+- Pictures for the G PRO keyboard, G410, G810 and G910, lit as their zones are, and for the G560 speakers: each of the four lights in its colour, the front ones under the grilles and the back ones as the glow behind. Click a key or a light to pick its zone. With a picture, the G PRO, G410, G810 and G910 also get the live effects (with per-key colours) and the Game view (with Game mode), experimental.
+- Mice are drawn in their own shape: the G Pro Wireless, the PRO X SUPERLIGHTs and the rest of the PRO family with their wheel, side buttons and the light on the palm; the PRO X 2 DEX in its right-handed shape; the G502s in theirs, with the logo and the DPI lights lit.
+- G510 and G510s: a picture of the keyboard lit in its colour, and two new views. M1, M2 and M3 each have their own lighting and G key bindings, as in Logitech Gaming Software: pick one in the footer and its light comes on. Bindings sets what G1 to G18 do; G-Lite keeps them but doesn't act on the G keys yet, nor on the keyboard's M keys. Game shows whether the keyboard's Game mode switch is on.
+- PRO X Wireless: an equalizer, experimental. The headset's ten bands (32 Hz to 16 kHz, 12 dB up or down) as it stores them, a row each, and Flat. G-Lite writes them to what the headset plays and to its memory (persistence 1, per Logitech's spec), to the first only while you drag; the headset hasn't been heard to apply its equalizer yet. Presets keep it.
 - G300 and G300s: the active profile's four DPI levels (250 to 2500), report rate, colour (one of eight) and buttons, saved to the mouse with a backup and read back. Nothing changes until you save, since the G300 can't take a change live; if the mouse's profile button switched profiles in the meantime, Save refuses rather than write the wrong one. Built from PeriHub's notes, which saved on a G300 (MIT); not yet tried by a G-Lite owner.
 - G515: a Game view to pick the keys the Game button turns off, as on the G815. Unlike the G815, the G515 leaves Windows and Menu on in Game mode, so they can be picked too. The keyboard forgets the list when turned off, so G-Lite sends it again whenever it connects, even after a quick off and on. Presets keep it. Tried on an owner's G515 TKL.
 - G915 X and G915 X TKL: their Game view can now pick keys, the G515's way. Experimental: not tried on one yet.
 - G512 X 75: a Game view to pick the keys Game mode turns off, the G515's way. Experimental: not tried on one yet. Its picture shows the two knobs right of F12, greyed out.
 - G515: its picture shows the LIGHTSPEED, Bluetooth and Game buttons and the two status lights above the F keys.
 - G515, G915 TKL, G512 X 75 and other keyboards with RGB effects: Wave goes Up and Down when the keyboard says it can (its effect info's direction bits), as on the G815. Not yet tried on these keyboards.
-- The window can be resized and maximized, down to its usual size. Each screen keeps its width, centred beside the sidebar.
-- Settings: an accent colour, G-Lite's green, your Windows accent (in the shade Windows uses for light or dark) or a colour you pick. Click Custom again to pick another.
-- Settings' scroll bar can be dragged, and a click beside it jumps there.
-- PRO X Wireless: an equalizer, experimental. The headset's ten bands (32 Hz to 16 kHz, 12 dB up or down) as it stores them, each on its own slider, and Flat. The headset hasn't been heard to play its stored equalizer yet; G-Lite now writes it the way Logitech's spec says applies it too. Presets keep it.
+- The demo has the G213, G513, G PRO, G810, G910 and G410 keyboards.
 
 ### Changed
 
+- Every device screen follows Settings' layout: the device's picture at the top, without a box, then one setting per row with a short hint, under section titles, a scroll bar when the window is too short, and the footer right after the last row. A row that doesn't apply now is greyed; a row the device doesn't have is left out.
+  - Keyboards (G515, G915, G815, G512 X 75, PRO X 60 and the other RGB keyboards): the Bindings view lists the G keys a row each, and the Game view picks its keys on the picture at the top, with the count and Clear below.
+  - Zone keyboards (G213, G413, G512, G513, G PRO, G810, G910, G410) and the G560: Zone, Effect, Color, Direction, Brightness and Speed a row each. The speakers pick their effect from a list like the keyboards.
+  - Mice: Sensitivity first (DPI stage, DPI, Report rate, Invert scrolling), then Lighting. The Bindings view lists the buttons a row each.
+  - Headsets: Sound (Sidetone, Test sidetone) and Power (Turn off after). The battery shows under the name; the firmware line is gone (it's in the report).
+  - Litra: Front light and Back light; the light's own effects are a row with Try.
+  - MX Master, MX Keys and MX Creative Keypad: a section per feature. Easy-Switch is left out when only one computer is paired.
+- Screen effect, on every device: its settings come right after Effect while it runs, its Intensity is now called Color boost, its monitor preview is larger, and adding a zone makes every zone an equal strip, the new one at the right.
+- Controls look the same everywhere: one size for toggles, dropdowns, pickers and sliders, and a slider whose setting doesn't apply sits at 0.
+- The mouse wheel scrolls the screen past a slider; click or Tab to a slider to move it with the wheel.
 - Sliders feel live on every device: while you drag one, G-Lite sends the change at most every 120 ms, where it used to wait until you stopped moving. On the keyboard screens, a drag updates only the values beside the sliders, and the key picture follows with each send, so the slider itself moves smoothly.
 - The window has Windows' own title bar, in the sidebar's colour on Windows 11 (dark or light on Windows 10), with Windows' minimize, maximize and close buttons and snapping.
 - Report and Backups sit next to the device's name. The line above a screen's footer is gone, and the sidebar lists the devices without a DEVICES heading, saying "Scanning devices…" while it looks.
 - Every row in Settings has the same height, Services' too, and Services lists the software without a heading row or Stop all: each row has its own Stop or Start.
-- The device list scrolls without fading its edges.
-- Scrolling Settings and the device list is smoother: the content moves in one piece.
-- The keyboard screens (G515, G915, G815, G512 X 75, PRO X 60 and the other RGB keyboards) follow Settings' layout: one setting per row with a short hint, under section titles, the key picture without a box, a scroll bar when the window is too short, and the footer right after the last row. A setting that doesn't apply is greyed. The Screen effect's settings come right after Effect while it runs, its Intensity is now called Color boost, and its monitor preview is larger. The Bindings view lists the G keys a row each, and the Game view picks its keys on the picture at the top, with the count and Clear below.
-- The mouse screens follow the same layout: the mouse picture at the top, then Sensitivity (DPI stage, DPI, Report rate, Invert scrolling) and Lighting, one setting per row, with only the rows the mouse has. The Bindings view lists the buttons a row each.
-- The zone keyboards (G213, G413, G512, G513, G PRO, G810, G910, G410) and the G560 speakers follow the same layout: the key picture at the top where there is one, then Zone, Effect, Color, Direction, Brightness and Speed a row each, with only the rows the device has. The speakers pick their effect from a list like the keyboards, and the Screen effect's settings come right after Effect while it runs, sharing Brightness; its Intensity is now called Color boost. The Game view works as on the RGB keyboards.
-- The demo has the G213, G513, G PRO, G810, G910 and G410 keyboards.
-- Pictures for the G PRO keyboard, G410, G810 and G910, lit as their zones are, and for the G560 speakers: each of the four lights in its colour, the front ones under the grilles and the back ones as the glow behind. Click a light to pick its zone. With a picture, the G PRO, G410, G810 and G910 also get the live effects (with per-key colours) and the Game view (with Game mode), experimental.
-- G510 and G510s: the same layout, with a picture of the keyboard lit in its colour, and two new views. M1, M2 and M3 each have their own lighting and G key bindings, as in Logitech Gaming Software: pick one in the footer and its light comes on. Bindings sets what G1 to G18 do; G-Lite keeps them but doesn't act on the G keys yet, nor on the keyboard's M keys. Game shows whether the keyboard's Game mode switch is on.
-- The headset screen follows the same layout: the headset at the top (its battery shows under its name), then Sound (Sidetone, Test sidetone) and Power (Turn off after), a row each. The firmware line is gone (it's in the report).
-- The Litra screen follows the same layout: the light at the top, then Front light and Back light, a setting per row. The Screen effect's settings come right after Effect while it runs, its Intensity now called Color boost, and Try effect is a row of its own.
-- The MX Master, MX Keys and MX Creative Keypad screens follow the same layout: a section per feature, a setting per row.
-- The G Pro Wireless, PRO X SUPERLIGHT and the rest of the PRO family are drawn in their own shape, with the wheel, side buttons and the light on the palm; the PRO X 2 DEX in its right-handed one, and the G502s in theirs, with the logo and the DPI lights lit.
-- Controls look the same everywhere: one size for toggles, dropdowns, pickers and sliders, and a disabled slider sits at 0.
-- Screen effect: adding a zone makes every zone an equal strip, the new one at the right.
+- Scrolling is smoother: the content moves in one piece. The device list scrolls without fading its edges.
 
 ### Fixed
 
