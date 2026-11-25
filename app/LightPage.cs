@@ -42,7 +42,8 @@ class LightPicture : DrawnControl
         get
         {
             float width = Width * 0.64f, height = width / 12;
-            return new RectangleF((Width - width) / 2, Height - height - 4 * DpiScale, width, height);
+            // Centred, so the glow around it and the picked zone's mark (5 to 8 px under the bar) stay inside the picture.
+            return new RectangleF((Width - width) / 2, (Height - height) / 2, width, height);
         }
     }
 
@@ -64,8 +65,9 @@ class LightPicture : DrawnControl
             for (int zone = 0; zone < zones.Length; zone++)
             {
                 if (zones[zone] < 0) continue;
-                var glow = new RectangleF(housing.X + zone * zoneWidth - zoneWidth * 0.35f, 0,
-                    zoneWidth * 1.7f, housing.Y * 2 + bar.Height * 0.4f);
+                // Around the housing, no further than the picture's edges.
+                float middle = housing.Y + housing.Height / 2, reach = Math.Min(middle, Height - middle);
+                var glow = new RectangleF(housing.X + zone * zoneWidth - zoneWidth * 0.2f, middle - reach, zoneWidth * 1.4f, 2 * reach);
                 using (var path = new GraphicsPath())
                 {
                     path.AddEllipse(glow);
