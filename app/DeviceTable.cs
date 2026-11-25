@@ -28,6 +28,7 @@ class DeviceTable
         new DeviceTable { Matches = found => found.IsLedKeyboard, Screen = typeof(ZonesPage),
             Make = (found, fake) => new ZonesPage(found, fake),
             Fake = found => found.ShortName.ToUpper().StartsWith("G413") ? FakeSpeaker.G413Silver()
+                : found.ShortName.ToUpper() == "G213" ? new FakeSpeaker { Count = 6, G213 = true }
                 : found.Has(0x8080) ? FakeSpeaker.G512()
                 : new FakeSpeaker { Count = 2 } },
         new DeviceTable { Matches = found => found.IsG510, Screen = typeof(G510Page),

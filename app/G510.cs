@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Linq;
 
 class G510Settings
 {
@@ -75,4 +76,50 @@ static class G510Lighting
         var report = new[] { Backlight, (byte)(color >> 16), (byte)(color >> 8), (byte)color };
         if (quiet) hidpp.SetFeatureUnlogged(report); else hidpp.SetFeature(report);
     }
+}
+
+// The G510's G keys and Game mode switch. Input report 0x03 (hid-lg-g15, facts only): G1–G8 in byte 1, G9–G16 in byte 2, G17 and
+// G18 bits 0 and 1 of byte 3, the Game mode switch bit 2 (the keyboard turns its Windows keys off itself), M1–M3 and MR bits 4 to 7.
+// The keyboard keeps no bindings: G-Lite keeps three sets, one per M key, as `gkeys.<device>.m1` to `.m3`, a binding (Buttons.cs's
+// four bytes) per key in hex. Nothing reads the G keys yet, so the bindings do nothing until G-Lite listens to report 0x03.
+static class G510Keys
+{
+    public const int Count = 18, Banks = 3;
+    public const byte KeysReport = 0x03;
+    public static readonly string[] Names = Enumerable.Range(1, Count).Select(number => "G" + number).ToArray();
+    static readonly byte[] Unbound = { 0x80, 0x00, 0x00, 0x00 };
+
+    public static byte[][] FromText(string text)
+    {
+        var parts = (text ?? "").Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        return Enumerable.Range(0, Count).Select(i =>
+        {
+            uint value;
+            return i < parts.Length && parts[i].Length == 8
+                && uint.TryParse(parts[i], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value)
+                ? new[] { (byte)(value >> 24), (byte)(value >> 16), (byte)(value >> 8), (byte)value }
+                : (byte[])Unbound.Clone();
+        }).ToArray();
+    }
+
+    public static string ToText(byte[][] bindings)
+    {
+        return string.Join(" ", bindings.Select(binding => string.Concat(binding.Select(part => part.ToString("X2")))));
+    }
+
+    // Feature 0x04 lights the M keys, one bit each: M1 0x80, M2 0x40, M3 0x20, MR 0x10 (hid-lg-g15; an owner's report reads 80).
+    public const byte BankLights = 0x04;
+
+    public static void LightBank(Hidpp hidpp, int bank) { hidpp.SetFeature(BankLights, (byte)(0x80 >> bank)); }
+
+    // The M key lit, or fallback when none of M1 to M3 is.
+    public static int LitBank(Hidpp hidpp, int fallback)
+    {
+        int mask = hidpp.GetFeature(BankLights)[1];
+        for (int bank = 0; bank < Banks; bank++) if ((mask & 0x80 >> bank) != 0) return bank;
+        return fallback;
+    }
+
+    // Asked for once (GET_REPORT), not listened to.
+    public static bool GameMode(Hidpp hidpp) { return (hidpp.GetInput(KeysReport)[3] & 0x04) != 0; }
 }

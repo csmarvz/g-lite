@@ -246,9 +246,19 @@ class FakeG510 : Hidpp
         { 0x07, new byte[] { 0x07, 0x03, 0x00 } },
     };
 
+    // Input report 0x03 (hid-lg-g15): the G keys, M keys and MR as bits, and the Game mode switch, byte 3 bit 2.
+    public bool GameMode;
+
     public FakeG510() : base(false) { }
 
     public override void Dispose() { }
+
+    protected override byte[] ReadInput(byte id)
+    {
+        Latency.Pause();
+        if (id != 0x03) throw new System.IO.IOException("Couldn't read input report " + id.ToString("X2") + " (error 31)");
+        return new byte[] { 0x03, 0x00, 0x00, (byte)(GameMode ? 0x04 : 0x00), 0x00, 0x00, 0x00, 0x00 };
+    }
 
     protected override byte[] ReadFeature(byte id)
     {

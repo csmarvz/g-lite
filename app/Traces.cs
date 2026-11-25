@@ -632,6 +632,17 @@ static class Traces
             script.Pick("Effect", "Cycle");
             script.Pick("Effect", "Static");
             script.Pick("G-Lite preset", "–");
+            script.Pick("View", "Bindings");
+            script.Pick("G5", "Volume up");
+            script.Pick("M key", "M2");
+            script.Pick("G1", "Play or pause");
+            script.Pick("M key", "M1");
+            script.Pick("View", "Game");
+            script.Pick("View", "Settings");
+            script.Pick("M key", "M2");
+            script.Press("Color 30D050");
+            script.Pick("M key", "M1");
+            script.Pick("M key", "M2");
             return script.Text;
         }
     }
@@ -664,7 +675,7 @@ static class Traces
             script.Pick("G-Lite preset", "Green");
             script.Pick("Effect", "Screen");
             script.Press("Update");
-            script.Slide("Intensity", 80);
+            script.Slide("Color boost", 80);
             script.Press("Revert changes");
             script.Pick("G-Lite preset", "–");
             script.Pick("G-Lite preset", "Green");

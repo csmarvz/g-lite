@@ -22,7 +22,7 @@ open
   8070 fn2  05 00 FF
   8070 fn2  05 01 FF
   4540 fn0
-  = status "" [Report] G-Lite preset=– [New…] […] Zone=All Effect=- Brightness=100 (off) Speed=0 (off) [Revert (off)]
+  = status "" [Report] G-Lite preset=– [New…] […] Zone=All Effect=- Direction=- (off) Brightness=100 (off) Speed=0 (off) [Revert (off)]
 pick Effect Static
   8070 fn3  00 01 FF FF FF
   8070 fn3  01 01 FF FF FF
@@ -30,7 +30,7 @@ pick Effect Static
   8070 fn3  03 01 FF FF FF
   8070 fn3  04 01 FF FF FF
   8070 fn3  05 01 FF FF FF
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Static <Color FFFFFF> Brightness=100 Speed=0 (off) [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Static <Color FFFFFF> Direction=- (off) Brightness=100 Speed=0 (off) [Revert (off)]
 press Color 30D050
   8070 fn3  00 01 30 D0 50
   8070 fn3  01 01 30 D0 50
@@ -38,23 +38,23 @@ press Color 30D050
   8070 fn3  03 01 30 D0 50
   8070 fn3  04 01 30 D0 50
   8070 fn3  05 01 30 D0 50
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Static <Color 30D050> Brightness=100 Speed=0 (off) [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Static <Color 30D050> Direction=- (off) Brightness=100 Speed=0 (off) [Revert (off)]
 pick Zone Zone 3
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 3 Effect=Static <Color 30D050> Brightness=100 Speed=0 (off) [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 3 Effect=Static <Color 30D050> Direction=- (off) Brightness=100 Speed=0 (off) [Revert (off)]
 press Color 3080FF
   8070 fn3  03 01 30 80 FF
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 3 Effect=Static <Color 3080FF> Brightness=100 Speed=0 (off) [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 3 Effect=Static <Color 3080FF> Direction=- (off) Brightness=100 Speed=0 (off) [Revert (off)]
 pick Effect Off
   8070 fn3  03
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 3 Effect=Off Brightness=100 (off) Speed=0 (off) [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 3 Effect=Off Direction=- (off) Brightness=100 (off) Speed=0 (off) [Revert (off)]
 pick Zone All
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Static <Color 30D050> Brightness=100 Speed=0 (off) [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Static <Color 30D050> Direction=- (off) Brightness=100 Speed=0 (off) [Revert (off)]
 pick Effect Breathe
   8070 fn3  00 02 30 D0 50 13 88 00 64
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Breathe <Color 30D050> Brightness=100 Speed=79 [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Breathe <Color 30D050> Direction=- (off) Brightness=100 Speed=79 [Revert (off)]
 pick Effect Cycle
   8070 fn3  00 03 00 00 00 00 00 13 88 64
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Cycle Brightness=100 Speed=79 [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Cycle Direction=- (off) Brightness=100 Speed=79 [Revert (off)]
 pick Effect Wave
   8070 fn3  00 04 00 00 00 00 00 00 88 06 64 13
   = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Wave Direction=Left Brightness=100 Speed=79 [Revert (off)]
@@ -65,49 +65,49 @@ slide Speed 50
   8070 fn3  00 04 00 00 00 00 00 00 04 03 64 29
   = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Wave Direction=Center out Brightness=100 Speed=50 [Revert (off)]
 pick Zone Zone 2
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 2 Effect=Static <Color 30D050> Brightness=100 Speed=50 (off) [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 2 Effect=Static <Color 30D050> Direction=- (off) Brightness=100 Speed=50 (off) [Revert (off)]
 pick Effect Static
   8070 fn3  01 01 30 D0 50
   8070 fn3  02 01 30 D0 50
   8070 fn3  03 01 30 D0 50
   8070 fn3  04 01 30 D0 50
   8070 fn3  05 01 30 D0 50
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 2 Effect=Static <Color 30D050> Brightness=100 Speed=50 (off) [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 2 Effect=Static <Color 30D050> Direction=- (off) Brightness=100 Speed=50 (off) [Revert (off)]
 press Color FF2020
   8070 fn3  02 01 FF 20 20
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 2 Effect=Static <Color FF2020> Brightness=100 Speed=50 (off) [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 2 Effect=Static <Color FF2020> Direction=- (off) Brightness=100 Speed=50 (off) [Revert (off)]
 pick Zone All
   = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Wave Direction=Center out Brightness=100 Speed=50 [Revert (off)]
 pick Effect Breathe
   8070 fn3  00 02 30 D0 50 29 04 00 64
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Breathe <Color 30D050> Brightness=100 Speed=50 [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Breathe <Color 30D050> Direction=- (off) Brightness=100 Speed=50 [Revert (off)]
 pick Zone Zone 4
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 4 Effect=Static <Color 30D050> Brightness=100 Speed=50 (off) [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 4 Effect=Static <Color 30D050> Direction=- (off) Brightness=100 Speed=50 (off) [Revert (off)]
 pick Effect Off
   8070 fn3  01 01 30 D0 50
   8070 fn3  02 01 30 D0 50
   8070 fn3  03 01 30 D0 50
   8070 fn3  04
   8070 fn3  05 01 30 D0 50
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 4 Effect=Off Brightness=100 (off) Speed=50 (off) [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 4 Effect=Off Direction=- (off) Brightness=100 (off) Speed=50 (off) [Revert (off)]
 pick Zone All
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Breathe <Color 30D050> Brightness=100 Speed=50 [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Breathe <Color 30D050> Direction=- (off) Brightness=100 Speed=50 [Revert (off)]
 pick Effect Breathe
   8070 fn3  00 02 30 D0 50 29 04 00 64
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Breathe <Color 30D050> Brightness=100 Speed=50 [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=All Effect=Breathe <Color 30D050> Direction=- (off) Brightness=100 Speed=50 [Revert (off)]
 pick Zone Zone 2
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 2 Effect=Static <Color 30D050> Brightness=100 Speed=50 (off) [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 2 Effect=Static <Color 30D050> Direction=- (off) Brightness=100 Speed=50 (off) [Revert (off)]
 press Color 3080FF
   8070 fn3  01 01 30 D0 50
   8070 fn3  02 01 30 80 FF
   8070 fn3  03 01 30 D0 50
   8070 fn3  04 01 30 D0 50
   8070 fn3  05 01 30 D0 50
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 2 Effect=Static <Color 3080FF> Brightness=100 Speed=50 (off) [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] G-Lite preset=– [New…] […] Zone=Zone 2 Effect=Static <Color 3080FF> Direction=- (off) Brightness=100 Speed=50 (off) [Revert (off)]
 menu More preset actions > Save as new preset…
   menu: Save as new preset… | Rename… (off) | Delete (off)
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] [Save] [Cancel] Zone=Zone 2 Effect=Static <Color 3080FF> Brightness=100 Speed=50 (off) [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] [Save] [Cancel] Zone=Zone 2 Effect=Static <Color 3080FF> Direction=- (off) Brightness=100 Speed=50 (off) [Revert (off)]
 type Wave
-  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] [Save] [Cancel] Zone=Zone 2 Effect=Static <Color 3080FF> Brightness=100 Speed=50 (off) [Revert (off)]
+  = status "Set by G-Lite. Keys dark? Press the light button above Pause" [Report] [Save] [Cancel] Zone=Zone 2 Effect=Static <Color 3080FF> Direction=- (off) Brightness=100 Speed=50 (off) [Revert (off)]
 press Save
-  = status "Saved the preset Wave" [Report] G-Lite preset=Wave [Update (off)] […] Zone=Zone 2 Effect=Static <Color 3080FF> Brightness=100 Speed=50 (off) [Revert (off)]
+  = status "Saved the preset Wave" [Report] G-Lite preset=Wave [Update (off)] […] Zone=Zone 2 Effect=Static <Color 3080FF> Direction=- (off) Brightness=100 Speed=50 (off) [Revert (off)]

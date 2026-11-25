@@ -39,6 +39,7 @@ class Hidpp : IDisposable
 
     [DllImport("hid.dll", SetLastError = true)] static extern bool HidD_GetFeature(SafeFileHandle handle, byte[] buffer, int length);
     [DllImport("hid.dll", SetLastError = true)] static extern bool HidD_SetFeature(SafeFileHandle handle, byte[] buffer, int length);
+    [DllImport("hid.dll", SetLastError = true)] static extern bool HidD_GetInputReport(SafeFileHandle handle, byte[] buffer, int length);
     [DllImport("hid.dll")] static extern bool HidD_GetPreparsedData(SafeFileHandle handle, out IntPtr data);
     [DllImport("hid.dll")] static extern bool HidD_FreePreparsedData(IntPtr data);
     [DllImport("hid.dll")] static extern int HidP_GetCaps(IntPtr data, short[] caps);
@@ -321,6 +322,34 @@ class Hidpp : IDisposable
             if (handle.IsInvalid || !HidD_SetFeature(handle, buffer, buffer.Length))
                 throw new IOException(
                     "Couldn't set feature report " + report[0].ToString("X2") + " (error " + Marshal.GetLastWin32Error() + ")");
+        }
+    }
+
+    // One input report, asked for (GET_REPORT), not listened to: the G510's Game mode switch.
+    public byte[] GetInput(byte id)
+    {
+        if (Tap != null) Tap("get input " + id.ToString("X2"));
+        return ReadInput(id);
+    }
+
+    protected virtual byte[] ReadInput(byte id)
+    {
+        using (var handle = CreateFile(path, 0xC0000000, 3, IntPtr.Zero, 3, 0, IntPtr.Zero))
+        {
+            IntPtr data;
+            int length = 1;
+            if (!handle.IsInvalid && HidD_GetPreparsedData(handle, out data))
+            {
+                var caps = new short[HidCaps.Length];
+                HidP_GetCaps(data, caps);
+                HidD_FreePreparsedData(data);
+                length = Math.Max(1, (int)caps[HidCaps.InputLength]);
+            }
+            var buffer = new byte[length];
+            buffer[0] = id;
+            if (handle.IsInvalid || !HidD_GetInputReport(handle, buffer, buffer.Length))
+                throw new IOException("Couldn't read input report " + id.ToString("X2") + " (error " + Marshal.GetLastWin32Error() + ")");
+            return buffer;
         }
     }
 

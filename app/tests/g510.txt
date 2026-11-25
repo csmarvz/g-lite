@@ -1,37 +1,69 @@
 open
+  get feature 04
   get feature 05
-  = status "" [Report] G-Lite preset=– [New…] […] Effect=Static <Color FFFFFF> Brightness=100 Speed=79 (off) [Revert (off)]
+  = status "" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Static <Color FFFFFF> Brightness=100 Speed=79 (off) M key=M1 [Revert (off)]
 press Color FF2020
   set feature  05 FF 20 20
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Effect=Static <Color FF2020> Brightness=100 Speed=79 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Static <Color FF2020> Brightness=100 Speed=79 (off) M key=M1 [Revert]
 slide Brightness 50
   set feature  05 7F 10 10
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Effect=Static <Color FF2020> Brightness=50 Speed=79 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Static <Color FF2020> Brightness=50 Speed=79 (off) M key=M1 [Revert]
 pick Effect Off
   set feature  05
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Effect=Off Brightness=50 (off) Speed=79 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Off Brightness=50 (off) Speed=79 (off) M key=M1 [Revert]
 pick Effect Static
   set feature  05 7F 10 10
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] Effect=Static <Color FF2020> Brightness=50 Speed=79 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Static <Color FF2020> Brightness=50 Speed=79 (off) M key=M1 [Revert]
 menu More preset actions > Save as new preset…
   menu: Save as new preset… | Rename… (off) | Delete (off)
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Save] [Cancel] Effect=Static <Color FF2020> Brightness=50 Speed=79 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Save] [Cancel] View=Settings Effect=Static <Color FF2020> Brightness=50 Speed=79 (off) M key=M1 [Revert]
 type Red
-  = status "Set by G-Lite, not saved to the keyboard" [Report] [Save] [Cancel] Effect=Static <Color FF2020> Brightness=50 Speed=79 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] [Save] [Cancel] View=Settings Effect=Static <Color FF2020> Brightness=50 Speed=79 (off) M key=M1 [Revert]
 press Save
-  = status "Saved the preset Red" [Report] G-Lite preset=Red [Update (off)] […] Effect=Static <Color FF2020> Brightness=50 Speed=79 (off) [Revert (off)]
+  = status "Saved the preset Red" [Report] G-Lite preset=Red [Update (off)] […] View=Settings Effect=Static <Color FF2020> Brightness=50 Speed=79 (off) M key=M1 [Revert (off)]
 press Color 3080FF
   set feature  05 18 40 7F
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Red • [Update] […] Effect=Static <Color 3080FF> Brightness=50 Speed=79 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Red • [Update] […] View=Settings Effect=Static <Color 3080FF> Brightness=50 Speed=79 (off) M key=M1 [Revert]
 pick Effect Breathe
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Red • [Update] […] Effect=Breathe <Color 3080FF> Brightness=50 Speed=79 [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Red • [Update] […] View=Settings Effect=Breathe <Color 3080FF> Brightness=50 Speed=79 M key=M1 [Revert]
 slide Speed 50
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Red • [Update] […] Effect=Breathe <Color 3080FF> Brightness=50 Speed=50 [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Red • [Update] […] View=Settings Effect=Breathe <Color 3080FF> Brightness=50 Speed=50 M key=M1 [Revert]
 pick Effect Cycle
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Red • [Update] […] Effect=Cycle Brightness=50 Speed=50 [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Red • [Update] […] View=Settings Effect=Cycle Brightness=50 Speed=50 M key=M1 [Revert]
 pick Effect Static
   set feature  05 18 40 7F
-  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Red • [Update] […] Effect=Static <Color 3080FF> Brightness=50 Speed=50 (off) [Revert]
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=Red • [Update] […] View=Settings Effect=Static <Color 3080FF> Brightness=50 Speed=50 (off) M key=M1 [Revert]
 pick G-Lite preset –
   set feature  05 FF FF FF
-  = status "" [Report] G-Lite preset=– [New…] […] Effect=Static <Color FFFFFF> Brightness=100 Speed=79 (off) [Revert (off)]
+  = status "" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Static <Color FFFFFF> Brightness=100 Speed=79 (off) M key=M1 [Revert (off)]
+pick View Bindings
+  = status "" [Report] G-Lite preset=– [New…] […] View=Bindings G1=Disabled G2=Disabled G3=Disabled G4=Disabled G5=Disabled G6=Disabled M key=M1 [Revert (off)] G7=Disabled G8=Disabled G9=Disabled G10=Disabled G11=Disabled G12=Disabled G13=Disabled G14=Disabled G15=Disabled G16=Disabled G17=Disabled G18=Disabled
+pick G5 Volume up
+  = status "" [Report] G-Lite preset=– [New…] […] View=Bindings G1=Disabled G2=Disabled G3=Disabled G4=Disabled G5=Volume up G6=Disabled M key=M1 [Revert (off)] G7=Disabled G8=Disabled G9=Disabled G10=Disabled G11=Disabled G12=Disabled G13=Disabled G14=Disabled G15=Disabled G16=Disabled G17=Disabled G18=Disabled
+pick M key M2
+  set feature  04 40
+  = status "" [Report] G-Lite preset=– [New…] […] View=Bindings G1=Disabled G2=Disabled G3=Disabled G4=Disabled G5=Disabled G6=Disabled M key=M2 [Revert (off)] G7=Disabled G8=Disabled G9=Disabled G10=Disabled G11=Disabled G12=Disabled G13=Disabled G14=Disabled G15=Disabled G16=Disabled G17=Disabled G18=Disabled
+pick G1 Play or pause
+  = status "" [Report] G-Lite preset=– [New…] […] View=Bindings G1=Play or pause G2=Disabled G3=Disabled G4=Disabled G5=Disabled G6=Disabled M key=M2 [Revert (off)] G7=Disabled G8=Disabled G9=Disabled G10=Disabled G11=Disabled G12=Disabled G13=Disabled G14=Disabled G15=Disabled G16=Disabled G17=Disabled G18=Disabled
+pick M key M1
+  set feature  04 80
+  = status "" [Report] G-Lite preset=– [New…] […] View=Bindings G1=Disabled G2=Disabled G3=Disabled G4=Disabled G5=Volume up G6=Disabled M key=M1 [Revert (off)] G7=Disabled G8=Disabled G9=Disabled G10=Disabled G11=Disabled G12=Disabled G13=Disabled G14=Disabled G15=Disabled G16=Disabled G17=Disabled G18=Disabled
+pick View Game
+  get input 03
+  = status "" [Report] G-Lite preset=– [New…] […] View=Game M key=M1 [Revert (off)]
+pick View Settings
+  = status "" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Static <Color FFFFFF> Brightness=100 Speed=79 (off) M key=M1 [Revert (off)]
+pick M key M2
+  set feature  04 40
+  = status "" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Static <Color FFFFFF> Brightness=100 Speed=79 (off) M key=M2 [Revert (off)]
+press Color 30D050
+  set feature  05 30 D0 50
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Static <Color 30D050> Brightness=100 Speed=79 (off) M key=M2 [Revert]
+pick M key M1
+  set feature  04 80
+  set feature  05 FF FF FF
+  = status "" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Static <Color FFFFFF> Brightness=100 Speed=79 (off) M key=M1 [Revert (off)]
+pick M key M2
+  set feature  04 40
+  set feature  05 30 D0 50
+  = status "Set by G-Lite, not saved to the keyboard" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Static <Color 30D050> Brightness=100 Speed=79 (off) M key=M2 [Revert]

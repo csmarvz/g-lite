@@ -5,7 +5,13 @@ using System.Collections.Generic;
 static class SelfTest
 {
     static readonly string[] LayoutFiles =
-        { "g515-tkl.json", "g915-tkl.json", "g915.json", "g915-x.json", "g915-x-tkl.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json", "g413.json" };
+        { "g515-tkl.json", "g915-tkl.json", "g915.json", "g915-x.json", "g915-x-tkl.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json", "g413.json", "g510.json" };
+
+    static bool LightsM3(FakeG510 keyboard)
+    {
+        G510Keys.LightBank(keyboard, 2);
+        return keyboard.Features[0x04][1] == 0x20 && G510Keys.LitBank(keyboard, 0) == 2;
+    }
 
     static byte[] Hex(string hex)
     {
@@ -800,6 +806,15 @@ static class SelfTest
                 .Same(new G510Settings { Effect = G510Settings.Cycle, Period = 3000 })
             && G510Settings.FromText("1,FF0000,100").Effect == G510Settings.Static,
             "the G510 gets its screen only when its vendor collection was found, and its backlight is the colour scaled by brightness");
+        var g510Keys = G510Keys.FromText("80020105 800300E9 nonsense");
+        var g510Switch = new FakeG510 { GameMode = true };
+        Check(g510Keys.Length == 18 && G510Keys.ToText(g510Keys).StartsWith("80020105 800300E9 80000000 ")
+            && G510Keys.FromText(G510Keys.ToText(g510Keys)).Zip(g510Keys, (x, y) => x.SequenceEqual(y)).All(same => same)
+            && G510Keys.GameMode(g510Switch) && !G510Keys.GameMode(new FakeG510())
+            && G510Keys.LitBank(g510Switch, 2) == 0 && LightsM3(g510Switch)
+            && KeyLayout.Load("g510.json").KeyIds().Count(id => id >= 0) == 18 + 104,
+            "the G510's G key bindings read back from their text, unbound keys as Disabled; its Game mode switch is bit 2 of byte 3 of "
+                + "input report 03; M1 to M3 light as 80, 40 and 20 in feature 04; its picture lights the 18 G keys and the 104 others");
         var g500s = FakeG9x.G500s();
         var g500sState = G9xRegisters.Read(g500s, G9xModel.G500s);
         G9xRegisters.SetDpi(g500s, 8200, G9xModel.G500s);

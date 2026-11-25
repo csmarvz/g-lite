@@ -68,7 +68,7 @@ What was built (the first plan had its own page, `PageKeyboard`, and a shared `L
 | File | What |
 |---|---|
 | `app/FoundDevice.cs` | `FoundDevice.IsLedKeyboard`: kind keyboard, has 0x8070, no 0x8071. |
-| `app/DeviceTable.cs` | `IsLedKeyboard` opens `ZonesPage`, with `FakeSpeaker { Count = 2 }` in the demo. |
+| `app/DeviceTable.cs` | `IsLedKeyboard` opens `ZonesPage`, with a `FakeSpeaker` in the demo (the G213's six zones, the G413 Silver's one, two with 0x8080 for the G512 and the others). |
 | `app/ZoneLighting.cs` | `ZoneLighting`: the zones and their effects (`Encode`, with Wave), `ZoneName` from the location, `Picture` for a keyboard with a zone key map. |
 | `app/ZonesPage.cs` | The screen: effect, colour, speed and brightness on all zones or one, effects a zone doesn't list greyed out, the key picture when there is one. Live only, kept as `lighting.<device>`. |
 | `app/models/g213.json` | The G213's picture, its `ids` are zones (`"kind": "zones"`). |
