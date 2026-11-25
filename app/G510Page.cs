@@ -11,6 +11,8 @@ class G510Page : DevicePage
     // Each M key's lighting, null until one is picked (the keyboard's colour as read is shown then), as LGS kept one per M key.
     readonly G510Settings[] lights = new G510Settings[G510Keys.Banks];
     G510Settings read, sent;
+    // Whether the last load read the colour.
+    bool answered;
     G510Settings Active { get { return lights[bank]; } set { lights[bank] = value; } }
     bool loading, ready, framing;
     int sequence;
@@ -67,6 +69,8 @@ class G510Page : DevicePage
         effectText = Rows.Row(light, y, "Effect", "");
         effects = Rows.Dropdown(light, y, "Effect");
         effects.Items.AddRange(G510Settings.Effects);
+        // Breathe and Cycle are drawn by G-Lite, frame by frame (after Off and Static).
+        effects.Badge = i => i > G510Settings.Static + 1 ? "Live" : null;
         effects.Picked += index => Edit(settings => { settings.On = index > 0; if (index > 0) settings.Effect = index - 1; }, true);
         y += rowHeight;
         colorText = Rows.Row(light, y, "Color", "One color for the whole keyboard");
@@ -145,15 +149,15 @@ class G510Page : DevicePage
         return lights.All(light => light == null) ? "" : string.Join("|", lights.Select(light => light == null ? "" : light.ToText()));
     }
 
-    // A preset from before the M keys had their own lighting holds one, for the M key picked.
+    // A preset from before the M keys had their own lighting holds one: M1's, where it was kept. An empty one has none.
     protected override void ApplyPreset(string text)
     {
         var pieces = text.Split('|');
-        if (pieces.Length == 1)
+        if (pieces.Length == 1 && text != "")
         {
             var settings = G510Settings.FromText(text);
             if (settings == null) return;
-            Active = settings;
+            lights[0] = settings;
         }
         else for (int set = 0; set < lights.Length; set++) lights[set] = set < pieces.Length ? G510Settings.FromText(pieces[set]) : null;
         Changed(true);
@@ -303,7 +307,7 @@ class G510Page : DevicePage
 
     protected override void ClearStatus()
     {
-        if (ready && read == null) { ShowStatus("The keyboard didn't answer. Is it plugged in?", true, Load, "Try again"); return; }
+        if (ready && !answered) { ShowStatus("The keyboard didn't answer. Is it plugged in?", true, Load, "Try again"); return; }
         ShowStatus(Active == null ? "" : "Set by G-Lite, not saved to the keyboard");
     }
 
@@ -365,7 +369,9 @@ class G510Page : DevicePage
         {
             ready = true;
             bank = lit;
-            read = color < 0 ? null : new G510Settings { On = color != 0, Color = color == 0 ? 0xFFFFFF : color, Bright = 100 };
+            answered = color >= 0;
+            // Only the first: later loads read what G-Lite set, which would pass one M key's colour to another.
+            if (read == null && answered) read = new G510Settings { On = color != 0, Color = color == 0 ? 0xFFFFFF : color, Bright = 100 };
             RefreshControls();
             Loaded();
         });

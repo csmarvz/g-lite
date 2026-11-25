@@ -740,7 +740,7 @@ static class Traces
             script.Pick("Effect", "Static");
             script.Pick("Effect", "Screen");
             script.Press("Update");
-            script.Slide("Intensity", 80);
+            script.Slide("Color boost", 80);
             script.Press("Revert changes");
             script.Pick("G-Lite preset", "–");
             script.Pick("G-Lite preset", "Desk");

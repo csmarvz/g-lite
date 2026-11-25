@@ -7,8 +7,6 @@ using System.Windows.Forms;
 
 class OtherDevicePage : DevicePage
 {
-    class SettingBox { public string Title; public bool Half; public Func<RoundedBox, int, int> Fill; }
-
     // current is on the screen, sent is on the device, stored is what was read at load, and remembered holds only what the user changed:
     // it's sent again at each load.
     OtherSettings current = new OtherSettings(), stored, sent, remembered, rememberedAtLoad;
@@ -17,14 +15,17 @@ class OtherDevicePage : DevicePage
     int sequence;
     readonly Timer debounce = new Timer { Interval = 120 };
 
+    // A section for each feature the device has, a setting per row; Easy-Switch is left out once read with one computer.
+    readonly RowLayout rows;
     Slider bright, dpi, shift, level;
-    Label brightValue, dpiValue, shiftValue, levelValue, shiftHead, levelHead;
+    Label brightValue, dpiValue, shiftValue, levelValue;
+    RowText shiftText, autoText, levelText;
     Toggle shiftOn, invert, thumb, light, auto;
-    Label delayHead;
-    readonly Label[] delayLabels = new Label[3];
+    readonly RowText[] delayTexts = new RowText[3];
     readonly Dropdown[] delayDropdowns = new Dropdown[3];
     SegmentedPicker hosts;
     RoundedBox hostsBox;
+    const int HostsWidth = 336;
 
     internal override bool Busy { get { return debounce.Enabled; } }
 
@@ -38,159 +39,120 @@ class OtherDevicePage : DevicePage
         debounce.Tick += (sender, e) => { debounce.Stop(); Send(); };
         remembered = OtherSettings.FromText(Settings.Get(Remembered));
         rememberedAtLoad = remembered.Clone();
-        var parts = new List<SettingBox>();
-        if (found.Has(0x8040)) parts.Add(new SettingBox { Title = found.Kind == "device" ? "Screens" : "Brightness", Fill = Brightness });
-        if (found.Has(0x2201)) parts.Add(new SettingBox { Title = "Pointer", Fill = Pointer });
-        if (found.Has(0x2110) || found.Has(0x2111) || found.Has(0x2121))
-            parts.Add(new SettingBox { Title = "Scroll wheel", Half = true, Fill = Wheel });
-        if (found.Has(0x2150)) parts.Add(new SettingBox { Title = "Thumb wheel", Half = true, Fill = ThumbWheel });
-        if (found.Has(0x1982)) parts.Add(new SettingBox { Title = "Backlight", Half = true, Fill = Backlight });
-        if (found.Has(0x1814)) parts.Add(new SettingBox { Title = "Easy-Switch", Fill = EasySwitch });
-        Lay(parts);
+        rows = new RowLayout(UseBody().Sheet);
+        if (found.Has(0x8040)) Brightness();
+        if (found.Has(0x2201)) Pointer();
+        if (found.Has(0x2110) || found.Has(0x2111) || found.Has(0x2121)) Wheel();
+        if (found.Has(0x2150)) ThumbWheel();
+        if (found.Has(0x1982)) Backlight();
+        if (found.Has(0x1814)) EasySwitch();
         RefreshControls();
         if (remembered.ToText() != "") Load();
     }
 
-    void Lay(List<SettingBox> parts)
+    void Brightness()
     {
-        int top = 118;
-        for (int index = 0; index < parts.Count; index++)
-        {
-            var part = parts[index];
-            bool pair = part.Half && index + 1 < parts.Count && parts[index + 1].Half;
-            if (!pair)
-            {
-                var box = Section(part.Title, 20, top, 616);
-                box.Height = part.Fill(box, 588) + 14;
-                top += box.Height + 12;
-                continue;
-            }
-            var left = Section(part.Title, 20, top, 380);
-            var right = Section(parts[index + 1].Title, 412, top, 224);
-            int height = Math.Max(part.Fill(left, 352), parts[index + 1].Fill(right, 196)) + 14;
-            left.Height = right.Height = height;
-            top += height + 12;
-            index++;
-        }
-    }
-
-    RoundedBox Section(string title, int x, int y, int width)
-    {
-        var box = Ui.Add(this, new RoundedBox(), x, y, width, 40);
-        Ui.Text(box, title, 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
-        return box;
-    }
-
-    Slider SliderRow(RoundedBox box, string name, int y, int width, out Label head, out Label value)
-    {
-        head = Ui.Text(box, name, 14, y, () => Theme.Dim, 9f);
-        value = Value(box, 14, y, width);
-        return Ui.Add(box, new Slider { AccessibleName = name }, 14, y + 20, width, 24);
-    }
-
-    Toggle ToggleRow(RoundedBox box, string name, string note, int y, int width)
-    {
-        var toggle = Ui.Add(box, new Toggle { AccessibleName = name }, 14, y + 2, 34, 18);
-        toggle.Follow(Ui.Text(box, name, 60, y, () => Theme.Text, 9.75f));
-        if (note != null) AddHint(box, note, 60, y + 22, width - 46, 36);
-        return toggle;
-    }
-
-    static Label AddHint(RoundedBox box, string text, int x, int y, int width, int height)
-    {
-        var label = Ui.Text(box, text, x, y, () => Theme.Dim, 9f);
-        label.AutoSize = false;
-        label.Size = new Size(width, height);
-        return label;
-    }
-
-    int Brightness(RoundedBox box, int width)
-    {
-        Label head;
-        bright = SliderRow(box, "Brightness", 40, width, out head, out brightValue);
+        Label heading;
+        var box = rows.Section(found.Kind == "device" ? "Screens" : "Brightness", out heading);
+        int y = rows.Row(box);
+        Rows.Row(box, y, "Brightness", found.Kind == "device" ? "The key screens; Logi Options+ may set it again" : "Logi Options+ may set it again when it starts");
+        bright = Rows.Slider(box, y, "Brightness", out brightValue);
         bright.Changed += (sender, e) => Change(OtherSettings.Bright, bright.Value);
-        AddHint(box,
-            found.Kind == "device"
-                ? "How bright the key screens are. Logi Options+ may set it again when it starts."
-                : "Logi Options+ may set it again when it starts.",
-            14, 98, width, 20);
-        return 118;
     }
 
-    int Pointer(RoundedBox box, int width)
+    void Pointer()
     {
-        Label head;
-        dpi = SliderRow(box, "Speed", 40, width, out head, out dpiValue);
+        Label heading;
+        var box = rows.Section("Pointer", out heading);
+        int y = rows.Row(box);
+        Rows.Row(box, y, "Speed", "How far the pointer moves");
+        dpi = Rows.Slider(box, y, "Speed", out dpiValue);
         dpi.Step = 1;
+        // A mouse with one DPI shows it, read-only.
+        dpi.ZeroWhenOff = false;
         dpi.Changed += (sender, e) =>
         {
             if (state != null && dpi.Value < state.Dpis.Length) Change(OtherSettings.Dpi, state.Dpis[dpi.Value]);
         };
-        return 84;
     }
 
-    int Wheel(RoundedBox box, int width)
+    void Wheel()
     {
-        int y = 40;
+        Label heading;
+        var box = rows.Section("Scroll wheel", out heading);
         if (found.Has(0x2110) || found.Has(0x2111))
         {
-            shiftOn = ToggleRow(box, "SmartShift", "Switches from ratchet to free spin when you scroll fast.", y, width);
+            int y = rows.Row(box);
+            Rows.Row(box, y, "SmartShift", "Ratchet to free spin when you scroll fast");
+            shiftOn = Rows.Toggle(box, y, "SmartShift");
             shiftOn.Changed += () => Change(OtherSettings.Shift, shiftOn.Checked ? shift.Value + 1 : 255);
-            shift = SliderRow(box, "Switch to free spin at", y + 62, width, out shiftHead, out shiftValue);
+            y = rows.Row(box);
+            shiftText = Rows.Row(box, y, "Switch to free spin at", "How fast you scroll, in turns a second");
+            shift = Rows.Slider(box, y, "Switch to free spin at", out shiftValue);
             shift.Max = 49;
             shift.Step = 1;
             shift.Changed += (sender, e) => Change(OtherSettings.Shift, shift.Value + 1);
-            y += 118;
         }
         if (found.Has(0x2121))
         {
-            invert = ToggleRow(box, "Invert scrolling", null, y, width);
+            int y = rows.Row(box);
+            Rows.Row(box, y, "Invert scrolling", "The wheel scrolls the other way");
+            invert = Rows.Toggle(box, y, "Invert scrolling");
             invert.Changed += () => Change(OtherSettings.Invert, invert.Checked ? 1 : 0);
-            y += 34;
         }
-        return y;
     }
 
-    int ThumbWheel(RoundedBox box, int width)
+    void ThumbWheel()
     {
-        thumb = ToggleRow(box, "Invert", null, 40, width);
-        thumb.AccessibleName = "Invert the thumb wheel";
+        Label heading;
+        var box = rows.Section("Thumb wheel", out heading);
+        int y = rows.Row(box);
+        Rows.Row(box, y, "Invert", "The thumb wheel scrolls the other way");
+        thumb = Rows.Toggle(box, y, "Invert the thumb wheel");
         thumb.Changed += () => Change(OtherSettings.Thumb, thumb.Checked ? 1 : 0);
-        return 74;
     }
 
-    int Backlight(RoundedBox box, int width)
+    void Backlight()
     {
+        Label heading;
+        var box = rows.Section("Backlight", out heading);
         // Plugged in, the MX Keys S's hand sensor seems off: turned on, it stays dark until a key is pressed.
         // On battery it lights at once (an owner, 2026-11).
-        light = ToggleRow(box, "Backlight", "Plugged in, the keys light up when you next type.", 40, width);
+        int y = rows.Row(box);
+        Rows.Row(box, y, "Backlight", "Plugged in, the keys light up when you next type");
+        light = Rows.Toggle(box, y, "Backlight");
         light.Changed += () => Change(OtherSettings.Light, light.Checked ? 1 : 0);
-        auto = ToggleRow(box, "Automatic", "Dims by itself with the room's light.", 102, width);
+        y = rows.Row(box);
+        autoText = Rows.Row(box, y, "Automatic", "Dims by itself with the room's light");
+        auto = Rows.Toggle(box, y, "Automatic");
         auto.Changed += () => Change(OtherSettings.Auto, auto.Checked ? 1 : 0);
-        level = SliderRow(box, "Level", 164, width, out levelHead, out levelValue);
+        y = rows.Row(box);
+        levelText = Rows.Row(box, y, "Level", "How bright the keys are, when not automatic");
+        level = Rows.Slider(box, y, "Level", out levelValue);
         level.Step = 1;
+        // Its level shows while Automatic sets it.
+        level.ZeroWhenOff = false;
         level.Changed += (sender, e) => Change(OtherSettings.Level, level.Value);
-        delayHead = Ui.Text(box, "Fades after", 14, 220, () => Theme.Dim, 9f);
         string[] names = { "Hands away", "Hands near", "Plugged in" };
-        int column = (width - 2 * 12) / names.Length;
+        string[] hints = { "Fades after this long without hands near", "Fades after this long with hands near", "Fades after this long, plugged in" };
         for (int index = 0; index < names.Length; index++)
         {
-            int setting = OtherSettings.Delays[index], x = 14 + index * (column + 12);
-            delayLabels[index] = Ui.Text(box, names[index], x, 242, () => Theme.Dim, 9f);
-            delayDropdowns[index] = Ui.Add(box, new Dropdown { AccessibleName = "Fades after, " + names[index].ToLowerInvariant() },
-                x, 262, column, 30);
+            int setting = OtherSettings.Delays[index];
+            y = rows.Row(box);
+            delayTexts[index] = Rows.Row(box, y, names[index], hints[index]);
+            delayDropdowns[index] = Rows.Dropdown(box, y, "Fades after, " + names[index].ToLowerInvariant());
             delayDropdowns[index].Picked += picked => Change(setting, DelayChoices(current[setting])[picked]);
         }
-        return 306;
     }
 
-    int EasySwitch(RoundedBox box, int width)
+    void EasySwitch()
     {
-        hostsBox = box;
-        hosts = Ui.Add(box, new SegmentedPicker { AccessibleName = "Computer" }, 14, 36, width, 32);
+        Label heading;
+        hostsBox = rows.Section("Easy-Switch", out heading);
+        int y = rows.Row(hostsBox);
+        Rows.Row(hostsBox, y, "Computer", "Switching sends the " + Noun + " there");
+        hosts = Rows.Picker(hostsBox, y, "Computer", new string[0], HostsWidth);
         hosts.Picked += AskSwitch;
-        AddHint(box, "Switching sends the " + Noun + " to that computer, like its Easy-Switch button.", 14, 76, width, 20);
-        return 96;
     }
 
     string HostName(int host)
@@ -272,8 +234,8 @@ class OtherDevicePage : DevicePage
             shiftOn.Checked = on;
             shift.Enabled = on;
             shift.Value = Math.Max(0, Math.Min(49, (on ? threshold : ready ? state.ShiftDefault : 10) - 1));
-            SetDimmed(shiftHead, on);
-            shiftValue.Text = on ? (threshold / 4.0).ToString("0.##", CultureInfo.InvariantCulture) + " turns a second" : "";
+            shiftText.Enable(on);
+            shiftValue.Text = on ? (threshold / 4.0).ToString("0.##", CultureInfo.InvariantCulture) + "/s" : "";
         }
         if (invert != null)
         {
@@ -291,15 +253,15 @@ class OtherDevicePage : DevicePage
             light.Enabled = ready && current[OtherSettings.Light] >= 0;
             light.Checked = lit;
             auto.Enabled = ready && current[OtherSettings.Auto] >= 0 && lit;
+            autoText.Enable(auto.Enabled);
             auto.Checked = lit && current[OtherSettings.Auto] == 1;
             bool manual = ready && current[OtherSettings.Level] >= 0 && lit && current[OtherSettings.Auto] != 1;
             level.Enabled = manual;
             level.Max = ready && state.Levels > 1 ? state.Levels - 1 : 1;
             level.Value = Math.Max(0, current[OtherSettings.Level]);
-            SetDimmed(levelHead, manual);
+            levelText.Enable(manual);
             levelValue.Text = ready && current[OtherSettings.Level] >= 0 ? current[OtherSettings.Level] + 1 + " of " + state.Levels : "";
             bool delays = ready && current[OtherSettings.Away] > 0 && lit;
-            SetDimmed(delayHead, delays);
             for (int index = 0; index < delayDropdowns.Length; index++)
             {
                 int seconds = current[OtherSettings.Delays[index]];
@@ -308,19 +270,20 @@ class OtherDevicePage : DevicePage
                 delayDropdowns[index].Items.AddRange(choices.Select(DelayText));
                 delayDropdowns[index].Index = Array.IndexOf(choices, seconds);
                 delayDropdowns[index].Enabled = delays;
-                SetDimmed(delayLabels[index], delays);
+                delayTexts[index].Enable(delays);
             }
         }
         if (hosts != null)
         {
             int count = ready ? state.Hosts : 0;
-            hostsBox.Visible = !ready || count > 1;
+            rows.ShowSection(hostsBox, !ready || count > 1);
             hosts.Items = count > 1 ? Enumerable.Range(0, count).Select(HostName).ToArray() : new[] { "1", "2", "3" };
             hosts.Enabled = count > 1;
             hosts.Index = count > 1 ? state.Host : -1;
             hosts.Invalidate();
         }
         foreach (var control in new Control[] { bright, dpi, shift, level }) if (control != null) control.Invalidate();
+        FitBody(rows.Place(Scaled, true));
         loading = false;
     }
 

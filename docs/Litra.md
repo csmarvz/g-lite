@@ -65,7 +65,7 @@ Firmware ILL 01.02 build 0073, USB 046D:C903, Bluetooth B903. 0x8040 and 0x8081 
 
 ## Try effect
 
-On a light with 0x8071, the back light box has Try effect. Its menu lists every effect of every cluster, read when the screen loads (0x8071 fn 0 `<cluster> <effect> 00`, byte 3 the id). Picking one stops G-Lite's own animation, takes software control of the clusters (0x8071 fn 5 `01 01 00`) and sends 0x8071 fn 1 `<cluster> <effect index> <10 parameter bytes> 01`, with the parameters from Lghub's notes. Without fn 5 the light answers fn 1 with error 0x05 for every effect (the owner's first try, 2026-11). Back to G-Lite's colours, any change on the screen, a preset, the Screen effect or reading the light again gives control back (fn 5 `01 00 00`):
+On a light with 0x8071, the Back light section has a Light's own effects row with Try. Its menu lists every effect of every cluster, read when the screen loads (0x8071 fn 0 `<cluster> <effect> 00`, byte 3 the id). Picking one stops G-Lite's own animation, takes software control of the clusters (0x8071 fn 5 `01 01 00`) and sends 0x8071 fn 1 `<cluster> <effect index> <10 parameter bytes> 01`, with the parameters from Lghub's notes. Without fn 5 the light answers fn 1 with error 0x05 for every effect (the owner's first try, 2026-11). Back to G-Lite's colours, any change on the screen, a preset, the Screen effect or reading the light again gives control back (fn 5 `01 00 00`):
 
 The parameters are the keyboards' (`G915Lighting.Encode`):
 

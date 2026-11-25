@@ -12,44 +12,44 @@ open
   1815 fn1  01
   1815 fn3  01
   1815 fn1  02
-  = status "" [Report] G-Lite preset=– [New…] […] Speed=16 SmartShift=on Invert the thumb wheel=off Switch to free spin at=9 Invert scrolling=off Computer=1: Desk PC [Revert (off)]
+  = status "" [Report] G-Lite preset=– [New…] […] Speed=16 SmartShift=on Switch to free spin at=9 Invert scrolling=off Invert the thumb wheel=off Computer=1: Desk PC [Revert (off)]
 slide Speed 36
   2201 fn3  00 07 D0
-  = status "Applied to the mouse." [Report] G-Lite preset=– [New…] […] Speed=36 SmartShift=on Invert the thumb wheel=off Switch to free spin at=9 Invert scrolling=off Computer=1: Desk PC [Revert]
+  = status "Applied to the mouse." [Report] G-Lite preset=– [New…] […] Speed=36 SmartShift=on Switch to free spin at=9 Invert scrolling=off Invert the thumb wheel=off Computer=1: Desk PC [Revert]
 slide Switch to free spin at 19
   2110 fn1  00 14 14
-  = status "Applied to the mouse." [Report] G-Lite preset=– [New…] […] Speed=36 SmartShift=on Invert the thumb wheel=off Switch to free spin at=19 Invert scrolling=off Computer=1: Desk PC [Revert]
+  = status "Applied to the mouse." [Report] G-Lite preset=– [New…] […] Speed=36 SmartShift=on Switch to free spin at=19 Invert scrolling=off Invert the thumb wheel=off Computer=1: Desk PC [Revert]
 press SmartShift
   2110 fn1  00 FF FF
-  = status "Applied to the mouse." [Report] G-Lite preset=– [New…] […] Speed=36 SmartShift=off Invert the thumb wheel=off Switch to free spin at=9 (off) Invert scrolling=off Computer=1: Desk PC [Revert]
+  = status "Applied to the mouse." [Report] G-Lite preset=– [New…] […] Speed=36 SmartShift=off Switch to free spin at=9 (off) Invert scrolling=off Invert the thumb wheel=off Computer=1: Desk PC [Revert]
 press Invert scrolling
   2121 fn1
   2121 fn2  04
-  = status "Applied to the mouse." [Report] G-Lite preset=– [New…] […] Speed=36 SmartShift=off Invert the thumb wheel=off Switch to free spin at=9 (off) Invert scrolling=on Computer=1: Desk PC [Revert]
+  = status "Applied to the mouse." [Report] G-Lite preset=– [New…] […] Speed=36 SmartShift=off Switch to free spin at=9 (off) Invert scrolling=on Invert the thumb wheel=off Computer=1: Desk PC [Revert]
 press Invert the thumb wheel
   2150 fn1
   2150 fn2  00 01
-  = status "Applied to the mouse." [Report] G-Lite preset=– [New…] […] Speed=36 SmartShift=off Invert the thumb wheel=on Switch to free spin at=9 (off) Invert scrolling=on Computer=1: Desk PC [Revert]
+  = status "Applied to the mouse." [Report] G-Lite preset=– [New…] […] Speed=36 SmartShift=off Switch to free spin at=9 (off) Invert scrolling=on Invert the thumb wheel=on Computer=1: Desk PC [Revert]
 menu More preset actions > Save as new preset…
   menu: Save as new preset… | Rename… (off) | Delete (off)
-  = status "Applied to the mouse." [Report] [Save] [Cancel] Speed=36 SmartShift=off Invert the thumb wheel=on Switch to free spin at=9 (off) Invert scrolling=on Computer=1: Desk PC [Revert]
+  = status "Applied to the mouse." [Report] [Save] [Cancel] Speed=36 SmartShift=off Switch to free spin at=9 (off) Invert scrolling=on Invert the thumb wheel=on Computer=1: Desk PC [Revert]
 type Work
-  = status "Applied to the mouse." [Report] [Save] [Cancel] Speed=36 SmartShift=off Invert the thumb wheel=on Switch to free spin at=9 (off) Invert scrolling=on Computer=1: Desk PC [Revert]
+  = status "Applied to the mouse." [Report] [Save] [Cancel] Speed=36 SmartShift=off Switch to free spin at=9 (off) Invert scrolling=on Invert the thumb wheel=on Computer=1: Desk PC [Revert]
 press Save
-  = status "Saved the preset Work" [Report] G-Lite preset=Work [Update (off)] […] Speed=36 SmartShift=off Invert the thumb wheel=on Switch to free spin at=9 (off) Invert scrolling=on Computer=1: Desk PC [Revert (off)]
+  = status "Saved the preset Work" [Report] G-Lite preset=Work [Update (off)] […] Speed=36 SmartShift=off Switch to free spin at=9 (off) Invert scrolling=on Invert the thumb wheel=on Computer=1: Desk PC [Revert (off)]
 press SmartShift
   2110 fn1  00 0A 0A
-  = status "Applied to the mouse." [Report] G-Lite preset=Work • [Update] […] Speed=36 SmartShift=on Invert the thumb wheel=on Switch to free spin at=9 Invert scrolling=on Computer=1: Desk PC [Revert]
+  = status "Applied to the mouse." [Report] G-Lite preset=Work • [Update] […] Speed=36 SmartShift=on Switch to free spin at=9 Invert scrolling=on Invert the thumb wheel=on Computer=1: Desk PC [Revert]
 press Revert changes
   2110 fn1  00 FF FF
-  = status "Applied to the mouse." [Report] G-Lite preset=Work [Update (off)] […] Speed=36 SmartShift=off Invert the thumb wheel=on Switch to free spin at=9 (off) Invert scrolling=on Computer=1: Desk PC [Revert (off)]
+  = status "Applied to the mouse." [Report] G-Lite preset=Work [Update (off)] […] Speed=36 SmartShift=off Switch to free spin at=9 (off) Invert scrolling=on Invert the thumb wheel=on Computer=1: Desk PC [Revert (off)]
 pick Computer 3: –
-  = status "Nothing is paired on computer 3 yet. Pair it with the Easy-Switch button first." [Report] G-Lite preset=Work [Update (off)] […] Speed=36 SmartShift=off Invert the thumb wheel=on Switch to free spin at=9 (off) Invert scrolling=on Computer=1: Desk PC [Revert (off)]
+  = status "Nothing is paired on computer 3 yet. Pair it with the Easy-Switch button first." [Report] G-Lite preset=Work [Update (off)] […] Speed=36 SmartShift=off Switch to free spin at=9 (off) Invert scrolling=on Invert the thumb wheel=on Computer=1: Desk PC [Revert (off)]
 pick Computer 2: MacBook
-  = status "Switch the mouse to MacBook? It leaves this PC until you switch back." [Report] G-Lite preset=Work [Update (off)] […] Speed=36 SmartShift=off Invert the thumb wheel=on Switch to free spin at=9 (off) Invert scrolling=on Computer=1: Desk PC [Switch] [Revert (off)]
+  = status "Switch the mouse to MacBook? It leaves this PC until you switch back." [Report] G-Lite preset=Work [Update (off)] […] Speed=36 SmartShift=off Switch to free spin at=9 (off) Invert scrolling=on Invert the thumb wheel=on Computer=1: Desk PC [Switch] [Revert (off)]
 press Switch
   1814 fn1  01
-  = status "Switched to computer 2. Press the Easy-Switch button to come back." [Report] G-Lite preset=Work [Update (off)] […] Speed=36 SmartShift=off Invert the thumb wheel=on Switch to free spin at=9 (off) Invert scrolling=on Computer=1: Desk PC [Revert (off)]
+  = status "Switched to computer 2. Press the Easy-Switch button to come back." [Report] G-Lite preset=Work [Update (off)] […] Speed=36 SmartShift=off Switch to free spin at=9 (off) Invert scrolling=on Invert the thumb wheel=on Computer=1: Desk PC [Revert (off)]
 reopen on a device that forgot
 open
   2201 fn1
@@ -84,4 +84,4 @@ open
   1815 fn1  01
   1815 fn3  01
   1815 fn1  02
-  = status "" [Report] G-Lite preset=Work [Update (off)] […] Speed=36 SmartShift=off Invert the thumb wheel=on Switch to free spin at=9 (off) Invert scrolling=on Computer=1: Desk PC [Revert (off)]
+  = status "" [Report] G-Lite preset=Work [Update (off)] […] Speed=36 SmartShift=off Switch to free spin at=9 (off) Invert scrolling=on Invert the thumb wheel=on Computer=1: Desk PC [Revert (off)]

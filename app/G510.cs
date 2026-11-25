@@ -121,5 +121,10 @@ static class G510Keys
     }
 
     // Asked for once (GET_REPORT), not listened to.
-    public static bool GameMode(Hidpp hidpp) { return (hidpp.GetInput(KeysReport)[3] & 0x04) != 0; }
+    public static bool GameMode(Hidpp hidpp)
+    {
+        var report = hidpp.GetInput(KeysReport);
+        if (report.Length < 4) throw new System.IO.IOException("Input report " + KeysReport.ToString("X2") + " is too short");
+        return (report[3] & 0x04) != 0;
+    }
 }

@@ -785,7 +785,8 @@ class ZonesPage : DevicePage
                 : offered.Any(zone => zone.ContainsKey(id == ZoneLighting.Audio.Id ? 0x01 : id))));
         effects.Items.Clear();
         effects.Items.AddRange(shownEffects.Select(id => id == ScreenEffect ? "Screen" : InfoOf(id).Name));
-        effects.Enabled = ready;
+        // Screen can be turned off before the speakers answer.
+        effects.Enabled = ready || screening;
         effects.Index = screening ? shownEffects.IndexOf(ScreenEffect) : known ? shownEffects.IndexOf(displayed.Effect) : -1;
         effects.Invalidate();
         effectText.Enable(ready);
@@ -799,7 +800,8 @@ class ZonesPage : DevicePage
         bool color = known && effect.Color && !monochrome, hasSpeed = known && effect.Speed,
             hasBrightness = screening || known && displayed.Effect != 0;
         colorText.Enable(color);
-        colors.RefreshControls(known ? displayed.Color : 0xFFFFFF, color);
+        // Not on a one-colour keyboard, whose colour row is left out: it would show its custom swatch again.
+        if (!monochrome) colors.RefreshControls(known ? displayed.Color : 0xFFFFFF, color);
         bool wave = known && effect.Direction && !IsLive(displayed);
         directionText.Enable(wave);
         directions.Enabled = wave;
@@ -821,6 +823,7 @@ class ZonesPage : DevicePage
         speedValue.Text = hasSpeed ? speed.Value + "%" : "";
         speed.Invalidate();
         pauseText.Enable(screening);
+        lockToggle.Enabled = screening;
         lockToggle.Checked = setup.PauseWhenLocked;
         if (picture != null) ShowFrame();
         if (gameMode)

@@ -15,98 +15,98 @@ open
   8071 fn0  01 02
   8071 fn0  01 03
   8071 fn0  02
-  = status "" [Report] G-Lite preset=– [New…] […] Front brightness=45 Color temperature=13 Front light on=on [Try effect] Back brightness=80 Speed=79 (off) Back light on=on Effect=Static Zone=All <Color FFFFFF> [Revert (off)]
+  = status "" [Report] G-Lite preset=– [New…] […] Front light on=on Front brightness=45 Color temperature=13 Back light on=on Effect=Static Zone=All [Revert (off)] <Color FFFFFF> Back brightness=80 Speed=79 (off) Pause when screen off or locked=on (off) [Try]
 press Front light on
   1990 fn1
-  = status "" [Report] G-Lite preset=– [New…] […] Front brightness=45 Color temperature=13 Front light on=off [Try effect] Back brightness=80 Speed=79 (off) Back light on=on Effect=Static Zone=All <Color FFFFFF> [Revert (off)]
+  = status "" [Report] G-Lite preset=– [New…] […] Front light on=off Front brightness=45 Color temperature=13 Back light on=on Effect=Static Zone=All [Revert (off)] <Color FFFFFF> Back brightness=80 Speed=79 (off) Pause when screen off or locked=on (off) [Try]
 slide Front brightness 50
   1990 fn4  00 D7
-  = status "" [Report] G-Lite preset=– [New…] […] Front brightness=50 Color temperature=13 Front light on=off [Try effect] Back brightness=80 Speed=79 (off) Back light on=on Effect=Static Zone=All <Color FFFFFF> [Revert (off)]
+  = status "" [Report] G-Lite preset=– [New…] […] Front light on=off Front brightness=50 Color temperature=13 Back light on=on Effect=Static Zone=All [Revert (off)] <Color FFFFFF> Back brightness=80 Speed=79 (off) Pause when screen off or locked=on (off) [Try]
 slide Color temperature 10
   1990 fn9  0E 74
-  = status "" [Report] G-Lite preset=– [New…] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=80 Speed=79 (off) Back light on=on Effect=Static Zone=All <Color FFFFFF> [Revert (off)]
+  = status "" [Report] G-Lite preset=– [New…] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Static Zone=All [Revert (off)] <Color FFFFFF> Back brightness=80 Speed=79 (off) Pause when screen off or locked=on (off) [Try]
 slide Back brightness 40
   8040 fn2  00 28
-  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=– [New…] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=79 (off) Back light on=on Effect=Static Zone=All <Color FFFFFF> [Revert (off)]
+  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=– [New…] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Static Zone=All [Revert (off)] <Color FFFFFF> Back brightness=40 Speed=79 (off) Pause when screen off or locked=on (off) [Try]
 press Color FF2020
   8081 fn1  01 FF 20 20 02 FF 20 20 03 FF 20 20 04 FF 20 20
   8081 fn1  05 FF 20 20 06 FF 20 20 07 FF 20 20 FF
   8081 fn7  00 00 01
-  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=– [New…] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=79 (off) Back light on=on Effect=Static Zone=All <Color FF2020> [Revert (off)]
+  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=– [New…] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Static Zone=All [Revert (off)] <Color FF2020> Back brightness=40 Speed=79 (off) Pause when screen off or locked=on (off) [Try]
 pick Zone 3
-  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=– [New…] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=79 (off) Back light on=on Effect=Static Zone=3 <Color FF2020> [Revert (off)]
+  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=– [New…] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Static Zone=3 [Revert (off)] <Color FF2020> Back brightness=40 Speed=79 (off) Pause when screen off or locked=on (off) [Try]
 press Color 3080FF
   8081 fn1  01 FF 20 20 02 FF 20 20 03 30 80 FF 04 FF 20 20
   8081 fn1  05 FF 20 20 06 FF 20 20 07 FF 20 20 FF
   8081 fn7  00 00 01
-  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=– [New…] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=79 (off) Back light on=on Effect=Static Zone=3 <Color 3080FF> [Revert (off)]
+  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=– [New…] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Static Zone=3 [Revert (off)] <Color 3080FF> Back brightness=40 Speed=79 (off) Pause when screen off or locked=on (off) [Try]
 menu More preset actions > Save as new preset…
   menu: Save as new preset… | Rename… (off) | Delete (off)
-  = status "Back light set by G-Lite, not saved to the light" [Report] [Save] [Cancel] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=79 (off) Back light on=on Effect=Static Zone=3 <Color 3080FF> [Revert (off)]
+  = status "Back light set by G-Lite, not saved to the light" [Report] [Save] [Cancel] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Static Zone=3 [Revert (off)] <Color 3080FF> Back brightness=40 Speed=79 (off) Pause when screen off or locked=on (off) [Try]
 type Desk
-  = status "Back light set by G-Lite, not saved to the light" [Report] [Save] [Cancel] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=79 (off) Back light on=on Effect=Static Zone=3 <Color 3080FF> [Revert (off)]
+  = status "Back light set by G-Lite, not saved to the light" [Report] [Save] [Cancel] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Static Zone=3 [Revert (off)] <Color 3080FF> Back brightness=40 Speed=79 (off) Pause when screen off or locked=on (off) [Try]
 press Save
-  = status "Saved the preset Desk" [Report] G-Lite preset=Desk [Update (off)] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=79 (off) Back light on=on Effect=Static Zone=3 <Color 3080FF> [Revert (off)]
+  = status "Saved the preset Desk" [Report] G-Lite preset=Desk [Update (off)] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Static Zone=3 [Revert (off)] <Color 3080FF> Back brightness=40 Speed=79 (off) Pause when screen off or locked=on (off) [Try]
 press Back light on
   8040 fn4
-  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=79 (off) Back light on=off Effect=Static Zone=3 <Color 3080FF> [Revert]
+  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk • [Update] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=off Effect=Static Zone=3 [Revert] <Color 3080FF> Back brightness=40 Speed=79 (off) Pause when screen off or locked=on (off) [Try]
 pick Zone All
-  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=79 (off) Back light on=off Effect=Static Zone=All <Color FF2020> [Revert]
+  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk • [Update] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=off Effect=Static Zone=All [Revert] <Color FF2020> Back brightness=40 Speed=79 (off) Pause when screen off or locked=on (off) [Try]
 press Color FFFFFF
   8081 fn1  01 FF FF FF 02 FF FF FF 03 FF FF FF 04 FF FF FF
   8081 fn1  05 FF FF FF 06 FF FF FF 07 FF FF FF FF
   8081 fn7  00 00 01
-  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=79 (off) Back light on=off Effect=Static Zone=All <Color FFFFFF> [Revert]
+  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk • [Update] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=off Effect=Static Zone=All [Revert] <Color FFFFFF> Back brightness=40 Speed=79 (off) Pause when screen off or locked=on (off) [Try]
 press Revert changes
   8040 fn4  01
   8081 fn1  01 FF 20 20 02 FF 20 20 03 30 80 FF 04 FF 20 20
   8081 fn1  05 FF 20 20 06 FF 20 20 07 FF 20 20 FF
   8081 fn7  00 00 01
-  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk [Update (off)] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=79 (off) Back light on=on Effect=Static Zone=All <Color FF2020> [Revert (off)]
+  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk [Update (off)] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Static Zone=All [Revert (off)] <Color FF2020> Back brightness=40 Speed=79 (off) Pause when screen off or locked=on (off) [Try]
 pick Effect Breathe
-  = status "Breathe: G-Lite runs it, so it stops if you quit G-Lite" [Report] G-Lite preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=79 Back light on=on Effect=Breathe Zone=All <Color FF2020> [Revert]
+  = status "Breathe: G-Lite runs it, so it stops if you quit G-Lite" [Report] G-Lite preset=Desk • [Update] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Breathe Zone=All [Revert] <Color FF2020> Back brightness=40 Speed=79 Pause when screen off or locked=on (off) [Try]
 slide Speed 80
-  = status "Breathe: G-Lite runs it, so it stops if you quit G-Lite" [Report] G-Lite preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=80 Back light on=on Effect=Breathe Zone=All <Color FF2020> [Revert]
+  = status "Breathe: G-Lite runs it, so it stops if you quit G-Lite" [Report] G-Lite preset=Desk • [Update] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Breathe Zone=All [Revert] <Color FF2020> Back brightness=40 Speed=80 Pause when screen off or locked=on (off) [Try]
 pick Effect Wave
-  = status "Wave: G-Lite runs it, so it stops if you quit G-Lite" [Report] G-Lite preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=80 Back light on=on Effect=Wave Zone=All (off) [Revert]
+  = status "Wave: G-Lite runs it, so it stops if you quit G-Lite" [Report] G-Lite preset=Desk • [Update] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Wave Zone=All (off) [Revert] Back brightness=40 Speed=80 Pause when screen off or locked=on (off) [Try]
 menu Try the light's own effects > Group 0: Breathe
   menu: Group 0: Static | Group 0: Breathe | Group 0: Smooth colour cycle | Group 1: Streaming | Group 1: Smooth colour wave | Group 1: Two colours | Back to G-Lite's colours
   8071 fn5  01 01
   8071 fn1  00 01 FF 20 20 12 C0 00 64 00 00 00 01
-  = status "Sent Group 0: Breathe. What lit up? Please say in your issue." [Report] G-Lite preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=80 Back light on=on Effect=Wave Zone=All (off) [Revert]
+  = status "Sent Group 0: Breathe. What lit up? Please say in your issue." [Report] G-Lite preset=Desk • [Update] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Wave Zone=All (off) [Revert] Back brightness=40 Speed=80 Pause when screen off or locked=on (off) [Try]
 menu Try the light's own effects > Group 1: Smooth colour wave
   menu: Group 0: Static | Group 0: Breathe | Group 0: Smooth colour cycle | Group 1: Streaming | Group 1: Smooth colour wave | Group 1: Two colours | Back to G-Lite's colours
   8071 fn5  01 01
   8071 fn1  01 01 00 FF 00 00 00 00 12 C0 64 01 01
-  = status "Sent Group 1: Smooth colour wave. What lit up? Please say in your issue." [Report] G-Lite preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=80 Back light on=on Effect=Wave Zone=All (off) [Revert]
+  = status "Sent Group 1: Smooth colour wave. What lit up? Please say in your issue." [Report] G-Lite preset=Desk • [Update] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Wave Zone=All (off) [Revert] Back brightness=40 Speed=80 Pause when screen off or locked=on (off) [Try]
 menu Try the light's own effects > Back to G-Lite's colours
   menu: Group 0: Static | Group 0: Breathe | Group 0: Smooth colour cycle | Group 1: Streaming | Group 1: Smooth colour wave | Group 1: Two colours | Back to G-Lite's colours
   8071 fn5  01
-  = status "Wave: G-Lite runs it, so it stops if you quit G-Lite" [Report] G-Lite preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=80 Back light on=on Effect=Wave Zone=All (off) [Revert]
+  = status "Wave: G-Lite runs it, so it stops if you quit G-Lite" [Report] G-Lite preset=Desk • [Update] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Wave Zone=All (off) [Revert] Back brightness=40 Speed=80 Pause when screen off or locked=on (off) [Try]
 pick Effect Static
   8081 fn1  01 FF 20 20 02 FF 20 20 03 30 80 FF 04 FF 20 20
   8081 fn1  05 FF 20 20 06 FF 20 20 07 FF 20 20 FF
   8081 fn7  00 00 01
-  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=80 (off) Back light on=on Effect=Static Zone=All <Color FF2020> [Revert]
+  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk • [Update] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Static Zone=All [Revert] <Color FF2020> Back brightness=40 Speed=80 (off) Pause when screen off or locked=on (off) [Try]
 pick Effect Screen
-  = status "Screen effect, not saved to the light" [Report] G-Lite preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect (off)] Back brightness=40 Speed=80 (off) Back light on=on Effect=Screen Monitor=<monitor> Intensity=33 Update rate=9 Smooth changes=on Pause when screen off or locked=on [Reset areas] [Revert]
+  = status "Screen effect, not saved to the light" [Report] G-Lite preset=Desk • [Update] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Screen [Revert] [Reset] Monitor=<monitor> Color boost=33 Update rate=9 Smooth changes=on Zone=All (off) Back brightness=40 Speed=80 (off) Pause when screen off or locked=on [Try (off)]
 press Update
-  = status "Updated the preset Desk" [Report] G-Lite preset=Desk [Update (off)] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect (off)] Back brightness=40 Speed=80 (off) Back light on=on Effect=Screen Monitor=<monitor> Intensity=33 Update rate=9 Smooth changes=on Pause when screen off or locked=on [Reset areas] [Revert (off)]
-slide Intensity 80
-  = status "Updated the preset Desk" [Report] G-Lite preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect (off)] Back brightness=40 Speed=80 (off) Back light on=on Effect=Screen Monitor=<monitor> Intensity=80 Update rate=9 Smooth changes=on Pause when screen off or locked=on [Reset areas] [Revert]
+  = status "Updated the preset Desk" [Report] G-Lite preset=Desk [Update (off)] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Screen [Revert (off)] [Reset] Monitor=<monitor> Color boost=33 Update rate=9 Smooth changes=on Zone=All (off) Back brightness=40 Speed=80 (off) Pause when screen off or locked=on [Try (off)]
+slide Color boost 80
+  = status "Updated the preset Desk" [Report] G-Lite preset=Desk • [Update] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Screen [Revert] [Reset] Monitor=<monitor> Color boost=80 Update rate=9 Smooth changes=on Zone=All (off) Back brightness=40 Speed=80 (off) Pause when screen off or locked=on [Try (off)]
 press Revert changes
-  = status "Screen effect, not saved to the light" [Report] G-Lite preset=Desk [Update (off)] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect (off)] Back brightness=40 Speed=80 (off) Back light on=on Effect=Screen Monitor=<monitor> Intensity=33 Update rate=9 Smooth changes=on Pause when screen off or locked=on [Reset areas] [Revert (off)]
+  = status "Screen effect, not saved to the light" [Report] G-Lite preset=Desk [Update (off)] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Screen [Revert (off)] [Reset] Monitor=<monitor> Color boost=33 Update rate=9 Smooth changes=on Zone=All (off) Back brightness=40 Speed=80 (off) Pause when screen off or locked=on [Try (off)]
 pick G-Lite preset –
-  = status "Screen effect, not saved to the light" [Report] G-Lite preset=– [New…] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect (off)] Back brightness=40 Speed=80 (off) Back light on=on Effect=Screen Monitor=<monitor> Intensity=33 Update rate=9 Smooth changes=on Pause when screen off or locked=on [Reset areas] [Revert (off)]
+  = status "Screen effect, not saved to the light" [Report] G-Lite preset=– [New…] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Screen [Revert (off)] [Reset] Monitor=<monitor> Color boost=33 Update rate=9 Smooth changes=on Zone=All (off) Back brightness=40 Speed=80 (off) Pause when screen off or locked=on [Try (off)]
 pick G-Lite preset Desk
-  = status "Screen effect, not saved to the light" [Report] G-Lite preset=Desk [Update (off)] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect (off)] Back brightness=40 Speed=80 (off) Back light on=on Effect=Screen Monitor=<monitor> Intensity=33 Update rate=9 Smooth changes=on Pause when screen off or locked=on [Reset areas] [Revert (off)]
+  = status "Screen effect, not saved to the light" [Report] G-Lite preset=Desk [Update (off)] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Screen [Revert (off)] [Reset] Monitor=<monitor> Color boost=33 Update rate=9 Smooth changes=on Zone=All (off) Back brightness=40 Speed=80 (off) Pause when screen off or locked=on [Try (off)]
 pick Effect Static
   8081 fn1  01 FF 20 20 02 FF 20 20 03 30 80 FF 04 FF 20 20
   8081 fn1  05 FF 20 20 06 FF 20 20 07 FF 20 20 FF
   8081 fn7  00 00 01
-  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=80 (off) Back light on=on Effect=Static Zone=All <Color FF2020> [Revert]
+  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk • [Update] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Static Zone=All [Revert] <Color FF2020> Back brightness=40 Speed=80 (off) Pause when screen off or locked=on (off) [Try]
 press Revert changes
-  = status "Screen effect, not saved to the light" [Report] G-Lite preset=Desk [Update (off)] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect (off)] Back brightness=40 Speed=80 (off) Back light on=on Effect=Screen Monitor=<monitor> Intensity=33 Update rate=9 Smooth changes=on Pause when screen off or locked=on [Reset areas] [Revert (off)]
+  = status "Screen effect, not saved to the light" [Report] G-Lite preset=Desk [Update (off)] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Screen [Revert (off)] [Reset] Monitor=<monitor> Color boost=33 Update rate=9 Smooth changes=on Zone=All (off) Back brightness=40 Speed=80 (off) Pause when screen off or locked=on [Try (off)]
 restart
 open
   1990 fn2
@@ -145,14 +145,14 @@ open
   1990 fn1
   1990 fn4  00 D7
   1990 fn9  0E 74
-  = status "Screen effect, not saved to the light" [Report] G-Lite preset=Desk [Update (off)] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect (off)] Back brightness=40 Speed=80 (off) Back light on=on Effect=Screen Monitor=<monitor> Intensity=33 Update rate=9 Smooth changes=on Pause when screen off or locked=on [Reset areas] [Revert (off)]
+  = status "Screen effect, not saved to the light" [Report] G-Lite preset=Desk [Update (off)] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Screen [Revert (off)] [Reset] Monitor=<monitor> Color boost=33 Update rate=9 Smooth changes=on Zone=All (off) Back brightness=40 Speed=80 (off) Pause when screen off or locked=on [Try (off)]
 pick Effect Static
   8081 fn1  01 FF 20 20 02 FF 20 20 03 30 80 FF 04 FF 20 20
   8081 fn1  05 FF 20 20 06 FF 20 20 07 FF 20 20 FF
   8081 fn7  00 00 01
-  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk • [Update] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=80 (off) Back light on=on Effect=Static Zone=All <Color FF2020> [Revert]
+  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk • [Update] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Static Zone=All [Revert] <Color FF2020> Back brightness=40 Speed=80 (off) Pause when screen off or locked=on (off) [Try]
 press Update
-  = status "Updated the preset Desk" [Report] G-Lite preset=Desk [Update (off)] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=80 (off) Back light on=on Effect=Static Zone=All <Color FF2020> [Revert (off)]
+  = status "Updated the preset Desk" [Report] G-Lite preset=Desk [Update (off)] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Static Zone=All [Revert (off)] <Color FF2020> Back brightness=40 Speed=80 (off) Pause when screen off or locked=on (off) [Try]
 restart
 open
   1990 fn2
@@ -197,4 +197,4 @@ open
   1990 fn1
   1990 fn4  00 D7
   1990 fn9  0E 74
-  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk [Update (off)] […] Front brightness=50 Color temperature=10 Front light on=off [Try effect] Back brightness=40 Speed=80 (off) Back light on=on Effect=Static Zone=All <Color FF2020> [Revert (off)]
+  = status "Back light set by G-Lite, not saved to the light" [Report] G-Lite preset=Desk [Update (off)] […] Front light on=off Front brightness=50 Color temperature=10 Back light on=on Effect=Static Zone=All [Revert (off)] <Color FF2020> Back brightness=40 Speed=80 (off) Pause when screen off or locked=on (off) [Try]

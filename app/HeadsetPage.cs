@@ -61,7 +61,9 @@ class HeadsetPage : DevicePage
     readonly RoundedBox sound, power, equalizer;
     readonly int sideRow, testRow;
     readonly RowText sideText, testText, offText;
-    const int PictureHeight = 168, NotePadding = 14, MaxBands = 16;
+    const int PictureHeight = 168, NotePadding = 14, MaxBands = 15;
+    // The bands last written to the EEPROM too (persistence 1); a drag writes RAM only, then these once let go. Device queue only.
+    int[] keptBands;
     readonly int[] bandRows = new int[MaxBands];
     readonly RowText[] bandTexts = new RowText[MaxBands];
     readonly Slider[] bandSliders = new Slider[MaxBands];
@@ -118,6 +120,7 @@ class HeadsetPage : DevicePage
                 current.Bands[band] = bandSliders[band].Value - state.Range;
                 Changed(false);
             };
+            bandSliders[i].MouseUp += (s, e) => { if (state != null) { debounce.Stop(); Send(); } };
         }
         int flatRow = rows.Row(equalizer);
         Rows.Row(equalizer, flatRow, "Flat", "Every band back to 0 dB");
@@ -279,6 +282,7 @@ class HeadsetPage : DevicePage
     {
         var want = current.Clone();
         var deviceState = state;
+        bool held = bandSliders.Any(slider => slider.Capture);
         int startedAt = ++sequence;
         RunOnDevice(hidpp =>
         {
@@ -287,8 +291,12 @@ class HeadsetPage : DevicePage
                 HeadsetProtocol.SetSidetone(hidpp, want.Sidetone);
             if (deviceState.HasOff && want.AutoOffMinutes >= 0 && (sent == null || want.AutoOffMinutes != sent.AutoOffMinutes))
                 HeadsetProtocol.SetOff(hidpp, want.AutoOffMinutes);
-            if (deviceState.Frequencies != null && want.Bands != null && (sent == null || !want.SameBands(sent)))
-                HeadsetProtocol.SetEqualizer(hidpp, want.Bands);
+            if (deviceState.Frequencies != null && want.Bands != null
+                && (sent == null || !want.SameBands(sent) || !held && (keptBands == null || !want.Bands.SequenceEqual(keptBands))))
+            {
+                HeadsetProtocol.SetEqualizer(hidpp, want.Bands, !held);
+                if (!held) keptBands = (int[])want.Bands.Clone();
+            }
             sent = want;
         }, () => { if (startedAt == sequence) ClearStatus(); });
     }
@@ -300,7 +308,11 @@ class HeadsetPage : DevicePage
         HeadsetProtocol.State read = null;
         int startedAt = sequence;
         bool autoOff = Demo || found.HasAutoOff;
-        RunOnDevice(hidpp => read = HeadsetProtocol.Read(hidpp, autoOff), () =>
+        RunOnDevice(hidpp =>
+        {
+            read = HeadsetProtocol.Read(hidpp, autoOff);
+            keptBands = read.Set.Bands == null ? null : (int[])read.Set.Bands.Clone();
+        }, () =>
         {
             state = read;
             stored = read.Set.Clone();

@@ -29,6 +29,8 @@
 - The demo has the G213, G513, G PRO, G810, G910 and G410 keyboards.
 - G510 and G510s: the same layout, with a picture of the keyboard lit in its colour, and two new views. M1, M2 and M3 each have their own lighting and G key bindings, as in Logitech Gaming Software: pick one in the footer and its light comes on. Bindings sets what G1 to G18 do; G-Lite keeps them but doesn't act on the G keys yet, nor on the keyboard's M keys. Game shows whether the keyboard's Game mode switch is on.
 - The headset screen follows the same layout: the headset at the top (its battery shows under its name), then Sound (Sidetone, Test sidetone) and Power (Turn off after), a row each. The firmware line is gone (it's in the report).
+- The Litra screen follows the same layout: the light at the top, then Front light and Back light, a setting per row. The Screen effect's settings come right after Effect while it runs, its Intensity now called Color boost, and Try effect is a row of its own.
+- The MX Master, MX Keys and MX Creative Keypad screens follow the same layout: a section per feature, a setting per row.
 - Controls look the same everywhere: one size for toggles, dropdowns, pickers and sliders, and a disabled slider sits at 0.
 - Screen effect: adding a zone makes every zone an equal strip, the new one at the right.
 

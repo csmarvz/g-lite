@@ -170,12 +170,14 @@ static class HeadsetProtocol
 
     // 0x8310, from Logitech's spec (x8310) and the PRO X's report: fn 0 gives the band count and the dB range, fn 1 the frequencies
     // from a band (7 per call, big endian), fn 2 one signed byte per band (location 0, the stored equalizer). The PRO X stored bands
-    // written with persistence 2 without applying them (CLAUDE.md); this writes persistence 1, RAM and EEPROM. Experimental.
+    // written with persistence 2 without applying them (CLAUDE.md); this writes persistence 1, RAM and EEPROM, and 0 while a band is
+    // dragged. Experimental.
     static void ReadEqualizer(Hidpp hidpp, State state)
     {
         byte feature = hidpp.FeatureIndex(0x8310);
         var info = hidpp.Call(feature, 0);
-        int count = Math.Min((int)info[0], 16);
+        // fn 3 writes a persistence byte before the bands, in a 16-byte report.
+        int count = Math.Min((int)info[0], 15);
         if (count == 0) return;
         var frequencies = new int[count];
         for (int start = 0; start < count; start += 7)
@@ -189,9 +191,11 @@ static class HeadsetProtocol
         state.Frequencies = frequencies;
     }
 
-    public static void SetEqualizer(Hidpp hidpp, int[] bands)
+    // keep: persistence 1, RAM and EEPROM; otherwise 0, RAM only (while a band is dragged, sparing the EEPROM).
+    public static void SetEqualizer(Hidpp hidpp, int[] bands, bool keep)
     {
-        hidpp.Call(hidpp.FeatureIndex(0x8310), 3, new[] { (byte)1 }.Concat(bands.Select(band => (byte)(sbyte)band)).ToArray());
+        hidpp.Call(hidpp.FeatureIndex(0x8310), 3,
+            new[] { (byte)(keep ? 1 : 0) }.Concat(bands.Select(band => (byte)(sbyte)band)).ToArray());
     }
 
     public static void SetSidetone(Hidpp hidpp, int level)

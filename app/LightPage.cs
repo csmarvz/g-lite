@@ -126,14 +126,20 @@ class LightPage : DevicePage
 
     internal override bool Busy { get { return debounce.Enabled; } }
 
-    readonly Label frontHead, lumenValue, kelvinValue, levelValue, speedHead, speedValue, zoneHead, colorHead, boostValue, rateValue;
+    readonly Label lumenValue, kelvinValue, levelValue, speedValue, boostValue, rateValue;
     readonly Toggle frontPower, backPower, smoothToggle, lockToggle;
     readonly Slider lumen, kelvin, level, speed, boost, rate;
-    readonly SegmentedPicker zonePicker, effects;
+    readonly SegmentedPicker zonePicker;
+    readonly Dropdown effects;
     readonly ColorRow colors;
-    readonly RoundedBox liveBox, frontBox, backBox, areas, settingsBox;
-    readonly Label liveHead;
     readonly LightPicture picture;
+    // The front light's rows, the back light's (left out without one) and Saving's note, in design units.
+    readonly RowLayout rows;
+    readonly RoundedBox backBox, savingBox;
+    readonly int screenRow, monitorRow, boostRow, rateRow, smoothRow, tryRow;
+    readonly RowText frontText, lumenText, kelvinText, backText, effectText, zoneText, colorText, levelText, speedText, pauseText, tryText;
+    readonly bool canTry;
+    const int PictureHeight = 96, PickerWidth = 336, ZonesHeight = 176, NotePadding = 14;
     string tried;
     readonly Dropdown monitorDropdown;
     readonly ScreenPreview preview;
@@ -149,90 +155,66 @@ class LightPage : DevicePage
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };
         setup = LitraProtocol.Screen(Settings.Get(Saved));
 
-        liveBox = Ui.Add(this, new RoundedBox(), 20, 118, 616, 96);
-        liveHead = Ui.Text(liveBox, "Live on the light", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
-        picture = Ui.Add(liveBox, new LightPicture(), 14, 30, 588, 58);
+        // The picture stays above the rows, which scroll under it.
+        picture = Ui.Add(this, new LightPicture(), 20, BodyTop, Rows.Width, PictureHeight);
         picture.Picked += index => { if (zonePicker.Enabled) { picked = index; RefreshControls(); } };
-        var front = frontBox = Ui.Add(this, new RoundedBox(), 20, 224, 616, 86);
-        frontHead = Ui.Text(front, "Front light", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
-        frontPower = Power(front, 14, 36, "Front light on", on => Edit(edited => edited.FrontOn = on, true));
-        Ui.Text(front, "Brightness", 110, 36, () => Theme.Dim, 9f);
-        lumenValue = Value(front, 110, 36, 230);
-        lumen = Ui.Add(front, new Slider { AccessibleName = "Front brightness" }, 110, 54, 230, 24);
+        var sheet = UseBody(BodyTop + PictureHeight + 12).Sheet;
+        rows = new RowLayout(sheet);
+
+        Label heading;
+        var front = rows.Section("Front light", out heading);
+        int y = rows.Row(front);
+        frontText = Rows.Row(front, y, "Power", "The light facing you");
+        frontPower = Rows.Toggle(front, y, "Front light on");
+        frontPower.Changed += () => Edit(edited => edited.FrontOn = frontPower.Checked, true);
+        y = rows.Row(front);
+        lumenText = Rows.Row(front, y, "Brightness", "In lumens");
+        lumen = Rows.Slider(front, y, "Front brightness", out lumenValue);
         lumen.Changed += (s, e) =>
         {
             int snapped = lumens.Snap(lumens.Min + (lumens.Max - lumens.Min) * lumen.Value / 100);
             Edit(edited => edited.Lumen = snapped, false);
         };
-        Ui.Text(front, "Color temperature", 366, 36, () => Theme.Dim, 9f);
-        kelvinValue = Value(front, 366, 36, 236);
-        kelvin = Ui.Add(front, new Slider { AccessibleName = "Color temperature", Step = 1 }, 366, 54, 236, 24);
+        y = rows.Row(front);
+        kelvinText = Rows.Row(front, y, "Color temperature", "Warm to cool, in kelvins");
+        kelvin = Rows.Slider(front, y, "Color temperature", out kelvinValue);
+        kelvin.Step = 1;
         kelvin.Changed += (s, e) =>
         {
             int snapped = kelvins.Snap(kelvins.Min + kelvin.Value * kelvins.Step);
             Edit(edited => edited.Kelvin = snapped, false);
         };
 
-        backBox = Ui.Add(this, new RoundedBox { Visible = back }, 20, 320, 616, 268);
-        Ui.Text(backBox, "Back light", 14, 12, () => Theme.Dim, 9f, Ui.Semibold);
-        if (back && found.Has(0x8071))
-        {
-            tryButton = Ui.Add(backBox, new FlatButton { Text = "Try effect", AccessibleName = "Try the light's own effects" },
-                490, 6, 112, 28);
-            tryButton.Click += (s, e) => TryMenu();
-        }
-        backPower = Power(backBox, 14, 36, "Back light on", on => Edit(edited => edited.BackOn = on, true));
-        Ui.Text(backBox, "Brightness", 110, 36, () => Theme.Dim, 9f);
-        levelValue = Value(backBox, 110, 36, 230);
-        level = Ui.Add(backBox, new Slider { AccessibleName = "Back brightness" }, 110, 54, 230, 24);
-        level.Changed += (s, e) => { int brightness = Math.Max(1, level.Value); Edit(edited => edited.BackLevel = brightness, false); };
-        speedHead = Ui.Text(backBox, "Speed", 366, 36, () => Theme.Dim, 9f);
-        speedValue = Value(backBox, 366, 36, 236);
-        speed = Ui.Add(backBox, new Slider { AccessibleName = "Speed" }, 366, 54, 236, 24);
-        speed.Changed += (s, e) =>
-        {
-            int period = SpeedScale.Period(speed.Value, LightState.MinPeriod, LightState.MaxPeriod);
-            Edit(edited => edited.Period = period, false);
-        };
-        Ui.Text(backBox, "Effect", 14, 88, () => Theme.Dim, 9f);
-        effects = Ui.Add(backBox,
-            new SegmentedPicker { Items = LightState.Effects.Concat(new[] { "Screen" }).ToArray(), AccessibleName = "Effect" },
-            14, 106, 588, 30);
+        // The back light (0x8081): its rows, the Screen effect's after Effect while it runs, and Try effect on a light with 0x8071.
+        backBox = rows.Section("Back light", out heading);
+        y = rows.Row(backBox);
+        backText = Rows.Row(backBox, y, "Power", "The colored light at the back");
+        backPower = Rows.Toggle(backBox, y, "Back light on");
+        backPower.Changed += () => Edit(edited => edited.BackOn = backPower.Checked, true);
+        y = rows.Row(backBox);
+        effectText = Rows.Row(backBox, y, "Effect", "");
+        effects = Rows.Dropdown(backBox, y, "Effect");
+        effects.Items.AddRange(LightState.Effects.Concat(new[] { "Screen" }));
+        // G-Lite draws every effect but Static, frame by frame.
+        effects.Badge = i => i > LightState.Static ? "Live" : null;
         effects.Picked += index =>
         {
             if (index == LightState.Effects.Length) { if (!screening) { ScreenOn(); Edited(); } return; }
             if (screening) ScreenOff();
             Edit(edited => { colorsChosen = true; edited.Effect = index; }, true);
         };
-        zoneHead = Ui.Text(backBox, "Zone", 14, 146, () => Theme.Dim, 9f);
-        zonePicker = Ui.Add(backBox,
-            new SegmentedPicker
-            {
-                Items = new[] { "All" }.Concat(Enumerable.Range(1, LightState.Zones).Select(i => i.ToString())).ToArray(),
-                AccessibleName = "Zone", Index = 0
-            },
-            14, 164, 588, 30);
-        zonePicker.Picked += index => { picked = index; RefreshControls(); };
-        colorHead = Ui.Text(backBox, "Color", 14, 204, () => Theme.Dim, 9f);
-        colors = new ColorRow(backBox, 221);
-        colors.Picked += color => Edit(edited =>
-        {
-            colorsChosen = true;
-            for (int zone = 0; zone < LightState.Zones; zone++) if (picked == 0 || picked == zone + 1) edited.Colors[zone] = color;
-        }, true);
-
-        areas = Ui.Add(this, new RoundedBox { Visible = false }, 20, 372, 358, 240);
-        settingsBox = Ui.Add(this, new RoundedBox { Visible = false }, 390, 372, 246, 240);
-        Ui.Text(areas, "Screen areas", 14, 12, () => Theme.Dim, 9f);
-        var frame = Ui.Add(areas, new RoundedBox(), 14, 34, 330, 158);
-        preview = Ui.Add(frame, new ScreenPreview(), 8, 8, 314, 142);
+        screenRow = rows.Row(backBox, ZonesHeight);
+        Rows.Row(backBox, screenRow, "Zones", "");
+        // The monitor takes the row's width up to Reset, down to its bottom; the light's seven areas are fixed, one per zone.
+        preview = Ui.Add(backBox, new ScreenPreview(), 130, screenRow + 14, Rows.Width - Rows.Inset - 66 - 12 - 130, 148);
         preview.Picked += index => { selectedZone = index; preview.Selected = index; preview.Invalidate(); };
         preview.Done += ScreenChanged;
-        var resetAreas = Ui.Add(areas, new FlatButton { Text = "Reset areas", AccessibleName = "Reset the screen areas" },
-            14, 200, 110, 30);
+        var resetAreas = Ui.Add(backBox, new FlatButton { Text = "Reset", AccessibleName = "Reset the screen areas" },
+            Rows.Width - Rows.Inset - 66, screenRow + 132, 66, 30);
         resetAreas.Click += (s, e) => { setup.Zones = LitraProtocol.ScreenZones(); selectedZone = 0; ScreenChanged(); };
-        Ui.Text(settingsBox, "Monitor", 14, 12, () => Theme.Dim, 9f);
-        monitorDropdown = Ui.Add(settingsBox, new Dropdown { AccessibleName = "Monitor" }, 14, 34, 218, 30);
+        monitorRow = rows.Row(backBox);
+        Rows.Row(backBox, monitorRow, "Monitor", "The screen the light follows");
+        monitorDropdown = Rows.Dropdown(backBox, monitorRow, "Monitor");
         monitorDropdown.Picked += index =>
         {
             var all = Screen.AllScreens;
@@ -241,13 +223,15 @@ class LightPage : DevicePage
             ScreenChanged();
             Snap();
         };
-        Ui.Text(settingsBox, "Intensity", 14, 72, () => Theme.Dim, 9f);
-        boostValue = Value(settingsBox, 14, 72, 218);
-        boost = Ui.Add(settingsBox, new Slider { AccessibleName = "Intensity" }, 14, 90, 218, 24);
+        boostRow = rows.Row(backBox);
+        Rows.Row(backBox, boostRow, "Color boost", "Stronger screen colors on the light");
+        boost = Rows.Slider(backBox, boostRow, "Color boost", out boostValue);
         boost.Changed += (s, e) => { setup.Boost = boost.Value; boostValue.Text = setup.Boost + "%"; ScreenChanged(); };
-        Ui.Text(settingsBox, "Update rate", 14, 118, () => Theme.Dim, 9f);
-        rateValue = Value(settingsBox, 14, 118, 218);
-        rate = Ui.Add(settingsBox, new Slider { AccessibleName = "Update rate", Max = 9, Step = 1 }, 14, 136, 218, 24);
+        rateRow = rows.Row(backBox);
+        Rows.Row(backBox, rateRow, "Update rate", "How often the light follows the screen");
+        rate = Rows.Slider(backBox, rateRow, "Update rate", out rateValue);
+        rate.Max = 9;
+        rate.Step = 1;
         rate.Changed += (s, e) =>
         {
             setup.Interval = 1000 - rate.Value * 100;
@@ -255,9 +239,51 @@ class LightPage : DevicePage
             screenTimer.Interval = setup.Interval;
             ScreenChanged();
         };
-        smoothToggle = Option(settingsBox, "Smooth changes", 14, 168, 20, () => setup.Smooth = !setup.Smooth);
-        lockToggle = Option(settingsBox, "Pause when screen off or locked", 14, 194, 36,
-            () => setup.PauseWhenLocked = !setup.PauseWhenLocked);
+        smoothRow = rows.Row(backBox);
+        Rows.Row(backBox, smoothRow, "Smooth changes", "Colors fade instead of jumping");
+        smoothToggle = Rows.Toggle(backBox, smoothRow, "Smooth changes");
+        smoothToggle.Changed += () => { setup.Smooth = smoothToggle.Checked; ScreenChanged(); };
+        y = rows.Row(backBox);
+        zoneText = Rows.Row(backBox, y, "Zone", "Click the light to pick one");
+        zonePicker = Rows.Picker(backBox, y, "Zone",
+            new[] { "All" }.Concat(Enumerable.Range(1, LightState.Zones).Select(i => i.ToString())).ToArray(), PickerWidth);
+        zonePicker.Index = 0;
+        zonePicker.Picked += index => { picked = index; RefreshControls(); };
+        y = rows.Row(backBox);
+        colorText = Rows.Row(backBox, y, "Color", "The picked zone's color");
+        colors = new ColorRow(backBox, Rows.Width - Rows.Inset - ColorRow.Widest, y + (Ui.RowHeight - ColorRow.Size) / 2, true);
+        colors.Picked += color => Edit(edited =>
+        {
+            colorsChosen = true;
+            for (int zone = 0; zone < LightState.Zones; zone++) if (picked == 0 || picked == zone + 1) edited.Colors[zone] = color;
+        }, true);
+        y = rows.Row(backBox);
+        levelText = Rows.Row(backBox, y, "Brightness", "How bright the back light is");
+        level = Rows.Slider(backBox, y, "Back brightness", out levelValue);
+        level.Changed += (s, e) => { int brightness = Math.Max(1, level.Value); Edit(edited => edited.BackLevel = brightness, false); };
+        y = rows.Row(backBox);
+        speedText = Rows.Row(backBox, y, "Speed", "How fast the effect moves");
+        speed = Rows.Slider(backBox, y, "Speed", out speedValue);
+        speed.Changed += (s, e) =>
+        {
+            int period = SpeedScale.Period(speed.Value, LightState.MinPeriod, LightState.MaxPeriod);
+            Edit(edited => edited.Period = period, false);
+        };
+        y = rows.Row(backBox);
+        pauseText = Rows.Row(backBox, y, "Pause when screen off or locked", "For the Screen effect");
+        lockToggle = Rows.Toggle(backBox, y, "Pause when screen off or locked");
+        lockToggle.Changed += () => { setup.PauseWhenLocked = lockToggle.Checked; ScreenChanged(); };
+        tryRow = rows.Row(backBox);
+        tryText = Rows.Row(backBox, tryRow, "Light's own effects", "");
+        tryButton = Rows.Button(backBox, tryRow, "Try", "Try the light's own effects");
+        tryButton.Click += (s, e) => TryMenu();
+        canTry = back && found.Has(0x8071);
+
+        savingBox = rows.Section("Saving", out heading);
+        string savingText = "The light keeps the front light's settings. G-Lite keeps the back light's and sets them again when it starts "
+            + "and when you open this screen. Effects other than Static stop when you quit G-Lite.";
+        int noteRow = rows.Row(savingBox, Rows.NoteHeight(savingText) + 2 * NotePadding);
+        Rows.Note(savingBox, noteRow + NotePadding, savingText);
 
         screenTimer.Tick += (s, e) => Tick();
         snapTimer.Tick += (s, e) => Snap();
@@ -278,25 +304,6 @@ class LightPage : DevicePage
             animationTimer.Dispose();
         }
         base.Dispose(disposing);
-    }
-
-    Toggle Power(Control parent, int x, int y, string name, Action<bool> changed)
-    {
-        Ui.Text(parent, "Power", x, y, () => Theme.Dim, 9f);
-        var toggle = Ui.Add(parent, new Toggle { AccessibleName = name }, x, y + 21, 34, 18);
-        toggle.Changed += () => changed(toggle.Checked);
-        return toggle;
-    }
-
-    Toggle Option(Control parent, string text, int x, int y, int tall, Action flip)
-    {
-        var toggle = Ui.Add(parent, new Toggle { AccessibleName = text }, x, y + 2, 34, 18);
-        toggle.Changed += () => { flip(); ScreenChanged(); };
-        var label = Ui.Text(parent, text, x + 42, y, () => Theme.Text, 9f);
-        label.AutoSize = false;
-        label.Size = new Size(176, tall);
-        toggle.Follow(label);
-        return toggle;
     }
 
     void TryMenu()
@@ -564,54 +571,64 @@ class LightPage : DevicePage
     {
         loading = true;
         var light = current;
-        frontHead.Text = ready ? "Front light" : "Front light (reading…)";
+        // A light without a back light (0x8081) has the front light's rows only; the Screen effect's show while it runs.
+        rows.ShowSection(backBox, back);
+        rows.ShowSection(savingBox, back);
+        foreach (int row in new[] { screenRow, monitorRow, boostRow, rateRow, smoothRow }) rows.ShowRow(backBox, row, screening);
+        rows.ShowRow(backBox, tryRow, canTry);
+        FitBody(rows.Place(Scaled, true));
+
         frontPower.Enabled = lumen.Enabled = kelvin.Enabled = ready;
+        frontText.Enable(ready);
+        lumenText.Enable(ready);
+        kelvinText.Enable(ready);
         if (light != null)
         {
             frontPower.Checked = light.FrontOn;
             lumen.Value = (light.Lumen - lumens.Min) * 100 / Math.Max(1, lumens.Max - lumens.Min);
-            lumenValue.Text = light.Lumen + " lm";
             kelvin.Max = Math.Max(1, (kelvins.Max - kelvins.Min) / kelvins.Step);
             kelvin.Value = (light.Kelvin - kelvins.Min) / kelvins.Step;
-            kelvinValue.Text = light.Kelvin + " K";
             backPower.Checked = light.BackOn;
             level.Value = light.BackLevel;
-            levelValue.Text = light.BackLevel + "%";
         }
+        lumenValue.Text = ready && light != null ? light.Lumen + " lm" : "";
+        kelvinValue.Text = ready && light != null ? light.Kelvin + " K" : "";
+        levelValue.Text = ready && light != null ? light.BackLevel + "%" : "";
         lumen.Invalidate();
         kelvin.Invalidate();
         level.Invalidate();
         backPower.Enabled = level.Enabled = effects.Enabled = ready;
-        if (tryButton != null) tryButton.Enabled = ready && !screening && groups != null;
-        zonePicker.Index = picked;
-        zonePicker.Invalidate();
+        backText.Enable(ready);
+        levelText.Enable(ready);
+        effectText.Enable(ready);
+        bool zoned = ready && light != null && !screening && (light.Effect == LightState.Static || light.Effect == LightState.Breathe);
+        bool moving = ready && light != null && !screening && light.Effect != LightState.Static;
+        effectText.Hint.Text = screening ? "The light follows the screen"
+            : moving ? "Drawn by G-Lite: it stops when you quit G-Lite" : "What the back light does";
         effects.Index = screening ? LightState.Effects.Length : light == null ? -1 : light.Effect;
         effects.Invalidate();
-        bool plain = back && !screening;
-        bool zoned = ready && light != null && (light.Effect == LightState.Static || light.Effect == LightState.Breathe);
-        bool moving = ready && light != null && !screening && light.Effect != LightState.Static;
-        zoneHead.Visible = zonePicker.Visible = colorHead.Visible = plain;
-        foreach (var control in backBox.Controls.Cast<Control>().Where(control => control is Swatch)) control.Visible = plain;
-        zonePicker.Enabled = plain && zoned;
-        SetDimmed(zoneHead, zoned);
-        SetDimmed(colorHead, zoned);
-        if (plain) colors.RefreshControls(light == null ? 0xFFFFFF : light.Colors[picked == 0 ? 0 : picked - 1], zoned);
-        SetDimmed(speedHead, moving);
+        zonePicker.Index = picked;
+        zonePicker.Enabled = zoned;
+        zonePicker.Invalidate();
+        zoneText.Enable(zoned);
+        colorText.Enable(zoned);
+        colors.RefreshControls(light == null ? 0xFFFFFF : light.Colors[picked == 0 ? 0 : picked - 1], zoned);
+        speedText.Enable(moving);
         speed.Enabled = moving;
         if (light != null) speed.Value = SpeedScale.Percent(light.Period, LightState.MinPeriod, LightState.MaxPeriod);
         speedValue.Text = moving ? speed.Value + "%" : "";
         speed.Invalidate();
-        backBox.Height = backBox.Width * (screening ? 148 : 268) / 616;
-        liveBox.Visible = !(back && screening);
-        frontBox.Top = backBox.Width * (liveBox.Visible ? 224 : 118) / 616;
-        backBox.Top = backBox.Width * (liveBox.Visible ? 320 : 214) / 616;
-        liveHead.Text = trying ? "Live on the light: trying " + tried + ", look at the light" : "Live on the light";
+        pauseText.Enable(screening);
+        lockToggle.Enabled = screening;
+        bool canTryNow = ready && !screening && groups != null;
+        tryButton.Enabled = canTryNow;
+        tryText.Enable(canTryNow);
+        tryText.Hint.Text = trying ? "Trying " + tried + ": look at the light" : "Experimental: what each one does isn't known yet";
         Show(light == null ? null
             : light.Effect == LightState.Static ? light.Colors
             : LitraProtocol.Frame(light, clock.Elapsed.TotalMilliseconds));
         Animation();
-        areas.Visible = settingsBox.Visible = back && screening;
-        if (back && screening) Monitors();
+        if (back) Monitors();
         loading = false;
     }
 
@@ -634,7 +651,6 @@ class LightPage : DevicePage
         lockToggle.Checked = setup.PauseWhenLocked;
         boost.Invalidate();
         rate.Invalidate();
-        loading = false;
     }
 
     void Values()
@@ -711,7 +727,7 @@ class LightPage : DevicePage
         LightState read = null;
         LightRange readLumens = null, readKelvins = null;
         List<byte[]> readGroups = null;
-        bool canTry = tryButton != null;
+        bool tryable = canTry;
         var remembered = new LightState();
         bool hasRemembered = back && remembered.ReadBack(Settings.Get(Remembered));
         bool screen = screening, wasTrying = trying;
@@ -730,7 +746,7 @@ class LightPage : DevicePage
                 var on = LitraProtocol.BackOn(hidpp);
                 read.BackOn = on ?? true;
                 read.Colors = Enumerable.Repeat(-1, LightState.Zones).ToArray();
-                if (canTry) try { readGroups = G915Lighting.Clusters(hidpp); } catch (NotSupportedException) { } catch (HidppError) { }
+                if (tryable) try { readGroups = G915Lighting.Clusters(hidpp); } catch (NotSupportedException) { } catch (HidppError) { }
             }
             sent = read.Clone();
             if (hasRemembered)
