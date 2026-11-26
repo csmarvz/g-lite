@@ -830,8 +830,26 @@ static class Traces
             script.Press("Backlight");
             script.Press("Backlight");
             script.Press("Revert changes");
-            return first + "on firmware 72.00\n" + script.Text;
+            first += "on firmware 72.00\n" + script.Text;
         }
+        // Logi Options+ installed and stopped, its diversions left (docs/mx-key-bindings.md): the screen gives the keys back as it
+        // opens; then Options+ diverts F5 again and Settings stops it.
+        found.Features = found.Features.Concat(new[] { 0x1B04 }).ToArray();
+        var diverted = FakeOther.For(found);
+        OtherDevicePage.OptionsPlusStopped = () => true;
+        try
+        {
+            using (var script = Begin(() => DeviceTable.For(found).Make(found, diverted)))
+            {
+                script.Do("Logi Options+ diverts F5, then Settings stops it", () =>
+                {
+                    diverted.Reporting[2] = 0x01;
+                    ((OtherDevicePage)script.Page).ReleaseKeys();
+                });
+                return first + "with Logi Options+ stopped\n" + script.Text;
+            }
+        }
+        finally { OtherDevicePage.OptionsPlusStopped = () => false; }
     }
 
     static string Keypad()
@@ -1301,6 +1319,8 @@ static class Traces
         if (Script.ShotFolder != null) Directory.CreateDirectory(Script.ShotFolder);
         var failures = new List<string>();
         Directory.CreateDirectory(folder);
+        // Not this PC's Logi Options+: the trace that wants it stopped says so.
+        OtherDevicePage.OptionsPlusStopped = () => false;
         foreach (var trace in All())
         {
             Fresh();

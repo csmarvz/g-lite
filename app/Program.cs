@@ -198,7 +198,10 @@ class MainWindow : Form
         runToggle = Ui.Add(start, new Toggle { AccessibleName = "Run on startup" }, 616 - 14 - 40, 21, 40, 22);
         runToggle.Changed += () => SetStartup(runToggle.Checked);
 
-        Rows.Section(settings.Sheet, "Services", ref sectionTop, new ServicesBox(demo), ServicesBox.DesignHeight);
+        var services = new ServicesBox(demo);
+        // Keys Logi Options+ diverted are dead once it's gone (docs/mx-key-bindings.md).
+        services.Stopped += id => { if (id == "optionsplus") foreach (var page in pages.Values.OfType<OtherDevicePage>()) page.ReleaseKeys(); };
+        Rows.Section(settings.Sheet, "Services", ref sectionTop, services, ServicesBox.DesignHeight);
         settings.Fit(sectionTop);
 
         foreach (var page in new Control[] { empty, settingsPage, logsPage, updatePage }) Watch(page);
@@ -654,7 +657,7 @@ class MainWindow : Form
                 Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x2110, 0x2121, 0x2150, 0x2201 } },
             new FoundDevice { Key = "demo|mxkeys", Name = "MX Keys S", Kind = "keyboard",
                 Link = "Bolt", Index = 3, WirelessId = 0xB378, Battery = 55, Firmware = "RBK 74.00, build 0024",
-                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x1982, 0x40A3 } },
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x1982, 0x40A3, 0x4521, 0x4540 } },
             new FoundDevice { Key = "demo|mxmini", Name = "MX Mechanical Mini", Kind = "keyboard",
                 Link = "Bluetooth", Index = 0xFF, Battery = 50, Firmware = "RBK 72.03, build 0014",
                 Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x1982, 0x40A3, 0x4521, 0x4540 } },
@@ -1054,6 +1057,8 @@ class MainWindow : Form
         if (args.Length >= 3 && args[0] == "--services") { Environment.ExitCode = LogitechSoftware.RunElevated(args); return; }
         WindowHelpers.EnableDpiAwareness();
         bool fresh, demo = args.Contains("--demo");
+        // The demo's devices are made up: this PC's Logi Options+ didn't divert their keys.
+        if (demo) OtherDevicePage.OptionsPlusStopped = () => false;
         using (var mutex = new Mutex(true, demo ? "GLiteDemo" : "GLite", out fresh))
         {
             if (!fresh && args.Contains("--restart"))

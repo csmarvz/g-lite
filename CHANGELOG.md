@@ -4,7 +4,10 @@
 
 ### Added
 
-- MX Mechanical Mini: a picture of the keyboard, lit while its backlight is on, with ISO's Enter when the keyboard's layout is ISO. Tried on a real keyboard.
+- MX Mechanical Mini and MX Keys S: a picture of the keyboard, lit while its backlight is on, as bright as its level and with its effect (Contrast, Breathing, Waves, Reaction to key presses, Random), with ISO's Enter when the keyboard's layout is ISO. Tried on a real Mini.
+- MX keyboards: the backlight's levels are numbered 0 (off) to 7, as in Logi Options+.
+- Reports read how each 0x1B04 control reports now (fn 2): diverted or remapped by an app like Logi Options+.
+- MX keyboards and mice: keys Logi Options+ had taken over (diverted) work again once it's stopped, from Settings or before G-Lite started; until now they did nothing until the device reconnected. Tried on an MX Mechanical Mini.
 - MX keyboards: the backlight's effects (Static, Contrast, Breathing, Waves, Reaction, Random) and battery saving, where the keyboard has them, and a Keys section: F1–F12 as media keys or standard keys, and turning off Caps Lock, Num Lock, Scroll Lock, Insert or the Windows key. The MX Mechanical Mini's effects, F1–F12 and disabled keys were tried on it. The effect and F1–F12 aren't set again when the keyboard comes back, since its own keys change them.
 - A backlight setting the keyboard doesn't have is left out once it's read (the MX Mechanical Mini on its first firmware has no automatic mode, levels or fade delays).
 - Settings: Logi Options+ in the Services box, stopped and started like G HUB (its service and its programs), since it sets the MX devices' settings again over G-Lite's.
@@ -16,6 +19,7 @@
 ### Fixed
 
 - Easy-Switch: after switching, the Computer picker shows the computer the device went to, not the one it left, and the device is read again when it comes back.
+- MX keyboards: turning Automatic off sets the level the Level slider shows, not the one the room's light had set, level 0 (off) too.
 
 ## [0.1.0-beta] - 2026-11-25
 

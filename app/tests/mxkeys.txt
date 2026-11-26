@@ -9,37 +9,36 @@ open
   1815 fn3  01
   1815 fn1  02
   40A3 fn0  FF
-  = status "" [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=3 Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min Battery saving=on F1–F12 as media keys=on [Revert (off)] Computer=1: Desk PC
+  = status "" [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=3 Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min [Revert (off)] Battery saving=on F1–F12 as media keys=on Computer=1: Desk PC
 slide Level 5
   1982 fn0
   1982 fn1  01 1D FF 05 06 00 06 00 3C
-  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=5 Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min Battery saving=on F1–F12 as media keys=on [Revert] Computer=1: Desk PC
+  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=5 Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min [Revert] Battery saving=on F1–F12 as media keys=on Computer=1: Desk PC
 press Automatic
   1982 fn0
   1982 fn1  01 0D FF 00 06 00 06 00 3C
-  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=on Level=5 (off) Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min Battery saving=on F1–F12 as media keys=on [Revert] Computer=1: Desk PC
+  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=on Level=5 (off) Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min [Revert] Battery saving=on F1–F12 as media keys=on Computer=1: Desk PC
 press Backlight
   1982 fn0
   1982 fn1  00 0D FF 00 06 00 06 00 3C
-  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=off Automatic=off (off) Level=5 (off) Fades after, hands away=30 s (off) Fades after, hands near=30 s (off) Fades after, plugged in=5 min (off) Battery saving=on F1–F12 as media keys=on [Revert] Computer=1: Desk PC
+  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=off Automatic=off (off) Level=5 (off) Fades after, hands away=30 s (off) Fades after, hands near=30 s (off) Fades after, plugged in=5 min (off) [Revert] Battery saving=on F1–F12 as media keys=on Computer=1: Desk PC
 press Backlight
   1982 fn0
   1982 fn1  01 0D FF 00 06 00 06 00 3C
-  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=on Level=5 (off) Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min Battery saving=on F1–F12 as media keys=on [Revert] Computer=1: Desk PC
+  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=on Level=5 (off) Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min [Revert] Battery saving=on F1–F12 as media keys=on Computer=1: Desk PC
 press Automatic
   1982 fn0
-  1982 fn2
   1982 fn1  01 1D FF 05 06 00 06 00 3C
-  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=5 Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min Battery saving=on F1–F12 as media keys=on [Revert] Computer=1: Desk PC
+  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=5 Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min [Revert] Battery saving=on F1–F12 as media keys=on Computer=1: Desk PC
 pick Fades after, hands away 2 min
   1982 fn0
   1982 fn1  01 1D FF 05 18 00 06 00 3C
-  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=5 Fades after, hands away=2 min Fades after, hands near=30 s Fades after, plugged in=5 min Battery saving=on F1–F12 as media keys=on [Revert] Computer=1: Desk PC
+  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=5 Fades after, hands away=2 min Fades after, hands near=30 s Fades after, plugged in=5 min [Revert] Battery saving=on F1–F12 as media keys=on Computer=1: Desk PC
 pick Fades after, plugged in 1 h
   1982 fn0
   1982 fn1  01 1D FF 05 18 00 06 00 D0 02
-  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=5 Fades after, hands away=2 min Fades after, hands near=30 s Fades after, plugged in=1 h Battery saving=on F1–F12 as media keys=on [Revert] Computer=1: Desk PC
+  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=5 Fades after, hands away=2 min Fades after, hands near=30 s Fades after, plugged in=1 h [Revert] Battery saving=on F1–F12 as media keys=on Computer=1: Desk PC
 press Revert changes
   1982 fn0
   1982 fn1  01 1D FF 03 06 00 06 00 3C
-  = status "" [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=3 Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min Battery saving=on F1–F12 as media keys=on [Revert (off)] Computer=1: Desk PC
+  = status "" [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=3 Fades after, hands away=30 s Fades after, hands near=30 s Fades after, plugged in=5 min [Revert (off)] Battery saving=on F1–F12 as media keys=on Computer=1: Desk PC

@@ -12,6 +12,10 @@ class OtherDevicePage : DevicePage
     OtherSettings current = new OtherSettings(), stored, sent, remembered, rememberedAtLoad;
     OtherDevice.State state;
     bool loading, dirty;
+    volatile bool releasePending;
+    // What the keys given back (ReleaseIfStopped) came to, set on the work queue: the status line until the next change, so the
+    // screen's own read doesn't clear it.
+    volatile string releasedNote;
     // Set by an Easy-Switch, so the device's return reads it again.
     volatile bool switched;
     int sequence;
@@ -34,8 +38,9 @@ class OtherDevicePage : DevicePage
     int autoRow, levelRow;
     readonly int[] delayRows = new int[3];
     readonly KeyPicture picture;
+    readonly BacklightPicture backlightPicture;
     KeyLayout isoModel;
-    bool isoShown;
+    bool isoShown, pageShown;
     const int HostsWidth = 336, PictureHeight = 168;
 
     internal override bool Busy { get { return debounce.Enabled; } }
@@ -46,6 +51,17 @@ class OtherDevicePage : DevicePage
     protected override void Opened(Hidpp hidpp)
     {
         if (switched && IsHandleCreated) BeginInvoke((Action)(() => { switched = false; Load(); }));
+    }
+
+    // The picture's effect moves only while the screen is shown.
+    public override void Shown() { pageShown = true; base.Shown(); RefreshControls(); }
+
+    public override void Hidden() { pageShown = false; base.Hidden(); RefreshControls(); }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && backlightPicture != null) backlightPicture.Dispose();
+        base.Dispose(disposing);
     }
 
     string Remembered { get { return "device." + found.SettingsKey; } }
@@ -65,6 +81,7 @@ class OtherDevicePage : DevicePage
             var ansi = KeyLayout.Load(model);
             isoModel = ansi.Iso();
             picture = Ui.Add(this, new KeyPicture(ansi) { Live = true, Enabled = false }, 20, BodyTop, Rows.Width, PictureHeight);
+            backlightPicture = new BacklightPicture(picture);
         }
         rows = new RowLayout((picture != null ? UseBody(BodyTop + PictureHeight + 12) : UseBody()).Sheet);
         if (found.Has(0x8040)) Brightness();
@@ -75,7 +92,36 @@ class OtherDevicePage : DevicePage
         if (found.Has(0x40A3) || found.Has(0x4521)) KeySettings();
         if (found.Has(0x1814)) EasySwitch();
         RefreshControls();
+        // Keys a stopped Logi Options+ left diverted are given back at the first read, which a screen not shown also makes
+        // (SendsAgain), so the preset it sends again isn't skipped.
+        releasePending = found.Has(0x1B04);
         if (remembered.ToText() != "") Load();
+    }
+
+    protected override bool SendsAgain { get { return base.SendsAgain || releasePending; } }
+
+    // Logi Options+ installed but not running: keys it diverted are dead until the device reconnects. Off in the demo; the traces
+    // replace it.
+    public static Func<bool> OptionsPlusStopped = () => LogitechSoftware.ByIds(new[] { "optionsplus" })[0]
+        .State(LogitechSoftware.RunningProcesses()) == SoftwareState.Stopped;
+
+    // On the work queue. The check lists the PC's processes, so it stays off the UI thread.
+    void ReleaseIfStopped(Hidpp device)
+    {
+        bool stopped;
+        try { stopped = OptionsPlusStopped(); }
+        catch (Exception ex) { Log.Add(DeviceLabel, "error", "Couldn't look for Logi Options+: " + ex.Message); stopped = false; }
+        if (!stopped) return;
+        int released = OtherDevice.ReleaseDiverted(device);
+        if (released > 0) releasedNote = released + (released == 1 ? " key" : " keys") + " Logi Options+ had taken over work again.";
+    }
+
+    // When Settings stops Logi Options+. A device that's away (switched, asleep) fails quietly: it gets its keys back when it
+    // reconnects anyway.
+    public void ReleaseKeys()
+    {
+        if (!found.Has(0x1B04) || switched) return;
+        RunOnDevice(ReleaseIfStopped, () => { if (releasedNote != null) ShowStatus(releasedNote); }, message => { });
     }
 
     void Brightness()
@@ -181,6 +227,9 @@ class OtherDevicePage : DevicePage
         saver.Changed += () => Change(OtherSettings.Saver, saver.Checked ? 1 : 0);
     }
 
+    // The keyboard's own numbers, as Logi Options+ shows them: 0 is off (an MX Mechanical Mini, 2026-11-26).
+    static string LevelText(int value, int levels) { return value + " of " + (levels - 1); }
+
     int[] EffectChoices()
     {
         return OtherDevice.EffectIds.Where(id => state == null || (state.Effects >> id & 1) != 0).ToArray();
@@ -272,6 +321,7 @@ class OtherDevicePage : DevicePage
     void Changed()
     {
         dirty = true;
+        releasedNote = null;
         sequence++;
         Edited();
         RefreshControls();
@@ -336,7 +386,7 @@ class OtherDevicePage : DevicePage
             level.Max = ready && state.Levels > 1 ? state.Levels - 1 : 1;
             level.Value = Math.Max(0, current[OtherSettings.Level]);
             levelText.Enable(manual);
-            levelValue.Text = ready && current[OtherSettings.Level] >= 0 ? current[OtherSettings.Level] + 1 + " of " + state.Levels : "";
+            levelValue.Text = ready && current[OtherSettings.Level] >= 0 ? LevelText(current[OtherSettings.Level], state.Levels) : "";
             bool delays = ready && current[OtherSettings.Away] > 0 && lit;
             for (int index = 0; index < delayDropdowns.Length; index++)
             {
@@ -389,8 +439,10 @@ class OtherDevicePage : DevicePage
                 isoShown = true;
                 picture.SetModel(isoModel);
             }
-            var shown = ready && current[OtherSettings.Light] == 1 ? Color.White : Theme.KeyOff;
-            picture.ShowLive(Enumerable.Repeat(shown, picture.Count).ToArray(), new bool[picture.Count]);
+            // As bright as the level (0 is off); full when the keyboard has no levels.
+            int shownLevel = current[OtherSettings.Level];
+            double brightness = ready && shownLevel >= 0 && state.Levels > 1 ? shownLevel / (double)(state.Levels - 1) : 1;
+            backlightPicture.Show(ready && current[OtherSettings.Light] == 1, brightness, current[OtherSettings.Effect], pageShown);
         }
         if (hosts != null)
         {
@@ -451,7 +503,7 @@ class OtherDevicePage : DevicePage
 
     protected override void ClearStatus()
     {
-        ShowStatus(state != null && dirty ? "Applied to the " + Noun + "." : "");
+        ShowStatus(state != null && dirty ? "Applied to the " + Noun + "." : releasedNote ?? "");
     }
 
     // A refused setting goes back to what the device has, and isn't remembered or sent again.
@@ -491,6 +543,7 @@ class OtherDevicePage : DevicePage
         int startedAt = sequence;
         RunOnDevice(device =>
         {
+            if (releasePending) { releasePending = false; ReleaseIfStopped(device); }
             read = OtherDevice.Read(device, found);
             before = read.Set.Clone();
             var want = read.Set.Clone();
@@ -516,5 +569,118 @@ class OtherDevicePage : DevicePage
             if (refused != null && refused.Count > 0) Refused(refused, before);
             rememberedAtLoad = remembered.Clone();
         });
+    }
+}
+
+// An MX keyboard's backlight on its picture: white, as bright as the level, with the keyboard's effect, as seen on an MX Mechanical
+// Mini (2026-11-26): Contrast dims the letters, digits, F1–F4, F9–F12 and the arrows, Breathing fades all the keys in and out, Waves sweep from left to right,
+// Reaction lights a key when it's pressed, Random lights keys at random. The speeds are guesses. Only while the screen is shown:
+// Reaction's key presses come from a hook (KeyPresses) that's removed when it stops.
+class BacklightPicture : IDisposable
+{
+    const int Contrast = 3, Breathing = 2, Waves = 6, Reaction = 4, Random = 5;
+    const double BreathSeconds = 4, WaveSeconds = 3, FadeSeconds = 1, TwinkleSeconds = 1.5, ContrastDim = 0.35;
+    readonly KeyPicture picture;
+    readonly Timer timer = new Timer { Interval = 40 };
+    readonly System.Random random = new System.Random();
+    readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
+    KeyPresses presses;
+    // When each key last lit up, for Reaction and Random.
+    double[] litAt = new double[0];
+    bool lit;
+    double brightness;
+    int effect;
+
+    public BacklightPicture(KeyPicture picture)
+    {
+        this.picture = picture;
+        timer.Tick += (s, e) => Tick();
+    }
+
+    // Minimizing doesn't hide the screen (Hidden), so the ticks idle meanwhile, and Reaction's hook goes until it's back.
+    void Tick()
+    {
+        var form = picture.FindForm();
+        bool minimized = form != null && form.WindowState == FormWindowState.Minimized;
+        if (minimized && presses != null) { presses.Dispose(); presses = null; }
+        if (minimized) return;
+        if (effect == Reaction && presses == null) presses = new KeyPresses();
+        Draw();
+    }
+
+    public void Show(bool on, double level, int newEffect, bool shown)
+    {
+        lit = on;
+        brightness = level;
+        effect = newEffect;
+        bool moving = shown && on && (effect == Breathing || effect == Waves || effect == Reaction || effect == Random);
+        if (moving && !timer.Enabled) timer.Start();
+        if (!moving) timer.Stop();
+        if (moving && effect == Reaction && presses == null) presses = new KeyPresses();
+        if (!(moving && effect == Reaction) && presses != null) { presses.Dispose(); presses = null; }
+        Draw();
+    }
+
+    void Draw()
+    {
+        double seconds = clock.Elapsed.TotalSeconds;
+        if (litAt.Length != picture.Count) litAt = Enumerable.Repeat(-1000.0, picture.Count).ToArray();
+        if (presses != null)
+            foreach (int usage in presses.Take())
+            {
+                int key = KeyOf(usage);
+                // Scan code 2B is \ on ANSI keyboards and # on ISO ones (as Echo does).
+                if (key < 0 && usage == 0x31) key = KeyOf(0x32);
+                if (key >= 0) litAt[key] = seconds;
+            }
+        var colors = new Color[picture.Count];
+        for (int key = 0; key < colors.Length; key++)
+            colors[key] = Ui.Mix(Theme.KeyOff, Color.White, lit ? brightness * Math.Max(0, Math.Min(1, Factor(key, seconds))) : 0);
+        picture.ShowLive(colors, new bool[colors.Length]);
+    }
+
+    int KeyOf(int usage)
+    {
+        int id = GameModeKeys.LightingId(usage);
+        for (int key = 0; key < picture.Count; key++) if (id >= 0 && picture.IdOf(key) == id) return key;
+        return -1;
+    }
+
+    // The key's share of the level, 0 to 1.
+    double Factor(int key, double seconds)
+    {
+        switch (effect)
+        {
+            case Contrast:
+                int id = picture.IdOf(key);
+                // Dim, as on the Mini: letters and digits (lighting ids 01–24), the punctuation among them (2A–35 but `, and ISO's <>,
+                // 61), F1–F4 and F9–F12 (37–3A, 3F–42) and the arrows (4C–4F).
+                bool dim = (id >= 0x01 && id <= 0x24) || (id >= 0x2A && id <= 0x35 && id != 0x32) || id == 0x61
+                    || (id >= 0x37 && id <= 0x3A) || (id >= 0x3F && id <= 0x42) || (id >= 0x4C && id <= 0x4F);
+                return dim ? ContrastDim : 1;
+            case Breathing:
+                return 0.5 - 0.5 * Math.Cos(2 * Math.PI * seconds / BreathSeconds);
+            case Waves:
+                return 0.5 + 0.5 * Math.Cos(2 * Math.PI * (picture.XOf(key) - seconds / WaveSeconds));
+            case Reaction:
+                return 1 - (seconds - litAt[key]) / FadeSeconds;
+            case Random:
+                double age = seconds - litAt[key];
+                // About one key in six lit at a time.
+                if (age >= TwinkleSeconds && random.NextDouble() < timer.Interval / 1000.0 / TwinkleSeconds / 5)
+                {
+                    litAt[key] = seconds;
+                    age = 0;
+                }
+                return age < TwinkleSeconds ? Math.Sin(Math.PI * age / TwinkleSeconds) : 0;
+            default:
+                return 1;
+        }
+    }
+
+    public void Dispose()
+    {
+        timer.Dispose();
+        if (presses != null) presses.Dispose();
     }
 }

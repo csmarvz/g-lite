@@ -267,6 +267,8 @@ class ServicesBox : RoundedBox
         { SoftwareState.Running, SoftwareState.NotInstalled, SoftwareState.NotInstalled, SoftwareState.Running };
     SoftwareState[] shown;
     bool lightingOn, busy, reading;
+    // A software's id (LogitechSoftware.Id) once Stop worked, on the UI thread.
+    public event Action<string> Stopped;
     // Bumped by each Stop or Start, so a read started before it is dropped.
     int sequence;
     DateTime problemsUntil;
@@ -375,6 +377,7 @@ class ServicesBox : RoundedBox
         {
             foreach (var row in rows) demoStates[row] = stop ? SoftwareState.Stopped : SoftwareState.Running;
             busy = false;
+            if (stop && Stopped != null) foreach (var item in software) Stopped(item.Id);
             Read();
             return;
         }
@@ -394,6 +397,7 @@ class ServicesBox : RoundedBox
                     foreach (var row in rows) problems[row] = problem;
                     problemsUntil = DateTime.UtcNow.AddSeconds(15);
                 }
+                else if (stop && Stopped != null) foreach (var item in software) Stopped(item.Id);
                 Read();
             }));
         });

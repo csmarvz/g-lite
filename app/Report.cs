@@ -18,7 +18,7 @@ static class Report
         { 0x1814, new[] { 0 } },
         { 0x1815, new[] { 0, 1 } },
         { 0x1982, new[] { 0, 2 } },
-        { 0x1B04, new[] { 0, 1 } },
+        { 0x1B04, new[] { 0, 1, 2 } },
         { 0x1F20, new[] { 0, 1 } },
         { 0x2110, new[] { 0 } },
         { 0x2111, new[] { 0, 1 } },
@@ -349,7 +349,13 @@ static class Report
             case 0x1B04:
                 {
                     var count = reader.Show("count", 0x1B04, 0);
-                    for (int i = 0; count != null && i < Math.Min((int)count[0], 48); i++) reader.Show("control " + i, 0x1B04, 1, (byte)i);
+                    // fn 2 is how each control reports now: diverted (byte 2 bit 0) by an app like Logi Options+, and remapped to
+                    // (bytes 3–4). docs/mx-key-bindings.md.
+                    for (int i = 0; count != null && i < Math.Min((int)count[0], 48); i++)
+                    {
+                        var info = reader.Show("control " + i, 0x1B04, 1, (byte)i);
+                        if (info != null) reader.Show("reporting " + i, 0x1B04, 2, info[0], info[1]);
+                    }
                     break;
                 }
             case 0x1990:

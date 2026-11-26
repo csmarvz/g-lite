@@ -969,8 +969,13 @@ class FakeOther : Hidpp
     static readonly Dictionary<int, byte> Index = new Dictionary<int, byte>
     {
         { 0x8040, 2 }, { 0x2201, 3 }, { 0x2110, 4 }, { 0x2121, 5 }, { 0x2150, 6 }, { 0x1982, 7 }, { 0x1814, 8 }, { 0x1815, 9 }, { 0x4540, 10 }, { 0x40A3, 11 },
-        { 0x4521, 12 }
+        { 0x4521, 12 }, { 0x1B04, 13 }
     };
+    // 0x1B04: five of the MX Mechanical Mini's controls (docs/mx-key-bindings.md), as Logi Options+ left them: F1 (Easy-Switch, not
+    // divertable), F4, F5, Vol- and Page Up, with F4, Vol- and Page Up diverted.
+    static readonly int[] ControlIds = { 0x00D1, 0x00E2, 0x00E3, 0x00E8, 0x011A };
+    static readonly byte[] ControlFlags = { 0x0A, 0x3A, 0x3A, 0x34, 0x30 };
+    public readonly byte[] Reporting = { 0x00, 0x01, 0x00, 0x01, 0x01 };
     static readonly string[] Names = { "Desk PC", "MacBook" };
     public int Bright = 100, Dpi = 1000, Shift = 10, Wheel, ThumbInvert, Level = 3, Host, Effect, MediaKeys = 1, DisabledKeys;
     public bool RefuseDpi;
@@ -990,7 +995,7 @@ class FakeOther : Hidpp
     public static FakeOther For(FoundDevice found)
     {
         var device = new FakeOther();
-        if (OtherDevice.Picture(found) == null) return device;
+        if (OtherDevice.Picture(found) != "mx-mechanical-mini.json") return device;
         device.Backlight = new byte[] { 0x01, 0x1D, 0x3D, 0x7F, 0x00, 0x07, 0x78, 0x00, 0x78, 0x00, 0x78, 0x00, 0, 0, 0, 0 };
         device.Level = 7;
         return device;
@@ -1064,6 +1069,20 @@ class FakeOther : Hidpp
                 if (fn == 1) MediaKeys = parameters[1];
                 reply[0] = parameters[0]; reply[1] = (byte)MediaKeys; reply[2] = 1; reply[3] = 1;
                 break;
+            case 0x1B04:
+                {
+                    if (fn == 0) { reply[0] = (byte)ControlIds.Length; break; }
+                    int control = fn == 1 ? parameters[0] : Array.IndexOf(ControlIds, parameters[0] << 8 | parameters[1]);
+                    reply[0] = (byte)(ControlIds[control] >> 8);
+                    reply[1] = (byte)ControlIds[control];
+                    if (fn == 1) { reply[4] = ControlFlags[control]; reply[8] = 0x04; }
+                    // fn 3: each flag (bits 0, 2, 4, 6) changes only with its valid bit, one above.
+                    if (fn == 3)
+                        for (int flag = 1; flag < 0x100; flag <<= 2)
+                            if ((parameters[2] & flag << 1) != 0) Reporting[control] = (byte)(Reporting[control] & ~flag | parameters[2] & flag);
+                    if (fn == 2 || fn == 3) { reply[2] = Reporting[control]; reply[3] = reply[0]; reply[4] = reply[1]; }
+                    break;
+                }
             case 0x4521:
                 if (fn == 2) DisabledKeys = parameters[0];
                 reply[0] = (byte)(fn == 0 ? 0x1D : DisabledKeys);

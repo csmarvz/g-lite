@@ -5,7 +5,7 @@ using System.Collections.Generic;
 static class SelfTest
 {
     static readonly string[] LayoutFiles =
-        { "g515-tkl.json", "g915-tkl.json", "g915.json", "g915-x.json", "g915-x-tkl.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json", "g413.json", "g510.json", "g-pro.json", "g410.json", "g810.json", "g910.json", "mx-mechanical-mini.json" };
+        { "g515-tkl.json", "g915-tkl.json", "g915.json", "g915-x.json", "g915-x-tkl.json", "g815.json", "g512-x-75.json", "g-full.json", "g-60.json", "g213.json", "g413.json", "g510.json", "g-pro.json", "g410.json", "g810.json", "g910.json", "mx-mechanical-mini.json", "mx-keys-s.json" };
 
     static bool LightsM3(FakeG510 keyboard)
     {
@@ -681,6 +681,20 @@ static class SelfTest
                 && device.DisabledKeys == 0x11 && unlisted.Set[OtherSettings.Effect] == 0xFF,
                 "MX keyboards: the effect in fn 1 b2, battery saving as options bit 2, F1–F12 in 0x40A3 fn 1, the disabled keys the keyboard"
                 + " can disable as 0x4521 fn 2's bits (no Num Lock on the Mini), and an effect not in the list read as FF");
+        }
+        {
+            var mini = new FoundDevice { Name = "MX Mechanical Mini", Kind = "keyboard", Features = new[] { 0x1982, 0x1B04 } };
+            var device = FakeOther.For(mini);
+            int released = OtherDevice.ReleaseDiverted(device);
+            var read = OtherDevice.Read(device, mini);
+            // The keyboard's own keys set level 5 after the read; a fade delay changed on the screen keeps it.
+            device.Backlight[5] = 5;
+            var want = read.Set.Clone();
+            want[OtherSettings.Away] = 120;
+            OtherDevice.Apply(device, read, want, read.Set);
+            Check(released == 3 && device.Reporting.All(flags => flags == 0) && device.Backlight[5] == 5,
+                "0x1B04: the three diverted controls given back (fn 3 with the valid bit, the flag off), none diverted; in manual mode, a"
+                + " backlight change keeps the level stored on the keyboard");
         }
         var lightState = new LightState
         {

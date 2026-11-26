@@ -30,29 +30,30 @@ class KeyLayout
                 ? Ids[rowIndex].Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList()
                 : new List<string>())
             .ToArray();
-        int tab = Array.FindIndex(rows, row => row.Contains("\\:1.5")),
-            caps = Array.FindIndex(rows, row => row.Contains("Enter:2.25")),
-            shift = Array.FindIndex(rows, row => row.Contains("Shift:2.25"));
+        // The first \, Enter and Shift that have a width: \ 1.5, Enter 2.25 and Shift 2.25 on most, \ 1.25 and Enter 2 on the MX Keys S.
+        // The numpad's Enter comes after the main one.
+        Func<List<string>, string, int> find = (row, name) => row.FindIndex(token => token.StartsWith(name + ":"));
+        int tab = Array.FindIndex(rows, row => find(row, "\\") >= 0),
+            caps = Array.FindIndex(rows, row => find(row, "Enter") >= 0),
+            shift = Array.FindIndex(rows, row => find(row, "Shift") >= 0);
         if (tab < 0 || caps < 0 || shift < 0) return null;
-        int backslash = rows[tab].IndexOf("\\:1.5"), enter = rows[caps].IndexOf("Enter:2.25"),
-            leftShift = rows[shift].IndexOf("Shift:2.25");
+        int backslash = find(rows[tab], "\\"), enter = find(rows[caps], "Enter"), leftShift = find(rows[shift], "Shift");
+        float backslashWidth = Width(rows[tab][backslash]), enterWidth = Width(rows[caps][enter]), shiftWidth = Width(rows[shift][leftShift]);
         int backslashKey = KeyIndex(rows[tab], backslash), enterKey = KeyIndex(rows[caps], enter),
             shiftKey = KeyIndex(rows[shift], leftShift);
         string enterId = enterKey < ids[caps].Count ? ids[caps][enterKey] : "--";
 
-        rows[tab][backslash] = "Enter:1.25:2:.25";
+        rows[tab][backslash] = "Enter:" + Number(backslashWidth - 0.25f) + ":2:.25";
         rows[tab].Insert(backslash, "_.25");
         if (backslashKey < ids[tab].Count) ids[tab][backslashKey] = enterId;
 
         rows[caps][enter] = "#";
         if (enter + 1 < rows[caps].Count && rows[caps][enter + 1].StartsWith("_"))
-            rows[caps][enter + 1] = "_"
-                + (float.Parse(rows[caps][enter + 1].Substring(1), CultureInfo.InvariantCulture) + 1.25f)
-                    .ToString("0.##", CultureInfo.InvariantCulture);
-        else if (enter + 1 < rows[caps].Count) rows[caps].Insert(enter + 1, "_1.25");
+            rows[caps][enter + 1] = "_" + Number(float.Parse(rows[caps][enter + 1].Substring(1), CultureInfo.InvariantCulture) + enterWidth - 1);
+        else if (enter + 1 < rows[caps].Count) rows[caps].Insert(enter + 1, "_" + Number(enterWidth - 1));
         if (!Zones && enterKey < ids[caps].Count) ids[caps][enterKey] = "2F";
 
-        rows[shift][leftShift] = "Shift:1.25";
+        rows[shift][leftShift] = "Shift:" + Number(shiftWidth - 1);
         rows[shift].Insert(leftShift + 1, "<>");
         if (shiftKey < ids[shift].Count) ids[shift].Insert(shiftKey + 1, Zones ? ids[shift][shiftKey] : "61");
 
@@ -70,6 +71,10 @@ class KeyLayout
     }
 
     static int KeyIndex(List<string> row, int tokenIndex) { return row.Take(tokenIndex).Count(cell => !cell.StartsWith("_")); }
+
+    static float Width(string token) { return float.Parse(token.Split(':')[1], CultureInfo.InvariantCulture); }
+
+    static string Number(float value) { return value.ToString("0.##", CultureInfo.InvariantCulture); }
 
     public List<int> KeyIds()
     {

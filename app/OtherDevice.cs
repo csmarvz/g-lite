@@ -77,7 +77,8 @@ static class OtherDevice
     // The keyboards drawn on their screen, matched by name; the layout comes from a photo. The Mac version has the same keys.
     public static string Picture(FoundDevice found)
     {
-        return found.ShortName.StartsWith("MX Mechanical Mini", StringComparison.OrdinalIgnoreCase) ? "mx-mechanical-mini.json" : null;
+        if (found.ShortName.StartsWith("MX Mechanical Mini", StringComparison.OrdinalIgnoreCase)) return "mx-mechanical-mini.json";
+        return found.ShortName.StartsWith("MX Keys S", StringComparison.OrdinalIgnoreCase) ? "mx-keys-s.json" : null;
     }
 
     public class State
@@ -175,6 +176,8 @@ static class OtherDevice
                 {
                     state.Levels = info[0];
                     set[OtherSettings.Level] = Math.Min(info[0] - 1, mode == 3 ? config[5] : info[1]);
+                    // Faded, it reads 0, which turning Automatic off would store as off.
+                    if (mode != 3 && set[OtherSettings.Level] == 0) set[OtherSettings.Level] = Math.Max(1, (info[0] - 1) / 2);
                 }
                 // Bytes 6–11: the fade delays, little-endian, in units of 5 s (spec x1982 v3, named by Solaar).
                 // Offered only when all three read, since an older version of the feature may not have them.
@@ -291,8 +294,9 @@ static class OtherDevice
             {
                 // The keyboard stores this write. Delays not picked go back as read; the level is sent only in mode 3, else 0, like Solaar.
                 // Mode 2 can't be set (spec x1982 v3), so a keyboard in it is written back as automatic.
-                // Outside mode 3 the stored level reads 0, so going to mode 3 without a level picked takes the level lit now
-                // (fn 2 byte 1) rather than turning the backlight off.
+                // Outside mode 3 the stored level reads 0, which is off, so going to mode 3 without a level picked takes the one the
+                // screen shows (0 too), else the level lit now (fn 2 byte 1). Not fn 2 first: in automatic it's the room's level, and
+                // the screen still shows the one picked before (seen on an MX Mechanical Mini, 2026-11-26).
                 var config = device.Call(device.FeatureIndex(0x1982), 0);
                 int now = config[1] >> 3 & 3;
                 int mode;
@@ -306,13 +310,16 @@ static class OtherDevice
                 if (want[OtherSettings.Saver] >= 0) options = (byte)(options & ~0x04 | (want[OtherSettings.Saver] == 1 ? 0x04 : 0));
                 // FF leaves the effect as it is.
                 bool effect = want[OtherSettings.Effect] >= 0 && want[OtherSettings.Effect] != sent[OtherSettings.Effect];
+                // Already in mode 3, a level not picked is the stored one, which the keyboard's own keys may have changed since.
                 bool picked = want[OtherSettings.Level] >= 0 && want[OtherSettings.Level] != sent[OtherSettings.Level];
+                bool fromLitNow = mode == 3 && !picked && now != 3 && want[OtherSettings.Level] < 0;
                 int level = mode != 3 ? 0
                     : picked ? want[OtherSettings.Level]
                     : now == 3 ? config[5]
+                    : !fromLitNow ? want[OtherSettings.Level]
                     : device.Call(device.FeatureIndex(0x1982), 2)[1];
-                // A level nobody picked that reads 0 (faded, or never set) would store the backlight off: take the middle level instead.
-                if (mode == 3 && !picked && level == 0) level = Math.Max(1, (state.Levels - 1) / 2);
+                // A level the screen doesn't show that reads 0 (faded, or never set) would store the backlight off: take the middle one.
+                if (fromLitNow && level == 0) level = Math.Max(1, (state.Levels - 1) / 2);
                 bool on = want[OtherSettings.Light] >= 0 ? want[OtherSettings.Light] == 1 : (config[0] & 1) != 0;
                 var delays = new byte[6];
                 for (int index = 0; index < OtherSettings.Delays.Length; index++)
@@ -334,6 +341,30 @@ static class OtherDevice
     }
 
     public static void Switch(Hidpp device, int host) { device.SendWithoutReply(device.FeatureIndex(0x1814), 1, (byte)host); }
+
+    // Keys an app like Logi Options+ diverted to itself (0x1B04) do nothing while it isn't running, until the device reconnects
+    // (docs/mx-key-bindings.md). This gives them back: fn 3 with the valid bit (one above) of each diversion flag that's on (diverted
+    // 0x01, persistently 0x04, raw XY 0x10, force raw XY 0x40) and the flag off, remap 0 (unchanged). It never diverts. Returns how many.
+    public static int ReleaseDiverted(Hidpp device)
+    {
+        byte feature = device.FeatureIndex(0x1B04);
+        int count = device.CallUnlogged(feature, 0)[0], released = 0;
+        for (int index = 0; index < Math.Min(count, 48); index++)
+            // A control the device refuses doesn't keep the others diverted.
+            try
+            {
+                var info = device.CallUnlogged(feature, 1, (byte)index);
+                // Neither divertable (0x20, 0x40) nor raw XY (0x100, 0x200): nothing can have diverted it.
+                if ((info[4] & 0x60) == 0 && (info[8] & 0x03) == 0) continue;
+                var reporting = device.CallUnlogged(feature, 2, info[0], info[1]);
+                int clear = new[] { 0x01, 0x04, 0x10, 0x40 }.Where(flag => (reporting[2] & flag) != 0).Sum(flag => flag << 1);
+                if (clear == 0) continue;
+                device.Call(feature, 3, info[0], info[1], (byte)clear, 0, 0);
+                released++;
+            }
+            catch (HidppError) { }
+        return released;
+    }
 
     // Keeps only what this device has, in its ranges, so a preset or remembered setting from elsewhere can't send something it lacks.
     public static OtherSettings KeepSupported(OtherSettings over, State state)

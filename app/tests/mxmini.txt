@@ -65,3 +65,45 @@ press Backlight
   = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Effect=Static Battery saving=on F1–F12 as media keys=on Disable Caps Lock=off [Revert] Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC
 press Revert changes
   = status "" [Report] G-Lite preset=– [New…] […] Backlight=on Effect=Static Battery saving=on F1–F12 as media keys=on Disable Caps Lock=off [Revert (off)] Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC
+with Logi Options+ stopped
+open
+  1B04 fn0
+  1B04 fn1
+  1B04 fn1  01
+  1B04 fn2  00 E2
+  1B04 fn3  00 E2 02
+  1B04 fn1  02
+  1B04 fn2  00 E3
+  1B04 fn1  03
+  1B04 fn2  00 E8
+  1B04 fn3  00 E8 02
+  1B04 fn1  04
+  1B04 fn2  01 1A
+  1B04 fn3  01 1A 02
+  1982 fn0
+  1982 fn2
+  1814 fn0
+  1815 fn0
+  1815 fn1
+  1815 fn3
+  1815 fn1  01
+  1815 fn3  01
+  1815 fn1  02
+  40A3 fn0  FF
+  4521 fn0
+  4521 fn1
+  4540 fn0
+  = status "3 keys Logi Options+ had taken over work again." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=7 Effect=Static Fades after, hands away=10 min Fades after, hands near=10 min [Revert (off)] Fades after, plugged in=10 min Battery saving=on F1–F12 as media keys=on Disable Caps Lock=off Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC
+Logi Options+ diverts F5, then Settings stops it
+  1B04 fn0
+  1B04 fn1
+  1B04 fn1  01
+  1B04 fn2  00 E2
+  1B04 fn1  02
+  1B04 fn2  00 E3
+  1B04 fn3  00 E3 02
+  1B04 fn1  03
+  1B04 fn2  00 E8
+  1B04 fn1  04
+  1B04 fn2  01 1A
+  = status "1 key Logi Options+ had taken over work again." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=7 Effect=Static Fades after, hands away=10 min Fades after, hands near=10 min [Revert (off)] Fades after, plugged in=10 min Battery saving=on F1–F12 as media keys=on Disable Caps Lock=off Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC
