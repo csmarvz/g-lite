@@ -6,6 +6,7 @@ KeyPicture.cs
 KeyboardKinds.cs
 KeyboardPage.cs
 MousePage.cs
+MouseShapes.cs
 HeadsetPage.cs
 ZoneLighting.cs
 ZonesPage.cs

@@ -6,6 +6,7 @@
 
 - MX Mechanical Mini and MX Keys S: a picture of the keyboard, lit while its backlight is on, as bright as its level and with its effect (Contrast, Breathing, Waves, Reaction to key presses, Random), with ISO's Enter when the keyboard's layout is ISO. Tried on a real Mini.
 - MX keyboards: the backlight's levels are numbered 0 (off) to 7, as in Logi Options+.
+- G305 and G304: a picture of the mouse in its own shape, from its top view, with the LED under the DPI button lit as the mouse's light is.
 - Reports read how each 0x1B04 control reports now (fn 2): diverted or remapped by an app like Logi Options+.
 - MX keyboards and mice: keys Logi Options+ had taken over (diverted) work again once it's stopped, from Settings or before G-Lite started; until now they did nothing until the device reconnected. Tried on an MX Mechanical Mini.
 - MX keyboards: the backlight's effects (Static, Contrast, Breathing, Waves, Reaction, Random) and battery saving, where the keyboard has them, and a Keys section: F1–F12 as media keys or standard keys, and turning off Caps Lock, Num Lock, Scroll Lock, Insert or the Windows key. The MX Mechanical Mini's effects, F1–F12 and disabled keys were tried on it. The effect and F1–F12 aren't set again when the keyboard comes back, since its own keys change them.
