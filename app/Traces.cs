@@ -801,6 +801,39 @@ static class Traces
         }
     }
 
+    // The MX Mechanical Mini: its effects, battery saving, F1–F12 and disabled keys; then on its first firmware, whose backlight is only
+    // on and off (its first report), so the other backlight rows go.
+    static string MxMini()
+    {
+        var found = new FoundDevice
+        {
+            Key = "trace|mxmini", Name = "MX Mechanical Mini", Kind = "keyboard", Link = "Bluetooth", Index = 0xFF,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x1982, 0x40A3, 0x4521, 0x4540 }
+        };
+        string first;
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, FakeOther.For(found))))
+        {
+            script.Pick("Effect", "Waves");
+            script.Press("Battery saving");
+            script.Press("F1–F12 as media keys");
+            script.Press("Disable Caps Lock");
+            script.Press("Disable Windows key");
+            script.Press("Disable Caps Lock");
+            script.Press("Revert changes");
+            first = script.Text;
+        }
+        Settings.Remove("device.mxmechanicalmini");
+        var firstFirmware = FakeOther.For(found);
+        firstFirmware.Backlight = (byte[])FakeOther.FirstMiniBacklight.Clone();
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, firstFirmware)))
+        {
+            script.Press("Backlight");
+            script.Press("Backlight");
+            script.Press("Revert changes");
+            return first + "on firmware 72.00\n" + script.Text;
+        }
+    }
+
     static string Keypad()
     {
         var found = new FoundDevice
@@ -1250,6 +1283,7 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("headset", Headset);
         yield return new KeyValuePair<string, Func<string>>("mxmaster", MxMaster);
         yield return new KeyValuePair<string, Func<string>>("mxkeys", MxKeys);
+        yield return new KeyValuePair<string, Func<string>>("mxmini", MxMini);
         yield return new KeyValuePair<string, Func<string>>("keypad", Keypad);
     }
 

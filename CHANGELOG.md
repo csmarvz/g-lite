@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- MX Mechanical Mini: a picture of the keyboard, lit while its backlight is on, with ISO's Enter when the keyboard's layout is ISO. Tried on an owner's keyboard.
+- MX keyboards: the backlight's effects (Static, Contrast, Breathing, Waves, Reaction, Random) and battery saving, where the keyboard has them, and a Keys section: F1–F12 as media keys or standard keys, and turning off Caps Lock, Num Lock, Scroll Lock, Insert or the Windows key. The MX Mechanical Mini's effects, F1–F12 and disabled keys were tried on it.
+- A backlight setting the keyboard doesn't have is left out once it's read (the MX Mechanical Mini on its first firmware has only on and off).
+
+### Fixed
+
+- Easy-Switch: after switching, the Computer picker shows the computer the device went to, not the one it left.
+
 ## [0.1.0-beta] - 2026-11-25
 
 G-Lite leaves alpha. Every screen is redesigned like Settings: the device's picture at the top, then its settings one per row, under section titles, with only the rows the device has. The window can be resized, has Windows' own title bar, and an accent colour.

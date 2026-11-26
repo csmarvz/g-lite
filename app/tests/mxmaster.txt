@@ -49,7 +49,7 @@ pick Computer 2: MacBook
   = status "Switch the mouse to MacBook? It leaves this PC until you switch back." [Report] G-Lite preset=Work [Update (off)] […] Speed=36 SmartShift=off Switch to free spin at=9 (off) Invert scrolling=on Invert the thumb wheel=on Computer=1: Desk PC [Switch] [Revert (off)]
 press Switch
   1814 fn1  01
-  = status "Switched to computer 2. Press the Easy-Switch button to come back." [Report] G-Lite preset=Work [Update (off)] […] Speed=36 SmartShift=off Switch to free spin at=9 (off) Invert scrolling=on Invert the thumb wheel=on Computer=1: Desk PC [Revert (off)]
+  = status "Switched to computer 2. Press the Easy-Switch button to come back." [Report] G-Lite preset=Work [Update (off)] […] Speed=36 SmartShift=off Switch to free spin at=9 (off) Invert scrolling=on Invert the thumb wheel=on Computer=2: MacBook [Revert (off)]
 reopen on a device that forgot
 open
   2201 fn1

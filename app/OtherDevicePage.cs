@@ -19,13 +19,22 @@ class OtherDevicePage : DevicePage
     readonly RowLayout rows;
     Slider bright, dpi, shift, level;
     Label brightValue, dpiValue, shiftValue, levelValue;
-    RowText shiftText, autoText, levelText;
-    Toggle shiftOn, invert, thumb, light, auto;
+    RowText shiftText, autoText, levelText, effectText;
+    Toggle shiftOn, invert, thumb, light, auto, saver, mediaKeys;
+    Dropdown effect;
+    readonly Toggle[] disableToggles = new Toggle[OtherDevice.DisableBits.Length];
+    readonly int[] disableRows = new int[OtherDevice.DisableBits.Length];
+    int effectRow, saverRow, mediaKeysRow;
     readonly RowText[] delayTexts = new RowText[3];
     readonly Dropdown[] delayDropdowns = new Dropdown[3];
     SegmentedPicker hosts;
-    RoundedBox hostsBox;
-    const int HostsWidth = 336;
+    RoundedBox hostsBox, backlightBox, keysBox;
+    int autoRow, levelRow;
+    readonly int[] delayRows = new int[3];
+    readonly KeyPicture picture;
+    KeyLayout isoModel;
+    bool isoShown;
+    const int HostsWidth = 336, PictureHeight = 168;
 
     internal override bool Busy { get { return debounce.Enabled; } }
 
@@ -39,12 +48,21 @@ class OtherDevicePage : DevicePage
         debounce.Tick += (sender, e) => { debounce.Stop(); Send(); };
         remembered = OtherSettings.FromText(Settings.Get(Remembered));
         rememberedAtLoad = remembered.Clone();
-        rows = new RowLayout(UseBody().Sheet);
+        var model = OtherDevice.Picture(found);
+        // The picture stays above the rows, which scroll under it. It only shows the backlight, so it takes no clicks.
+        if (model != null)
+        {
+            var ansi = KeyLayout.Load(model);
+            isoModel = ansi.Iso();
+            picture = Ui.Add(this, new KeyPicture(ansi) { Live = true, Enabled = false }, 20, BodyTop, Rows.Width, PictureHeight);
+        }
+        rows = new RowLayout((picture != null ? UseBody(BodyTop + PictureHeight + 12) : UseBody()).Sheet);
         if (found.Has(0x8040)) Brightness();
         if (found.Has(0x2201)) Pointer();
         if (found.Has(0x2110) || found.Has(0x2111) || found.Has(0x2121)) Wheel();
         if (found.Has(0x2150)) ThumbWheel();
         if (found.Has(0x1982)) Backlight();
+        if (found.Has(0x40A3) || found.Has(0x4521)) KeySettings();
         if (found.Has(0x1814)) EasySwitch();
         RefreshControls();
         if (remembered.ToText() != "") Load();
@@ -115,33 +133,70 @@ class OtherDevicePage : DevicePage
     void Backlight()
     {
         Label heading;
-        var box = rows.Section("Backlight", out heading);
+        var box = backlightBox = rows.Section("Backlight", out heading);
         // Plugged in, the MX Keys S's hand sensor seems off: turned on, it stays dark until a key is pressed.
-        // On battery it lights at once (an owner, 2026-11).
+        // On battery it lights at once (an owner, 2026-11). The MX Mechanical Mini does the same plugged in (an owner, 2026-11-26).
         int y = rows.Row(box);
         Rows.Row(box, y, "Backlight", "Plugged in, the keys light up when you next type");
         light = Rows.Toggle(box, y, "Backlight");
         light.Changed += () => Change(OtherSettings.Light, light.Checked ? 1 : 0);
-        y = rows.Row(box);
+        y = autoRow = rows.Row(box);
         autoText = Rows.Row(box, y, "Automatic", "Dims by itself with the room's light");
         auto = Rows.Toggle(box, y, "Automatic");
         auto.Changed += () => Change(OtherSettings.Auto, auto.Checked ? 1 : 0);
-        y = rows.Row(box);
+        y = levelRow = rows.Row(box);
         levelText = Rows.Row(box, y, "Level", "How bright the keys are, when not automatic");
         level = Rows.Slider(box, y, "Level", out levelValue);
         level.Step = 1;
         // Its level shows while Automatic sets it.
         level.ZeroWhenOff = false;
         level.Changed += (sender, e) => Change(OtherSettings.Level, level.Value);
+        y = effectRow = rows.Row(box);
+        effectText = Rows.Row(box, y, "Effect", "Fn and the light key switch it too");
+        effect = Rows.Dropdown(box, y, "Effect");
+        effect.Picked += picked => Change(OtherSettings.Effect, EffectChoices()[picked]);
         string[] names = { "Hands away", "Hands near", "Plugged in" };
         string[] hints = { "Fades after this long without hands near", "Fades after this long with hands near", "Fades after this long, plugged in" };
         for (int index = 0; index < names.Length; index++)
         {
             int setting = OtherSettings.Delays[index];
-            y = rows.Row(box);
+            y = delayRows[index] = rows.Row(box);
             delayTexts[index] = Rows.Row(box, y, names[index], hints[index]);
             delayDropdowns[index] = Rows.Dropdown(box, y, "Fades after, " + names[index].ToLowerInvariant());
             delayDropdowns[index].Picked += picked => Change(setting, DelayChoices(current[setting])[picked]);
+        }
+        y = saverRow = rows.Row(box);
+        Rows.Row(box, y, "Battery saving", "Turns the backlight off below 10% battery");
+        saver = Rows.Toggle(box, y, "Battery saving");
+        saver.Changed += () => Change(OtherSettings.Saver, saver.Checked ? 1 : 0);
+    }
+
+    int[] EffectChoices()
+    {
+        return OtherDevice.EffectIds.Where(id => state == null || (state.Effects >> id & 1) != 0).ToArray();
+    }
+
+    void KeySettings()
+    {
+        Label heading;
+        keysBox = rows.Section("Keys", out heading);
+        if (found.Has(0x40A3))
+        {
+            int y = mediaKeysRow = rows.Row(keysBox);
+            Rows.Row(keysBox, y, "F1–F12 as media keys", "Off, they type F1–F12. Fn and Esc switch it too");
+            mediaKeys = Rows.Toggle(keysBox, y, "F1–F12 as media keys");
+            mediaKeys.Changed += () => Change(OtherSettings.MediaKeys, mediaKeys.Checked ? 1 : 0);
+        }
+        if (!found.Has(0x4521)) return;
+        for (int index = 0; index < OtherDevice.DisableBits.Length; index++)
+        {
+            int bit = OtherDevice.DisableBits[index];
+            string name = "Disable " + OtherDevice.DisableNames[index];
+            int y = disableRows[index] = rows.Row(keysBox);
+            Rows.Row(keysBox, y, name, "The key does nothing while this is on");
+            var toggle = disableToggles[index] = Rows.Toggle(keysBox, y, name);
+            toggle.Changed += () => Change(OtherSettings.Disabled,
+                toggle.Checked ? current[OtherSettings.Disabled] | bit : current[OtherSettings.Disabled] & ~bit);
         }
     }
 
@@ -181,8 +236,14 @@ class OtherDevicePage : DevicePage
     void Switch(int host)
     {
         LogUserAction("Switch to computer " + (host + 1));
-        RunOnDevice(device => OtherDevice.Switch(device, host),
-            () => ShowStatus("Switched to computer " + (host + 1) + ". Press the Easy-Switch button to come back."));
+        RunOnDevice(device => OtherDevice.Switch(device, host), () =>
+        {
+            // The picker shows where the device is now; showing the page again reads it back.
+            state.Host = host;
+            hosts.Index = host;
+            hosts.Invalidate();
+            ShowStatus("Switched to computer " + (host + 1) + ". Press the Easy-Switch button to come back.");
+        });
     }
 
     void Change(int setting, int value)
@@ -272,6 +333,49 @@ class OtherDevicePage : DevicePage
                 delayDropdowns[index].Enabled = delays;
                 delayTexts[index].Enable(delays);
             }
+            var effects = EffectChoices();
+            bool hasEffect = ready && current[OtherSettings.Effect] >= 0;
+            effect.Items.Clear();
+            effect.Items.AddRange(effects.Select(id => OtherDevice.EffectNames[Array.IndexOf(OtherDevice.EffectIds, id)]));
+            effect.Index = Array.IndexOf(effects, current[OtherSettings.Effect]);
+            effect.Enabled = hasEffect && lit;
+            effectText.Enable(hasEffect && lit);
+            saver.Enabled = ready && current[OtherSettings.Saver] >= 0;
+            saver.Checked = current[OtherSettings.Saver] == 1;
+            // Once read, the rows the keyboard doesn't have go: on its first firmware, the MX Mechanical Mini's backlight is only on or off.
+            rows.ShowRow(backlightBox, effectRow, !ready || hasEffect);
+            rows.ShowRow(backlightBox, saverRow, !ready || current[OtherSettings.Saver] >= 0);
+            rows.ShowRow(backlightBox, autoRow, !ready || current[OtherSettings.Auto] >= 0);
+            rows.ShowRow(backlightBox, levelRow, !ready || current[OtherSettings.Level] >= 0);
+            foreach (int row in delayRows) rows.ShowRow(backlightBox, row, !ready || current[OtherSettings.Away] > 0);
+        }
+        if (keysBox != null)
+        {
+            if (mediaKeys != null)
+            {
+                mediaKeys.Enabled = ready && current[OtherSettings.MediaKeys] >= 0;
+                mediaKeys.Checked = current[OtherSettings.MediaKeys] == 1;
+                rows.ShowRow(keysBox, mediaKeysRow, !ready || current[OtherSettings.MediaKeys] >= 0);
+            }
+            for (int index = 0; index < disableToggles.Length; index++)
+            {
+                if (disableToggles[index] == null) continue;
+                bool can = ready && current[OtherSettings.Disabled] >= 0 && (state.Disableable & OtherDevice.DisableBits[index]) != 0;
+                disableToggles[index].Enabled = can;
+                disableToggles[index].Checked = can && (current[OtherSettings.Disabled] & OtherDevice.DisableBits[index]) != 0;
+                rows.ShowRow(keysBox, disableRows[index], !ready || can);
+            }
+            rows.ShowSection(keysBox, !ready || current[OtherSettings.MediaKeys] >= 0 || current[OtherSettings.Disabled] >= 0);
+        }
+        if (picture != null)
+        {
+            if (!isoShown && isoModel != null && ready && KeyLayout.IsIso(state.LayoutCode))
+            {
+                isoShown = true;
+                picture.SetModel(isoModel);
+            }
+            var shown = ready && current[OtherSettings.Light] == 1 ? Color.White : Theme.KeyOff;
+            picture.ShowLive(Enumerable.Repeat(shown, picture.Count).ToArray(), new bool[picture.Count]);
         }
         if (hosts != null)
         {

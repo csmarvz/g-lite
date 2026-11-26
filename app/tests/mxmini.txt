@@ -1,0 +1,67 @@
+open
+  1982 fn0
+  1982 fn2
+  1814 fn0
+  1815 fn0
+  1815 fn1
+  1815 fn3
+  1815 fn1  01
+  1815 fn3  01
+  1815 fn1  02
+  40A3 fn0  FF
+  4521 fn0
+  4521 fn1
+  4540 fn0
+  = status "" [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=7 Effect=Static Fades after, hands away=10 min Fades after, hands near=10 min [Revert (off)] Fades after, plugged in=10 min Battery saving=on F1–F12 as media keys=on Disable Caps Lock=off Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC
+pick Effect Waves
+  1982 fn0
+  1982 fn1  01 1D 06 07 78 00 78 00 78
+  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=7 Effect=Waves Fades after, hands away=10 min Fades after, hands near=10 min [Revert] Fades after, plugged in=10 min Battery saving=on F1–F12 as media keys=on Disable Caps Lock=off Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC
+press Battery saving
+  1982 fn0
+  1982 fn1  01 19 FF 07 78 00 78 00 78
+  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=7 Effect=Waves Fades after, hands away=10 min Fades after, hands near=10 min [Revert] Fades after, plugged in=10 min Battery saving=off F1–F12 as media keys=on Disable Caps Lock=off Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC
+press F1–F12 as media keys
+  40A3 fn1  FF
+  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=7 Effect=Waves Fades after, hands away=10 min Fades after, hands near=10 min [Revert] Fades after, plugged in=10 min Battery saving=off F1–F12 as media keys=off Disable Caps Lock=off Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC
+press Disable Caps Lock
+  4521 fn2  01
+  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=7 Effect=Waves Fades after, hands away=10 min Fades after, hands near=10 min [Revert] Fades after, plugged in=10 min Battery saving=off F1–F12 as media keys=off Disable Caps Lock=on Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC
+press Disable Windows key
+  4521 fn2  11
+  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=7 Effect=Waves Fades after, hands away=10 min Fades after, hands near=10 min [Revert] Fades after, plugged in=10 min Battery saving=off F1–F12 as media keys=off Disable Caps Lock=on Disable Scroll Lock=off Disable Insert=off Disable Windows key=on Computer=1: Desk PC
+press Disable Caps Lock
+  4521 fn2  10
+  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=7 Effect=Waves Fades after, hands away=10 min Fades after, hands near=10 min [Revert] Fades after, plugged in=10 min Battery saving=off F1–F12 as media keys=off Disable Caps Lock=off Disable Scroll Lock=off Disable Insert=off Disable Windows key=on Computer=1: Desk PC
+press Revert changes
+  40A3 fn1  FF 01
+  4521 fn2
+  1982 fn0
+  1982 fn1  01 1D 00 07 78 00 78 00 78
+  = status "" [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=7 Effect=Static Fades after, hands away=10 min Fades after, hands near=10 min [Revert (off)] Fades after, plugged in=10 min Battery saving=on F1–F12 as media keys=on Disable Caps Lock=off Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC
+on firmware 72.00
+open
+  1982 fn0
+  1982 fn2
+  1814 fn0
+  1815 fn0
+  1815 fn1
+  1815 fn3
+  1815 fn1  01
+  1815 fn3  01
+  1815 fn1  02
+  40A3 fn0  FF
+  4521 fn0
+  4521 fn1
+  4540 fn0
+  = status "" [Report] G-Lite preset=– [New…] […] Backlight=on Effect=Static Battery saving=on F1–F12 as media keys=on Disable Caps Lock=off [Revert (off)] Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC
+press Backlight
+  1982 fn0
+  1982 fn1  00 05 FF
+  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=off Effect=Static (off) Battery saving=on F1–F12 as media keys=on Disable Caps Lock=off [Revert] Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC
+press Backlight
+  1982 fn0
+  1982 fn1  01 05 FF
+  = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Effect=Static Battery saving=on F1–F12 as media keys=on Disable Caps Lock=off [Revert] Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC
+press Revert changes
+  = status "" [Report] G-Lite preset=– [New…] […] Backlight=on Effect=Static Battery saving=on F1–F12 as media keys=on Disable Caps Lock=off [Revert (off)] Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC

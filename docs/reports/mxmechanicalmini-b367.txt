@@ -1,0 +1,109 @@
+G-Lite device report
+G-Lite 0.1.0-beta, Windows 11 build 26200
+2026-11-26 09:14 UTC
+
+Device    MX Mechanical Mini
+Kind      keyboard
+Link      Bluetooth
+Model     Bluetooth B367
+Firmware  RBK 72.03, build 0014
+Battery   45%
+Screen    OtherDevicePage
+
+Features
+01 0001 v2  feature set
+02 0003 v4  firmware
+03 0005 v0  name
+04 1D4B v0  wireless status
+05 0020 v0  config change
+06 0007 v0  friendly name
+07 1004 v3  battery
+08 1B04 v5  controls
+09 1814 v2  change host
+0A 1815 v2  hosts info
+0B 1982 v3  backlight
+0C 40A3 v0  F1–F12
+0D 4220 v0
+0E 4521 v0  disable keys
+0F 4531 v1
+10 4540 v0  keyboard layout
+11 00C3 v0
+12 1802 v0  hidden internal
+13 1803 v0  hidden internal
+14 1806 v8  hidden internal
+15 1816 v0  hidden internal
+16 1805 v0  hidden internal
+17 1830 v0  hidden internal
+18 1891 v9  hidden internal
+19 18A1 v0  hidden internal
+1A 1E00 v0  hidden
+1B 1E02 v0  hidden internal
+1C 1602 v0
+1D 1EB0 v0  hidden internal
+1E 1861 v1  hidden internal
+1F 1A20 v0  hidden internal
+20 18B0 v0  hidden internal
+
+0003 firmware
+entity 0=01 42 4C 31 50 00 00 10 00 B3 67 00 00 00 00 00
+entity 1=00 52 42 4B 72 03 00 14 01 B3 67 00 00 00 00 00
+entity 2=05 00 00 00 00 00 01 26 00 00 00 00 00 00 00 00
+entity 3=02 48 57 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+1B04 controls
+count=20 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+control 0=00 D1 00 AE 0A 01 00 00 04 00 00 00 00 00 00 00
+control 1=00 D2 00 AF 0A 02 00 00 04 00 00 00 00 00 00 00
+control 2=00 D3 00 B0 0A 03 00 00 04 00 00 00 00 00 00 00
+control 3=00 E2 00 C1 3A 04 00 00 04 00 00 00 00 00 00 00
+control 4=00 E3 00 C2 3A 05 00 00 04 00 00 00 00 00 00 00
+control 5=01 03 00 D8 3A 06 00 00 04 00 00 00 00 00 00 00
+control 6=01 08 00 DD 3A 07 00 00 04 00 00 00 00 00 00 00
+control 7=01 0A 00 DF 3A 08 00 00 04 00 00 00 00 00 00 00
+control 8=01 1C 00 F1 3A 09 00 00 04 00 00 00 00 00 00 00
+control 9=00 D4 00 B1 3A 0A 00 00 04 00 00 00 00 00 00 00
+control 10=01 41 00 FD 3A 0B 00 00 04 00 00 00 00 00 00 00
+control 11=00 E7 00 03 3A 0C 00 00 04 00 00 00 00 00 00 00
+control 12=00 E8 00 02 34 00 00 00 04 00 00 00 00 00 00 00
+control 13=00 E9 00 01 34 00 00 00 04 00 00 00 00 00 00 00
+control 14=01 0B 00 E0 30 00 00 00 04 00 00 00 00 00 00 00
+control 15=01 0C 00 E1 30 00 00 00 04 00 00 00 00 00 00 00
+control 16=01 0D 00 E2 30 00 00 00 04 00 00 00 00 00 00 00
+control 17=01 0E 00 E3 30 00 00 00 04 00 00 00 00 00 00 00
+control 18=01 0F 00 E4 30 00 00 00 04 00 00 00 00 00 00 00
+control 19=01 10 00 E5 30 00 00 00 04 00 00 00 00 00 00 00
+control 20=01 11 00 E6 30 00 00 00 04 00 00 00 00 00 00 00
+control 21=01 12 00 E7 30 00 00 00 04 00 00 00 00 00 00 00
+control 22=01 3C 00 F8 30 00 00 00 04 00 00 00 00 00 00 00
+control 23=01 15 00 EA 30 00 00 00 04 00 00 00 00 00 00 00
+control 24=01 1E 00 F3 30 00 00 00 04 00 00 00 00 00 00 00
+control 25=01 17 00 EC 30 00 00 00 04 00 00 00 00 00 00 00
+control 26=01 18 00 ED 30 00 00 00 04 00 00 00 00 00 00 00
+control 27=01 19 00 EE 30 00 00 00 04 00 00 00 00 00 00 00
+control 28=01 1A 00 EF 30 00 00 00 04 00 00 00 00 00 00 00
+control 29=01 1B 00 F0 30 00 00 00 04 00 00 00 00 00 00 00
+control 30=00 DE 00 62 00 00 00 00 04 00 00 00 00 00 00 00
+control 31=00 34 00 62 00 00 00 00 00 00 00 00 00 00 00 00
+
+1814 change host
+hosts=03 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+1815 hosts info
+info=13 08 03 01 00 00 00 00 00 00 00 00 00 00 00 00
+host 0=00 01 04 01 16 18 00 00 00 00 00 00 00 00 00 00
+host 1=01 01 04 01 03 18 00 00 00 00 00 00 00 00 00 00
+host 2=02 00 00 00 00 18 00 00 00 00 00 00 00 00 00 00
+
+1982 backlight
+config=01 0D 3D 7F 00 02 78 00 78 00 78 00 00 00 00 00
+info=08 02 02 00 03 00 06 00 3C 00 00 00 00 00 00 00
+
+40A3 F1–F12
+this computer=FF 01 01 01 00 00 00 00 00 00 00 00 00 00 00 00
+
+4521 disable keys
+can disable=1D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+disabled=00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+4540 keyboard layout
+layout=0D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00

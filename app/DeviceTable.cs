@@ -71,7 +71,7 @@ class DeviceTable
 
     public static readonly DeviceTable Other = new DeviceTable { Matches = OtherDevice.Supports, Screen = typeof(OtherDevicePage),
         Make = (found, fake) => new OtherDevicePage(found, fake),
-        Fake = found => new FakeOther() };
+        Fake = FakeOther.For };
 
     public static DeviceTable For(FoundDevice found)
     {

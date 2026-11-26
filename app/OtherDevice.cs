@@ -6,10 +6,16 @@ using System.Text;
 class OtherSettings
 {
     // Away, Near and Powered are the backlight's fade delays in seconds: hands away from the keys, hands near them, on external power.
+    // Effect is a 0x1982 effect id, Saver the backlight's battery saving, MediaKeys 0x40A3's state (1: F1–F12 are media keys) and
+    // Disabled 0x4521's bits (1 Caps Lock, 2 Num Lock, 4 Scroll Lock, 8 Insert, 16 Windows).
     public const int Bright = 0, Dpi = 1, Shift = 2, Invert = 3, Thumb = 4, Light = 5, Auto = 6, Level = 7,
-        Away = 8, Near = 9, Powered = 10, Count = 11;
+        Away = 8, Near = 9, Powered = 10, Effect = 11, Saver = 12, MediaKeys = 13, Disabled = 14, Count = 15;
     public static readonly int[] Delays = { Away, Near, Powered };
-    static readonly string[] Keys = { "bright", "dpi", "shift", "invert", "thumb", "light", "auto", "level", "away", "near", "powered" };
+    static readonly string[] Keys =
+    {
+        "bright", "dpi", "shift", "invert", "thumb", "light", "auto", "level", "away", "near", "powered", "effect", "saver", "mediakeys",
+        "disabled"
+    };
 
     // -1 is a setting the device doesn't have, or one this set leaves alone. Shift is SmartShift's threshold: 1–50, or 255 when it's off
     // (the wheel never switches to free spin).
@@ -52,23 +58,40 @@ class OtherSettings
 }
 
 // The settings of Logitech devices that aren't G devices. Bytes from Solaar's settings, OpenLogi's captures of an MX Master 3S
-// and MX Keys S, and the MX Creative Keypad's report. See docs/other-devices.md.
+// and MX Keys S, and the reports of an MX Creative Keypad and an MX Mechanical Mini. See docs/other-devices.md.
 static class OtherDevice
 {
     // 0x1814 alone doesn't get the screen: a device with only Easy-Switch has nothing else to set.
-    public static readonly int[] Features = { 0x8040, 0x2201, 0x2110, 0x2111, 0x2121, 0x2150, 0x1982 };
+    public static readonly int[] Features = { 0x8040, 0x2201, 0x2110, 0x2111, 0x2121, 0x2150, 0x1982, 0x40A3, 0x4521 };
+
+    // 0x1982's effects, in Logi Options+'s order; 1 (none) isn't offered.
+    public static readonly int[] EffectIds = { 0, 3, 2, 6, 4, 5 };
+    public static readonly string[] EffectNames = { "Static", "Contrast", "Breathing", "Waves", "Reaction", "Random" };
+
+    public static readonly int[] DisableBits = { 1, 2, 4, 8, 16 };
+    public static readonly string[] DisableNames = { "Caps Lock", "Num Lock", "Scroll Lock", "Insert", "Windows key" };
 
     // Devices with 0x40A0 and a coarse battery (the K295) keep the info page and its media keys toggle.
     public static bool Supports(FoundDevice found) { return !found.MediaKeys && Features.Any(found.Has); }
+
+    // The keyboards drawn on their screen, matched by name; the layout comes from a photo. The Mac version has the same keys.
+    public static string Picture(FoundDevice found)
+    {
+        return found.ShortName.StartsWith("MX Mechanical Mini", StringComparison.OrdinalIgnoreCase) ? "mx-mechanical-mini.json" : null;
+    }
 
     public class State
     {
         public OtherSettings Set = new OtherSettings();
         public int BrightMax = 100, ShiftDefault = 10, ShiftFeature, Levels, Hosts, Host = -1;
+        // 0x1982's effect bits (bit n is effect n) and 0x4521's keys that can be disabled.
+        public int Effects, Disableable;
         public int[] Dpis = new int[0];
         public string[] Names = new string[0];
         public bool[] Paired = new bool[0];
         public bool PairedKnown;
+        // 0x4540's layout code, read only for a keyboard with a picture (KeyLayout.IsIso).
+        public int LayoutCode = -1;
     }
 
     static int ReadUInt16BigEndian(byte[] bytes, int offset) { return bytes[offset] << 8 | bytes[offset + 1]; }
@@ -136,10 +159,17 @@ static class OtherDevice
                 // (spec x1982 v3).
                 int mode = config[1] >> 3 & 3;
                 if ((config[2] & 0x08) != 0 && (config[2] & 0x20) != 0) set[OtherSettings.Auto] = mode == 1 || mode == 2 ? 1 : 0;
-                var info = (config[2] & 0x20) != 0 ? Try(device, 0x1982, 2) : null;
+                // b2 bit 2: battery saving is supported, b1 bit 2 it's on (off below 10%, Logi Options+); b3–4 the effects, a bit
+                // each (OpenLogi's notes on x1982 v3). Only Static and None (the MX Keys S) is no choice.
+                if ((config[2] & 0x04) != 0) set[OtherSettings.Saver] = (config[1] & 0x04) != 0 ? 1 : 0;
+                state.Effects = config[3] | config[4] << 8;
+                bool effects = (state.Effects & ~3) != 0;
+                var info = (config[2] & 0x20) != 0 || effects ? Try(device, 0x1982, 2) : null;
+                // fn 2 b3 is the effect shown now.
+                if (effects && info != null && info[3] < 16 && (state.Effects >> info[3] & 1) != 0) set[OtherSettings.Effect] = info[3];
                 // In mode 3 the level is fn 0's b5, the stored setting, like Solaar. Outside it b5 reads 0 (spec x1982 v3),
                 // so the slider shows fn 2's b1, the level lit now (it fades when idle).
-                if (info != null && info[0] > 1)
+                if ((config[2] & 0x20) != 0 && info != null && info[0] > 1)
                 {
                     state.Levels = info[0];
                     set[OtherSettings.Level] = Math.Min(info[0] - 1, mode == 3 ? config[5] : info[1]);
@@ -161,6 +191,25 @@ static class OtherDevice
             if (state.Hosts > 0 && found.Has(0x1815))
                 try { ReadNames(device, state); }
                 catch (TimeoutException) { state.PairedKnown = false; }
+        }
+        // fn 0 `FF` asks for the computer in use: host, state (1: F1–F12 are media keys, as Logi Options+ shows it), default,
+        // capabilities (an MX Mechanical Mini answers `FF 01 01 01`; OpenLogi's notes).
+        if (found.Has(0x40A3))
+        {
+            var fnKeys = Try(device, 0x40A3, 0, 0xFF, 0, 0);
+            if (fnKeys != null) set[OtherSettings.MediaKeys] = fnKeys[1] & 1;
+        }
+        // fn 0 the keys that can be disabled, fn 1 those that are (OpenLogi's notes; the MX Mechanical Mini answers 1D: no Num Lock).
+        if (found.Has(0x4521))
+        {
+            var keys = Try(device, 0x4521, 0);
+            var disabled = keys != null && (keys[0] & 0x1F) != 0 ? Try(device, 0x4521, 1) : null;
+            if (disabled != null) { state.Disableable = keys[0] & 0x1F; set[OtherSettings.Disabled] = disabled[0] & state.Disableable; }
+        }
+        if (Picture(found) != null && found.Has(0x4540))
+        {
+            var layout = Try(device, 0x4540, 0);
+            if (layout != null) state.LayoutCode = layout[0];
         }
         return state;
     }
@@ -192,7 +241,8 @@ static class OtherDevice
         return new[]
         {
             "brightness", "pointer speed", "SmartShift", "invert scrolling", "thumb wheel",
-            "backlight", "backlight", "backlight", "backlight", "backlight", "backlight"
+            "backlight", "backlight", "backlight", "backlight", "backlight", "backlight", "backlight", "backlight",
+            "F1–F12 setting", "disabled keys"
         }[setting];
     }
 
@@ -228,7 +278,10 @@ static class OtherDevice
             var now = device.Call(device.FeatureIndex(0x2150), 1);
             device.Call(device.FeatureIndex(0x2150), 2, now[0], (byte)want[OtherSettings.Thumb], 0);
         });
-        var lightSettings = new[] { OtherSettings.Light, OtherSettings.Auto, OtherSettings.Level }.Concat(OtherSettings.Delays).ToArray();
+        send(OtherSettings.MediaKeys, () => device.Call(device.FeatureIndex(0x40A3), 1, 0xFF, (byte)want[OtherSettings.MediaKeys], 0));
+        send(OtherSettings.Disabled, () => device.Call(device.FeatureIndex(0x4521), 2, (byte)want[OtherSettings.Disabled]));
+        var lightSettings = new[] { OtherSettings.Light, OtherSettings.Auto, OtherSettings.Level, OtherSettings.Effect, OtherSettings.Saver }
+            .Concat(OtherSettings.Delays).ToArray();
         bool backlight = lightSettings.Any(setting => want[setting] >= 0 && want[setting] != sent[setting]);
         if (backlight)
         {
@@ -248,6 +301,9 @@ static class OtherDevice
                 else if (now == 2) mode = 1;
                 else mode = now;
                 byte options = (byte)(config[1] & ~0x18 | mode << 3);
+                if (want[OtherSettings.Saver] >= 0) options = (byte)(options & ~0x04 | (want[OtherSettings.Saver] == 1 ? 0x04 : 0));
+                // FF leaves the effect as it is.
+                bool effect = want[OtherSettings.Effect] >= 0 && want[OtherSettings.Effect] != sent[OtherSettings.Effect];
                 bool picked = want[OtherSettings.Level] >= 0 && want[OtherSettings.Level] != sent[OtherSettings.Level];
                 int level = mode != 3 ? 0
                     : picked ? want[OtherSettings.Level]
@@ -264,7 +320,8 @@ static class OtherDevice
                     delays[2 * index] = (byte)units;
                     delays[2 * index + 1] = (byte)(units >> 8);
                 }
-                device.Call(device.FeatureIndex(0x1982), 1, new byte[] { (byte)(on ? 1 : 0), options, 0xFF, (byte)level }
+                device.Call(device.FeatureIndex(0x1982), 1,
+                    new byte[] { (byte)(on ? 1 : 0), options, effect ? (byte)want[OtherSettings.Effect] : (byte)0xFF, (byte)level }
                     .Concat(delays)
                     .Concat(new byte[] { 0, 0 })
                     .ToArray());
@@ -290,6 +347,8 @@ static class OtherDevice
                 case OtherSettings.Dpi: value = state.Dpis[Nearest(state.Dpis, value)]; break;
                 case OtherSettings.Shift: if (value > 50 && value != 255) value = -1; break;
                 case OtherSettings.Level: value = Math.Min(state.Levels - 1, value); break;
+                case OtherSettings.Effect: if (value > 15 || (state.Effects >> value & 1) == 0) value = -1; break;
+                case OtherSettings.Disabled: value &= state.Disableable; break;
                 // Up to 2 hours (Solaar's note on the spec), in steps of 5 s.
                 case OtherSettings.Away:
                 case OtherSettings.Near:

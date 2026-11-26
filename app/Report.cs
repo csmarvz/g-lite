@@ -26,6 +26,8 @@ static class Report
         { 0x2150, new[] { 0, 1 } },
         { 0x2201, new[] { 0, 1, 2 } },
         { 0x2202, new[] { 0, 1, 2, 3, 4, 5 } },
+        { 0x40A3, new[] { 0 } },
+        { 0x4521, new[] { 0, 1 } },
         { 0x4540, new[] { 0 } },
         { 0x8010, new[] { 0 } },
         { 0x8020, new[] { 0 } },
@@ -61,6 +63,7 @@ static class Report
         { 0x1990, "illumination" }, { 0x1B04, "controls" }, { 0x1D4B, "wireless status" }, { 0x1F20, "battery and auto-off" },
         { 0x2110, "SmartShift" }, { 0x2111, "SmartShift" }, { 0x2121, "scroll wheel" }, { 0x2150, "thumb wheel" },
         { 0x2201, "DPI" }, { 0x2202, "DPI, X and Y" }, { 0x8061, "report rate, to 8 kHz" }, { 0x4540, "keyboard layout" },
+        { 0x40A3, "F1–F12" }, { 0x4521, "disable keys" },
         { 0x8010, "G keys" }, { 0x8020, "M keys" }, { 0x8030, "MR key" }, { 0x8040, "brightness" }, { 0x8060, "report rate" },
         { 0x8070, "LED effects" }, { 0x8071, "RGB effects" }, { 0x8080, "per-key lighting" }, { 0x8081, "per-key lighting" },
         { 0x8100, "onboard profiles" }, { 0x8101, "onboard files" }, { 0x8110, "button spy" }, { 0x8300, "sidetone" },
@@ -389,6 +392,8 @@ static class Report
                 reader.Show("now, wireless", id, 2, 1);
                 break;
             case 0x4540: reader.Show("layout", id, 0); break;
+            case 0x40A3: reader.Show("this computer", id, 0, 0xFF); break;
+            case 0x4521: reader.Show("can disable", id, 0); reader.Show("disabled", id, 1); break;
             case 0x8010:
             case 0x8020: reader.Show("count", id, 0); break;
             case 0x8040: reader.Show("info", id, 0); reader.Show("now", id, 1); break;
