@@ -20,6 +20,7 @@
 
 - Easy-Switch: after switching, the Computer picker shows the computer the device went to, not the one it left, and the device is read again when it comes back.
 - MX keyboards: turning Automatic off sets the level the Level slider shows, not the one the room's light had set, level 0 (off) too.
+- MX Keys S: F1–F12 as media keys does something: it's set for this computer by its Easy-Switch number, since the MX Keys S ignores the "computer in use" G-Lite sent. Reports show the setting for each computer.
 
 ## [0.1.0-beta] - 2026-11-25
 

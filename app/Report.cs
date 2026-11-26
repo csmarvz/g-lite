@@ -398,7 +398,11 @@ static class Report
                 reader.Show("now, wireless", id, 2, 1);
                 break;
             case 0x4540: reader.Show("layout", id, 0); break;
-            case 0x40A3: reader.Show("this computer", id, 0, 0xFF); break;
+            case 0x40A3:
+                // Each Easy-Switch computer's: FF, "the one in use", reads 00 on an MX Keys S whatever it has (docs/other-devices.md).
+                reader.Show("this computer", id, 0, 0xFF);
+                for (int host = 0; host < 3; host++) reader.Show("computer " + (host + 1), id, 0, (byte)host);
+                break;
             case 0x4521: reader.Show("can disable", id, 0); reader.Show("disabled", id, 1); break;
             case 0x8010:
             case 0x8020: reader.Show("count", id, 0); break;

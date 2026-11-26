@@ -87,6 +87,8 @@ static class OtherDevice
         public int BrightMax = 100, ShiftDefault = 10, ShiftFeature, Levels, Hosts, Host = -1;
         // 0x1982's effect bits (bit n is effect n) and 0x4521's keys that can be disabled.
         public int Effects, Disableable;
+        // The computer 0x40A3 is read and set for: this one's Easy-Switch index, read before any switch.
+        public byte FnKeysHost = 0xFF;
         public int[] Dpis = new int[0];
         public string[] Names = new string[0];
         public bool[] Paired = new bool[0];
@@ -197,11 +199,14 @@ static class OtherDevice
                 try { ReadNames(device, state); }
                 catch (TimeoutException) { state.PairedKnown = false; }
         }
-        // fn 0 `FF` asks for the computer in use: host, state (1: F1–F12 are media keys, as Logi Options+ shows it), default,
-        // capabilities (an MX Mechanical Mini answers `FF 01 01 01`; OpenLogi's notes).
+        // fn 0 `<host>` asks for a computer's: host, state (1: F1–F12 are media keys, as Logi Options+ shows it), default,
+        // capabilities (an MX Mechanical Mini answers `FF 01 01 01`; OpenLogi's notes); fn 1 `<host> <state> 00` sets it.
+        // The MX Keys S takes FF but ignores it, and reads 00 for it (2026-11-26): the computer's Easy-Switch index works on it and on
+        // the Mini, so FF is only for a device that doesn't say it.
         if (found.Has(0x40A3))
         {
-            var fnKeys = Try(device, 0x40A3, 0, 0xFF, 0, 0);
+            state.FnKeysHost = state.Host >= 0 ? (byte)state.Host : (byte)0xFF;
+            var fnKeys = Try(device, 0x40A3, 0, state.FnKeysHost, 0, 0);
             if (fnKeys != null) set[OtherSettings.MediaKeys] = fnKeys[1] & 1;
         }
         // fn 0 the keys that can be disabled, fn 1 those that are (OpenLogi's notes; the MX Mechanical Mini answers 1D: no Num Lock).
@@ -283,7 +288,7 @@ static class OtherDevice
             var now = device.Call(device.FeatureIndex(0x2150), 1);
             device.Call(device.FeatureIndex(0x2150), 2, now[0], (byte)want[OtherSettings.Thumb], 0);
         });
-        send(OtherSettings.MediaKeys, () => device.Call(device.FeatureIndex(0x40A3), 1, 0xFF, (byte)want[OtherSettings.MediaKeys], 0));
+        send(OtherSettings.MediaKeys, () => device.Call(device.FeatureIndex(0x40A3), 1, state.FnKeysHost, (byte)want[OtherSettings.MediaKeys], 0));
         send(OtherSettings.Disabled, () => device.Call(device.FeatureIndex(0x4521), 2, (byte)want[OtherSettings.Disabled]));
         var lightSettings = new[] { OtherSettings.Light, OtherSettings.Auto, OtherSettings.Level, OtherSettings.Effect, OtherSettings.Saver }
             .Concat(OtherSettings.Delays).ToArray();

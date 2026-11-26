@@ -8,7 +8,7 @@ open
   1815 fn1  01
   1815 fn3  01
   1815 fn1  02
-  40A3 fn0  FF
+  40A3 fn0
   4521 fn0
   4521 fn1
   4540 fn0
@@ -22,7 +22,7 @@ press Battery saving
   1982 fn1  01 19 FF 07 78 00 78 00 78
   = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=7 Effect=Waves Fades after, hands away=10 min Fades after, hands near=10 min [Revert] Fades after, plugged in=10 min Battery saving=off F1–F12 as media keys=on Disable Caps Lock=off Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC
 press F1–F12 as media keys
-  40A3 fn1  FF
+  40A3 fn1
   = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=7 Effect=Waves Fades after, hands away=10 min Fades after, hands near=10 min [Revert] Fades after, plugged in=10 min Battery saving=off F1–F12 as media keys=off Disable Caps Lock=off Disable Scroll Lock=off Disable Insert=off Disable Windows key=off Computer=1: Desk PC
 press Disable Caps Lock
   4521 fn2  01
@@ -34,7 +34,7 @@ press Disable Caps Lock
   4521 fn2  10
   = status "Applied to the keyboard." [Report] G-Lite preset=– [New…] […] Backlight=on Automatic=off Level=7 Effect=Waves Fades after, hands away=10 min Fades after, hands near=10 min [Revert] Fades after, plugged in=10 min Battery saving=off F1–F12 as media keys=off Disable Caps Lock=off Disable Scroll Lock=off Disable Insert=off Disable Windows key=on Computer=1: Desk PC
 press Revert changes
-  40A3 fn1  FF 01
+  40A3 fn1  00 01
   4521 fn2
   1982 fn0
   1982 fn1  01 1D 00 07 78 00 78 00 78
@@ -50,7 +50,7 @@ open
   1815 fn1  01
   1815 fn3  01
   1815 fn1  02
-  40A3 fn0  FF
+  40A3 fn0
   4521 fn0
   4521 fn1
   4540 fn0
@@ -89,7 +89,7 @@ open
   1815 fn1  01
   1815 fn3  01
   1815 fn1  02
-  40A3 fn0  FF
+  40A3 fn0
   4521 fn0
   4521 fn1
   4540 fn0
