@@ -123,6 +123,7 @@ abstract class DevicePage : Control, IPage
     protected override void OnLayout(LayoutEventArgs e)
     {
         base.OnLayout(e);
+        if (Ui.Rescaling) return;
         PlaceHeaderButtons();
         // A window made smaller limits the picture again.
         FitPicture();

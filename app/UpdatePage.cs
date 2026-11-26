@@ -66,8 +66,9 @@ class UpdatePage : Control
         notes.HandleCreated += (s, e) => { Dark(); Later(Render); };
         notes.Resize += (s, e) => { if (notes.Width != renderedWidth) { renderedWidth = notes.Width; Later(Render); } };
         VisibleChanged += (s, e) => { if (Visible) { Arrange(); Render(); } };
-        // The page takes the window's width: shown, it's sized after the handler above.
-        Resize += (s, e) => { if (Visible) Arrange(); };
+        // The page takes the window's width: shown, it's sized after the handler above. Not while the window rescales: it lays out
+        // after (Ui.Rescaling).
+        Layout += (s, e) => { if (Visible && !Ui.Rescaling) Arrange(); };
 
         status = Ui.Add(this, new StatusLine(), 20, 683, 330, 36);
         status.Anchor = Ui.Footer;

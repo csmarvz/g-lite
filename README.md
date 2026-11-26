@@ -123,7 +123,7 @@ Open an [issue](https://github.com/csmarvz/g-lite/issues). Say what you did and 
 G-Lite has no installer. Everything it keeps is in plain text files you can open, copy or delete:
 
 - **`settings.txt`**, next to `GLite.exe`: your presets and the one picked on each device, the lighting it sets again on each start, and your choices in Settings. If that folder can't be written to, it goes in `%LOCALAPPDATA%\GLite` instead.
-- **`log.txt`**, next to `settings.txt`: what G-Lite did and when, like the devices it found, what it sent to them and updates. **Logs** in the sidebar shows it. When it reaches 512 KB, it becomes `log.old.txt` and a new one starts.
+- **`log.txt`**, next to `settings.txt`: what G-Lite did and when, like the devices it found, what it sent to them and updates. **Show logs**, in Settings, shows it. When it reaches 512 KB, it becomes `log.old.txt` and a new one starts.
 - **Backups**, in `%LOCALAPPDATA%\GLite\backups`: a copy of what was on your keyboard or mouse before each save, one folder per device. G-Lite keeps the first one and the last ten. **Backups** on a device's screen restores them.
 
 To remove G-Lite, quit it from the tray, turn off **Run on startup** in Settings, and delete these files.

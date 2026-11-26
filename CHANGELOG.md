@@ -16,7 +16,7 @@
 ### Changed
 
 - The G560 is marked Works: it was tried on real speakers.
-- The window: screens fill the width right of the sidebar, their setting boxes widening with it and the controls on the right of each row keeping to its edge; the footer stays at the bottom. Thin lines under the title bar, along the sidebar's edge, over its bottom buttons, under a screen's header and above its footer, so the rows scroll under the header instead of looking cut. The G-Lite title and the rounded corner are gone; the update button sits under the line over the bottom buttons. More room under the device pictures and above the first section.
+- The window: screens fill the width right of the sidebar, their setting boxes widening with it and the controls on the right of each row keeping to its edge; the footer stays at the bottom. Thin lines along the sidebar's edge and the top of the screens, joined by the rounded corner, and under a screen's header and above its footer, so the rows scroll under the header instead of looking cut. More room under the device pictures and above the first section. Logs moves from the sidebar to Settings (Show logs, after Services); an empty device list says No device found.
 - The sidebar's edge and the line under a screen's picture can be dragged: a wider sidebar (up to 400), a taller or shorter picture on every screen. They start at their usual sizes each time.
 
 ### Fixed

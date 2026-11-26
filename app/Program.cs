@@ -19,9 +19,9 @@ class MainWindow : Form
 {
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-    // ButtonsGap: between the line over the sidebar's buttons at the bottom and the first of them.
+    // ButtonsGap: between the device list and the sidebar's buttons at the bottom (the update's row first when it shows).
     // EdgeGrab: how wide the strip at the sidebar's right edge that drags it is.
-    const int EdgeGrab = 6, ButtonsGap = 10, SettingsHeader = 52, WindowWidth = 868, WindowHeight = 730, SidebarWidth = 212, SidebarInnerWidth = SidebarWidth - 20, ListTop = 8;
+    const int EdgeGrab = 6, ButtonsGap = 10, SettingsHeader = 52, WindowWidth = 868, WindowHeight = 730, SidebarWidth = 212, SidebarInnerWidth = SidebarWidth - 20, ListTop = 32;
 
     public NotifyIcon Tray;
     readonly FakeHidpp fake;
@@ -41,8 +41,8 @@ class MainWindow : Form
     int navTop;
     bool rowShown, labelShown;
     string ready;
-    readonly Control side, settingsPage, topLine;
-    readonly FlatButton settingsButton, logsButton, scanButton;
+    readonly Control side, settingsPage, topLine, corner;
+    readonly FlatButton settingsButton, scanButton;
     readonly LogsPage logsPage;
     readonly System.Windows.Forms.Timer rescanSoon = new System.Windows.Forms.Timer { Interval = 1500 },
         sleepers = new System.Windows.Forms.Timer { Interval = 15000 },
@@ -61,7 +61,7 @@ class MainWindow : Form
     bool trayLight;
     float scale = 1;
     FormWindowState shownState = FormWindowState.Normal;
-    bool built;
+    bool built, rescaling;
 
 
     public MainWindow(FakeHidpp fake)
@@ -79,6 +79,10 @@ class MainWindow : Form
 
         side = Ui.Add(this, new Control(), 0, 0, SidebarWidth, WindowHeight);
         Ui.Style(side, () => side.BackColor = Theme.Sidebar);
+        Ui.Add(side, new TitleLogo(), 10, 0, SidebarInnerWidth, 24).MouseDown += (s, e) =>
+        {
+            if (e.Button == MouseButtons.Left && e.X < 60 * Ui.DpiScale) ToggleView();
+        };
         // Short of the sidebar's right edge, which drags its width (SidebarDrag).
         deviceList = Ui.Add(side, new DeviceList(), 0, ListTop, SidebarWidth - EdgeGrab, 400);
         deviceList.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
@@ -96,12 +100,6 @@ class MainWindow : Form
         settingsButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         settingsButton.Click += (s, e) => ShowSettings();
         settingsButton.TabIndex = 102;
-        bottom -= 40;
-        logsButton = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "lines", Text = "Logs" },
-            10, bottom, SidebarInnerWidth, 36);
-        logsButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-        logsButton.Click += (s, e) => ShowLogs();
-        logsButton.TabIndex = 101;
         bottom -= 40;
         scanButton = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "refresh", Text = "Scan for devices" },
             10, bottom, SidebarInnerWidth, 36);
@@ -125,16 +123,10 @@ class MainWindow : Form
         updateButton.Click += (s, e) => { if (ready != null) Restart(); else ShowUpdatePage(false); };
         updateButton.TabIndex = 99;
         navTop = bottom;
-        // A line above the buttons at the bottom (and the update's row when it shows), and along the sidebar's right edge.
-        var firstButton = side.Controls.OfType<FlatButton>().Where(button => button != updateButton).OrderBy(button => button.Top).First();
+        // A line along the sidebar's right edge, from below the pages' rounded corner, whose arc carries it on.
         side.Paint += (s, e) =>
         {
-            using (var pen = new Pen(Theme.Border))
-            {
-                int navLine = (labelShown ? readyText.Top : rowShown ? updateButton.Top : firstButton.Top) - S(ButtonsGap);
-                e.Graphics.DrawLine(pen, 0, navLine, side.Width, navLine);
-                e.Graphics.DrawLine(pen, side.Width - 1, 0, side.Width - 1, side.Height);
-            }
+            using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, side.Width - 1, corner.Height, side.Width - 1, side.Height);
         };
         side.Resize += (s, e) => side.Invalidate();
         SidebarDrag();
@@ -219,11 +211,26 @@ class MainWindow : Form
         // Keys Logi Options+ diverted are dead once it's gone (docs/mx-key-bindings.md).
         services.Stopped += id => { if (id == "optionsplus") foreach (var page in pages.Values.OfType<OtherDevicePage>()) page.ReleaseKeys(); };
         Rows.Section(settings.Sheet, "Services", ref sectionTop, services, ServicesBox.DesignHeight);
+
+        var logsBox = Rows.Section(settings.Sheet, "Logs", ref sectionTop, new RoundedBox(), rowHeight);
+        Rows.Row(logsBox, 0, "Logs", "What G-Lite sent to your devices, and what went wrong");
+        var showLogs = Ui.Add(logsBox, new FlatButton { Icon = "lines", Text = "Show logs" }, 616 - 14 - 180, 16, 180, 32);
+        showLogs.Click += (s, e) => ShowLogs();
         settings.Fit(sectionTop);
 
         foreach (var page in new Control[] { empty, settingsPage, logsPage, updatePage }) { Ui.Stretch(page); Watch(page); }
-        // A line along the top, under the title bar, across the sidebar and the pages.
-        topLine = Ui.Add(this, new Control(), 0, 0, WindowWidth, 1);
+        // The pages' top left corner is rounded into the sidebar and the title bar, which share a colour, its arc in the border's
+        // colour, from the sidebar's line to the one along the top of the pages (topLine). One pixel into the sidebar, so the arc
+        // starts on its line. Both are kept on top of the pages and placed by PlaceTop.
+        corner = Ui.Add(this, new Control(), SidebarWidth - 1, 0, 8, 8);
+        corner.Paint += (s, e) =>
+        {
+            e.Graphics.Clear(Theme.Sidebar);
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            using (var brush = new SolidBrush(Theme.Background)) e.Graphics.FillEllipse(brush, 0, 0, 2 * corner.Width, 2 * corner.Height);
+            using (var pen = new Pen(Theme.Border)) e.Graphics.DrawArc(pen, 0, 0, 2 * corner.Width, 2 * corner.Height, 180, 90);
+        };
+        topLine = Ui.Add(this, new Control(), SidebarWidth + 7, 0, WindowWidth - SidebarWidth - 7, 1);
         Ui.Style(topLine, () => topLine.BackColor = Theme.Border);
         topLine.BringToFront();
         Theme.Changed += Restyle;
@@ -283,8 +290,6 @@ class MainWindow : Form
         settingsButton.On = false;
         settingsButton.Invalidate();
         logsPage.Close();
-        logsButton.On = false;
-        logsButton.Invalidate();
         HideUpdatePage();
         foreach (var pair in pages) pair.Value.Visible = pair.Key == key;
         empty.Visible = key == null;
@@ -311,8 +316,6 @@ class MainWindow : Form
         foreach (var page in pages.Values) page.Visible = false;
         empty.Visible = false;
         logsPage.Close();
-        logsButton.On = false;
-        logsButton.Invalidate();
         HideUpdatePage();
         settingsPage.Visible = true;
         foreach (var i in items.Values) { i.On = false; i.Invalidate(); }
@@ -326,13 +329,12 @@ class MainWindow : Form
         foreach (var page in pages.Values) page.Visible = false;
         empty.Visible = false;
         settingsPage.Visible = false;
-        settingsButton.On = false;
-        settingsButton.Invalidate();
         HideUpdatePage();
         foreach (var i in items.Values) { i.On = false; i.Invalidate(); }
         logsPage.Open();
-        logsButton.On = true;
-        logsButton.Invalidate();
+        // Logs opens from Settings, which stays lit.
+        settingsButton.On = true;
+        settingsButton.Invalidate();
     }
 
     void ShowUpdatePage(bool fromSettings)
@@ -343,8 +345,6 @@ class MainWindow : Form
         settingsButton.On = false;
         settingsButton.Invalidate();
         logsPage.Close();
-        logsButton.On = false;
-        logsButton.Invalidate();
         foreach (var i in items.Values) { i.On = false; i.Invalidate(); }
         if (!fromSettings && available != null && ready == null && !updatePage.Busy && updatePage.State != "failed")
             updatePage.Available(available);
@@ -546,8 +546,9 @@ class MainWindow : Form
             y += 50;
         }
         deviceList.Fit(S(Math.Max(0, y - 4)));
-        noneText.Text = "None found";
+        noneText.Text = "No device found";
         noneText.Visible = list.Count == 0;
+        corner.BringToFront();
         topLine.BringToFront();
         sleepers.Enabled = list.Any(device => device.Asleep && !Devices.Shorts.ContainsKey(device.Path ?? ""));
         if (!demo) Listen(list);
@@ -713,11 +714,18 @@ class MainWindow : Form
         float ratio = newScale / scale;
         var client = ClientSize;
         SuspendLayout();
-        Scale(new SizeF(ratio, ratio));
+        // The form grows first while Scale runs: sized then, the sidebar moved its bottom-anchored buttons down by the growth before
+        // they were scaled too, out of the window at 150%.
+        rescaling = Ui.Rescaling = true;
+        try { Scale(new SizeF(ratio, ratio)); }
+        finally { rescaling = Ui.Rescaling = false; }
         scale = newScale;
         Ui.DpiScale = newScale;
         Ui.Refont();
         ResumeLayout();
+        if (built && WindowState != FormWindowState.Minimized) FitWindow();
+        // Each page lays out once, now that it's at the new scale (DevicePage.OnLayout waits while Ui.Rescaling).
+        foreach (var page in pages.Values.Concat(new Control[] { empty, settingsPage, logsPage, updatePage })) page.PerformLayout();
         // WinForms sizes the frame at the system's DPI, so the client size is set from the frame the window has.
         if (WindowState == FormWindowState.Normal)
             Size += new Size((int)Math.Round(client.Width * ratio) - ClientSize.Width,
@@ -776,6 +784,7 @@ class MainWindow : Form
         WindowHelpers.Relayout(this, () =>
         {
             side.Width = width;
+            PlaceTop();
             if (growth > 0 && WindowState == FormWindowState.Normal)
             {
                 if (Right + growth > area.Right) Left = Math.Max(area.Left, area.Right - Width - growth);
@@ -786,19 +795,30 @@ class MainWindow : Form
         });
     }
 
+    // The corner and the top line follow the sidebar's width and the window's.
+    void PlaceTop()
+    {
+        corner.Location = new Point(side.Width - 1, 0);
+        // 1 pixel, not scaled with the window (2 at 150%).
+        topLine.Bounds = new Rectangle(corner.Right, 0, Math.Max(0, ClientSize.Width - corner.Right), 1);
+    }
+
     // A page takes the window right of the sidebar; its controls follow its width (Ui.Stretch).
     Rectangle PageBounds { get { return new Rectangle(side.Width, 0, ClientSize.Width - side.Width, ClientSize.Height); } }
 
     protected override void OnResize(EventArgs e)
     {
         base.OnResize(e);
-        if (!built || WindowState == FormWindowState.Minimized) return;
+        if (!built || rescaling || WindowState == FormWindowState.Minimized) return;
         shownState = WindowState;
+        FitWindow();
+    }
+
+    // The sidebar, the top line and the shown page to the window's size.
+    void FitWindow()
+    {
         side.Height = ClientSize.Height;
-        // Set here, not anchored: its anchor's distance came out wrong once the sidebar's drag widened the window.
-        topLine.Width = ClientSize.Width;
-        // Scaled with the window, it would be 2 pixels at 150%.
-        topLine.Height = 1;
+        PlaceTop();
         FitList();
         foreach (var page in pages.Values.Concat(new Control[] { empty, settingsPage, logsPage, updatePage }))
             if (page.Visible) page.Bounds = PageBounds;
@@ -870,6 +890,16 @@ class MainWindow : Form
             var value = key == null ? null : key.GetValue("GLite") as byte[];
             return value == null || value.Length == 0 || (value[0] & 1) == 0;
         }
+    }
+
+    void ToggleView()
+    {
+        if (view == null)
+        {
+            view = new KeyboardView(new FakeHidpp(), KeyLayout.Load("g515-tkl.json"));
+            view.VisibleChanged += (s, e) => wantView = view.Visible;
+        }
+        if (view.Visible) view.Hide(); else ShowView();
     }
 
     void ShowView()

@@ -183,6 +183,10 @@ static class Ui
     // (the status line, which the footer's buttons cover otherwise; the Screen effect's preview, up to the zone list).
     public static readonly object StaysLeft = new object(), StaysRight = new object(), Centred = new object(), Across = new object();
 
+    // True while the window scales to a new DPI (MainWindow.Rescale): a layout from sizes read then mixes scaled and unscaled ones,
+    // and its result gets scaled again (the sidebar's bottom buttons ended below the window at 150%). Pages wait, and lay out after.
+    public static bool Rescaling;
+
     public static void Stretch(Control parent)
     {
         var scroll = parent as ScrollPanel;
