@@ -780,6 +780,102 @@ static class Traces
             return first + "reopen on a device that forgot\n" + script.Text;
     }
 
+    // What every device screen shares (DevicePage), on an MX Master: a setting the mouse refuses, a preset, a screen not shown that
+    // reads the mouse to send that preset again (LoadToSendAgain), the mouse switched away and lost mid-change then found by a scan
+    // (SetFound), and switched away and reported back by the receiver (Reconnected).
+    static string Session()
+    {
+        var found = new FoundDevice
+        {
+            Key = "trace|session", Name = "MX Master 3S", Kind = "mouse", Link = "Bolt receiver", Index = 2,
+            Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x2110, 0x2121, 0x2150, 0x2201 }
+        };
+        var device = new FakeOther { RefuseDpi = true };
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device)))
+        {
+            var page = (DevicePage)script.Page;
+            script.Slide("Speed", 36);
+            script.Press("Invert scrolling");
+            script.Menu("More preset actions", "Save as new preset…");
+            script.Type("Work");
+            script.Press("Save");
+            script.Do("another screen for the mouse, not shown, reads it to send its preset again", () =>
+            {
+                Settings.Remove("device." + found.SettingsKey);
+                var other = (DevicePage)DeviceTable.For(found).Make(found, new FakeOther());
+                other.LoadToSendAgain();
+                // Its read, then the preset it picks again and sends, each finishing on the UI thread.
+                for (int i = 0; i < 3; i++)
+                {
+                    other.Queue.Wait(5000);
+                    for (int j = 0; j < 20; j++) { Application.DoEvents(); Thread.Sleep(5); }
+                }
+                other.Dispose();
+            });
+            script.Pick("Computer", "2: MacBook");
+            script.Press("Switch");
+            script.Do("the mouse is out of reach", () => device.Away = true);
+            script.Press("Invert scrolling");
+            script.Do("a scan finds it again", () => { device.Away = false; page.SetFound(found); });
+            script.Pick("Computer", "1: Desk PC");
+            script.Press("Switch");
+            script.Do("the receiver says the mouse is back", () => page.Reconnected());
+            return script.Text;
+        }
+    }
+
+    // The Screen effect's frames on a G515, the G560 and a Litra, from made-up samples (ScreenCapture.TestSample) and each screen's
+    // own Tick (its timer doesn't run in the traces): the first frame is sent, the next one moved too little to send, the last one
+    // moved enough. Each zone's colour is the frame's, a little darker zone by zone.
+    static string ScreenFrames()
+    {
+        var frames = new[] { 0x806040, 0x826242, 0x2050C0 };
+        int frame = 0;
+        ScreenCapture.TestSample = count => Enumerable.Range(0, count)
+            .Select(zone => frames[frame] - zone * 0x080808)
+            .ToArray();
+        try
+        {
+            var keyboard = new FoundDevice
+            {
+                Key = "trace|screenframes515", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard", Link = "LIGHTSPEED", Index = 1,
+                WirelessId = 0x40B4, Features = Keyboard
+            };
+            var speakers = new FoundDevice
+            {
+                Key = "trace|screenframes560", Name = "G560 Gaming Speaker", Kind = "device", Link = "USB", Index = 0xFF,
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 }
+            };
+            var light = new FoundDevice
+            {
+                Key = "trace|screenframeslitra", Name = "Litra Beam LX", Kind = "light", Link = "USB", Index = 0xFF,
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1990, 0x8040, 0x8071, 0x8081 }
+            };
+            Action<int> pick = which => frame = which;
+            return "G515\n" + Frames(keyboard, new FakeHidpp(), pick, false)
+                + "G560\n" + Frames(speakers, new FakeSpeaker(), pick, false)
+                + "Litra Beam LX\n" + Frames(light, new FakeLight(), pick, true);
+        }
+        finally { ScreenCapture.TestSample = null; }
+    }
+
+    static string Frames(FoundDevice found, Hidpp device, Action<int> pick, bool backLight)
+    {
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device)))
+        {
+            if (backLight) script.Press("Back light on");
+            script.Pick("Effect", "Screen");
+            var tick = script.Page.GetType().GetMethod("Tick", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            string[] names = { "first", "moved too little", "moved" };
+            for (int i = 0; i < names.Length; i++)
+            {
+                int which = i;
+                script.Do("a frame, " + names[i], () => { pick(which); tick.Invoke(script.Page, null); });
+            }
+            return script.Text;
+        }
+    }
+
     static string MxKeys()
     {
         var found = new FoundDevice
@@ -1300,6 +1396,8 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("g9x", G9x);
         yield return new KeyValuePair<string, Func<string>>("headset", Headset);
         yield return new KeyValuePair<string, Func<string>>("mxmaster", MxMaster);
+        yield return new KeyValuePair<string, Func<string>>("session", Session);
+        yield return new KeyValuePair<string, Func<string>>("screenframes", ScreenFrames);
         yield return new KeyValuePair<string, Func<string>>("mxkeys", MxKeys);
         yield return new KeyValuePair<string, Func<string>>("mxmini", MxMini);
         yield return new KeyValuePair<string, Func<string>>("keypad", Keypad);

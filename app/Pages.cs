@@ -18,15 +18,10 @@ interface IPage
 abstract class DevicePage : Control, IPage
 {
     protected FoundDevice found;
-    readonly Hidpp fake;
-    Hidpp connection;
-    // Whether the work running on the queue opened the connection, so Opened has just run.
-    bool openedNow;
-    // Set when a call failed and the connection was dropped, until a scan finds the device again (SetFound).
-    volatile bool lost;
-    Task queue = Task.FromResult(0);
+    // The connection and work queue (RunOnDevice), and the presets in settings.txt.
+    readonly DeviceSession session;
+    readonly Presets presets;
     const string NoPreset = "–";
-    readonly string prefix;
     readonly DeviceSubtitle subtitle;
     readonly Dropdown profiles;
     readonly TextField nameField;
@@ -37,7 +32,7 @@ abstract class DevicePage : Control, IPage
     readonly FlatButton actionButton;
     Action actDo;
     readonly ReportView report;
-    bool naming, touched, ready, queuedWork, restoring = true;
+    bool naming, touched, ready, restoring = true;
     string baseline, renaming, loaded, remembered;
     readonly Dictionary<string, string[]> drafts = new Dictionary<string, string[]>();
     public string Note;
@@ -58,8 +53,8 @@ abstract class DevicePage : Control, IPage
     protected DevicePage(FoundDevice device, Hidpp fake, string title, string noun, string prefix)
     {
         found = device;
-        this.fake = fake;
-        this.prefix = prefix;
+        session = new DeviceSession(device, fake, hidpp => Opened(hidpp), () => Lost());
+        presets = new Presets(prefix, device);
         Size = Ui.PageSize;
         Ui.Style(this, () => BackColor = Theme.Background);
         heading = Ui.Text(this, title, 20, 14, () => Theme.Text, 13.5f, Ui.Semibold);
@@ -108,9 +103,9 @@ abstract class DevicePage : Control, IPage
         ShowSub();
     }
 
-    public Task Queue { get { return queue; } }
+    public Task Queue { get { return session.Queue; } }
 
-    protected bool Demo { get { return fake != null; } }
+    protected bool Demo { get { return session.Demo; } }
 
     protected FlatButton BackupsButton(string noun)
     {
@@ -318,7 +313,7 @@ abstract class DevicePage : Control, IPage
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) queue = queue.ContinueWith(_ => { if (connection != null) connection.Dispose(); connection = null; });
+        if (disposing) session.Close();
         base.Dispose(disposing);
     }
 
@@ -362,9 +357,9 @@ abstract class DevicePage : Control, IPage
 
     public void SetFound(FoundDevice device)
     {
-        found = device;
+        found = session.Found = presets.Found = device;
         ShowSub();
-        if (lost && ReopensWhenFound) RunOnDevice(hidpp => { });
+        if (session.IsLost && ReopensWhenFound) RunOnDevice(hidpp => { });
     }
 
     // The receiver says the device connected again (0x41), which a scan misses when it was off only for a moment. A device just
@@ -373,7 +368,7 @@ abstract class DevicePage : Control, IPage
     {
         if (!ReopensWhenFound) return;
         Log.Add(DeviceLabel, "found", "connected again");
-        RunOnDevice(hidpp => { if (!openedNow) Opened(hidpp); }, null, message => { });
+        RunOnDevice(hidpp => { if (!session.OpenedNow) Opened(hidpp); }, null, message => { });
     }
 
     void ShowSub()
@@ -455,52 +450,27 @@ abstract class DevicePage : Control, IPage
     protected void LogUserAction(string what) { Log.Add(DeviceLabel, "you", what); }
 
     // Whether the screen has something to send to its device after a scan: its preset, by default.
-    protected virtual bool SendsAgain { get { return Settings.Get(PresetKey) != ""; } }
+    protected virtual bool SendsAgain { get { return presets.Picked != ""; } }
 
     // A screen that didn't read its device when made, and isn't shown, reads it now, so what it keeps is sent again without opening it.
     public void LoadToSendAgain()
     {
-        if (queuedWork || !SendsAgain) return;
+        if (session.Queued || !SendsAgain) return;
         // Started in the tray, a hidden screen has no handle yet, and Do's callbacks need one.
         if (!IsHandleCreated) CreateHandle();
         Load();
     }
 
+    // work on the device's queue (DeviceSession), then done or failed on the UI thread; without failed, the error goes to the status
+    // line.
     protected void RunOnDevice(Action<Hidpp> work, Action done = null, Action<string> failed = null)
     {
-        queuedWork = true;
-        queue = queue.ContinueWith(_ =>
+        session.Run(work, () => { if (done != null && IsHandleCreated) BeginInvoke(done); }, ex =>
         {
-            try
-            {
-                openedNow = connection == null;
-                if (connection == null)
-                {
-                    connection = fake ?? new Hidpp(found.Path, found.Index, found.ShortPath);
-                    connection.DeviceLabel = DeviceLabel;
-                    lost = false;
-                    Opened(connection);
-                }
-                work(connection);
-                if (done != null && IsHandleCreated) BeginInvoke(done);
-            }
-            catch (Exception ex)
-            {
-                Log.Add(DeviceLabel, "error", ex.Message);
-                if (connection != null && !(ex is HidppError) && !(ex is RefusedException))
-                {
-                    connection.Dispose();
-                    connection = null;
-                    lost = true;
-                    Lost();
-                }
-                if (failed == null) ShowStatusLater(ex.Message, true);
-                else if (IsHandleCreated) BeginInvoke((Action)(() => failed(ex.Message)));
-            }
+            if (failed == null) ShowStatusLater(ex.Message, true);
+            else if (IsHandleCreated) BeginInvoke((Action)(() => failed(ex.Message)));
         });
     }
-
-    string PresetKey { get { return "preset." + found.SettingsKey; } }
 
     // The picked preset's name, with "=edited" (a name can't hold "=") once the settings moved away from it:
     // then the next start keeps what the device or lighting.<device> has and shows the dot, instead of sending the preset over it.
@@ -510,7 +480,7 @@ abstract class DevicePage : Control, IPage
         var value = loaded == null ? "" : loaded + (Changed() ? "=edited" : "");
         if (value == remembered) return;
         remembered = value;
-        if (value == "") Settings.Remove(PresetKey); else Settings.Set(PresetKey, value);
+        presets.Picked = value;
     }
 
     protected virtual bool Damaged { get { return false; } }
@@ -520,13 +490,13 @@ abstract class DevicePage : Control, IPage
     {
         if (!restoring) return;
         restoring = false;
-        remembered = Settings.Get(PresetKey);
+        remembered = presets.Picked;
         var parts = remembered.Split('=');
         var name = parts[0];
         bool edited = parts.Length > 1;
         int index = name == "" ? -1 : profiles.Items.IndexOf(name);
         if (index <= 0) { Remember(); return; }
-        var text = Settings.Get(prefix + name);
+        var text = presets.Text(name);
         if (!edited && !Damaged && Current() != text)
         {
             try { ApplyPreset(text); }
@@ -564,11 +534,7 @@ abstract class DevicePage : Control, IPage
     {
         profiles.Items.Clear();
         profiles.Items.Add(NoPreset);
-        var presetNames = Settings.Keys()
-            .Where(key => key.StartsWith(prefix))
-            .Select(key => key.Substring(prefix.Length))
-            .OrderBy(key => key);
-        foreach (var presetName in presetNames) profiles.Items.Add(presetName);
+        foreach (var presetName in presets.Names()) profiles.Items.Add(presetName);
         profiles.Index = select == null ? 0 : Math.Max(0, profiles.Items.IndexOf(select));
         ShowSets();
     }
@@ -668,7 +634,7 @@ abstract class DevicePage : Control, IPage
             {
                 string[] draft;
                 if (drafts.TryGetValue(name, out draft)) { ApplyPreset(draft[1]); baseline = draft[0]; drafts.Remove(name); }
-                else { ApplyPreset(Settings.Get(prefix + name)); baseline = Current(); }
+                else { ApplyPreset(presets.Text(name)); baseline = Current(); }
                 loaded = name;
                 touched = draft != null;
             }
@@ -701,7 +667,7 @@ abstract class DevicePage : Control, IPage
         var name = profiles.Items[profiles.Index];
         baseline = Current();
         touched = false;
-        Settings.Set(prefix + name, baseline);
+        presets.Store(name, baseline);
         ShowSets();
         Briefly("Updated the preset " + name);
     }
@@ -709,7 +675,7 @@ abstract class DevicePage : Control, IPage
     void DeleteSet(string name)
     {
         if (name == null) return;
-        Settings.Remove(prefix + name);
+        presets.Delete(name);
         drafts.Remove(name);
         baseline = null;
         loaded = null;
@@ -733,8 +699,7 @@ abstract class DevicePage : Control, IPage
         if (renaming != null)
         {
             var old = renaming;
-            Settings.Set(prefix + name, Settings.Get(prefix + old));
-            Settings.Remove(prefix + old);
+            presets.Rename(old, name);
             if (loaded == old) loaded = name;
             EndName();
             LoadSets(name);
@@ -745,7 +710,7 @@ abstract class DevicePage : Control, IPage
         touched = false;
         loaded = name;
         restoring = false;
-        Settings.Set(prefix + name, baseline);
+        presets.Store(name, baseline);
         EndName();
         LoadSets(name);
         Briefly("Saved the preset " + name);
@@ -915,7 +880,7 @@ class InfoPage : Control
             try
             {
                 using (var hidpp = new Hidpp(device.Path, device.Index, device.ShortPath))
-                    hidpp.Call(hidpp.FeatureIndex(0x40A0), 1, (byte)(on ? 1 : 0));
+                    OtherDevice.SetFnInversion(hidpp, on);
             }
             catch (Exception) { }
         });

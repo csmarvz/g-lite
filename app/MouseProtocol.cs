@@ -5,6 +5,17 @@ using System.Linq;
 
 static class MouseProtocol
 {
+    // Button spy (0x8110): fn 1 starts it, the mouse then reporting each press as event fn 0 (ButtonSpy reads them); fn 2 stops it.
+    // It only reports: the buttons keep working. Returns the feature's index, which the events carry.
+    public static byte StartButtonSpy(Hidpp hidpp)
+    {
+        byte feature = hidpp.FeatureIndex(0x8110);
+        hidpp.Call(feature, 1);
+        return feature;
+    }
+
+    public static void StopButtonSpy(Hidpp hidpp) { hidpp.Call(hidpp.FeatureIndex(0x8110), 2); }
+
     public static readonly EffectInfo[] Effects =
     {
         new EffectInfo { Id = 0x00, Name = "Off" },

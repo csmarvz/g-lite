@@ -607,7 +607,7 @@ class MousePage : DevicePage
         if (spying || found.Path == null || !found.Has(0x8110)) return;
         spying = true;
         byte feature = 0;
-        RunOnDevice(hidpp => { feature = hidpp.FeatureIndex(0x8110); hidpp.Call(feature, 1); }, () =>
+        RunOnDevice(hidpp => feature = MouseProtocol.StartButtonSpy(hidpp), () =>
         {
             if (!spying || spy != null) return;
             try
@@ -627,7 +627,7 @@ class MousePage : DevicePage
         if (!spying) return;
         spying = false;
         if (spy != null) { spy.Dispose(); spy = null; }
-        RunOnDevice(hidpp => { try { hidpp.Call(hidpp.FeatureIndex(0x8110), 2); } catch (HidppError) { } });
+        RunOnDevice(hidpp => { try { MouseProtocol.StopButtonSpy(hidpp); } catch (HidppError) { } });
     }
 
     internal void Pressed(int bits)

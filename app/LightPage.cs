@@ -114,14 +114,13 @@ class LightPage : DevicePage
     LightState current;
     volatile LightState sent;
     LightRange lumens = new LightRange { Min = 30, Max = 400, Step = 1 }, kelvins = new LightRange { Min = 2700, Max = 6500, Step = 100 };
-    bool loading, ready, colorsChosen, screening, capturing, framing, snapping, trying;
+    bool loading, ready, colorsChosen, screening, framing, snapping, trying;
     List<byte[]> groups;
     readonly FlatButton tryButton;
     readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
     int sequence, picked, selectedZone;
-    int[] shown;
+    readonly ScreenSampler sampler = new ScreenSampler();
     volatile int[] framed;
-    DateTime nextRefresh;
     ScreenSettings setup;
     readonly bool back;
     readonly Timer debounce = new Timer { Interval = 120 }, screenTimer = new Timer { Interval = 100 },
@@ -438,7 +437,7 @@ class LightPage : DevicePage
         screening = true;
         Settings.Set(Active, "1");
         Settings.Set(Saved, setup.ToText());
-        shown = null;
+        sampler.Shown = null;
         framed = null;
         LogUserAction("Screen effect on");
         screenTimer.Interval = setup.Interval;
@@ -455,7 +454,7 @@ class LightPage : DevicePage
         screenTimer.Stop();
         snapTimer.Stop();
         Settings.Remove(Active);
-        shown = null;
+        sampler.Shown = null;
         framed = null;
         colorsChosen = true;
         if (ready)
@@ -502,36 +501,16 @@ class LightPage : DevicePage
 
     void Tick()
     {
-        if (IsDisposed || !screening || !ready || capturing || framing) return;
+        if (IsDisposed || !screening || !ready || sampler.Capturing || framing) return;
         if (setup.PauseWhenLocked && (Presence.Locked || Presence.DisplayOff)) return;
-        capturing = true;
-        var monitor = ScreenCapture.Find(setup.Monitor).Bounds;
-        var zones = setup.Zones.ToList();
-        var context = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
-        ThreadPool.QueueUserWorkItem(state =>
-        {
-            int[] sampled = null;
-            try { sampled = ScreenCapture.Sample(monitor, zones); } catch (Exception) { }
-            try { context.Post(posted => { capturing = false; if (sampled != null && !IsDisposed && screening) Sampled(sampled); }, null); }
-            catch (Exception) { }
-        });
+        sampler.Capture(setup, sampled => { if (sampled != null && !IsDisposed && screening) Sampled(sampled); });
     }
 
     void Sampled(int[] sampled)
     {
-        bool fresh = shown == null || shown.Length != sampled.Length;
-        if (fresh) shown = new int[sampled.Length];
-        bool refresh = DateTime.UtcNow >= nextRefresh;
-        if (refresh) nextRefresh = DateTime.UtcNow.AddSeconds(2);
-        var last = framed;
-        bool changed = refresh || fresh || last == null || last.Length != sampled.Length;
-        for (int zone = 0; zone < sampled.Length; zone++)
-        {
-            int target = ScreenCapture.Boost(sampled[zone], setup.Boost);
-            shown[zone] = setup.Smooth && !fresh ? ScreenCapture.Blend(shown[zone], target, 0.45) : target;
-            if (!changed && ScreenCapture.Distance(shown[zone], last[zone]) > 6) changed = true;
-        }
-        if (!changed) return;
+        bool refresh;
+        if (!sampler.Mix(sampled, setup, framed, false, out refresh)) return;
+        var shown = sampler.Shown;
         var frame = Enumerable.Range(0, LightState.Zones).Select(zone => zone < shown.Length ? shown[zone] : 0).ToArray();
         framing = true;
         RunOnDevice(hidpp =>
@@ -546,27 +525,16 @@ class LightPage : DevicePage
         if (!screening || !Visible || snapping) return;
         snapping = true;
         var monitor = ScreenCapture.Find(setup.Monitor).Bounds;
-        int width = preview.Width, height = Math.Max(1, width * monitor.Height / Math.Max(1, monitor.Width));
-        var context = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
-        ThreadPool.QueueUserWorkItem(state =>
+        ScreenCapture.Shoot(monitor, preview.Width, image =>
         {
-            Bitmap image = null;
-            try { image = ScreenCapture.Shrink(monitor, width, height); } catch (Exception) { }
-            try
-            {
-                context.Post(posted =>
-                {
-                    snapping = false;
-                    if (image == null) return;
-                    if (IsDisposed) { image.Dispose(); return; }
-                    var old = preview.Image;
-                    preview.Monitor = monitor.Size;
-                    preview.Image = image;
-                    preview.Invalidate();
-                    if (old != null) old.Dispose();
-                }, null);
-            }
-            catch (Exception) { if (image != null) image.Dispose(); }
+            snapping = false;
+            if (image == null) return;
+            if (IsDisposed) { image.Dispose(); return; }
+            var old = preview.Image;
+            preview.Monitor = monitor.Size;
+            preview.Image = image;
+            preview.Invalidate();
+            if (old != null) old.Dispose();
         });
     }
 

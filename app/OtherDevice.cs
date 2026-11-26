@@ -347,6 +347,9 @@ static class OtherDevice
 
     public static void Switch(Hidpp device, int host) { device.SendWithoutReply(device.FeatureIndex(0x1814), 1, (byte)host); }
 
+    // 0x40A0 fn 1 (Fn inversion): on, F1–F12 send media actions; off, the default, they type F1–F12 (docs/K295.md).
+    public static void SetFnInversion(Hidpp hidpp, bool on) { hidpp.Call(hidpp.FeatureIndex(0x40A0), 1, (byte)(on ? 1 : 0)); }
+
     // Keys an app like Logi Options+ diverted to itself (0x1B04) do nothing while it isn't running, until the device reconnects
     // (docs/mx-key-bindings.md). This gives them back: fn 3 with the valid bit (one above) of each diversion flag that's on (diverted
     // 0x01, persistently 0x04, raw XY 0x10, force raw XY 0x40) and the flag off, remap 0 (unchanged). It never diverts. Returns how many.

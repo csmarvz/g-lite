@@ -20,7 +20,7 @@ The compiler is `%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`, targeti
 - `app/DeviceTable.cs`: which screen and driver each device gets; a device that works like a supported one is a new entry here
 - `app/Devices.cs`, `app/FoundDevice.cs`: the scan, what it learned about each device, `DeviceWatcher` (events, battery)
 - `app/Hidpp.cs`: HID++ 2.0 and 1.0 calls and their errors
-- `app/Pages.cs`: `DevicePage` (what every device screen shares: presets, work queue, status line, backups menu), `ColorRow`, `InfoPage`, `EmptyPage`
+- `app/Pages.cs`: `DevicePage` (what every device screen shares: presets, work queue, status line, backups menu), `ColorRow`, `InfoPage`, `EmptyPage`; `app/DeviceSession.cs` (a screen's connection and work queue) and `app/Presets.cs` (its presets in settings.txt), without UI
 - Keyboards: `app/KeyboardPage.cs`, `KeyboardKinds.cs`, `KeyboardLighting.cs` (`Lighting`, `G515Profile`, `G915Lighting`), `GameMode.cs` (the Game mode key's list), `KeyPicture.cs`, `KeyLayout.cs` and the layouts in `app/models/`
 - Zones (the G560 and the 0x8070 keyboards): `app/ZonesPage.cs`, `ZoneLighting.cs`
 - Mice: `app/MousePage.cs`, `MouseShapes.cs` (the pictures' shapes), `Mouse.cs` (`IMouse`, `MouseSettings`), `MouseProtocol.cs`, `G9x.cs` (HID++ 1.0 mice), `G600.cs` (the G600's feature reports), `G300.cs` (the G300's)

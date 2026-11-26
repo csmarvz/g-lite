@@ -689,3 +689,44 @@ static class G915Lighting
         }
     }
 }
+
+// The keyboard screens' calls that aren't a lighting effect: its layout, battery, which onboard profile runs, whether it took its
+// lighting back, and claiming it again without the full claim.
+static class KeyboardCalls
+{
+    // 0x4540 fn 0 b0 (KeyLayout.IsIso).
+    public static int LayoutCode(Hidpp hidpp) { return hidpp.Call(hidpp.FeatureIndex(0x4540), 0)[0]; }
+
+    // 0x1004 fn 1: b0 the level, b2 charging.
+    public static void Battery(Hidpp hidpp, out int level, out bool charging)
+    {
+        var reply = hidpp.CallUnlogged(hidpp.FeatureIndex(0x1004), 1);
+        level = reply[0];
+        charging = reply[2] != 0;
+    }
+
+    // 0x8100 fn 4: the onboard profile running, 0 for none; then host says whether fn 2 b0 isn't 1, the PC running the lighting.
+    public static int RunningSector(Hidpp hidpp, out bool host)
+    {
+        byte feature = hidpp.FeatureIndex(0x8100);
+        var reply = hidpp.CallUnlogged(feature, 4);
+        int sector = reply[0] << 8 | reply[1];
+        host = sector == 0 && hidpp.CallUnlogged(feature, 2)[0] != 1;
+        return sector;
+    }
+
+    // 0x8100 fn 3: run that onboard profile.
+    public static void RunSector(Hidpp hidpp, int sector) { hidpp.Call(hidpp.FeatureIndex(0x8100), 3, (byte)(sector >> 8), (byte)sector); }
+
+    // 0x8071 fn 5 00: b1 is 0 once the keyboard runs its own lighting again (docs/G815-G915.md).
+    public static bool StillClaimed(Hidpp hidpp) { return hidpp.CallUnlogged(hidpp.FeatureIndex(0x8071), 5, 0x00)[1] != 0; }
+
+    // Claimed before: the software-control calls alone, unlogged (0x8101 fn 6 05 with profiles, 0x8071 fn 5 01 03 04, and without
+    // profiles 0x8071 fn 8 01 01 00, which some refuse).
+    public static void ClaimAgain(Hidpp hidpp, bool profiles)
+    {
+        if (profiles) hidpp.CallUnlogged(hidpp.FeatureIndex(0x8101), 6, 0x05);
+        hidpp.CallUnlogged(hidpp.FeatureIndex(0x8071), 5, 0x01, 0x03, 0x04);
+        if (!profiles) try { hidpp.CallUnlogged(hidpp.FeatureIndex(0x8071), 8, 0x01, 0x01, 0x00); } catch (HidppError) { }
+    }
+}

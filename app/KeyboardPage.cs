@@ -71,7 +71,7 @@ class KeyboardPage : DevicePage
     ScreenSettings setup;
     readonly Timer screenTimer = new Timer { Interval = 100 }, snapTimer = new Timer { Interval = 1000 },
         watchTimer = new Timer { Interval = 500 };
-    volatile bool sending, failing, statusDirty, layoutDirty, capturing, snapping, watching, claimed;
+    volatile bool sending, failing, statusDirty, layoutDirty, snapping, watching, claimed;
     // Whether the keyboard's Wave lists Up and Down (G915Lighting.Clusters): -1 until read, then 0 or 1 (ApplyWaveDirections).
     volatile int verticalWave = -1;
     // A G515 twice kept answering every per-key frame with busy until it was turned off and on, though claimed again every 6 s
@@ -84,9 +84,11 @@ class KeyboardPage : DevicePage
     int watchTicks;
     int battery = -1, layoutCode = -1, selectedZone = 1;
     bool charging;
-    DateTime nextBattery, nextTry, nextRefresh;
+    DateTime nextBattery, nextTry;
     HashSet<int> present;
-    int[] shown, sent;
+    // The Screen effect's colours shown (sampler.Shown) and last sent.
+    readonly ScreenSampler sampler = new ScreenSampler();
+    int[] sent;
     // The Screen effect's rows in the Lighting box, and the rows under them, which move up while they're hidden, with the box and
     // the section after it. In design units: where Screen's rows start, the box's and all the rows' height with them.
     readonly List<Control> screenRows = new List<Control>();
@@ -604,7 +606,8 @@ class KeyboardPage : DevicePage
         dirty = true;
         force = true;
         released = false;
-        shown = sent = null;
+        sampler.Shown = null;
+        sent = null;
         nextTry = DateTime.MinValue;
         runningName = EffectName;
         LogUserAction(runningName + " effect on");
@@ -620,7 +623,8 @@ class KeyboardPage : DevicePage
         StopAnimation();
         Settings.Set(Active, ActiveText);
         force = true;
-        shown = sent = null;
+        sampler.Shown = null;
+        sent = null;
         runningName = EffectName;
         LogUserAction(runningName + " effect on");
         screenTimer.Interval = FrameInterval;
@@ -641,7 +645,8 @@ class KeyboardPage : DevicePage
         snapTimer.Stop();
         StopAnimation();
         Settings.Remove(Active);
-        shown = sent = null;
+        sampler.Shown = null;
+        sent = null;
         released = false;
         LogUserAction(runningName + " effect off");
         leftScreen = true;
@@ -674,7 +679,7 @@ class KeyboardPage : DevicePage
         var outlined = new bool[picture.Count];
         for (int key = 0; key < picture.Count; key++)
         {
-            int zone = ZoneOfKey(key), color = shown != null && zone < shown.Length ? shown[zone] : 0;
+            int zone = ZoneOfKey(key), color = sampler.Shown != null && zone < sampler.Shown.Length ? sampler.Shown[zone] : 0;
             colors[key] = Color.FromArgb(color >> 16 & 0xFF, color >> 8 & 0xFF, color & 0xFF);
             outlined[key] = zone == selectedZone;
         }
@@ -689,9 +694,7 @@ class KeyboardPage : DevicePage
             releaseFirst = false;
         }
         if (!quiet) { ClaimLights(hidpp); return; }
-        if (found.Has(0x8101)) hidpp.CallUnlogged(hidpp.FeatureIndex(0x8101), 6, 0x05);
-        hidpp.CallUnlogged(hidpp.FeatureIndex(0x8071), 5, 0x01, 0x03, 0x04);
-        if (!found.Has(0x8101)) try { hidpp.CallUnlogged(hidpp.FeatureIndex(0x8071), 8, 0x01, 0x01, 0x00); } catch (HidppError) { }
+        KeyboardCalls.ClaimAgain(hidpp, found.Has(0x8101));
     }
 
     void ReleaseLights(Hidpp hidpp)
@@ -755,42 +758,18 @@ class KeyboardPage : DevicePage
         }
         if (released) { released = false; force = true; ClearStatus(); }
         if (!Sampling) { Animate(readBattery); return; }
-        if (capturing) return;
-        capturing = true;
-        var monitor = ScreenCapture.Find(setup.Monitor).Bounds;
-        var zones = setup.Zones.ToList();
-        var context = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
-        ThreadPool.QueueUserWorkItem(state =>
+        if (sampler.Capturing) return;
+        sampler.Capture(setup, sampled =>
         {
-            int[] sampled = null;
-            try { sampled = ScreenCapture.Sample(monitor, zones); } catch (Exception) { }
-            try
-            {
-                context.Post(posted =>
-                {
-                    capturing = false;
-                    if (sampled != null && !IsDisposed && Sampling && !sending && sampled.Length == setup.Zones.Count)
-                        Sampled(sampled, readBattery);
-                    else if (readBattery) nextBattery = DateTime.UtcNow;
-                }, null);
-            }
-            catch (Exception) { }
+            if (sampled != null && !IsDisposed && Sampling && !sending && sampled.Length == setup.Zones.Count) Sampled(sampled, readBattery);
+            else if (readBattery) nextBattery = DateTime.UtcNow;
         });
     }
 
     void Sampled(int[] sampled, bool readBattery)
     {
-        bool fresh = shown == null || shown.Length != sampled.Length;
-        if (fresh) shown = new int[sampled.Length];
-        bool refresh = DateTime.UtcNow >= nextRefresh;
-        if (refresh) nextRefresh = DateTime.UtcNow.AddSeconds(2);
-        bool changed = force || refresh || fresh || sent == null || sent.Length != shown.Length;
-        for (int zone = 0; zone < sampled.Length; zone++)
-        {
-            int target = ScreenCapture.Boost(sampled[zone], setup.Boost);
-            shown[zone] = setup.Smooth && !fresh ? ScreenCapture.Blend(shown[zone], target, 0.45) : target;
-            if (!changed && ScreenCapture.Distance(shown[zone], sent[zone]) > 6) changed = true;
-        }
+        bool refresh;
+        bool changed = sampler.Mix(sampled, setup, sent, force, out refresh);
         ShowLive();
         if (!changed && !readBattery) return;
         var groups = new Dictionary<int, List<int>>();
@@ -799,20 +778,20 @@ class KeyboardPage : DevicePage
         {
             int id = picture.IdOf(key);
             if (id < 0 || !done.Add(id)) continue;
-            int color = shown[ZoneOfKey(key)];
+            int color = sampler.Shown[ZoneOfKey(key)];
             List<int> list;
             if (!groups.TryGetValue(color, out list)) groups[color] = list = new List<int>();
             list.Add(id);
         }
         force = false;
-        sent = (int[])shown.Clone();
+        sent = (int[])sampler.Shown.Clone();
         sending = true;
         bool send = changed, readLayout = layoutCode < 0 && !live && found.Has(0x4540);
         RunOnDevice(hidpp =>
         {
             try
             {
-                if (readLayout) { layoutCode = hidpp.Call(hidpp.FeatureIndex(0x4540), 0)[0]; layoutDirty = true; }
+                if (readLayout) { layoutCode = KeyboardCalls.LayoutCode(hidpp); layoutDirty = true; }
                 if (send)
                 {
                     if (present == null) present = KeyLights.Present(hidpp);
@@ -855,8 +834,8 @@ class KeyboardPage : DevicePage
         ShowAnimation(frameColors);
         // Lost and Failed, on the device's thread, drop the map to force a full frame; this frame keeps the one it took.
         var lastSent = sentColors;
-        bool full = force || lastSent == null || DateTime.UtcNow >= nextRefresh;
-        if (full) nextRefresh = DateTime.UtcNow.AddSeconds(2);
+        bool full = force || lastSent == null || DateTime.UtcNow >= sampler.NextRefresh;
+        if (full) sampler.NextRefresh = DateTime.UtcNow.AddSeconds(2);
         if (lastSent == null) sentColors = lastSent = new Dictionary<int, int>();
         var changes = new Dictionary<int, int>();
         for (int i = 0; i < keyField.Count; i++)
@@ -920,9 +899,7 @@ class KeyboardPage : DevicePage
 
     void ReadBattery(Hidpp hidpp)
     {
-        var reply = hidpp.CallUnlogged(hidpp.FeatureIndex(0x1004), 1);
-        battery = reply[0];
-        charging = reply[2] != 0;
+        KeyboardCalls.Battery(hidpp, out battery, out charging);
     }
 
     // Up and Down in the Direction row once the keyboard's Wave says it has them. Not All (0): no capability bit lists it, and it
@@ -958,32 +935,21 @@ class KeyboardPage : DevicePage
         if (!Sampling || !Visible || snapping) return;
         snapping = true;
         var monitor = ScreenCapture.Find(setup.Monitor).Bounds;
-        int width = preview.Width, height = Math.Max(1, width * monitor.Height / Math.Max(1, monitor.Width));
-        var context = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
-        ThreadPool.QueueUserWorkItem(state =>
+        ScreenCapture.Shoot(monitor, preview.Width, image =>
         {
-            Bitmap image = null;
-            try { image = ScreenCapture.Shrink(monitor, width, height); } catch (Exception) { }
-            try
+            snapping = false;
+            if (image == null) return;
+            if (IsDisposed || ScreenCapture.Find(setup.Monitor).Bounds != monitor)
             {
-                context.Post(posted =>
-                {
-                    snapping = false;
-                    if (image == null) return;
-                    if (IsDisposed || ScreenCapture.Find(setup.Monitor).Bounds != monitor)
-                    {
-                        image.Dispose();
-                        if (!IsDisposed) Snap();
-                        return;
-                    }
-                    var old = preview.Image;
-                    preview.Monitor = monitor.Size;
-                    preview.Image = image;
-                    preview.Invalidate();
-                    if (old != null) old.Dispose();
-                }, null);
+                image.Dispose();
+                if (!IsDisposed) Snap();
+                return;
             }
-            catch (Exception) { if (image != null) image.Dispose(); }
+            var old = preview.Image;
+            preview.Monitor = monitor.Size;
+            preview.Image = image;
+            preview.Invalidate();
+            if (old != null) old.Dispose();
         });
     }
 
@@ -1369,10 +1335,7 @@ class KeyboardPage : DevicePage
         bool host = false;
         RunOnDevice(hidpp =>
         {
-            byte feature = hidpp.FeatureIndex(0x8100);
-            var reply = hidpp.CallUnlogged(feature, 4);
-            now = reply[0] << 8 | reply[1];
-            if (now == 0) host = hidpp.CallUnlogged(feature, 2)[0] != 1;
+            now = KeyboardCalls.RunningSector(hidpp, out host);
         }, () =>
         {
             checkingSlot = false;
@@ -1429,7 +1392,7 @@ class KeyboardPage : DevicePage
         {
             G915Lighting.Release(hidpp);
             claimed = false;
-            if (picked) hidpp.Call(hidpp.FeatureIndex(0x8100), 3, (byte)(sector >> 8), (byte)sector);
+            if (picked) KeyboardCalls.RunSector(hidpp, sector);
         });
         Load();
     }
@@ -1771,7 +1734,7 @@ class KeyboardPage : DevicePage
         byte[][] keysRead = null;
         RunOnDevice(hidpp =>
         {
-            if (readLayout) layoutCode = hidpp.Call(hidpp.FeatureIndex(0x4540), 0)[0];
+            if (readLayout) layoutCode = KeyboardCalls.LayoutCode(hidpp);
             bool vertical;
             clusters = G915Lighting.Clusters(hidpp, out vertical);
             verticalWave = vertical ? 1 : 0;
@@ -1851,7 +1814,7 @@ class KeyboardPage : DevicePage
         bool readWave = verticalWave < 0 && !kind.VerticalWave && found.Has(0x8071);
         RunOnDevice(hidpp =>
         {
-            if (readLayout) layoutCode = hidpp.Call(hidpp.FeatureIndex(0x4540), 0)[0];
+            if (readLayout) layoutCode = KeyboardCalls.LayoutCode(hidpp);
             if (readWave)
                 try { bool vertical; G915Lighting.Clusters(hidpp, out vertical); verticalWave = vertical ? 1 : 0; }
                 catch (NotSupportedException) { verticalWave = 0; }
@@ -1906,7 +1869,7 @@ class KeyboardPage : DevicePage
         {
             try
             {
-                if (!claimed || hidpp.CallUnlogged(hidpp.FeatureIndex(0x8071), 5, 0x00)[1] != 0) return;
+                if (!claimed || KeyboardCalls.StillClaimed(hidpp)) return;
                 G515Profile.Claim(hidpp);
                 claimed = true;
                 if (level != G515Profile.Brightness(hidpp)) G515Profile.SetBrightness(hidpp, level);

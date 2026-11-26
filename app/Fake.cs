@@ -979,6 +979,8 @@ class FakeOther : Hidpp
     static readonly string[] Names = { "Desk PC", "MacBook" };
     public int Bright = 100, Dpi = 1000, Shift = 10, Wheel, ThumbInvert, Level = 3, Host, Effect, MediaKeys = 1, DisabledKeys;
     public bool RefuseDpi;
+    // Out of reach (switched to another computer, off): every call times out, as a real device's would.
+    public bool Away;
     // An MX Keys S's 0x1982 fn 0, from its report: manual, level 3, fading after 30 s, 30 s and 300 s.
     public byte[] Backlight = { 0x01, 0x1D, 0x3D, 0x03, 0x00, 0x03, 0x06, 0x00, 0x06, 0x00, 0x3C, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
@@ -1011,6 +1013,7 @@ class FakeOther : Hidpp
     protected override byte[] Send(byte featureIndex, int fn, byte[] parameters)
     {
         Latency.Pause();
+        if (Away) throw new TimeoutException("No answer from the device");
         var reply = new byte[16];
         if (featureIndex == 0)
         {
@@ -1104,5 +1107,131 @@ class FakeOther : Hidpp
                 break;
         }
         return reply;
+    }
+}
+
+// The devices --demo finds in place of a scan; DeviceTable gives each its simulated device from this file.
+static class DemoDevices
+{
+    public static List<FoundDevice> Scan()
+    {
+        Thread.Sleep(400);
+        return new List<FoundDevice>
+        {
+            new FoundDevice { Key = "demo|keyboard", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard",
+                Link = "LIGHTSPEED", WirelessId = 0x40B4, Battery = 82, Firmware = "MPK 25.02, build 0016",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1B10, 0x4523, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
+            new FoundDevice { Key = "demo|g915full", Name = "G915 LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard",
+                Link = "LIGHTSPEED", Index = 2, WirelessId = 0x407C, Battery = 46, BatteryFromVoltage = true, Millivolts = 3780,
+                Firmware = "MPK 12.01, build 0019",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x4522, 0x8040, 0x8071, 0x8081, 0x8100 } },
+            new FoundDevice { Key = "demo|g915", Name = "G915 TKL LIGHTSPEED Wireless RGB Mechanical Gaming Keyboard", Kind = "keyboard",
+                Link = "LIGHTSPEED", Index = 1, WirelessId = 0x408E, Battery = 70, BatteryFromVoltage = true, Millivolts = 3923,
+                Firmware = "MPK 14.01, build 0021",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x4522, 0x8040, 0x8071, 0x8081, 0x8100 } },
+            new FoundDevice { Key = "demo|g915x", Name = "G915 X LIGHTSPEED", Kind = "keyboard",
+                Link = "LIGHTSPEED", Index = 2, WirelessId = 0x40B5, Battery = 68, Firmware = "MPK 27.00, build 0012",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
+            new FoundDevice { Key = "demo|g915xtkl", Name = "G915 X LIGHTSPEED TKL", Kind = "keyboard",
+                Link = "LIGHTSPEED", Index = 3, WirelessId = 0x40B6, Battery = 91, Firmware = "MPK 27.00, build 0012",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
+            new FoundDevice { Key = "demo|g815", Name = "G815 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard",
+                Link = "USB", Index = 0xFF, Firmware = "U1 31.02, build 0018",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x4522, 0x4540, 0x8040, 0x8071, 0x8081, 0x8100 } },
+            new FoundDevice { Key = "demo|g512x", Name = "G512 X 75", Kind = "keyboard",
+                Link = "USB", Index = 0xFF, Firmware = "U1 81.05, build 0020",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1B10, 0x4523, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
+            new FoundDevice { Key = "demo|prox60", Name = "PRO X 60", Kind = "keyboard",
+                Link = "LIGHTSPEED", Index = 5, WirelessId = 0x40C1, Battery = 77, Firmware = "MPK 21.01, build 0012",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x4540, 0x8040, 0x8071, 0x8081, 0x8101 } },
+            new FoundDevice { Key = "demo|g512", Name = "G512 RGB MECHANICAL GAMING KEYBOARD", Kind = "keyboard",
+                Link = "USB", Index = 0xFF, Firmware = "U1 38.03, build 0015",
+                Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x4540, 0x8060, 0x8080, 0x8070 } },
+            new FoundDevice { Key = "demo|g413", Name = "G413 Silver Mechanical Gaming Keyboard", Kind = "keyboard",
+                Link = "USB", Index = 0xFF, Firmware = "U1 14.00, build 0008",
+                Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x4540, 0x8060, 0x8070, 0x40A2 } },
+            new FoundDevice { Key = "demo|g213", Name = "Gaming Keyboard G213", Kind = "keyboard",
+                Link = "USB", Index = 0xFF, Firmware = "U1 12.01, build 0007",
+                Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x4540, 0x8060, 0x8070 } },
+            new FoundDevice { Key = "demo|g513", Name = "G513 Carbon RGB Mechanical Gaming Keyboard", Kind = "keyboard",
+                Link = "USB", Index = 0xFF, Firmware = "U1 38.03, build 0015",
+                Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x4540, 0x8060, 0x8080, 0x8070 } },
+            // Zone keyboards without a key picture yet.
+            new FoundDevice { Key = "demo|gprokeyboard", Name = "G PRO RGB Mechanical Gaming Keyboard", Kind = "keyboard",
+                Link = "USB", Index = 0xFF, Firmware = "U1 36.02, build 0011",
+                Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x4540, 0x8060, 0x8080, 0x8070 } },
+            new FoundDevice { Key = "demo|g810", Name = "G810 Orion Spectrum", Kind = "keyboard",
+                Link = "USB", Index = 0xFF, Firmware = "U1 35.04, build 0012",
+                Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x4540, 0x8060, 0x8080, 0x8070 } },
+            new FoundDevice { Key = "demo|g910", Name = "G910 Orion Spectrum", Kind = "keyboard",
+                Link = "USB", Index = 0xFF, Firmware = "U1 34.01, build 0009",
+                Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x4540, 0x8060, 0x8080, 0x8070 } },
+            new FoundDevice { Key = "demo|g410", Name = "G410 Atlas Spectrum", Kind = "keyboard",
+                Link = "USB", Index = 0xFF, Firmware = "U1 33.00, build 0008",
+                Features = new[] { 0x0001, 0x0003, 0x4522, 0x0005, 0x4540, 0x8060, 0x8080, 0x8070 } },
+            new FoundDevice { Key = "demo|g510", Name = "G510s Gaming Keyboard", Kind = "keyboard",
+                Link = "USB", Index = 0xFF, PlainHid = true, HasVendorCollection = true, Path = @"\\?\hid#vid_046d&pid_c22d&mi_01&col02" },
+            new FoundDevice { Key = "demo|mouse", Name = "G Pro Wireless Gaming Mouse", Kind = "mouse",
+                Link = "LIGHTSPEED", Index = 1, WirelessId = 0x4079, Battery = 54, BatteryFromVoltage = true, Millivolts = 3824,
+                Firmware = "MPM 15.02, build 0017",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
+            new FoundDevice { Key = "demo|superlight", Name = "PRO X Wireless", Kind = "mouse",
+                Link = "LIGHTSPEED", Index = 7, WirelessId = 0x4093, Battery = 71, Firmware = "MPM 25.01, build 0018",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2201, 0x8060, 0x8070, 0x8100 } },
+            new FoundDevice { Key = "demo|g502xplus", Name = "G502 X PLUS", Kind = "mouse",
+                Link = "LIGHTSPEED", Index = 3, WirelessId = 0x4099, Battery = 82, Firmware = "MPM 30.00, build 0014",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2121, 0x2201, 0x8060, 0x8071, 0x8081, 0x8100 } },
+            new FoundDevice { Key = "demo|superlight2", Name = "PRO X SUPERLIGHT 2", Kind = "mouse",
+                Link = "LIGHTSPEED", Index = 4, WirelessId = 0x40A9, Battery = 63, Firmware = "MPM 31.01, build 0018",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2202, 0x8061, 0x8100 } },
+            new FoundDevice { Key = "demo|dex", Name = "PRO X 2 DEX", Kind = "mouse",
+                Link = "LIGHTSPEED", Index = 6, WirelessId = 0x40B8, Battery = 88, Firmware = "MPM 33.00, build 0010",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x2202, 0x8061, 0x8100 } },
+            new FoundDevice { Key = "demo|g600", Name = "G600 Gaming Mouse", Kind = "mouse", Models = "USB C24A",
+                Link = "USB", Index = 0xFF, PlainHid = true, HasVendorCollection = true, Path = @"\\?\hid#vid_046d&pid_c24a&mi_01&col03" },
+            new FoundDevice { Key = "demo|g300", Name = "G300 Gaming Mouse", Kind = "mouse", Models = "USB C246",
+                Link = "USB", Index = 0xFF, PlainHid = true, HasVendorCollection = true, Path = @"\\?\hid#vid_046d&pid_c246&mi_01&col03" },
+            new FoundDevice { Key = "demo|g9x", Name = "G9x Laser Mouse", Kind = "mouse",
+                Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c066&mi_01&col04", Firmware = "58.02, build 0018" },
+            new FoundDevice { Key = "demo|g560", Name = "G560 Gaming Speaker", Kind = "device",
+                Link = "USB", Index = 0xFF, Firmware = "U1 22.03, build 0023",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x8070, 0x8010, 0x8310, 0x8320, 0x8040, 0x8305 } },
+            new FoundDevice { Key = "demo|litra", Name = "Litra Beam LX", Kind = "light",
+                Link = "USB", Index = 0xFF, Firmware = "U1 03.02, build 0011",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1990, 0x8040, 0x8071, 0x8081 } },
+            new FoundDevice { Key = "demo|mxmaster", Name = "MX Master 3S", Kind = "mouse",
+                Link = "Bolt", Index = 2, WirelessId = 0xB034, Battery = 70, Firmware = "RBM 21.00, build 0013",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x2110, 0x2121, 0x2150, 0x2201 } },
+            new FoundDevice { Key = "demo|mxkeys", Name = "MX Keys S", Kind = "keyboard",
+                Link = "Bolt", Index = 3, WirelessId = 0xB378, Battery = 55, Firmware = "RBK 74.00, build 0024",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x1982, 0x40A3, 0x4521, 0x4540 } },
+            new FoundDevice { Key = "demo|mxmini", Name = "MX Mechanical Mini", Kind = "keyboard",
+                Link = "Bluetooth", Index = 0xFF, Battery = 50, Firmware = "RBK 72.03, build 0014",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1004, 0x1814, 0x1815, 0x1982, 0x40A3, 0x4521, 0x4540 } },
+            new FoundDevice { Key = "demo|keypad", Name = "MX Creative Keypad", Kind = "device",
+                Link = "USB", Index = 0xFF, Firmware = "U1 66.00, build 0017",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1B04, 0x8040 } },
+            new FoundDevice { Key = "demo|g305", Name = "G305 Lightspeed Wireless Gaming Mouse", Kind = "mouse",
+                Link = "LIGHTSPEED", Index = 6, WirelessId = 0x4074, Battery = 90, Firmware = "RQM 68.02, build 0021",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1000, 0x1D4B, 0x2201, 0x8060, 0x8070, 0x8100 } },
+            new FoundDevice { Key = "demo|g502", Name = "G502 LIGHTSPEED Wireless Gaming Mouse", Kind = "mouse",
+                Link = "LIGHTSPEED", Index = 3, WirelessId = 0x407F, Battery = 88, BatteryFromVoltage = true, Millivolts = 4020,
+                Firmware = "MPM 16.01, build 0020",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x1001, 0x2201, 0x8060, 0x8070, 0x8100 } },
+            new FoundDevice { Key = "demo|g9", Name = "G9 Laser Mouse", Kind = "mouse",
+                Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c048&mi_01&col04", Firmware = "31.01, build 0012" },
+            new FoundDevice { Key = "demo|g700s", Name = "G700s Gaming Mouse", Kind = "mouse",
+                Link = "Wireless", Index = 1, WirelessId = 0x102A, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c531&mi_01&col02",
+                Models = "Wireless 102A", Firmware = "79.02, build 0016" },
+            new FoundDevice { Key = "demo|g500s", Name = "G500s Laser Gaming Mouse", Kind = "mouse",
+                Link = "USB", Index = 0, Hidpp10 = true, Path = @"\\?\hid#vid_046d&pid_c24e&mi_01&col04", Firmware = "86.01, build 0003" },
+            new FoundDevice { Key = "demo|g502hero", Name = "G502 HERO Gaming Mouse", Kind = "mouse",
+                Link = "USB", Index = 0xFF, Models = "USB C08B", Firmware = "U1 69.00, build 0009",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x2201, 0x8060, 0x8070, 0x8100 } },
+            new FoundDevice { Key = "demo|headset", Name = "PRO X Wireless Gaming Headset", Kind = "headset",
+                Link = "LIGHTSPEED", Index = 0xFF, Battery = 71, BatteryFromVoltage = true, Millivolts = 3926,
+                Firmware = "U1 12.01, build 0203",
+                Features = new[] { 0x0001, 0x0003, 0x0005, 0x8310, 0x8300, 0x1F20 } },
+        };
     }
 }

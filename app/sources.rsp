@@ -18,6 +18,8 @@ OtherDevice.cs
 OtherDevicePage.cs
 UpdatePage.cs
 Pages.cs
+DeviceSession.cs
+Presets.cs
 ReportView.cs
 LogsPage.cs
 FoundDevice.cs

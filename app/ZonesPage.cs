@@ -100,12 +100,12 @@ class ZonesPage : DevicePage
     readonly string noun;
     MouseLight[] current, sent;
     volatile List<Dictionary<int, int>> zones;
-    bool loading, screening, capturing, framing, snapping;
+    bool loading, screening, framing, snapping;
     int sequence, picked, selectedZone;
     List<int> segZones = new List<int>();
-    int[] shown;
+    // The Screen effect's colours shown (sampler.Shown) and last sent.
+    readonly ScreenSampler sampler = new ScreenSampler();
     volatile int[] framed;
-    DateTime nextRefresh;
     ScreenSettings setup;
     readonly Timer debounce = new Timer { Interval = 120 }, screenTimer = new Timer { Interval = 100 },
         snapTimer = new Timer { Interval = 1000 }, frameTimer = new Timer { Interval = 50 };
@@ -749,7 +749,7 @@ class ZonesPage : DevicePage
         picked = 0;
         Settings.Set(Active, "1");
         Settings.Set(Saved, setup.ToText());
-        shown = null;
+        sampler.Shown = null;
         framed = null;
         LogUserAction("Screen effect on");
         screenTimer.Interval = setup.Interval;
@@ -766,7 +766,7 @@ class ZonesPage : DevicePage
         screenTimer.Stop();
         snapTimer.Stop();
         Settings.Remove(Active);
-        shown = null;
+        sampler.Shown = null;
         framed = null;
         sent = new MouseLight[Count];
         LogUserAction("Screen effect off");
@@ -784,37 +784,16 @@ class ZonesPage : DevicePage
 
     void Tick()
     {
-        if (IsDisposed || !screening || zones == null || capturing || framing) return;
+        if (IsDisposed || !screening || zones == null || sampler.Capturing || framing) return;
         if (setup.PauseWhenLocked && (Presence.Locked || Presence.DisplayOff)) return;
-        capturing = true;
-        var monitor = ScreenCapture.Find(setup.Monitor).Bounds;
-        var areas = setup.Zones.ToList();
-        var context = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
-        ThreadPool.QueueUserWorkItem(state =>
-        {
-            int[] sampled = null;
-            try { sampled = ScreenCapture.Sample(monitor, areas); } catch (Exception) { }
-            try { context.Post(posted => { capturing = false; if (sampled != null && !IsDisposed && screening) Sampled(sampled); }, null); }
-            catch (Exception) { }
-        });
+        sampler.Capture(setup, sampled => { if (sampled != null && !IsDisposed && screening) Sampled(sampled); });
     }
 
     void Sampled(int[] sampled)
     {
-        bool fresh = shown == null || shown.Length != sampled.Length;
-        if (fresh) shown = new int[sampled.Length];
-        bool refresh = DateTime.UtcNow >= nextRefresh;
-        if (refresh) nextRefresh = DateTime.UtcNow.AddSeconds(2);
-        var last = framed;
-        bool changed = refresh || fresh || last == null || last.Length != sampled.Length;
-        for (int area = 0; area < sampled.Length; area++)
-        {
-            int target = ScreenCapture.Boost(sampled[area], setup.Boost);
-            shown[area] = setup.Smooth && !fresh ? ScreenCapture.Blend(shown[area], target, 0.45) : target;
-            if (!changed && ScreenCapture.Distance(shown[area], last[area]) > 6) changed = true;
-        }
-        if (!changed) return;
-        var frame = (int[])shown.Clone();
+        bool refresh;
+        if (!sampler.Mix(sampled, setup, framed, false, out refresh)) return;
+        var frame = (int[])sampler.Shown.Clone();
         int level = setup.Bright;
         var listed = zones;
         if (listed == null) return;
@@ -836,27 +815,16 @@ class ZonesPage : DevicePage
         if (!screening || !Visible || snapping) return;
         snapping = true;
         var monitor = ScreenCapture.Find(setup.Monitor).Bounds;
-        int width = preview.Width, height = Math.Max(1, width * monitor.Height / Math.Max(1, monitor.Width));
-        var context = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
-        ThreadPool.QueueUserWorkItem(state =>
+        ScreenCapture.Shoot(monitor, preview.Width, image =>
         {
-            Bitmap image = null;
-            try { image = ScreenCapture.Shrink(monitor, width, height); } catch (Exception) { }
-            try
-            {
-                context.Post(posted =>
-                {
-                    snapping = false;
-                    if (image == null) return;
-                    if (IsDisposed) { image.Dispose(); return; }
-                    var old = preview.Image;
-                    preview.Monitor = monitor.Size;
-                    preview.Image = image;
-                    preview.Invalidate();
-                    if (old != null) old.Dispose();
-                }, null);
-            }
-            catch (Exception) { if (image != null) image.Dispose(); }
+            snapping = false;
+            if (image == null) return;
+            if (IsDisposed) { image.Dispose(); return; }
+            var old = preview.Image;
+            preview.Monitor = monitor.Size;
+            preview.Image = image;
+            preview.Invalidate();
+            if (old != null) old.Dispose();
         });
     }
 
@@ -1138,7 +1106,7 @@ class ZonesPage : DevicePage
             read = ZoneLighting.Zones(hidpp, out oneColor);
             monochrome = oneColor;
             if (picture != null && layout < 0 && found.Has(0x4540))
-                try { layout = hidpp.Call(hidpp.FeatureIndex(0x4540), 0)[0]; } catch (HidppError) { layout = 0; }
+                try { layout = KeyboardCalls.LayoutCode(hidpp); } catch (HidppError) { layout = 0; }
             sent = new MouseLight[Count];
             if (want != null) Apply(hidpp, read, want);
         }, () =>

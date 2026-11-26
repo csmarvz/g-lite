@@ -6,6 +6,7 @@ using System.Drawing.Imaging;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
@@ -205,8 +206,27 @@ static class ScreenCapture
         return (int)(red / count) << 16 | (int)(green / count) << 8 | (int)(blue / count);
     }
 
+    // A picture of the monitor, width wide, for a Screen preview, taken off the UI thread; done gets it on the UI thread (null when it
+    // failed) and owns it.
+    public static void Shoot(Rectangle monitor, int width, Action<Bitmap> done)
+    {
+        int height = Math.Max(1, width * monitor.Height / Math.Max(1, monitor.Width));
+        var context = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
+        ThreadPool.QueueUserWorkItem(state =>
+        {
+            Bitmap image = null;
+            try { image = Shrink(monitor, width, height); } catch (Exception) { }
+            try { context.Post(posted => done(image), null); }
+            catch (Exception) { if (image != null) image.Dispose(); }
+        });
+    }
+
+    // The traces' made-up samples, one colour per zone, in place of the screen's.
+    public static Func<int, int[]> TestSample;
+
     public static int[] Sample(Rectangle monitor, List<Zone> zones)
     {
+        if (TestSample != null) return TestSample(zones.Count);
         return zones.Select(zone => { using (var shrunk = Shrink(Pixels(monitor, zone.Area), 8, 8)) return Average(shrunk); }).ToArray();
     }
 
@@ -233,6 +253,53 @@ static class ScreenCapture
         return Math.Abs((first >> 16 & 0xFF) - (second >> 16 & 0xFF))
             + Math.Abs((first >> 8 & 0xFF) - (second >> 8 & 0xFF))
             + Math.Abs((first & 0xFF) - (second & 0xFF));
+    }
+}
+
+// The Screen effect's sampling, shared by the keyboards, the zones and the Litra, without UI: each zone's area of the monitor captured
+// off the UI thread (Capture), then mixed into the colours shown (Mix): boosted, smoothed, and to send when one moved more than 6 from
+// what was last sent, or every 2 s (NextRefresh, which a keyboard's live effects share).
+class ScreenSampler
+{
+    // The colours shown, a zone each; null before the first sample.
+    public int[] Shown;
+    public DateTime NextRefresh;
+    volatile bool capturing;
+
+    public bool Capturing { get { return capturing; } }
+
+    // sampled runs on the UI thread with the colours, or null when the capture failed.
+    public void Capture(ScreenSettings setup, Action<int[]> sampled)
+    {
+        capturing = true;
+        var monitor = ScreenCapture.Find(setup.Monitor).Bounds;
+        var zones = setup.Zones.ToList();
+        var context = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
+        ThreadPool.QueueUserWorkItem(state =>
+        {
+            int[] colors = null;
+            try { colors = ScreenCapture.Sample(monitor, zones); } catch (Exception) { }
+            try { context.Post(posted => { capturing = false; sampled(colors); }, null); }
+            catch (Exception) { }
+        });
+    }
+
+    // Whether the colours shown, with this sample mixed in, are to be sent: force, the 2 s refresh (refresh), a new count of zones,
+    // nothing sent yet (last), or a zone more than 6 away from last.
+    public bool Mix(int[] sampled, ScreenSettings setup, int[] last, bool force, out bool refresh)
+    {
+        bool fresh = Shown == null || Shown.Length != sampled.Length;
+        if (fresh) Shown = new int[sampled.Length];
+        refresh = DateTime.UtcNow >= NextRefresh;
+        if (refresh) NextRefresh = DateTime.UtcNow.AddSeconds(2);
+        bool changed = force || refresh || fresh || last == null || last.Length != Shown.Length;
+        for (int zone = 0; zone < sampled.Length; zone++)
+        {
+            int target = ScreenCapture.Boost(sampled[zone], setup.Boost);
+            Shown[zone] = setup.Smooth && !fresh ? ScreenCapture.Blend(Shown[zone], target, 0.45) : target;
+            if (!changed && ScreenCapture.Distance(Shown[zone], last[zone]) > 6) changed = true;
+        }
+        return changed;
     }
 }
 
