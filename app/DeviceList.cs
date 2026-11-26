@@ -107,16 +107,3 @@ class DeviceSubtitle : Control
         text(after);
     }
 }
-
-class TitleLogo : DrawnControl
-{
-    public TitleLogo() { Cursor = Cursors.Default; TabStop = false; }
-
-    protected override void OnPaint(PaintEventArgs e)
-    {
-        var graphics = Begin(e);
-        float x = 8 * DpiScale;
-        Ui.Draw(graphics, "G-Lite", Ui.Get(10.5f, Ui.Semibold), new RectangleF(x, 0, Width - x, Height), Theme.Text,
-            TextFormatFlags.VerticalCenter);
-    }
-}

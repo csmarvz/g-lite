@@ -148,7 +148,7 @@ class MousePage : DevicePage
         // The picture stays above the rows, which scroll under it.
         picture = Ui.Add(this, new MousePicture(), 20, BodyTop, Rows.Width, PictureHeight);
         picture.Shape = MouseShape.For(found.Name);
-        var sheet = UseBody(BodyTop + PictureHeight + 12).Sheet;
+        var sheet = UseBody(BodyTop + PictureHeight + PictureGap).Sheet;
         layout = new RowLayout(sheet);
 
         // Sensitivity first: DPI is what's changed most, and some mice have no lighting. Rows a mouse doesn't have go once it's read.

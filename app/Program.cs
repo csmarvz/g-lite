@@ -19,7 +19,9 @@ class MainWindow : Form
 {
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-    const int SettingsHeader = 52, WindowWidth = 868, WindowHeight = 730, SidebarWidth = 212, SidebarInnerWidth = SidebarWidth - 20, ListTop = 32;
+    // NavGap: between the line over the buttons at the bottom and the first of them.
+    // EdgeGrab: how wide the strip at the sidebar's right edge that drags it is.
+    const int EdgeGrab = 6, NavGap = 10, SettingsHeader = 52, WindowWidth = 868, WindowHeight = 730, SidebarWidth = 212, SidebarInnerWidth = SidebarWidth - 20, ListTop = 8;
 
     public NotifyIcon Tray;
     readonly FakeHidpp fake;
@@ -39,7 +41,7 @@ class MainWindow : Form
     int navTop;
     bool rowShown, labelShown;
     string ready;
-    readonly Control side, settingsPage, corner;
+    readonly Control side, settingsPage, topLine;
     readonly FlatButton settingsButton, logsButton, scanButton;
     readonly LogsPage logsPage;
     readonly System.Windows.Forms.Timer rescanSoon = new System.Windows.Forms.Timer { Interval = 1500 },
@@ -77,35 +79,33 @@ class MainWindow : Form
 
         side = Ui.Add(this, new Control(), 0, 0, SidebarWidth, WindowHeight);
         Ui.Style(side, () => side.BackColor = Theme.Sidebar);
-        Ui.Add(side, new TitleLogo(), 10, 0, SidebarInnerWidth, 24).MouseDown += (s, e) =>
-        {
-            if (e.Button == MouseButtons.Left && e.X < 60 * Ui.DpiScale) ToggleView();
-        };
-        deviceList = Ui.Add(side, new DeviceList(), 0, ListTop, SidebarWidth - 1, 400);
+        // Short of the sidebar's right edge, which drags its width (SidebarDrag).
+        deviceList = Ui.Add(side, new DeviceList(), 0, ListTop, SidebarWidth - EdgeGrab, 400);
+        deviceList.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         noneText = Ui.Text(deviceList.Sheet, "Scanning devices…", 18, 4, () => Theme.Dim, 9f);
 
         int bottom = WindowHeight - 14 - 36;
         var quit = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "power", Text = "Quit" },
             10, bottom, SidebarInnerWidth, 36);
-        quit.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        quit.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         quit.Click += (s, e) => { HidePanel(); WaitAll(); Application.Exit(); };
         quit.TabIndex = 103;
         bottom -= 40;
         settingsButton = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "gear", Text = "Settings" },
             10, bottom, SidebarInnerWidth, 36);
-        settingsButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        settingsButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         settingsButton.Click += (s, e) => ShowSettings();
         settingsButton.TabIndex = 102;
         bottom -= 40;
         logsButton = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "lines", Text = "Logs" },
             10, bottom, SidebarInnerWidth, 36);
-        logsButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        logsButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         logsButton.Click += (s, e) => ShowLogs();
         logsButton.TabIndex = 101;
         bottom -= 40;
         scanButton = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "refresh", Text = "Scan for devices" },
             10, bottom, SidebarInnerWidth, 36);
-        scanButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        scanButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         scanButton.Click += (s, e) => Rescan();
         scanButton.TabIndex = 100;
         if (demo)
@@ -114,24 +114,37 @@ class MainWindow : Form
             view = new KeyboardView(fake, KeyLayout.Load("g515-tkl.json"));
             var show = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "keyboard", Text = "Show keyboard" },
                 10, bottom, SidebarInnerWidth, 36);
-            show.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            show.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             show.Click += (s, e) => { if (view.Visible) view.Hide(); else ShowView(); };
             view.VisibleChanged += (s, e) => { show.Text = view.Visible ? "Hide keyboard" : "Show keyboard"; wantView = view.Visible; };
         }
         updateButton = Ui.Add(side,
             new FlatButton { Style = ButtonStyle.Solid, Icon = "download", Text = "Update available", Visible = false },
             10, bottom - 40, SidebarInnerWidth, 36);
-        updateButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        updateButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         updateButton.Click += (s, e) => { if (ready != null) Restart(); else ShowUpdatePage(false); };
         updateButton.TabIndex = 99;
         navTop = bottom;
+        // A line above the buttons at the bottom (and the update's row when it shows), and along the sidebar's right edge.
+        var firstNav = side.Controls.OfType<FlatButton>().Where(button => button != updateButton).OrderBy(button => button.Top).First();
+        side.Paint += (s, e) =>
+        {
+            using (var pen = new Pen(Theme.Border))
+            {
+                int navLine = (labelShown ? readyText.Top : rowShown ? updateButton.Top : firstNav.Top) - S(NavGap);
+                e.Graphics.DrawLine(pen, 0, navLine, side.Width, navLine);
+                e.Graphics.DrawLine(pen, side.Width - 1, 0, side.Width - 1, side.Height);
+            }
+        };
+        side.Resize += (s, e) => side.Invalidate();
+        SidebarDrag();
         readyText = Ui.Text(side, "", 18, bottom - 40 - 20, () => Theme.Dim, 8.25f);
         readyText.AutoSize = false;
         readyText.AutoEllipsis = true;
         readyText.Size = new Size(SidebarInnerWidth - 8, 16);
         readyText.Cursor = Cursors.Hand;
         readyText.Visible = false;
-        readyText.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+        readyText.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         readyText.Click += (s, e) => ShowUpdatePage(false);
         FitList();
 
@@ -143,6 +156,10 @@ class MainWindow : Form
 
         settingsPage = Ui.Add(this, new Control { Visible = false }, SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         Ui.Style(settingsPage, () => settingsPage.BackColor = Theme.Background);
+        settingsPage.Paint += (s, e) =>
+        {
+            using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, S(SettingsHeader) - 1, settingsPage.Width, S(SettingsHeader) - 1);
+        };
         // The title stays while the rest scrolls.
         var settings = Ui.Add(settingsPage, new ScrollPanel(), 0, SettingsHeader, WindowWidth - SidebarWidth, WindowHeight - SettingsHeader);
         settings.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
@@ -204,15 +221,11 @@ class MainWindow : Form
         Rows.Section(settings.Sheet, "Services", ref sectionTop, services, ServicesBox.DesignHeight);
         settings.Fit(sectionTop);
 
-        foreach (var page in new Control[] { empty, settingsPage, logsPage, updatePage }) Watch(page);
-        // The pages' top left corner is rounded into the sidebar and the title bar, which share a colour.
-        corner = Ui.Add(this, new Control(), SidebarWidth, 0, 8, 8);
-        corner.Paint += (s, e) =>
-        {
-            e.Graphics.Clear(Theme.Sidebar);
-            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            using (var brush = new SolidBrush(Theme.Background)) e.Graphics.FillEllipse(brush, 0, 0, 2 * corner.Width, 2 * corner.Height);
-        };
+        foreach (var page in new Control[] { empty, settingsPage, logsPage, updatePage }) { Ui.Stretch(page); Watch(page); }
+        // A line along the top, under the title bar, across the sidebar and the pages.
+        topLine = Ui.Add(this, new Control(), 0, 0, WindowWidth, 1);
+        Ui.Style(topLine, () => topLine.BackColor = Theme.Border);
+        topLine.BringToFront();
         Theme.Changed += Restyle;
         ShowThemeHint();
         ShowUpdate(null);
@@ -498,6 +511,7 @@ class MainWindow : Form
             if (page == null)
             {
                 page = MakePage(device, type);
+                Ui.Stretch(page);
                 Place(this, page, SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
                 Watch(page);
                 page.Visible = false;
@@ -512,6 +526,9 @@ class MainWindow : Form
             {
                 var key = device.Key;
                 item = Place(deviceList.Sheet, new DeviceListItem(), 10, y, SidebarInnerWidth, 46);
+                // As wide as the sidebar is now, and following it.
+                item.Width = deviceList.Sheet.Width - S(20 - EdgeGrab);
+                item.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
                 item.Click += (s, e) => Pick(key);
                 items[key] = item;
             }
@@ -531,7 +548,7 @@ class MainWindow : Form
         deviceList.Fit(S(Math.Max(0, y - 4)));
         noneText.Text = "None found";
         noneText.Visible = list.Count == 0;
-        corner.BringToFront();
+        topLine.BringToFront();
         sleepers.Enabled = list.Any(device => device.Asleep && !Devices.Shorts.ContainsKey(device.Path ?? ""));
         if (!demo) Listen(list);
         if (!settingsPage.Visible && !logsPage.Visible && !updatePage.Visible) Pick(selected);
@@ -721,15 +738,45 @@ class MainWindow : Form
         if (bigPixels != bigSize) { bigSize = bigPixels; Icon = Logo.MakeIcon(bigPixels); }
     }
 
-    // A page keeps its width, centred right of the sidebar, and takes the window's height.
-    Rectangle PageBounds
+    // The sidebar's right edge drags its width, from its own width at the start (where it always starts) to 400; a wider one widens
+    // the window, so the page keeps the width it was built at.
+    void SidebarDrag()
     {
-        get
+        int pressedAt = -1, widthThen = 0;
+        Func<int, bool> onEdge = x => x >= side.Width - S(EdgeGrab);
+        side.MouseDown += (s, e) =>
         {
-            int width = S(WindowWidth - SidebarWidth);
-            return new Rectangle(side.Width + (ClientSize.Width - side.Width - width) / 2, 0, width, ClientSize.Height);
-        }
+            if (e.Button != MouseButtons.Left || !onEdge(e.X)) return;
+            pressedAt = e.X;
+            widthThen = side.Width;
+            side.Capture = true;
+        };
+        side.MouseMove += (s, e) =>
+        {
+            if (pressedAt >= 0) SetSidebar(widthThen + e.X - pressedAt);
+            else side.Cursor = onEdge(e.X) ? Cursors.SizeWE : Cursors.Default;
+        };
+        side.MouseUp += (s, e) => { pressedAt = -1; side.Capture = false; };
+        side.MouseLeave += (s, e) => { if (pressedAt < 0) side.Cursor = Cursors.Default; };
     }
+
+    void SetSidebar(int width)
+    {
+        int pageWidth = S(WindowWidth - SidebarWidth);
+        int widest = WindowState == FormWindowState.Normal ? S(400) : Math.Min(S(400), ClientSize.Width - pageWidth);
+        width = Math.Max(S(SidebarWidth), Math.Min(widest, width));
+        if (width == side.Width) return;
+        WindowHelpers.Relayout(this, () =>
+        {
+            side.Width = width;
+            if (ClientSize.Width - width < pageWidth) ClientSize = new Size(width + pageWidth, ClientSize.Height);
+            foreach (var page in pages.Values.Concat(new Control[] { empty, settingsPage, logsPage, updatePage }))
+                if (page.Visible) page.Bounds = PageBounds;
+        });
+    }
+
+    // A page takes the window right of the sidebar; its controls follow its width (Ui.Stretch).
+    Rectangle PageBounds { get { return new Rectangle(side.Width, 0, ClientSize.Width - side.Width, ClientSize.Height); } }
 
     protected override void OnResize(EventArgs e)
     {
@@ -737,6 +784,8 @@ class MainWindow : Form
         if (!built || WindowState == FormWindowState.Minimized) return;
         shownState = WindowState;
         side.Height = ClientSize.Height;
+        // Set here, not anchored: its anchor's distance came out wrong once the sidebar's drag widened the window.
+        topLine.Width = ClientSize.Width;
         FitList();
         foreach (var page in pages.Values.Concat(new Control[] { empty, settingsPage, logsPage, updatePage }))
             if (page.Visible) page.Bounds = PageBounds;
@@ -769,7 +818,7 @@ class MainWindow : Form
             // to measure the frame from, so Windows' own limit stays.
             if (ClientSize.Width > 0)
             {
-                Marshal.WriteInt32(message.LParam, 24, S(WindowWidth) + Width - ClientSize.Width);
+                Marshal.WriteInt32(message.LParam, 24, side.Width + S(WindowWidth - SidebarWidth) + Width - ClientSize.Width);
                 Marshal.WriteInt32(message.LParam, 28, S(WindowHeight) + Height - ClientSize.Height);
             }
             return;
@@ -808,16 +857,6 @@ class MainWindow : Form
             var value = key == null ? null : key.GetValue("GLite") as byte[];
             return value == null || value.Length == 0 || (value[0] & 1) == 0;
         }
-    }
-
-    void ToggleView()
-    {
-        if (view == null)
-        {
-            view = new KeyboardView(new FakeHidpp(), KeyLayout.Load("g515-tkl.json"));
-            view.VisibleChanged += (s, e) => wantView = view.Visible;
-        }
-        if (view.Visible) view.Hide(); else ShowView();
     }
 
     void ShowView()
@@ -893,8 +932,10 @@ class MainWindow : Form
 
     void FitList()
     {
-        int bottom = labelShown ? navTop - 40 - 24 : rowShown ? navTop - 40 - 8 : navTop - 8;
+        // The list ends above the line over the buttons at the bottom.
+        int bottom = (labelShown ? navTop - 40 - 20 : rowShown ? navTop - 40 : navTop) - NavGap - 4;
         deviceList.Height = side.Height - S(WindowHeight - bottom + ListTop);
+        side.Invalidate();
     }
 
     void Ready(string version)

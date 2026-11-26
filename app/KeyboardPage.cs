@@ -197,7 +197,7 @@ class KeyboardPage : DevicePage
 
         // The picture stays above the rows, which scroll under it.
         picture = Ui.Add(this, new KeyPicture(kind.Keys), 20, BodyTop, Rows.Width, PictureHeight);
-        var sheet = UseBody(BodyTop + PictureHeight + 12).Sheet;
+        var sheet = UseBody(BodyTop + PictureHeight + PictureGap).Sheet;
         if (Parts)
         {
             picture.Bar = new HashSet<int>(kind.Bar);

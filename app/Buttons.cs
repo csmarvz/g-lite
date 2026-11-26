@@ -237,9 +237,9 @@ class ButtonRows
         {
             if (Pressed < 0 || Pressed >= Max || !rowNames[Pressed].Visible) return;
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            // The parent is scaled with its page.
-            float scale = parent.Width / (float)Rows.Width;
-            Ui.Fill(e.Graphics, new RectangleF(6 * scale, (Pressed * Ui.RowHeight + 6) * scale, (Rows.Width - 12) * scale,
+            // The parent is scaled with its page, and as wide as the window lets it.
+            float scale = Ui.DpiScale;
+            Ui.Fill(e.Graphics, new RectangleF(6 * scale, (Pressed * Ui.RowHeight + 6) * scale, parent.Width - 12 * scale,
                 (Ui.RowHeight - 12) * scale), 6 * scale, Theme.AccentBackground, Theme.AccentBackground);
         };
         keyField = Rows.Place(parent, 0, new TextField { Visible = false }, Rows.ControlWidth, Rows.ControlHeight);

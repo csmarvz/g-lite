@@ -661,6 +661,8 @@ class ScrollPanel : Control
     int offset, content, target;
     readonly Timer glide = new Timer { Interval = 15 };
     public bool ShowBar = true;
+    // Room above the sheet, in pixels, that scrolls away with it (under a device screen's header line).
+    public int TopPadding;
     public readonly Control Sheet = new Control();
     // A drag of the bar: the pointer's height and the offset when it started, -1 when there's none.
     int grabbedAt = -1, grabbedOffset;
@@ -684,7 +686,8 @@ class ScrollPanel : Control
     // The bar's strip at the right stays the panel's, out of the sheet.
     int SheetWidth { get { return ShowBar ? Width - (int)Math.Round(14 * Ui.DpiScale) : Width; } }
 
-    void FitSheet() { Sheet.Bounds = new Rectangle(0, -offset, SheetWidth, Math.Max(content, Height)); }
+    // content counts the padding; the sheet starts below it.
+    void FitSheet() { Sheet.Bounds = new Rectangle(0, TopPadding - offset, SheetWidth, Math.Max(content - TopPadding, Height)); }
 
     protected override void Dispose(bool disposing)
     {
@@ -694,11 +697,9 @@ class ScrollPanel : Control
 
     public int Offset { get { return offset; } }
 
-    public int Content { get { return content; } }
-
     public void Fit(int height)
     {
-        content = height;
+        content = height + TopPadding;
         FitSheet();
         ScrollTo(offset);
     }
@@ -709,6 +710,7 @@ class ScrollPanel : Control
     // area is in the sheet's coordinates; the view moves only as far as it takes.
     void Reveal(Rectangle area)
     {
+        area.Offset(0, TopPadding);
         if (area.Top < offset) ScrollTo(area.Top);
         else if (area.Bottom > offset + Height) ScrollTo(area.Bottom - Height);
     }
@@ -755,6 +757,7 @@ class ScrollPanel : Control
         offset = (int)Math.Round(offset * factor.Height);
         target = (int)Math.Round(target * factor.Height);
         content = (int)Math.Round(content * factor.Height);
+        TopPadding = (int)Math.Round(TopPadding * factor.Height);
         // The sheet is scaled after this with the panel's other children: sized here too, at the old scale's bar width, it would
         // be scaled twice.
         scaling = true;
@@ -774,7 +777,7 @@ class ScrollPanel : Control
         to = Clamp(to);
         if (to == offset) return;
         offset = to;
-        Sheet.Top = -offset;
+        Sheet.Top = TopPadding - offset;
         if (ShowBar) Invalidate();
     }
 

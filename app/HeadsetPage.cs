@@ -76,7 +76,7 @@ class HeadsetPage : DevicePage
 
         // The picture stays above the rows, which scroll under it.
         picture = Ui.Add(this, new HeadsetPicture(), 20, BodyTop, Rows.Width, PictureHeight);
-        var sheet = UseBody(BodyTop + PictureHeight + 12).Sheet;
+        var sheet = UseBody(BodyTop + PictureHeight + PictureGap).Sheet;
         rows = new RowLayout(sheet);
 
         Label heading;

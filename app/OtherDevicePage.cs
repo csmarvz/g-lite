@@ -83,7 +83,7 @@ class OtherDevicePage : DevicePage
             picture = Ui.Add(this, new KeyPicture(ansi) { Live = true, Enabled = false }, 20, BodyTop, Rows.Width, PictureHeight);
             backlightPicture = new BacklightPicture(picture);
         }
-        rows = new RowLayout((picture != null ? UseBody(BodyTop + PictureHeight + 12) : UseBody()).Sheet);
+        rows = new RowLayout((picture != null ? UseBody(BodyTop + PictureHeight + PictureGap) : UseBody()).Sheet);
         if (found.Has(0x8040)) Brightness();
         if (found.Has(0x2201)) Pointer();
         if (found.Has(0x2110) || found.Has(0x2111) || found.Has(0x2121)) Wheel();

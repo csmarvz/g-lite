@@ -56,7 +56,7 @@ class G510Page : DevicePage
 
         // The picture stays above the rows, which scroll under it.
         picture = Ui.Add(this, new KeyPicture(KeyLayout.Load("g510.json")) { Live = true }, 20, BodyTop, Rows.Width, PictureHeight);
-        var sheet = UseBody(BodyTop + PictureHeight + 12).Sheet;
+        var sheet = UseBody(BodyTop + PictureHeight + PictureGap).Sheet;
         viewPick = Ui.Add(this, new SegmentedPicker { Items = new[] { "Settings", "Bindings", "Game" }, AccessibleName = "View" },
             636 - 192, 72, 192, 32);
         viewPick.Picked += ShowView;

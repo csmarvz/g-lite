@@ -175,6 +175,30 @@ static class Ui
     public const AnchorStyles Footer = AnchorStyles.Bottom | AnchorStyles.Left;
     public const AnchorStyles Tall = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
 
+    // A page as wide as the window lets it, built at PageSize: once built, each control is anchored where it is. One across most of
+    // its parent's width stretches with it, one in the right half keeps its distance from the right edge, the rest stay at the left;
+    // the vertical anchors are kept. Done inside plain containers, the settings boxes and the scrolling sheets too.
+    // A control whose Tag is this stays at the left wherever it is (the preset row's "…", just right of the middle); one tagged
+    // Centred keeps its place in the middle (the empty screen's two buttons).
+    public static readonly object StaysLeft = new object(), Centred = new object();
+
+    public static void Stretch(Control parent)
+    {
+        var scroll = parent as ScrollPanel;
+        if (scroll != null) { Stretch(scroll.Sheet); return; }
+        int width = parent.Width;
+        foreach (Control control in parent.Controls)
+        {
+            var vertical = control.Anchor & (AnchorStyles.Top | AnchorStyles.Bottom);
+            if (vertical == 0) vertical = AnchorStyles.Top;
+            bool across = control.Width > width / 2 && control.Left < width / 5 && width - control.Right < width / 5;
+            control.Anchor = vertical | (control.Tag == Centred ? AnchorStyles.None
+                : across ? AnchorStyles.Left | AnchorStyles.Right
+                : control.Left + control.Width / 2 > width / 2 && control.Tag != StaysLeft ? AnchorStyles.Right : AnchorStyles.Left);
+            if (control is ScrollPanel || control is RoundedBox || control.GetType() == typeof(Control)) Stretch(control);
+        }
+    }
+
     public static T Add<T>(Control parent, T control, int x, int y, int width, int height) where T : Control
     {
         control.Bounds = new Rectangle(x, y, width, height);

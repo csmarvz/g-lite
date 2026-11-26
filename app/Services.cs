@@ -407,7 +407,8 @@ class ServicesBox : RoundedBox
     {
         base.OnPaint(e);
         var graphics = e.Graphics;
-        float scale = Width / (float)BoxWidth;
+        // Its width follows the window's, so the scale is the screen's.
+        float scale = Ui.DpiScale;
         using (var pen = new Pen(Theme.Border, Math.Max(1, scale)))
             for (int row = 1; row < Rows; row++)
                 graphics.DrawLine(pen, 14 * scale, row * RowHeight * scale, Width - 14 * scale, row * RowHeight * scale);

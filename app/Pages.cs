@@ -51,6 +51,8 @@ abstract class DevicePage : Control, IPage
     readonly List<Control> footer = new List<Control>();
     // Design units: Body starts under the preset row; the footer's status line sits 10 below Body, the footer 57 high in all.
     protected const int BodyTop = 118;
+    // Between a screen's picture and Body, in design units.
+    protected const int PictureGap = 20;
     const int FooterGap = 10, FooterHeight = 730 - 673;
 
     protected DevicePage(FoundDevice device, Hidpp fake, string title, string noun, string prefix)
@@ -83,7 +85,7 @@ abstract class DevicePage : Control, IPage
             else if (profiles.Index <= 0) StartName(null);
             else UpdateSet();
         };
-        moreButton = Ui.Add(this, new FlatButton { Text = "…", AccessibleName = "More preset actions" }, 360, 72, 36, 32);
+        moreButton = Ui.Add(this, new FlatButton { Text = "…", AccessibleName = "More preset actions", Tag = Ui.StaysLeft }, 360, 72, 36, 32);
         moreButton.Click += (s, e) => { if (naming) EndName(); else PresetMenu(); };
 
         status = Ui.Add(this, new StatusLine(), 20, 683, 460, 36);
@@ -128,7 +130,9 @@ abstract class DevicePage : Control, IPage
     // top: where Body starts, in design units, lower when the screen keeps something above it (the keyboard's picture).
     protected ScrollPanel UseBody(int top = BodyTop)
     {
-        Body = Ui.Add(this, new ScrollPanel(), 0, top, Ui.PageSize.Width, Ui.PageSize.Height - FooterHeight - top);
+        // Room under the header's line before the first section, as in Settings.
+        Body = Ui.Add(this, new ScrollPanel { TopPadding = 12 }, 0, top, Ui.PageSize.Width, Ui.PageSize.Height - FooterHeight - top);
+        builtPicture = Math.Max(0, top - BodyTop - PictureGap);
         Ui.Style(Body, () => Body.BackColor = Theme.Background);
         footer.AddRange(new Control[] { status, undoButton, actionButton });
         return Body;
@@ -149,17 +153,100 @@ abstract class DevicePage : Control, IPage
         PlaceFooter();
     }
 
-    // Design units in the page's pixels: the page is built at 100% and scaled as a whole once placed, at its width's ratio.
-    protected int Scaled(int units) { return (int)Math.Round(units * Width / (float)Ui.PageSize.Width); }
+    // Design units in the page's pixels: the page is built at 100% and scaled as a whole once placed.
+    protected int Scaled(int units) { return (int)Math.Round(units * pageScale); }
 
+    // What the page was scaled by since it was built at 100%: its width no longer says it, since the page takes the window's.
+    float pageScale = 1;
+
+    protected override void ScaleControl(SizeF factor, BoundsSpecified specified)
+    {
+        pageScale *= factor.Height;
+        base.ScaleControl(factor, specified);
+    }
+
+    // The line under a screen's picture drags its height: pictureGrowth, in design units, is added to the height every screen's picture
+    // was built at (the Litra's is lower than the others), shared while G-Lite runs and back to 0 when it starts again.
+    static int pictureGrowth;
+    int builtPicture, pressedAt = -1, heightThen;
+
+    // The picture and anything else between the header and Body (the mouse's DPI text is in its picture) take the height.
+    void FitPicture()
+    {
+        if (Body == null || builtPicture == 0) return;
+        int top = Scaled(BodyTop), current = Body.Top - Scaled(PictureGap) - top, height = Scaled(builtPicture + pictureGrowth);
+        if (current == height) return;
+        foreach (Control control in Controls)
+            if (control != Body && control.Top >= top - 1 && control.Bottom <= top + current + 1 && control.Bottom > top) control.Height = height;
+        Body.Top = top + height + Scaled(PictureGap);
+        PlaceFooter();
+    }
+
+    bool OnPictureLine(int y) { return Body != null && builtPicture > 0 && y >= Body.Top - Scaled(8) && y < Body.Top + 1; }
+
+    protected override void OnMouseDown(MouseEventArgs e)
+    {
+        base.OnMouseDown(e);
+        if (e.Button != MouseButtons.Left || !OnPictureLine(e.Y)) return;
+        pressedAt = e.Y;
+        heightThen = builtPicture + pictureGrowth;
+        Capture = true;
+    }
+
+    // Between 60 and what leaves Body room for about two rows (160).
+    protected override void OnMouseMove(MouseEventArgs e)
+    {
+        base.OnMouseMove(e);
+        if (pressedAt < 0) { Cursor = OnPictureLine(e.Y) ? Cursors.SizeNS : Cursors.Default; return; }
+        int tallest = (int)((Height - Scaled(FooterHeight) - Scaled(BodyTop) - Scaled(PictureGap)) / pageScale) - 160;
+        int height = Math.Max(60, Math.Min(tallest, heightThen + (int)Math.Round((e.Y - pressedAt) / pageScale)));
+        if (height == builtPicture + pictureGrowth) return;
+        pictureGrowth = height - builtPicture;
+        WindowHelpers.Relayout(this, FitPicture);
+    }
+
+    protected override void OnMouseUp(MouseEventArgs e)
+    {
+        base.OnMouseUp(e);
+        pressedAt = -1;
+        Capture = false;
+    }
+
+    protected override void OnMouseLeave(EventArgs e)
+    {
+        base.OnMouseLeave(e);
+        if (pressedAt < 0) Cursor = Cursors.Default;
+    }
+
+    // Another screen's drag shows when this one is shown.
+    protected override void OnVisibleChanged(EventArgs e)
+    {
+        base.OnVisibleChanged(e);
+        if (Visible) FitPicture();
+    }
+
+    // Body reaches down to the footer, which stays at the bottom of the window.
     void PlaceFooter()
     {
         if (Body == null) return;
         int bottom = Height - Scaled(FooterHeight);
-        Body.Height = Math.Max(0, Math.Min(Body.Content, bottom - Body.Top));
+        Body.Height = Math.Max(0, bottom - Body.Top);
         int top = Body.Bottom + Scaled(FooterGap);
         int shift = top - status.Top;
         if (shift != 0) foreach (var control in footer) control.Top += shift;
+        Invalidate();
+    }
+
+    // A line under the header, which stays while Body scrolls, and one above the footer.
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        base.OnPaint(e);
+        if (Body == null) return;
+        using (var pen = new Pen(Theme.Border))
+        {
+            e.Graphics.DrawLine(pen, 0, Body.Top - 1, Width, Body.Top - 1);
+            e.Graphics.DrawLine(pen, 0, Body.Bottom, Width, Body.Bottom);
+        }
     }
 
     // Report and Backups follow the device's name, as far as the page's width lets them.
@@ -490,7 +577,7 @@ abstract class DevicePage : Control, IPage
         if (!IsHandleCreated || !Visible) return;
         moreButton.Width = (int)((naming ? 76 : 36) * Ui.DpiScale);
         var main = MainButton();
-        undoButton.Left = (main != null ? main.Left - (int)(8 * Ui.DpiScale) : (int)(636 * Ui.DpiScale)) - undoButton.Width;
+        undoButton.Left = (main != null ? main.Left - (int)(8 * Ui.DpiScale) : Width - Scaled(20)) - undoButton.Width;
         if (FooterPicker != null)
             FooterPicker.Bounds = new Rectangle(undoButton.Left - (int)(8 * Ui.DpiScale) - FooterPicker.Width, undoButton.Top,
                 FooterPicker.Width, undoButton.Height);
@@ -878,9 +965,9 @@ class EmptyPage : Control
         Ui.Style(this, () => BackColor = Theme.Background);
         title = Centered(Ui.Text(this, "", 0, 150, () => Theme.Text, 15f, Ui.Semibold), 36);
         text = Centered(Ui.Text(this, "", 0, 192, () => Theme.Dim, 9.75f), 44);
-        scan = Ui.Add(this, new FlatButton { Style = ButtonStyle.Primary, Text = "Scan again" }, 328 - 8 - 150, 252, 150, 32);
+        scan = Ui.Add(this, new FlatButton { Style = ButtonStyle.Primary, Text = "Scan again", Tag = Ui.Centred }, 328 - 8 - 150, 252, 150, 32);
         scan.Click += (s, e) => rescan();
-        report = Ui.Add(this, new FlatButton { Text = "Report your device" }, 328 + 8, 252, 150, 32);
+        report = Ui.Add(this, new FlatButton { Text = "Report your device", Tag = Ui.Centred }, 328 + 8, 252, 150, 32);
         report.Click += (s, e) => Process.Start("https://github.com/csmarvz/g-lite/issues/new");
         tips = Centered(Ui.Text(this,
             "Turn the device on and wake it with a key press or a click.\nQuit G HUB, which can hold on to the device.\nPair Bluetooth devices in Windows first.",

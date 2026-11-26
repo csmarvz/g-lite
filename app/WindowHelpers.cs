@@ -112,6 +112,24 @@ static class WindowHelpers
         RedrawWindow(control.Handle, IntPtr.Zero, IntPtr.Zero, 0x80 | 0x100);
     }
 
+    [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
+
+    // Changes a control's layout without drawing each step (WM_SETREDRAW off), then paints it and everything in it at once: a drag
+    // that moves many controls otherwise shows them moving one by one.
+    public static void Relayout(Control control, Action change)
+    {
+        if (!control.IsHandleCreated) { change(); return; }
+        SendMessage(control.Handle, 0x000B, IntPtr.Zero, IntPtr.Zero);
+        control.SuspendLayout();
+        try { change(); }
+        finally
+        {
+            control.ResumeLayout(true);
+            SendMessage(control.Handle, 0x000B, (IntPtr)1, IntPtr.Zero);
+            RedrawWindow(control.Handle, IntPtr.Zero, IntPtr.Zero, 0x1 | 0x4 | 0x80 | 0x100);
+        }
+    }
+
     public static void Border(Form form, Color color)
     {
         if (!form.IsHandleCreated) return;

@@ -204,7 +204,7 @@ class ZonesPage : DevicePage
             picture = Ui.Add(this, new KeyPicture(ansi) { Live = true }, 20, BodyTop, Rows.Width, PictureHeight);
         }
         if (!keyboard) speakers = Ui.Add(this, new SpeakerPicture(), 20, BodyTop, Rows.Width, PictureHeight);
-        var sheet = (picture != null || speakers != null ? UseBody(BodyTop + PictureHeight + 12) : UseBody()).Sheet;
+        var sheet = (picture != null || speakers != null ? UseBody(BodyTop + PictureHeight + PictureGap) : UseBody()).Sheet;
         rows = new RowLayout(sheet);
 
         // Before the device is read every row it may have shows; once read, the zone row goes with one zone, the colour row on a
@@ -1157,7 +1157,7 @@ class ZonesPage : DevicePage
                     .ToArray();
                 int width = ZonePickerWidth(zonePicker.Items.Length);
                 zonePicker.Width = Scaled(width);
-                zonePicker.Left = Scaled(Rows.Width - Rows.Inset - width);
+                zonePicker.Left = zonePicker.Parent.Width - Scaled(Rows.Inset + width);
                 if (picked > segZones.Count) picked = 0;
             }
             RefreshControls();
