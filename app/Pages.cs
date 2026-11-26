@@ -45,8 +45,8 @@ abstract class DevicePage : Control, IPage
     protected Control FooterPicker;
     // Whether the screen shows FooterPicker: its Visible reads false while the window is hidden in the tray.
     protected bool FooterPickerShown;
-    // A screen laid out in rows (UseBody) puts its settings on Body.Sheet, below the header. Body is as tall as they are and the
-    // footer follows it; when they don't fit the window, Body scrolls and the footer stays at the bottom.
+    // A screen laid out in rows (UseBody) puts its settings on Body.Sheet, below the header. Body reaches down to the footer, which
+    // stays at the bottom of the window, and scrolls when they don't fit.
     protected ScrollPanel Body;
     readonly List<Control> footer = new List<Control>();
     // Design units: Body starts under the preset row; the footer's status line sits 10 below Body, the footer 57 high in all.
@@ -88,7 +88,7 @@ abstract class DevicePage : Control, IPage
         moreButton = Ui.Add(this, new FlatButton { Text = "…", AccessibleName = "More preset actions", Tag = Ui.StaysLeft }, 360, 72, 36, 32);
         moreButton.Click += (s, e) => { if (naming) EndName(); else PresetMenu(); };
 
-        status = Ui.Add(this, new StatusLine(), 20, 683, 460, 36);
+        status = Ui.Add(this, new StatusLine { Tag = Ui.Across }, 20, 683, 460, 36);
         undoButton = Ui.Add(this, new FlatButton { Text = "Revert", Enabled = false, AccessibleName = "Revert changes" }, 416, 685, 72, 32);
         undoButton.Click += (s, e) => Undo();
         actionButton = Ui.Add(this, new FlatButton { Visible = false }, 328, 685, 160, 32);
@@ -124,6 +124,8 @@ abstract class DevicePage : Control, IPage
     {
         base.OnLayout(e);
         PlaceHeaderButtons();
+        // A window made smaller limits the picture again.
+        FitPicture();
         PlaceFooter();
     }
 
@@ -170,11 +172,19 @@ abstract class DevicePage : Control, IPage
     static int pictureGrowth;
     int builtPicture, pressedAt = -1, heightThen;
 
+    // The height this screen's picture takes now, in design units: between 60 and what leaves Body room for about two rows (160) at
+    // the window's height now, whatever the drag made it on another screen or in a taller window.
+    int ShownPictureHeight()
+    {
+        int tallest = (int)((Height - Scaled(FooterHeight) - Scaled(BodyTop) - Scaled(PictureGap)) / pageScale) - 160;
+        return Math.Max(60, Math.Min(tallest, builtPicture + pictureGrowth));
+    }
+
     // The picture and anything else between the header and Body (the mouse's DPI text is in its picture) take the height.
     void FitPicture()
     {
         if (Body == null || builtPicture == 0) return;
-        int top = Scaled(BodyTop), current = Body.Top - Scaled(PictureGap) - top, height = Scaled(builtPicture + pictureGrowth);
+        int top = Scaled(BodyTop), current = Body.Top - Scaled(PictureGap) - top, height = Scaled(ShownPictureHeight());
         if (current == height) return;
         foreach (Control control in Controls)
             if (control != Body && control.Top >= top - 1 && control.Bottom <= top + current + 1 && control.Bottom > top) control.Height = height;
@@ -189,20 +199,27 @@ abstract class DevicePage : Control, IPage
         base.OnMouseDown(e);
         if (e.Button != MouseButtons.Left || !OnPictureLine(e.Y)) return;
         pressedAt = e.Y;
-        heightThen = builtPicture + pictureGrowth;
+        heightThen = ShownPictureHeight();
         Capture = true;
     }
 
-    // Between 60 and what leaves Body room for about two rows (160).
     protected override void OnMouseMove(MouseEventArgs e)
     {
         base.OnMouseMove(e);
         if (pressedAt < 0) { Cursor = OnPictureLine(e.Y) ? Cursors.SizeNS : Cursors.Default; return; }
-        int tallest = (int)((Height - Scaled(FooterHeight) - Scaled(BodyTop) - Scaled(PictureGap)) / pageScale) - 160;
-        int height = Math.Max(60, Math.Min(tallest, heightThen + (int)Math.Round((e.Y - pressedAt) / pageScale)));
-        if (height == builtPicture + pictureGrowth) return;
-        pictureGrowth = height - builtPicture;
+        int wanted = heightThen + (int)Math.Round((e.Y - pressedAt) / pageScale);
+        if (wanted == ShownPictureHeight()) return;
+        pictureGrowth = wanted - builtPicture;
+        // Kept within what this screen allows, so another drag starts from what shows.
+        pictureGrowth = ShownPictureHeight() - builtPicture;
         WindowHelpers.Relayout(this, FitPicture);
+    }
+
+    // Lost to another window (Alt+Tab, a menu) mid-drag: the drag ends.
+    protected override void OnMouseCaptureChanged(EventArgs e)
+    {
+        base.OnMouseCaptureChanged(e);
+        if (!Capture) pressedAt = -1;
     }
 
     protected override void OnMouseUp(MouseEventArgs e)

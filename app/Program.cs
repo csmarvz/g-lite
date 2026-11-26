@@ -19,9 +19,9 @@ class MainWindow : Form
 {
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-    // NavGap: between the line over the buttons at the bottom and the first of them.
+    // ButtonsGap: between the line over the sidebar's buttons at the bottom and the first of them.
     // EdgeGrab: how wide the strip at the sidebar's right edge that drags it is.
-    const int EdgeGrab = 6, NavGap = 10, SettingsHeader = 52, WindowWidth = 868, WindowHeight = 730, SidebarWidth = 212, SidebarInnerWidth = SidebarWidth - 20, ListTop = 8;
+    const int EdgeGrab = 6, ButtonsGap = 10, SettingsHeader = 52, WindowWidth = 868, WindowHeight = 730, SidebarWidth = 212, SidebarInnerWidth = SidebarWidth - 20, ListTop = 8;
 
     public NotifyIcon Tray;
     readonly FakeHidpp fake;
@@ -126,12 +126,12 @@ class MainWindow : Form
         updateButton.TabIndex = 99;
         navTop = bottom;
         // A line above the buttons at the bottom (and the update's row when it shows), and along the sidebar's right edge.
-        var firstNav = side.Controls.OfType<FlatButton>().Where(button => button != updateButton).OrderBy(button => button.Top).First();
+        var firstButton = side.Controls.OfType<FlatButton>().Where(button => button != updateButton).OrderBy(button => button.Top).First();
         side.Paint += (s, e) =>
         {
             using (var pen = new Pen(Theme.Border))
             {
-                int navLine = (labelShown ? readyText.Top : rowShown ? updateButton.Top : firstNav.Top) - S(NavGap);
+                int navLine = (labelShown ? readyText.Top : rowShown ? updateButton.Top : firstButton.Top) - S(ButtonsGap);
                 e.Graphics.DrawLine(pen, 0, navLine, side.Width, navLine);
                 e.Graphics.DrawLine(pen, side.Width - 1, 0, side.Width - 1, side.Height);
             }
@@ -757,6 +757,8 @@ class MainWindow : Form
             else side.Cursor = onEdge(e.X) ? Cursors.SizeWE : Cursors.Default;
         };
         side.MouseUp += (s, e) => { pressedAt = -1; side.Capture = false; };
+        // Lost to another window (Alt+Tab, a menu) mid-drag: the drag ends.
+        side.MouseCaptureChanged += (s, e) => { if (!side.Capture) pressedAt = -1; };
         side.MouseLeave += (s, e) => { if (pressedAt < 0) side.Cursor = Cursors.Default; };
     }
 
@@ -765,11 +767,20 @@ class MainWindow : Form
         int pageWidth = S(WindowWidth - SidebarWidth);
         int widest = WindowState == FormWindowState.Normal ? S(400) : Math.Min(S(400), ClientSize.Width - pageWidth);
         width = Math.Max(S(SidebarWidth), Math.Min(widest, width));
+        // The window widens only as far as the screen lets it: moved left first, then the sidebar stops.
+        var area = Screen.FromControl(this).WorkingArea;
+        int growth = width + pageWidth - ClientSize.Width, room = area.Width - Width;
+        if (WindowState == FormWindowState.Normal && growth > room) { width -= growth - room; growth = room; }
+        width = Math.Max(S(SidebarWidth), width);
         if (width == side.Width) return;
         WindowHelpers.Relayout(this, () =>
         {
             side.Width = width;
-            if (ClientSize.Width - width < pageWidth) ClientSize = new Size(width + pageWidth, ClientSize.Height);
+            if (growth > 0 && WindowState == FormWindowState.Normal)
+            {
+                if (Right + growth > area.Right) Left = Math.Max(area.Left, area.Right - Width - growth);
+                ClientSize = new Size(width + pageWidth, ClientSize.Height);
+            }
             foreach (var page in pages.Values.Concat(new Control[] { empty, settingsPage, logsPage, updatePage }))
                 if (page.Visible) page.Bounds = PageBounds;
         });
@@ -786,6 +797,8 @@ class MainWindow : Form
         side.Height = ClientSize.Height;
         // Set here, not anchored: its anchor's distance came out wrong once the sidebar's drag widened the window.
         topLine.Width = ClientSize.Width;
+        // Scaled with the window, it would be 2 pixels at 150%.
+        topLine.Height = 1;
         FitList();
         foreach (var page in pages.Values.Concat(new Control[] { empty, settingsPage, logsPage, updatePage }))
             if (page.Visible) page.Bounds = PageBounds;
@@ -933,7 +946,7 @@ class MainWindow : Form
     void FitList()
     {
         // The list ends above the line over the buttons at the bottom.
-        int bottom = (labelShown ? navTop - 40 - 20 : rowShown ? navTop - 40 : navTop) - NavGap - 4;
+        int bottom = (labelShown ? navTop - 40 - 20 : rowShown ? navTop - 40 : navTop) - ButtonsGap - 4;
         deviceList.Height = side.Height - S(WindowHeight - bottom + ListTop);
         side.Invalidate();
     }

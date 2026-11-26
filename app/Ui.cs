@@ -178,14 +178,22 @@ static class Ui
     // A page as wide as the window lets it, built at PageSize: once built, each control is anchored where it is. One across most of
     // its parent's width stretches with it, one in the right half keeps its distance from the right edge, the rest stay at the left;
     // the vertical anchors are kept. Done inside plain containers, the settings boxes and the scrolling sheets too.
-    // A control whose Tag is this stays at the left wherever it is (the preset row's "…", just right of the middle); one tagged
-    // Centred keeps its place in the middle (the empty screen's two buttons).
-    public static readonly object StaysLeft = new object(), Centred = new object();
+    // A Tag overrides the rule: StaysLeft (the preset row's "…", just right of the middle), StaysRight (the report's Back, just left of
+    // it, with the buttons it goes with), Centred (the empty screen's two buttons), Across, stretching though it doesn't span the width
+    // (the status line, which the footer's buttons cover otherwise; the Screen effect's preview, up to the zone list).
+    public static readonly object StaysLeft = new object(), StaysRight = new object(), Centred = new object(), Across = new object();
 
     public static void Stretch(Control parent)
     {
         var scroll = parent as ScrollPanel;
-        if (scroll != null) { Stretch(scroll.Sheet); return; }
+        if (scroll != null)
+        {
+            // The sheet at its width in design units, like the page: built while Ui.DpiScale is already the screen's, it's narrower
+            // by the scaled bar, which anchored the boxes past its right edge at 150% and up.
+            if (scroll.ShowBar) scroll.Sheet.Width = scroll.Width - ScrollPanel.BarWidth;
+            Stretch(scroll.Sheet);
+            return;
+        }
         int width = parent.Width;
         foreach (Control control in parent.Controls)
         {
@@ -193,9 +201,11 @@ static class Ui
             if (vertical == 0) vertical = AnchorStyles.Top;
             bool across = control.Width > width / 2 && control.Left < width / 5 && width - control.Right < width / 5;
             control.Anchor = vertical | (control.Tag == Centred ? AnchorStyles.None
-                : across ? AnchorStyles.Left | AnchorStyles.Right
-                : control.Left + control.Width / 2 > width / 2 && control.Tag != StaysLeft ? AnchorStyles.Right : AnchorStyles.Left);
-            if (control is ScrollPanel || control is RoundedBox || control.GetType() == typeof(Control)) Stretch(control);
+                : across || control.Tag == Across ? AnchorStyles.Left | AnchorStyles.Right
+                : (control.Left + control.Width / 2 > width / 2 && control.Tag != StaysLeft) || control.Tag == StaysRight ? AnchorStyles.Right
+                : AnchorStyles.Left);
+            if (control is ScrollPanel || control is RoundedBox || control is ReportView || control.GetType() == typeof(Control))
+                Stretch(control);
         }
     }
 

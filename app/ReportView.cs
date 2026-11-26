@@ -79,7 +79,7 @@ class ReportView : Control
 
         status = Ui.Add(this, new StatusLine(), 20, 611, 256, 36);
         status.Anchor = Ui.Footer;
-        var back = Ui.Add(this, new FlatButton { Text = "Back" }, 284, 614, 76, 32);
+        var back = Ui.Add(this, new FlatButton { Text = "Back", Tag = Ui.StaysRight }, 284, 614, 76, 32);
         back.Anchor = Ui.Footer;
         back.Click += (s, e) => Close();
         issue = Ui.Add(this, new FlatButton { Text = "Open GitHub issue" }, 368, 614, 160, 32);

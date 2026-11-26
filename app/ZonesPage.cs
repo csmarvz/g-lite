@@ -248,7 +248,7 @@ class ZonesPage : DevicePage
         screenRow = rows.Row(lighting, ZonesHeight);
         Rows.Row(lighting, screenRow, "Zones", "");
         // The monitor takes the row's width up to Reset, down to its bottom; the speakers' four areas are fixed, one per zone.
-        preview = Ui.Add(lighting, new ScreenPreview(), 130, screenRow + 14, Rows.Width - Rows.Inset - 66 - 12 - 130, 148);
+        preview = Ui.Add(lighting, new ScreenPreview { Tag = Ui.Across }, 130, screenRow + 14, Rows.Width - Rows.Inset - 66 - 12 - 130, 148);
         preview.Picked += index => { selectedZone = index; preview.Selected = index; preview.Invalidate(); };
         preview.Done += ScreenChanged;
         var resetAreas = Ui.Add(lighting, new FlatButton { Text = "Reset", AccessibleName = "Reset the screen areas" },

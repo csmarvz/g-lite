@@ -66,6 +66,8 @@ class UpdatePage : Control
         notes.HandleCreated += (s, e) => { Dark(); Later(Render); };
         notes.Resize += (s, e) => { if (notes.Width != renderedWidth) { renderedWidth = notes.Width; Later(Render); } };
         VisibleChanged += (s, e) => { if (Visible) { Arrange(); Render(); } };
+        // The page takes the window's width: shown, it's sized after the handler above.
+        Resize += (s, e) => { if (Visible) Arrange(); };
 
         status = Ui.Add(this, new StatusLine(), 20, 683, 330, 36);
         status.Anchor = Ui.Footer;
@@ -185,8 +187,9 @@ class UpdatePage : Control
         back.Visible = fromSettings;
         skip.Visible = showSkip;
         primary.Visible = showPrimary;
-        float scale = Width / 656f;
-        int x = (int)Math.Round(636 * scale);
+        // From the right edge, at the screen's scale: the page is as wide as the window.
+        float scale = Ui.DpiScale;
+        int x = Width - (int)Math.Round(20 * scale);
         foreach (var button in new[] { primary, skip, back })
         {
             if (button == back ? !fromSettings : button == skip ? !showSkip : !showPrimary) continue;

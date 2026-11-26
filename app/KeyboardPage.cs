@@ -290,7 +290,7 @@ class KeyboardPage : DevicePage
         screenTop = y;
         // The monitor takes the row's width up to the zone list, down to the bottom of Add and Reset.
         Rows.Row(screen, screenY, "Zones", "");
-        preview = Ui.Add(screen, new ScreenPreview(), 130, screenY + 14, Rows.Width - Rows.Inset - 140 - 12 - 130, 148);
+        preview = Ui.Add(screen, new ScreenPreview { Tag = Ui.Across }, 130, screenY + 14, Rows.Width - Rows.Inset - 140 - 12 - 130, 148);
         preview.Picked += PickZone;
         preview.Done += ScreenChanged;
         zoneList = Ui.Add(screen, new ZoneList(), Rows.Width - Rows.Inset - 140, screenY + 14, 140, 110);

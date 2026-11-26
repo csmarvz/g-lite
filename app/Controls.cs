@@ -683,8 +683,9 @@ class ScrollPanel : Control
         Sheet.BackColor = BackColor;
     }
 
-    // The bar's strip at the right stays the panel's, out of the sheet.
-    int SheetWidth { get { return ShowBar ? Width - (int)Math.Round(14 * Ui.DpiScale) : Width; } }
+    // The bar's strip at the right stays the panel's, out of the sheet: BarWidth at 100%.
+    public const int BarWidth = 14;
+    int SheetWidth { get { return ShowBar ? Width - (int)Math.Round(BarWidth * Ui.DpiScale) : Width; } }
 
     // content counts the padding; the sheet starts below it.
     void FitSheet() { Sheet.Bounds = new Rectangle(0, TopPadding - offset, SheetWidth, Math.Max(content - TopPadding, Height)); }
