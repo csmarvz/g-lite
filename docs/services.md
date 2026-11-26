@@ -6,12 +6,13 @@ The idea is G-Helper's list of Asus services (GPL: the idea only, no code).
 
 ## What G-Lite looks for
 
-Seen on a PC with both installed (2026-11-23):
+Seen on a PC with G HUB and LGS installed (2026-11-23), and Logi Options+ (2026-11-26):
 
 | Row | Services | Programs | Startup |
 |---|---|---|---|
 | G HUB | `LGHUBUpdaterService` (automatic) | names starting `lghub` or `logitechg_` (`logitechg_discord.exe`, its Discord link) | Run entries mentioning `lghub` |
 | Logitech Gaming Software | `LogiRegistryService` (automatic) | names starting `LCore` | "Launch LCore" in the all-users Run key, `LCore.exe /minimized` |
+| Logi Options+ | `OptionsPlusUpdaterService` (automatic, shown as "Logi Options+") | names starting `logioptionsplus` (`logioptionsplus.exe`, `_agent`, `_appbroker`, `_updater`) | none: no Run entry or scheduled task, so its service seems to start the agent |
 | Logitech LampArray Service | `logi_lamparray_service` (automatic) | | |
 
 The LampArray service hands Logitech devices to Windows Dynamic Lighting. Dynamic Lighting itself is a setting (`HKCU\Software\Microsoft\Lighting`, `AmbientLightingEnabled`), not a service; G-Lite only reads it, since changing the value directly may not take effect until Windows reads it again.
@@ -26,7 +27,7 @@ Stop:
 - turns off its startup entries the way Task Manager's Startup apps does: the Run entry stays, and `Explorer\StartupApproved\Run` (`Run32` for 32-bit entries) gets `03 00 00 00` and the time it was turned off (FILETIME, 8 bytes)
 - ends its programs
 
-Tried on that PC (2026-11-23): after Stop and a restart, nothing came back. Opening G HUB starts its service again but leaves it on Manual, and LCore runs without its service; after another restart both stayed stopped. So Manual is enough; G-Helper sets Asus services to Disabled because Asus software turns them back on. G HUB keeps a `LGHUB` value of its own (`01`, not Task Manager's 02 or 03) under the user's `StartupApproved\Run` with no Run entry: it seems to add its entry only when its own start-with-Windows setting is on.
+Tried on that PC (2026-11-23): after Stop and a restart, nothing came back. Opening G HUB starts its service again but leaves it on Manual, and LCore runs without its service; after another restart both stayed stopped. So Manual is enough; G-Helper sets Asus services to Disabled because Asus software turns them back on. G HUB keeps a `LGHUB` value of its own (`01`, not Task Manager's 02 or 03) under the user's `StartupApproved\Run` with no Run entry: it seems to add its entry only when its own start-with-Windows setting is on. Logi Options+ (2026-11-26): Stop left its service on Manual and stopped, and ended its programs; not yet seen after a restart.
 
 Start sets the services back to automatic and starts them, and turns the entries back on (`02` and 11 zero bytes). It doesn't open G HUB or LCore: they start at the next sign-in, or when opened.
 

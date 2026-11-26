@@ -56,6 +56,6 @@ On the G Pro Wireless in onboard mode, 0x8060 fn 2 is refused, and the rate only
 
 ## Order
 
-1. Add the reads to `Report`. Ask owners of those mice for a report (they're common, so an issue or a Reddit post should get one).
+1. Add the reads to `Report`. Ask for a report of those mice (they're common, so an issue or a Reddit post should get one).
 2. Build live rate changes against the fake.
 3. Check on a real mouse: fn 3 in onboard mode, and where the profile keeps the rate.

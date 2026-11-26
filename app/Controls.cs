@@ -541,7 +541,7 @@ class TextField : DrawnControl
 class Slider : DrawnControl
 {
     public int Max = 100, Value, Step = 5;
-    // The only values the slider takes, in order, unmarked (ticks under the track were dropped at the owner's request); null for any.
+    // The only values the slider takes, in order, unmarked (ticks under the track were dropped); null for any.
     public int[] Stops;
     // Off, drawn at 0, for a row whose setting doesn't apply and whose value is blank (Rows.Slider); a read-only slider shows its value.
     public bool ZeroWhenOff;

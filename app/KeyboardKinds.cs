@@ -12,7 +12,7 @@ class KeyboardKinds
     public bool NoIdleTimes;
     // The G815 runs a profile written again only after leaving onboard mode and coming back (G915Lighting.Store).
     public bool ReloadThroughHostMode;
-    // The brightness levels 0x8040 keeps; any other value drops to the one below (the G815, tried on an owner's keyboard). Null for any.
+    // The brightness levels 0x8040 keeps; any other value drops to the one below (the G815, tried on a real keyboard). Null for any.
     public int[] BrightnessLevels;
     // The names of the keys whose bindings the profile holds first (G1-G5); null when G-Lite doesn't edit them.
     public string[] GKeys;
@@ -24,10 +24,10 @@ class KeyboardKinds
     // experimental on the G915 X and the G512 X 75, whose reports list the same 0x4523 and 0x1B10 versions.
     public GameModeSupport GameMode;
     // Wave 0x04 also goes up (direction 7) and down (2) on the G815, and 0 cycles through every direction; 4, 5, 9 and 10 change
-    // nothing (tried on an owner's keyboard). The G915s wait for an owner.
+    // nothing (tried on a real keyboard). The G915s wait for a try on a real one.
     public bool VerticalWave;
     // An Intensity slider for the effects that have one (0x8071's intensity byte; 0 shows as 100 on the G815). It doesn't make finer
-    // brightness steps: tried as the level above with the intensity lowered, 60% looked darker than 50% (an owner's G815).
+    // brightness steps: tried as the level above with the intensity lowered, 60% looked darker than 50% (on a real G815).
     public bool Intensity;
     public int[] Bar;
 

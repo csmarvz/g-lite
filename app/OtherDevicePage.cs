@@ -12,6 +12,8 @@ class OtherDevicePage : DevicePage
     OtherSettings current = new OtherSettings(), stored, sent, remembered, rememberedAtLoad;
     OtherDevice.State state;
     bool loading, dirty;
+    // Set by an Easy-Switch, so the device's return reads it again.
+    volatile bool switched;
     int sequence;
     readonly Timer debounce = new Timer { Interval = 120 };
 
@@ -37,6 +39,14 @@ class OtherDevicePage : DevicePage
     const int HostsWidth = 336, PictureHeight = 168;
 
     internal override bool Busy { get { return debounce.Enabled; } }
+
+    protected override bool ReopensWhenFound { get { return switched; } }
+
+    // From the work queue, when the connection opens or the receiver says the device is back.
+    protected override void Opened(Hidpp hidpp)
+    {
+        if (switched && IsHandleCreated) BeginInvoke((Action)(() => { switched = false; Load(); }));
+    }
 
     string Remembered { get { return "device." + found.SettingsKey; } }
 
@@ -135,7 +145,7 @@ class OtherDevicePage : DevicePage
         Label heading;
         var box = backlightBox = rows.Section("Backlight", out heading);
         // Plugged in, the MX Keys S's hand sensor seems off: turned on, it stays dark until a key is pressed.
-        // On battery it lights at once (an owner, 2026-11). The MX Mechanical Mini does the same plugged in (an owner, 2026-11-26).
+        // On battery it lights at once (tried on a real one, 2026-11). The MX Mechanical Mini does the same plugged in (tried on a real one, 2026-11-26).
         int y = rows.Row(box);
         Rows.Row(box, y, "Backlight", "Plugged in, the keys light up when you next type");
         light = Rows.Toggle(box, y, "Backlight");
@@ -238,7 +248,8 @@ class OtherDevicePage : DevicePage
         LogUserAction("Switch to computer " + (host + 1));
         RunOnDevice(device => OtherDevice.Switch(device, host), () =>
         {
-            // The picker shows where the device is now; showing the page again reads it back.
+            // The picker shows where the device is now, until it comes back (Opened) or the page is shown again.
+            switched = true;
             state.Host = host;
             hosts.Index = host;
             hosts.Invalidate();
@@ -250,9 +261,13 @@ class OtherDevicePage : DevicePage
     {
         if (loading || state == null || current[setting] < 0) return;
         current[setting] = value;
-        remembered[setting] = value;
+        if (Remembers(setting)) remembered[setting] = value;
         Changed();
     }
+
+    // The keyboard keeps these and changes them with its own keys (Fn and Esc, Fn and the light key): sent again at each load, they
+    // would undo a change made there.
+    static bool Remembers(int setting) { return setting != OtherSettings.Effect && setting != OtherSettings.MediaKeys; }
 
     void Changed()
     {
@@ -419,7 +434,7 @@ class OtherDevicePage : DevicePage
         if (state == null) return;
         var preset = OtherDevice.KeepSupported(OtherSettings.FromText(text), state);
         for (int setting = 0; setting < OtherSettings.Count; setting++)
-            if (preset[setting] >= 0 && preset[setting] != current[setting]) remembered[setting] = preset[setting];
+            if (preset[setting] >= 0 && preset[setting] != current[setting] && Remembers(setting)) remembered[setting] = preset[setting];
         current.Merge(preset);
         Changed();
     }

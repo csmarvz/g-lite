@@ -151,7 +151,7 @@ static class LitraProtocol
         parameters[1] = (byte)index;
         int color = state.Colors[0], other = state.Colors[LightState.Zones - 1], period = state.Period;
         // The keyboards' encoding: smooth cycle and wave (0x15, 0x16) take 00 FF, the period at bytes 6–7 and the intensity at 8,
-        // not the older cycle's layout, which the Beam LX ignored (owner's report, 2026-11).
+        // not the older cycle's layout, which the Beam LX ignored (tried on a real one, 2026-11).
         if (id == 0x01 || id == 0x03 || id == 0x04 || id == 0x0A || id == 0x0B || id == 0x15 || id == 0x16)
             Array.Copy(G915Lighting.Encode(id, new Lighting { Effect = id, Color = color, Period = period }), 0, parameters, 2, 10);
         else
@@ -171,7 +171,7 @@ static class LitraProtocol
     }
 
     // 0x8071 fn 1 needs software control of the clusters (fn 5 bit 0) first: without it the Beam LX answers 0x05
-    // (an owner's report, docs/lighting-control.md).
+    // (its report, docs/lighting-control.md).
     public static void TryEffect(Hidpp hidpp, int group, int index, byte id, LightState state)
     {
         hidpp.Call(hidpp.FeatureIndex(0x8071), 5, 0x01, 0x01, 0x00);

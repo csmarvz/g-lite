@@ -31,7 +31,7 @@ A Settings | Bindings switch on the G815 screen, as on the mouse, with the mouse
 
 ### 4. Macros
 
-- Done: the report reads the sectors the profiles' macros point to (`macro 0004=…`, fn 5 only). Ask the G915 TKL owner, who has macros, and the G815 owner for new reports, after recording a macro in G HUB.
+- Done: the report reads the sectors the profiles' macros point to (`macro 0004=…`, fn 5 only). Next: new reports from the G915 TKL, which has macros, and the G815, after recording a macro in G HUB.
 - Decode the format: the G815's `asd` and long text gave key down, key up, wait, jump and end; libratbag's list of the other steps is in [G815-G915.md](G815-G915.md), "Macros". G HUB no longer saves macros to the G815, so the rest waits for G-Lite's own editor, tested with short macros of each step.
 - An editor: a list of key down, key up and delay steps, and Record, which takes the keystrokes typed while the G-Lite window has the focus.
 - Writing picks a free sector and keeps the directory and the other profiles right. New ground: backups, read back, a fake and traces before a real keyboard.
@@ -43,12 +43,12 @@ Left alone. The manual's MR steps (MR, a G key, the keys, MR) record nothing on 
 ## Also
 
 - **A G815 in `--demo`:** done, on `FakeG915` with three profiles (its sectors are 255 bytes, not 256). The G915 trace covers steps 1 and 2.
-- **Game mode (0x4522, in the report):** which keys the Game mode key turns off. G HUB turns off the Windows and Menu keys always and lets you add keys with a standard usage. The list is lost when the keyboard loses power (tried on 2026-11-21), so G-Lite would send it each time the keyboard connects. The format is OpenLogi's, and fn 0, 1, 2 and 3 work on the G815 (tried on 2026-11-21, [G815-G915.md](G815-G915.md)). Built on 2026-11-21: a Game view on the G815 screen, where clicking a key on the picture adds it to the list or takes it off. Each change goes to the keyboard at once, and the list is kept in `settings.txt` and in presets, and sent again when the keyboard connects. "–" clears it. Tried on the G815 on 2026-11-21: the picked keys are off in Game mode, the list comes back after a replug without opening the screen, G HUB opening and closing turns the status red and back with the list still working, and a preset sets its keys. The G915 and G915 TKL wait for an owner, since OpenGHub couldn't make it work on a G915.
+- **Game mode (0x4522, in the report):** which keys the Game mode key turns off. G HUB turns off the Windows and Menu keys always and lets you add keys with a standard usage. The list is lost when the keyboard loses power (tried on 2026-11-21), so G-Lite would send it each time the keyboard connects. The format is OpenLogi's, and fn 0, 1, 2 and 3 work on the G815 (tried on 2026-11-21, [G815-G915.md](G815-G915.md)). Built on 2026-11-21: a Game view on the G815 screen, where clicking a key on the picture adds it to the list or takes it off. Each change goes to the keyboard at once, and the list is kept in `settings.txt` and in presets, and sent again when the keyboard connects. "–" clears it. Tried on the G815 on 2026-11-21: the picked keys are off in Game mode, the list comes back after a replug without opening the screen, G HUB opening and closing turns the status red and back with the list still working, and a preset sets its keys. The G915 and G915 TKL wait for a try on a real one, since OpenGHub couldn't make it work on a G915.
 - **Restore the factory profile:** done on 2026-11-20. On the G815 it brings back the factory lighting and G1–G5 (M1–M3 and the G-shift layer are left as they are); a backup restores the whole profile.
 - **Report rate (0x8060):** the mouse code has it. Cheap, of little use on a keyboard.
 - Not in this plan: per-key colours (0x8081).
 
-## Ask the owner first
+## Try on the keyboard first
 
 One session, before any screen is built:
 

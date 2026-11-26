@@ -46,7 +46,7 @@ class G510Settings
 
 // The G510 and G510s backlight: one colour for the whole keyboard in feature report 0x05 (`05 R G B`),
 // with no brightness or effects of its own, so brightness scales the colour and G-Lite runs Breathe and Cycle
-// by sending frames. From the Linux driver hid-lg-g15 (facts only) and an owner's report (docs/G510.md).
+// by sending frames. From the Linux driver hid-lg-g15 (facts only) and its report (docs/G510.md).
 static class G510Lighting
 {
     public const byte Backlight = 0x05;
@@ -107,7 +107,7 @@ static class G510Keys
         return string.Join(" ", bindings.Select(binding => string.Concat(binding.Select(part => part.ToString("X2")))));
     }
 
-    // Feature 0x04 lights the M keys, one bit each: M1 0x80, M2 0x40, M3 0x20, MR 0x10 (hid-lg-g15; an owner's report reads 80).
+    // Feature 0x04 lights the M keys, one bit each: M1 0x80, M2 0x40, M3 0x20, MR 0x10 (hid-lg-g15; its report reads 80).
     public const byte BankLights = 0x04;
 
     public static void LightBank(Hidpp hidpp, int bank) { hidpp.SetFeature(BankLights, (byte)(0x80 >> bank)); }

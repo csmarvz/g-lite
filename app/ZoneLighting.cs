@@ -51,8 +51,8 @@ static class ZoneLighting
         hidpp.CallUnlogged(feature, 5);
     }
 
-    // A keyboard's key map: with "kind": "zones", each key's 0x8070 zone in "ids" (the G213's zones were shown by its owner,
-    // docs/G213.md); otherwise lighting ids, every key in zone 0 of a one-zone keyboard (the G413, drawn from its owner's photo), which
+    // A keyboard's key map: with "kind": "zones", each key's 0x8070 zone in "ids" (the G213's zones were checked on a real one,
+    // docs/G213.md); otherwise lighting ids, every key in zone 0 of a one-zone keyboard (the G413, drawn from a photo of it), which
     // also serve its Game view.
     public static string Picture(FoundDevice found)
     {

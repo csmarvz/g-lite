@@ -466,7 +466,7 @@ static class G915Lighting
     }
 
     // The G915 TKL turns itself off after its timeout even while G-Lite holds the power modes, and wakes in mode 3 (off) on its own
-    // lighting, ignoring effects until fn 8 sets full power again (tested on an owner's keyboard).
+    // lighting, ignoring effects until fn 8 sets full power again (tested on a real keyboard).
     public static void Claim(Hidpp hidpp)
     {
         byte feature = hidpp.FeatureIndex(0x8071);
@@ -658,7 +658,7 @@ static class G915Lighting
     // Writes the profile (MouseProtocol.WriteSector refuses 0000 and the factory sectors, and reads it back), loads it again and gives
     // the lighting back, so the keyboard runs it, its power save included.
     // The G815 acks fn 3 for the profile it runs but keeps running its old copy, until an M key is pressed. Leaving onboard mode and
-    // coming back (fn 1 02, then 01) makes it read the profile again, with a barely visible flash of the M key (tested on an owner's
+    // coming back (fn 1 02, then 01) makes it read the profile again, with a barely visible flash of the M key (tested on a real
     // G815). Loading another profile and coming back also works, but flashes the other profile's M key.
     public static void Store(Hidpp hidpp, int sector, byte[] profile, bool reloadThroughHostMode = false)
     {

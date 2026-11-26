@@ -454,7 +454,7 @@ class KeyboardPage : DevicePage
             lastBox = idle;
         }
         contentHeight = sectionTop;
-        // The G915 TKL reads 0 as at once, not never (tried on an owner's keyboard), so its profile keyboards don't offer Never.
+        // The G915 TKL reads 0 as at once, not never (tried on a real keyboard), so its profile keyboards don't offer Never.
         never = kind.Profile ? 1 : 0;
         idleBox = Choice(idle, 0, "Dim after", "Time without typing before the keys dim", IdleText.Skip(never).ToArray(),
             i => current.Idle = IdleSecs[i + never]);
@@ -1408,7 +1408,7 @@ class KeyboardPage : DevicePage
         if (sector == running && !again) return;
         if (picked) LogUserAction("Switch to M" + sector);
         running = sector;
-        // A live effect or the Screen effect stops too: the keyboard shows the new profile's lighting (the owner's choice, 2026-11-21).
+        // A live effect or the Screen effect stops too: the keyboard shows the new profile's lighting (decided 2026-11-21).
         if (Screening)
         {
             ScreenOff();

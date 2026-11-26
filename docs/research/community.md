@@ -31,7 +31,7 @@ HN was searched directly and through its public Algolia index. It is useful for 
 | [G502 X PLUS RGB configuration conflict](https://www.reddit.com/r/LogitechG/comments/1x9kms5/logitech_g502_x_plus_rgb_bug_g_hub_configuration/) | Device/host ownership and G HUB database lead | A database workaround is not a verified hardware fix |
 | [G13 and current G HUB](https://www.reddit.com/r/LogitechG/comments/1xc5k8h/is_the_g13_gamepad_still_supported_in_the_current/) | Legacy support/doc-removal concern | Use the official retirement notice and libg15/G13 source for facts |
 
-No Reddit posts were sent and no owners were contacted. These are links for subsequent evidence gathering.
+No Reddit posts were sent and no one was contacted. These are links for subsequent evidence gathering.
 
 ## SourceForge and forums
 

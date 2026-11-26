@@ -58,7 +58,7 @@ Priority here means research payoff relative to G-Lite's existing implementation
 | 10 | G13/G15/G19/G510 and G5/G7/G500/G700 | Exact revision and interface descriptors, bounded known reads only, original settings snapshots | Legacy device-class transport and model-specific profiles |
 | 11 | G560, X56, wheels / ASTRO | VID/PID + interfaces + read-only protocol identity first | Additional product classes beyond current G-Lite architecture |
 
-These are future requests, not instructions to an owner to run random writes. Capture a single known UI action in the vendor app, retain request and reply, and compare before/after state. Do not execute scripts from discovered projects just to collect evidence.
+These are future requests, not instructions to run random writes. Capture a single known UI action in the vendor app, retain request and reply, and compare before/after state. Do not execute scripts from discovered projects just to collect evidence.
 
 ## Minimal capture record for the map
 

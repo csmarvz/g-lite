@@ -1,6 +1,6 @@
 # G-Lite
 
-A small Windows app that controls the lighting, DPI and other settings of Logitech G keyboards, mice, headsets and lights, without G HUB. One file, nothing to install, and next to no CPU when idle. It can also stop G HUB and Logitech Gaming Software, so they don't undo your settings, and start them again.
+A small Windows app that controls the lighting, DPI and other settings of Logitech G keyboards, mice, headsets and lights, without G HUB. One file, nothing to install, and next to no CPU when idle. It can also stop G HUB, Logitech Gaming Software and Logi Options+, so they don't undo your settings, and start them again.
 
 [![Download beta version](https://img.shields.io/badge/Download-beta%20version-2ea44f?style=for-the-badge)](https://github.com/csmarvz/g-lite/releases/latest)
 
@@ -16,7 +16,7 @@ A small Windows app that controls the lighting, DPI and other settings of Logite
 
 You need Windows 10 (version 1903 or later) or Windows 11.
 
-1. Quit G HUB, and stop it from starting with Windows. Both apps control the same devices and would undo each other's changes. G-Lite's Settings can do it for you: Services lists G HUB, Logitech Gaming Software and the LampArray service, with Stop and Start.
+1. Quit G HUB, and stop it from starting with Windows. Both apps control the same devices and would undo each other's changes. G-Lite's Settings can do it for you: Services lists G HUB, Logitech Gaming Software, Logi Options+ and the LampArray service, with Stop and Start.
 2. On Windows 11, turn off **Dynamic Lighting** (Settings > Personalization > Dynamic Lighting), for the same reason. G-Lite warns you if it's on.
 3. Download `GLite.exe` from the [latest release](https://github.com/csmarvz/g-lite/releases/latest) and double-click it.
 4. G-Lite finds your Logitech G devices and lists them on the left. Click one to change its settings.
@@ -72,13 +72,13 @@ The preset you picked on each device is picked again when G-Lite starts, and set
 | Device | Connection | Status | What G-Lite can do |
 |---|---|---|---|
 | PRO X Wireless | Its own LIGHTSPEED receiver | Works | Sidetone, turning off when idle, battery, profiles. Equalizer: experimental. |
-| G735, PRO X 2 LIGHTSPEED, G522, A50 X and other G headsets | USB | Report only | Listed in the sidebar so their owner can send a report. Nothing can be changed yet. |
+| G735, PRO X 2 LIGHTSPEED, G522, A50 X and other G headsets | USB | Report only | Listed in the sidebar so a report can be sent. Nothing can be changed yet. |
 
 ### Speakers
 
 | Device | Connection | Status | What G-Lite can do |
 |---|---|---|---|
-| G560 Gaming Speaker | USB | Untested | Lighting effects, colour, speed, brightness and profiles, on all four zones or each one (bottom left, bottom right, top left, top right), on a picture of the speakers, and the Screen effect. Not saved to the speaker. Not yet: the audio visualizer effect, the equalizer. See [docs/G560.md](docs/G560.md). |
+| G560 Gaming Speaker | USB | Works | Lighting effects, colour, speed, brightness and profiles, on all four zones or each one (bottom left, bottom right, top left, top right), on a picture of the speakers, and the Screen effect. Not saved to the speaker. Not yet: the audio visualizer effect, the equalizer. See [docs/G560.md](docs/G560.md). |
 
 ### Lights
 
@@ -86,13 +86,13 @@ The preset you picked on each device is picked again when G-Lite starts, and set
 |---|---|---|---|
 | Litra Beam LX, Beam and Glow | USB | Untested | Front light on and off, brightness and colour temperature. On the Beam LX, the back light: on and off, brightness, Static, Breathe, Cycle, Wave and the Screen effect, with a colour for all seven zones or each one, and a live picture of the light. Profiles. See [docs/Litra.md](docs/Litra.md). |
 
-**Works** means tried on the real device. **Partial** means tried on the real device, with some of its features not done yet. **Untested** means built from documentation and owners' reports, and not yet confirmed by an owner. Devices that aren't saved to are set again by G-Lite each time it starts.
+**Works** means tried on the real device. **Partial** means tried on the real device, with some of its features not done yet. **Untested** means built from documentation and reports, and not yet tried on the real device. Devices that aren't saved to are set again by G-Lite each time it starts.
 
 ### Other Logitech devices
 
 | Device | Connection | Status | What G-Lite can do |
 |---|---|---|---|
-| MX Mechanical Mini | Bluetooth or Bolt receiver | Works | The backlight: on and off, automatic or one of 8 levels, its effects (Static, Contrast, Breathing, Waves, Reaction, Random), how long before it fades, and battery saving, on a picture of the keyboard (with ISO's Enter when its layout is ISO). F1–F12 as media keys or standard keys, turning off Caps Lock, Scroll Lock, Insert or the Windows key, and Easy-Switch with each computer's name. Levels and automatic need firmware 72.03 or later (Logi Options+ updates it). Tried on an owner's keyboard over Bluetooth; battery saving not tried yet. |
+| MX Mechanical Mini | Bluetooth or Bolt receiver | Works | The backlight: on and off, automatic or one of 8 levels, its effects (Static, Contrast, Breathing, Waves, Reaction, Random), how long before it fades, and battery saving, on a picture of the keyboard (with ISO's Enter when its layout is ISO). F1–F12 as media keys or standard keys, turning off Caps Lock, Scroll Lock, Insert or the Windows key, and Easy-Switch with each computer's name. Levels and automatic need firmware 72.03 or later (Logi Options+ updates it). Tried on a real keyboard over Bluetooth; battery saving not tried yet. |
 | MX Master, MX Anywhere, MX Keys, MX Mechanical, MX Creative Keypad and other Logitech devices | Bolt or Unifying receiver, or USB | Untested | Pointer speed, SmartShift, inverted scrolling, the thumb wheel's direction, the backlight, brightness, and switching computers (Easy-Switch), when the device has them. G-Lite sets your changes again when the device comes back. Buttons, gestures and per-app settings stay in Logi Options+. See [docs/other-devices.md](docs/other-devices.md). |
 
 Logitech devices with none of these settings show up in the sidebar with their connection, battery and firmware. Devices that could come next are listed in [#11](https://github.com/csmarvz/g-lite/issues/11).
@@ -137,11 +137,11 @@ G-Lite never sends your data or how you use it anywhere. There are no accounts, 
 
 ## Project status
 
-Beta. The devices marked Works have been tried on real hardware; everything else needs owners to try it and send a report. What changed in each version is in the [changelog](CHANGELOG.md).
+Beta. The devices marked Works have been tried on real hardware; everything else needs a try on the real device and a report. What changed in each version is in the [changelog](CHANGELOG.md).
 
 ## Contributing
 
-Reports from device owners help the most, and need no code. To build G-Lite, add a device or send a pull request, see [CONTRIBUTING.md](CONTRIBUTING.md).
+Reports help the most, and need no code. To build G-Lite, add a device or send a pull request, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Credits
 
@@ -159,7 +159,7 @@ Reports from device owners help the most, and need no code. To build G-Lite, add
 - [Featherweight](https://github.com/Ad1FPS/Featherweight) (MIT) and [logitech-onboard-memory](https://github.com/marco-vrinssen/logitech-onboard-memory) (MIT). Profile format 7 and how to write it, on a PRO X SUPERLIGHT 2 and a PRO X 2 DEX.
 - [GFlick](https://github.com/R4ULtv/gflick) (MIT) by Raul Carini and [onboard-lite](https://github.com/ZhichenJin/onboard-lite) (MIT). Profile format 4 on the original PRO X SUPERLIGHT, written and read back on the mouse.
 - libratbag's G600 driver and [g600prog](https://github.com/tulth/g600prog) (MIT). The G600's feature reports.
-- [PeriHub](https://github.com/hex-dump/perihub) (MIT). The G300's profile reports and how to save them, tried on an owner's G300; and many HID++ facts (`docs/research/more-references.md`).
+- [PeriHub](https://github.com/hex-dump/perihub) (MIT). The G300's profile reports and how to save them, tried on a real G300; and many HID++ facts (`docs/research/more-references.md`).
 - [G-Helper](https://github.com/seerge/g-helper), the model for the look and feel of the tray panel.
 
 ## License

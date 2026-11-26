@@ -165,8 +165,10 @@ static class OtherDevice
                 state.Effects = config[3] | config[4] << 8;
                 bool effects = (state.Effects & ~3) != 0;
                 var info = (config[2] & 0x20) != 0 || effects ? Try(device, 0x1982, 2) : null;
-                // fn 2 b3 is the effect shown now.
-                if (effects && info != null && info[3] < 16 && (state.Effects >> info[3] & 1) != 0) set[OtherSettings.Effect] = info[3];
+                // fn 2 b3 is the effect shown now. One the list doesn't have (None, maybe, while the backlight is off) reads as FF:
+                // the row stays, with nothing picked, and fn 1 takes FF as unchanged.
+                if (effects && info != null)
+                    set[OtherSettings.Effect] = info[3] < 16 && (state.Effects >> info[3] & 1) != 0 && Array.IndexOf(EffectIds, (int)info[3]) >= 0 ? info[3] : 0xFF;
                 // In mode 3 the level is fn 0's b5, the stored setting, like Solaar. Outside it b5 reads 0 (spec x1982 v3),
                 // so the slider shows fn 2's b1, the level lit now (it fades when idle).
                 if ((config[2] & 0x20) != 0 && info != null && info[0] > 1)

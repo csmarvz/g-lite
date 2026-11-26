@@ -9,7 +9,7 @@ using Timer = System.Windows.Forms.Timer;
 
 // The G560 from the front, drawn from its photos: two round speakers, each with a light under its grille on the inner side (the
 // front zone: bottom left, bottom right) and a glow behind it on the wall (the back zone: top left, top right). Zones 0 to 3 are
-// bottom left, bottom right, top left and top right (an owner's check, docs/G560.md); a click on a light picks its zone.
+// bottom left, bottom right, top left and top right (checked on real ones, docs/G560.md); a click on a light picks its zone.
 class SpeakerPicture : DrawnControl
 {
     Color[] colors = new Color[4];

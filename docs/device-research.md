@@ -72,7 +72,7 @@ Yes. It writes 0x8100 onboard profiles, on mice and keyboards.
   - It writes only sector 0x0000 and the profile sectors, never 0x0100 and up.
   - Missing: no read-back after writing, and no backup.
   - It rebuilds each sector from scratch, filled with 0xFF, so bytes it doesn't parse are lost.
-- Reports: #1425 "ratbagd bricked my Logitech G700s" and #1563 (a G305 unusable after a bad report rate). In #1104, G915 owners edit G-key macros with it.
+- Reports: #1425 "ratbagd bricked my Logitech G700s" and #1563 (a G305 unusable after a bad report rate). In #1104, it edits a G915's G-key macros.
 
 ### Solaar (GPL-2)
 

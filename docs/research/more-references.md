@@ -240,7 +240,7 @@ hakangit/g512-keyboard-controller (OpenRGB client), geromet/g502-linux-control (
 
 ## PeriHub
 
-[hex-dump/perihub](https://github.com/hex-dump/perihub) (MIT, Rust, Windows and Linux, many brands), read 2026-11-23 at commit 9202683. Its `docs/protocols/` has a page per protocol; its issues hold the owners' reports. Tested on hardware: saves on a G502 HERO (C08B, format 2, 256-byte sectors), a G502 X (C098, format 3), a G502 HERO Wireless over a POWERPLAY (407F, issue #28) and a G300 (C246, #21); reads of a PRO X 2 DEX (#32), PRO 2 LIGHTSPEED (#33), G303 Shroud Edition (#34) and G903 HERO (#115); lighting on one G915 X LS (#30). Written from docs, untried: the G213, the G600, HID++ 1.0 mice, format 4 and 7 saves. Nothing on the G413, G512, G513, PRO X 60 or 0x8080.
+[hex-dump/perihub](https://github.com/hex-dump/perihub) (MIT, Rust, Windows and Linux, many brands), read 2026-11-23 at commit 9202683. Its `docs/protocols/` has a page per protocol; its issues hold the device reports. Tested on hardware: saves on a G502 HERO (C08B, format 2, 256-byte sectors), a G502 X (C098, format 3), a G502 HERO Wireless over a POWERPLAY (407F, issue #28) and a G300 (C246, #21); reads of a PRO X 2 DEX (#32), PRO 2 LIGHTSPEED (#33), G303 Shroud Edition (#34) and G903 HERO (#115); lighting on one G915 X LS (#30). Written from docs, untried: the G213, the G600, HID++ 1.0 mice, format 4 and 7 saves. Nothing on the G413, G512, G513, PRO X 60 or 0x8080.
 
 Mice:
 

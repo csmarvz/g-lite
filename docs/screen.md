@@ -26,7 +26,7 @@ The G515 reports 96 ids: 00–4F, 61–6F and FE. Checked by lighting them:
 
 0x4540 fn 0 byte 0 gives the layout: 0D on this Swiss keyboard. G-Lite treats 0 and 1 as ANSI and anything above as ISO (`KeyLayout.IsIso`): Solaar reads 2 as ISO, and 9 and 0x3E as JIS, whose Enter has ISO's shape (PeriHub's `docs/protocols/keyboard-layouts.md`). A German G915 X LS answers 04, which Solaar calls AZERTY, so only the shape can be trusted. G-Lite's reports have only 01 (ANSI) and 0D (ISO).
 
-The G915 ids in `g915.json` and `g915-tkl.json` follow the same rule. The Screen effect worked on an owner's G915 TKL (Swiss, also 0D); the full-size G915's are untested.
+The G915 ids in `g915.json` and `g915-tkl.json` follow the same rule. The Screen effect worked on a real G915 TKL (Swiss, also 0D); the full-size G915's are untested.
 
 ## Adding a keyboard
 
@@ -36,7 +36,7 @@ A report of the keyboard lists its layout (0x4540) and its lit ids (`lit ids=` u
 
 - A full update (8 fn 6 calls and fn 7) took 30–39 ms over LIGHTSPEED while streaming 10 times a second, 90–195 ms when idle in between. Changing the effect through 0x8071 fn 1 instead took 223 ms.
 - Live effects send more per frame: single keys go four to a message (fn 1). Counted on a TKL-shaped grid at 10 frames a second, a frame takes about 3 messages for Starlight, 5 for Rain, 12 for Fire and 23 for Aurora, which changes nearly every key every frame; rounding colours coarser barely changes that.
-- On an owner's G515 (2026-11-22), Rain at a frame every 40 ms got fn 7 answered with error 08, busy, and looked choppy. G-Lite now sends fn 7 again every 10 ms while the keyboard is busy (up to 20 times, logged the first time; it once took 2), sends a live effect's frame every 100 ms on a keyboard without a cable, and at most 40 keys a frame there (about the 9 messages of a Screen frame), the most changed first. A keyboard on USB keeps 40 ms and every key; the G815 was smooth.
+- On a real G515 (2026-11-22), Rain at a frame every 40 ms got fn 7 answered with error 08, busy, and looked choppy. G-Lite now sends fn 7 again every 10 ms while the keyboard is busy (up to 20 times, logged the first time; it once took 2), sends a live effect's frame every 100 ms on a keyboard without a cable, and at most 40 keys a frame there (about the 9 messages of a Screen frame), the most changed first. A keyboard on USB keeps 40 ms and every key; the G815 was smooth.
 - The same G515 twice got stuck answering busy to every frame, even after being claimed again: once after choppy Rain, once after G-Lite was killed during a frame. Turning it off and on fixed it. After a busy frame G-Lite now gives the lighting back to the keyboard before claiming it again; whether that clears it isn't known yet.
 - After the keyboard is turned off and on, it comes back in its own mode and ignores per-key frames until it's claimed again. G-Lite claims it again and sends the whole frame every 2 seconds, without logging, and retries every 5 seconds while it can't reach it.
 - The keyboard didn't dim or sleep during 7 minutes of updates without typing: its idle timers don't run while G-Lite sends colours. G-Lite doesn't dim it either; the pause options cover that (screen off or locked, low battery).

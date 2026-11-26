@@ -4,13 +4,18 @@
 
 ### Added
 
-- MX Mechanical Mini: a picture of the keyboard, lit while its backlight is on, with ISO's Enter when the keyboard's layout is ISO. Tried on an owner's keyboard.
-- MX keyboards: the backlight's effects (Static, Contrast, Breathing, Waves, Reaction, Random) and battery saving, where the keyboard has them, and a Keys section: F1–F12 as media keys or standard keys, and turning off Caps Lock, Num Lock, Scroll Lock, Insert or the Windows key. The MX Mechanical Mini's effects, F1–F12 and disabled keys were tried on it.
-- A backlight setting the keyboard doesn't have is left out once it's read (the MX Mechanical Mini on its first firmware has only on and off).
+- MX Mechanical Mini: a picture of the keyboard, lit while its backlight is on, with ISO's Enter when the keyboard's layout is ISO. Tried on a real keyboard.
+- MX keyboards: the backlight's effects (Static, Contrast, Breathing, Waves, Reaction, Random) and battery saving, where the keyboard has them, and a Keys section: F1–F12 as media keys or standard keys, and turning off Caps Lock, Num Lock, Scroll Lock, Insert or the Windows key. The MX Mechanical Mini's effects, F1–F12 and disabled keys were tried on it. The effect and F1–F12 aren't set again when the keyboard comes back, since its own keys change them.
+- A backlight setting the keyboard doesn't have is left out once it's read (the MX Mechanical Mini on its first firmware has no automatic mode, levels or fade delays).
+- Settings: Logi Options+ in the Services box, stopped and started like G HUB (its service and its programs), since it sets the MX devices' settings again over G-Lite's.
+
+### Changed
+
+- The G560 is marked Works: it was tried on real speakers.
 
 ### Fixed
 
-- Easy-Switch: after switching, the Computer picker shows the computer the device went to, not the one it left.
+- Easy-Switch: after switching, the Computer picker shows the computer the device went to, not the one it left, and the device is read again when it comes back.
 
 ## [0.1.0-beta] - 2026-11-25
 
@@ -25,8 +30,8 @@ G-Lite leaves alpha. Every screen is redesigned like Settings: the device's pict
 - Mice are drawn in their own shape: the G Pro Wireless, the PRO X SUPERLIGHTs and the rest of the PRO family with their wheel, side buttons and the light on the palm; the PRO X 2 DEX in its right-handed shape; the G502s in theirs, with the logo and the DPI lights lit.
 - G510 and G510s: a picture of the keyboard lit in its colour, and two new views. M1, M2 and M3 each have their own lighting and G key bindings, as in Logitech Gaming Software: pick one in the footer and its light comes on. Bindings sets what G1 to G18 do; G-Lite keeps them but doesn't act on the G keys yet, nor on the keyboard's M keys. Game shows whether the keyboard's Game mode switch is on.
 - PRO X Wireless: an equalizer, experimental. The headset's ten bands (32 Hz to 16 kHz, 12 dB up or down) as it stores them, a row each, and Flat. G-Lite writes them to what the headset plays and to its memory (persistence 1, per Logitech's spec), to the first only while you drag; the headset hasn't been heard to apply its equalizer yet. Presets keep it.
-- G300 and G300s: the active profile's four DPI levels (250 to 2500), report rate, colour (one of eight) and buttons, saved to the mouse with a backup and read back. Nothing changes until you save, since the G300 can't take a change live; if the mouse's profile button switched profiles in the meantime, Save refuses rather than write the wrong one. Built from PeriHub's notes, which saved on a G300 (MIT); not yet tried by a G-Lite owner.
-- G515: a Game view to pick the keys the Game button turns off, as on the G815. Unlike the G815, the G515 leaves Windows and Menu on in Game mode, so they can be picked too. The keyboard forgets the list when turned off, so G-Lite sends it again whenever it connects, even after a quick off and on. Presets keep it. Tried on an owner's G515 TKL.
+- G300 and G300s: the active profile's four DPI levels (250 to 2500), report rate, colour (one of eight) and buttons, saved to the mouse with a backup and read back. Nothing changes until you save, since the G300 can't take a change live; if the mouse's profile button switched profiles in the meantime, Save refuses rather than write the wrong one. Built from PeriHub's notes, which saved on a G300 (MIT); not yet tried on a real G300 in G-Lite.
+- G515: a Game view to pick the keys the Game button turns off, as on the G815. Unlike the G815, the G515 leaves Windows and Menu on in Game mode, so they can be picked too. The keyboard forgets the list when turned off, so G-Lite sends it again whenever it connects, even after a quick off and on. Presets keep it. Tried on a real G515 TKL.
 - G915 X and G915 X TKL: their Game view can now pick keys, the G515's way. Experimental: not tried on one yet.
 - G512 X 75: a Game view to pick the keys Game mode turns off, the G515's way. Experimental: not tried on one yet. Its picture shows the two knobs right of F12, greyed out.
 - G515: its picture shows the LIGHTSPEED, Bluetooth and Game buttons and the two status lights above the F keys.
@@ -74,7 +79,7 @@ G-Lite leaves alpha. Every screen is redesigned like Settings: the device's pict
 
 ### Changed
 
-- G413: Game mode keys work on the keyboard (tried by its owner), so its Game view no longer says experimental. The G512's and G513's still does.
+- G413: Game mode keys work on the keyboard (tried on a real one), so its Game view no longer says experimental. The G512's and G513's still does.
 - Keyboards on the zones screen (G413, G213, G512, G513 and the others with 0x8070): the effects are a dropdown listing only those the keyboard, or the zone picked, takes, instead of a row with the others greyed out.
 - G413: the Audio effect works on the keyboard. Its colour row now says Brightness works within the keyboard's own level (Fn+F7), which scales whatever G-Lite sends and which G-Lite can't read or set.
 
@@ -85,7 +90,7 @@ G-Lite leaves alpha. Every screen is redesigned like Settings: the device's pict
 - G413 (Silver, white backlight): a picture of its keys, with its caps lock and Game mode lights. The keyboard says its LEDs have one colour, so its screen has no colour swatches: Brightness sets the level, as G HUB's black-to-white slider does, and G-Lite always sends white. Off, Static and Breathe, the effects it lists; Breathe's brightness is now sent as a dimmer white, since the keyboard ignored the intensity G-Lite sent (not yet tried on the keyboard). No zone row, since it has one zone. Its name shows as "G413 Silver".
 - G413 and other keyboards on the zones screen: an Audio effect, the lighting following the PC's sound, like G HUB's audio visualizer (one level for the whole keyboard). Not yet tried on a keyboard.
 - G413: Game mode keys (Fn+F8), picked on a Game view as on the G815, kept in presets. Experimental, not yet tried on the keyboard.
-- G512 and G513, experimental: a picture of their keys, G-Lite's live effects (Starlight, Echo, Audio, Rain, Fire, Aurora) drawn key by key, picked from the Effect list next to the keyboard's own, and Game mode keys (Fn+F8) on a Game view. Built from what g810-led and OpenLogi know about these keyboards' per-key lighting; not yet tried on either keyboard. A report from an owner, and a try of Rain, would confirm it.
+- G512 and G513, experimental: a picture of their keys, G-Lite's live effects (Starlight, Echo, Audio, Rain, Fire, Aurora) drawn key by key, picked from the Effect list next to the keyboard's own, and Game mode keys (Fn+F8) on a Game view. Built from what g810-led and OpenLogi know about these keyboards' per-key lighting; not yet tried on either keyboard. A report, and a try of Rain, would confirm it.
 
 ### Fixed
 
@@ -96,9 +101,9 @@ G-Lite leaves alpha. Every screen is redesigned like Settings: the device's pict
 
 ### Added
 
-- G502 X PLUS (onboard profile format 5): Save to mouse, like the original PRO X SUPERLIGHT: DPI stages, report rate and buttons, with a backup first and the profile read back after writing, and Restore the factory profile. Its lighting records, write counter and timeouts are left as they are. Not yet tried by an owner in G-Lite: the layout comes from OMM's own profile code, and GOMM checked it against OMM on this mouse. Only on the firmware with profile format 5.
-- Mice with onboard profile format 6 or 8 (superstrike-studio found format 8 on a SUPERSTRIKE): Save to mouse, as on the PRO X SUPERLIGHT 2. OMM's profile code puts everything G-Lite writes in the same place as on format 7. Not yet tried by an owner in G-Lite.
-- PRO X SUPERLIGHT 2, PRO X 2 DEX and other mice with profile format 6, 7 or 8: Restore the factory profile. It copies the factory profile over the active one, keeping the profile's name, after checking it reads as this layout. OMM's own restore also copies a factory profile over the user one. Not yet tried by an owner in G-Lite.
+- G502 X PLUS (onboard profile format 5): Save to mouse, like the original PRO X SUPERLIGHT: DPI stages, report rate and buttons, with a backup first and the profile read back after writing, and Restore the factory profile. Its lighting records, write counter and timeouts are left as they are. Not yet tried on a real mouse in G-Lite: the layout comes from OMM's own profile code, and GOMM checked it against OMM on this mouse. Only on the firmware with profile format 5.
+- Mice with onboard profile format 6 or 8 (superstrike-studio found format 8 on a SUPERSTRIKE): Save to mouse, as on the PRO X SUPERLIGHT 2. OMM's profile code puts everything G-Lite writes in the same place as on format 7. Not yet tried on a real mouse in G-Lite.
+- PRO X SUPERLIGHT 2, PRO X 2 DEX and other mice with profile format 6, 7 or 8: Restore the factory profile. It copies the factory profile over the active one, keeping the profile's name, after checking it reads as this layout. OMM's own restore also copies a factory profile over the user one. Not yet tried on a real mouse in G-Lite.
 
 ### Changed
 
@@ -112,10 +117,10 @@ G-Lite leaves alpha. Every screen is redesigned like Settings: the device's pict
 
 ### Added
 
-- PRO X SUPERLIGHT 2 and PRO X 2 DEX (onboard profile format 7): Save to mouse. It writes the DPI stages, the default stage, the report rate (for the receiver or the cable, whichever the mouse is on) and the buttons, and leaves the rest of the profile as it was. A backup is made first and the profile is read back after writing. These mice only take their saved DPI stages, so a stage's new DPI reaches the mouse when you save. Not yet tried by an owner in G-Lite: the layout and the way to write it come from Featherweight (on a SUPERLIGHT 2) and logitech-onboard-memory (on a DEX), which both checked their writes on the mouse. No factory restore on these mice yet.
-- Original PRO X SUPERLIGHT (onboard profile format 4; it calls itself PRO X Wireless): Save to mouse, like the G Pro Wireless: DPI stages, report rate and buttons, with a backup first and the profile read back after writing. Its lighting record is left as it is. Not yet tried by an owner in G-Lite: GFlick and onboard-lite wrote this layout on the mouse and read it back. The SUPERLIGHT's light settings are gone from its screen: they drove its status light, which the mouse marks as hidden.
+- PRO X SUPERLIGHT 2 and PRO X 2 DEX (onboard profile format 7): Save to mouse. It writes the DPI stages, the default stage, the report rate (for the receiver or the cable, whichever the mouse is on) and the buttons, and leaves the rest of the profile as it was. A backup is made first and the profile is read back after writing. These mice only take their saved DPI stages, so a stage's new DPI reaches the mouse when you save. Not yet tried on a real mouse in G-Lite: the layout and the way to write it come from Featherweight (on a SUPERLIGHT 2) and logitech-onboard-memory (on a DEX), which both checked their writes on the mouse. No factory restore on these mice yet.
+- Original PRO X SUPERLIGHT (onboard profile format 4; it calls itself PRO X Wireless): Save to mouse, like the G Pro Wireless: DPI stages, report rate and buttons, with a backup first and the profile read back after writing. Its lighting record is left as it is. Not yet tried on a real mouse in G-Lite: GFlick and onboard-lite wrote this layout on the mouse and read it back. The SUPERLIGHT's light settings are gone from its screen: they drove its status light, which the mouse marks as hidden.
 - Newer mice: the Bindings view shows the buttons saved in the profile.
-- G600: its screen, read only for now. It shows the active mode's DPI levels, report rate, lighting and its 20 buttons. The G600 doesn't speak HID++: G-Lite reads its feature reports, as libratbag does on Linux. Not yet tried on a real G600: a report from an owner would confirm Windows lets G-Lite read them.
+- G600: its screen, read only for now. It shows the active mode's DPI levels, report rate, lighting and its 20 buttons. The G600 doesn't speak HID++: G-Lite reads its feature reports, as libratbag does on Linux. Not yet tried on a real G600: a report would confirm Windows lets G-Lite read them.
 - G915 and G915 TKL: the Game view to pick the keys the Game mode key turns off, as on the G815, marked experimental: not tried on one yet, and another project found a G915 kept every key working.
 - G915 TKL and G915: a Bindings view, experimental, as on the G815: the G915 TKL's F1–F12 (its G keys) and the G915's G1–G5, saved to the active onboard profile. It only shows when the keyboard reports the button slots expected. Restore the factory profile now brings back their factory bindings too.
 - G915 X and G915 X TKL: a Game view that shows the keyboard but can't pick keys yet; they set their Game mode keys through a feature G-Lite doesn't know.
@@ -162,7 +167,7 @@ G-Lite leaves alpha. Every screen is redesigned like Settings: the device's pict
 
 ### Changed
 
-- G815: marked as working, after an owner tried lighting, Save and Restore, M1–M3, the brightness key and G1–G5 on a real keyboard.
+- G815: marked as working, after lighting, Save and Restore, M1–M3, the brightness key and G1–G5 were tried on a real keyboard.
 - The preset row is labelled G-Lite preset, so it isn't mistaken for a device's onboard profiles, and no preset shows as – instead of None.
 - G815: the Lighting box takes the whole width, since the keyboard has no idle settings to show beside it.
 - The mouse's Buttons view is now shared with the keyboard screen; it works as before.
@@ -187,7 +192,7 @@ G-Lite leaves alpha. Every screen is redesigned like Settings: the device's pict
 ### Changed
 
 - MX keyboards: the note under Backlight now says the keys light up at the next keypress only when the keyboard is plugged in. On battery, the MX Keys S lights at once and its hand sensor works.
-- The G915 TKL is marked Works: an owner tried it.
+- The G915 TKL is marked Works: it was tried on a real one.
 
 ### Fixed
 
@@ -200,7 +205,7 @@ G-Lite leaves alpha. Every screen is redesigned like Settings: the device's pict
 
 - No more dots between words: headings, status lines, menus and the device report use commas, colons and brackets instead, like "Lighting (as on the keyboard)" and "Set by G-Lite, not saved to the keyboard".
 - The demo (`--demo`) shows each device's real connection (LIGHTSPEED, USB, Bolt) instead of "Demo", and no "demo" next to the title.
-- The G213 is marked Works and the G512 X 75 Partial: both were tried by their owners.
+- The G213 is marked Works and the G512 X 75 Partial: both were tried on real ones.
 - MX keyboards: while the backlight is off, Automatic shows as off. Under Backlight, the screen says the keys light up when you next type: turned on, the MX Keys S stays dark until a key is pressed.
 - Switches that can't be changed look faded, like the sliders.
 - MX devices: the status line no longer repeats that buttons, gestures and per-app settings stay in Logi Options+.
@@ -246,7 +251,7 @@ G-Lite leaves alpha. Every screen is redesigned like Settings: the device's pict
 
 ### Added
 
-- Older G mice and keyboards are listed even when they don't answer G-Lite's usual protocol, so their owners can send a report: the G5, G9, G9x, G500, G500s, G700, G700s, G300, G400, G400s, G100s, G600 and MX518 mice, and the G11, G13, G15, G19, G103, G105, G110 and G710 keyboards. They get the info page for now. Untested on real devices.
+- Older G mice and keyboards are listed even when they don't answer G-Lite's usual protocol, so a report can be sent: the G5, G9, G9x, G500, G500s, G700, G700s, G300, G400, G400s, G100s, G600 and MX518 mice, and the G11, G13, G15, G19, G103, G105, G110 and G710 keyboards. They get the info page for now. Untested on real devices.
 
 ### Changed
 
@@ -258,7 +263,7 @@ G-Lite leaves alpha. Every screen is redesigned like Settings: the device's pict
 
 - The G213 ("Gaming Keyboard G213") is recognised and gets a lighting screen: the whole keyboard, or each of its five areas (left to right) in Static. Effects a zone can't do are greyed out. Tested on a real G213.
 - The G213 gets Wave, with its direction, and a key picture that shows each zone's lighting. Click a key to pick its zone. It can't store lighting, so G-Lite sets it again at each start.
-- The G510 and G510s get a screen: the backlight Off, Static, Breathe or Cycle, its colour, brightness and speed, and presets. Breathe and Cycle are run by G-Lite, so they stop when it quits. Built from an owner's report, untested on a real keyboard.
+- The G510 and G510s get a screen: the backlight Off, Static, Breathe or Cycle, its colour, brightness and speed, and presets. Breathe and Cycle are run by G-Lite, so they stop when it quits. Built from its report, untested on a real keyboard.
 - Devices on a USB cable without a battery, like the G213, show a USB symbol where the battery goes: in the sidebar, the tray menu, the tray popup and on the device's screen.
 
 ### Fixed
@@ -289,16 +294,16 @@ G-Lite leaves alpha. Every screen is redesigned like Settings: the device's pict
 - Older G keyboards that light up through 0x8070 (G512, G513, G PRO keyboard, G810, G910, G410, G413, G213) get a lighting screen: Off, Static, Breathe and Cycle, on all zones or each one, with presets. Live only, and untested on a real keyboard.
 - Newer G mice (PRO X SUPERLIGHT 2, PRO X 2, G502 X and others with 0x2202) open on the mouse screen: DPI, the DPI stages saved on the mouse and the report rate up to 8000 Hz. Nothing is saved to them yet. Untested on a real mouse.
 - Other G keyboards with 0x8071 lighting (G915 X, G713, G715, PRO X TKL, PRO X 60, G512 X 98 and more) get live lighting, with a key picture picked from their name. Untested on real keyboards.
-- G headsets G-Lite can't talk to yet (G735, PRO X 2, G522, A50 X and others) show up in the sidebar, so their owners can send a report.
+- G headsets G-Lite can't talk to yet (G735, PRO X 2, G522, A50 X and others) show up in the sidebar, so a report can be sent.
 - The G815 opens on the G915's screen.
 - The G915's logo, brightness key, media keys and G keys have their light ids, so the key picture and the Screen effect reach them.
 - Reports read the newer mice's DPI (0x2202) and report rate (0x8061).
 - The Litra screen has a Live on the light picture, like the keyboards and mice: the front light's warmth and brightness and the back light's seven zones, with the running effect. A click on a zone picks it.
-- The Litra Beam LX has Try effect, which runs the light's own effects one at a time, so an owner can tell which ones light the back light. Reports read where each of its lighting groups sits.
+- The Litra Beam LX has Try effect, which runs the light's own effects one at a time, to tell which ones light the back light. Reports read where each of its lighting groups sits.
 
 ### Changed
 
-- The G560's zones are named Bottom left, Bottom right, Top left and Top right, as an owner found them.
+- The G560's zones are named Bottom left, Bottom right, Top left and Top right, as checked on real speakers.
 - The G515 RAPID TKL no longer gets Save to keyboard: its onboard profile isn't known to match the G515's, so it gets live lighting.
 - Report rates of 1000 Hz and up read 1k, 2k, 4k and 8k.
 - A selected option that is greyed out is easier to read.

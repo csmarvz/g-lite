@@ -40,6 +40,13 @@ class LogitechSoftware
         },
         new LogitechSoftware
         {
+            // No Run entry or scheduled task: its service starts logioptionsplus_agent.exe (seen 2026-11-26, Options+ for an MX
+            // Mechanical Mini). The agent sets the MX devices' settings again when they connect, over G-Lite's.
+            Id = "optionsplus", Name = "Logi Options+", Detail = "logioptionsplus.exe, its agent and its service",
+            Services = new[] { "OptionsPlusUpdaterService" }, ProcessPrefixes = new[] { "logioptionsplus" }
+        },
+        new LogitechSoftware
+        {
             Id = "lamparray", Name = "Logitech LampArray Service", Detail = "Hands Logitech devices to Windows Dynamic Lighting",
             Services = new[] { "logi_lamparray_service" }
         },
@@ -250,13 +257,14 @@ class LogitechSoftware
 class ServicesBox : RoundedBox
 {
     public const int DesignHeight = RowHeight * Rows;
-    const int RowHeight = Ui.RowHeight, BoxWidth = 616, ButtonX = BoxWidth - 14 - 96, StatusX = ButtonX - 12 - 84, Rows = 4;
+    const int RowHeight = Ui.RowHeight, BoxWidth = 616, ButtonX = BoxWidth - 14 - 96, StatusX = ButtonX - 12 - 84, Rows = 5;
     readonly bool demo;
     readonly Timer timer = new Timer { Interval = 3000 };
     readonly Label[] detailLabels = new Label[Rows], stateLabels = new Label[Rows];
     readonly FlatButton[] buttons = new FlatButton[Rows];
     readonly string[] problems = new string[Rows];
-    readonly SoftwareState[] demoStates = { SoftwareState.Running, SoftwareState.NotInstalled, SoftwareState.Running };
+    readonly SoftwareState[] demoStates =
+        { SoftwareState.Running, SoftwareState.NotInstalled, SoftwareState.NotInstalled, SoftwareState.Running };
     SoftwareState[] shown;
     bool lightingOn, busy, reading;
     // Bumped by each Stop or Start, so a read started before it is dropped.

@@ -40,7 +40,7 @@ No 0x8071, 0x8040 (brightness), 0x8100 or 0x8101. So:
 From what's known about these models, not checked:
 
 - The G413 Silver uses 0x8070 alone, one zone, and says it's monochrome (fn 0's extended capabilities, bit 3): see [G413.md](G413.md).
-- G512 and G513: the owner's list gives the G512 Carbon USB C342 and the G513 Carbon C33C; OpenLogi's recording named "G512" has C33C. Photos of both show the G413's layout (Ⓐ and Ⓖ lights, the G logo top right).
+- G512 and G513: a list of USB ids gives the G512 Carbon USB C342 and the G513 Carbon C33C; OpenLogi's recording named "G512" has C33C. Photos of both show the G413's layout (Ⓐ and Ⓖ lights, the G logo top right).
 - G513, G910 and G810 may also use 0x8070 and 0x8080. Only a report tells.
 - The G213 uses 0x8070 with six zones: the whole keyboard and five areas that take Static only. See [G213.md](G213.md).
 - The G815 is the wired G915: its report shows 0x8071, 0x8040 and 0x8100 like the G915 TKL, and it gets the G915 screen. See [G815-G915.md](G815-G915.md).

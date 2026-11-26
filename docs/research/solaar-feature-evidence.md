@@ -1,6 +1,6 @@
 # Solaar recorded G-device feature evidence
 
-Extracted from checked-in `docs/devices` reports on 2026-11-08. See [snapshot](snapshots.md). These are historical owner captures at particular firmware versions, not an exhaustive supported-device list. Only product/transport facts and feature IDs are retained here; serial numbers, unit IDs, local paths and friendly names are deliberately omitted. A feature absent from this extracted table is not proof of hardware absence if the report is partial.
+Extracted from checked-in `docs/devices` reports on 2026-11-08. See [snapshot](snapshots.md). These are historical captures at particular firmware versions, not an exhaustive supported-device list. Only product/transport facts and feature IDs are retained here; serial numbers, unit IDs, local paths and friendly names are deliberately omitted. A feature absent from this extracted table is not proof of hardware absence if the report is partial.
 
 Transport IDs come from each report's labeled `Transport IDs` mapping. Filename IDs are only labels and are not independently classified as USB IDs. A question mark means that an older report did not print a feature version. Feature versions are important: `8071v2` and `8071v4` can behave differently.
 

@@ -5,7 +5,7 @@ using System.Linq;
 
 // The G600 doesn't speak HID++. Its vendor collection has feature report F0, the active mode and DPI level, and F3 to F5, one
 // 154-byte report per mode. Layout from libratbag's driver-logitech-g600.c and tulth/g600prog (both MIT), which agree; see
-// docs/G600.md. Read only until an owner tries a write.
+// docs/G600.md. Read only until a write is tried on a real one.
 class G600Mouse : IMouse
 {
     public const byte ActiveReport = 0xF0, FirstModeReport = 0xF3;

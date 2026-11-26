@@ -801,8 +801,8 @@ static class Traces
         }
     }
 
-    // The MX Mechanical Mini: its effects, battery saving, F1–F12 and disabled keys; then on its first firmware, whose backlight is only
-    // on and off (its first report), so the other backlight rows go.
+    // The MX Mechanical Mini: its effects, battery saving, F1–F12 and disabled keys; then on its first firmware, whose backlight has no
+    // automatic mode, levels or fade delays (its first report), so those rows go.
     static string MxMini()
     {
         var found = new FoundDevice

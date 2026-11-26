@@ -240,7 +240,7 @@ static class KeyLights
 {
     static readonly HashSet<string> waitedOn = new HashSet<string>();
 
-    // fn 7 shows the frame. An owner's G515 answered it with error 08, busy, during Rain at a frame every 40 ms (a full frame took it
+    // fn 7 shows the frame. A real G515 answered it with error 08, busy, during Rain at a frame every 40 ms (a full frame took it
     // 30–39 ms over LIGHTSPEED, docs/screen.md): busy means try again, so it's sent again for up to about 200 ms. The first wait per
     // keyboard is logged; keyboards on their own device threads share the set, hence the lock.
     public static void ShowFrame(Hidpp hidpp, byte feature)

@@ -155,7 +155,7 @@ Ids 7 (audio), 8 (boot), 9 (demo), 11 (ripple), 12 (stored custom) and 19 (host 
 
 ## For G-Lite
 
-- Formats 6 and 8 have format 7's layout everywhere `MouseProtocol.BuildWide` writes (bytes 0, 1, 2, the stages at 4 and the buttons from 0x30); format 8 only adds bytes 0x25–0x2B. Making them writable is a matter of trusting this table, and a report from an owner.
+- Formats 6 and 8 have format 7's layout everywhere `MouseProtocol.BuildWide` writes (bytes 0, 1, 2, the stages at 4 and the buttons from 0x30); format 8 only adds bytes 0x25–0x2B. Making them writable is a matter of trusting this table, and a report.
 - Factory restore on format 7: OMM copies 0x0100 + n into the user sector, so the factory profiles have the same layout. Featherweight saw no valid CRC on them, so a copy would need a new CRC.
 - Format 4's LED records are now known from two sources (OMM and onboard-lite).
 - Format 10 (the G502 X family after a firmware update) is format 1's layout with the rate indexes at 0x14 and 0x15, 13 buttons and a Y table at 0x56, and byte 0 FF once migrated. G-Lite treats it as unknown today.
