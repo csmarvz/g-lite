@@ -109,7 +109,8 @@ class MousePage : DevicePage
     MouseProtocol.State state;
     bool loading, dirty, lightSet;
     int sequence;
-    readonly Timer debounce = new Timer { Interval = 120 }, watch = new Timer { Interval = 5000 };
+    readonly Timer debounce = new Timer { Interval = 120 }, watch = new Timer { Interval = 5000 },
+        ledRelease = new Timer { Interval = 1000 };
     readonly Toggle invert;
     readonly SegmentedPicker viewPick;
     // Settings' sections and the rows a mouse may not have, in design units; the Bindings view's buttons, one row each.
@@ -128,7 +129,7 @@ class MousePage : DevicePage
     internal override bool Busy { get { return debounce.Enabled; } }
 
     readonly Label speedValue, brightValue, dpiValue;
-    readonly SegmentedPicker stages, rates;
+    readonly SegmentedPicker stages, rates, profilePicker;
     readonly Dropdown effects;
     readonly ColorRow colors;
     readonly Slider speed, bright, dpi;
@@ -142,6 +143,7 @@ class MousePage : DevicePage
     {
         this.mouse = mouse;
         debounce.Tick += (s, e) => { debounce.Stop(); Send(); };
+        ledRelease.Tick += (s, e) => { ledRelease.Stop(); ReleaseLogo(); };
         backupsButton = BackupsButton("mouse's profile");
         backupsButton.Click += (s, e) => ShowBackups();
 
@@ -230,6 +232,14 @@ class MousePage : DevicePage
         saveButton = Ui.Add(this, new FlatButton { Style = ButtonStyle.Primary, Text = "Save to mouse" }, 496, 685, 140, 32);
         saveButton.Click += (s, e) => Save();
         InFooter(saveButton);
+        // The onboard profiles, like a keyboard's M1 to M3: the one picked runs on the mouse and is the one saved to.
+        profilePicker = Ui.Add(this, new SegmentedPicker { AccessibleName = "Onboard profile", Visible = false }, 264, 685, 144, 32);
+        profilePicker.Picked += index =>
+        {
+            if (!loading && state != null && index >= 0 && index < state.Profiles.Length) SwitchProfile(state.Profiles[index]);
+        };
+        FooterPicker = profilePicker;
+        InFooter(profilePicker);
 
         RefreshControls();
     }
@@ -294,7 +304,7 @@ class MousePage : DevicePage
         bool ready = state != null;
         var light = current.Light;
         var effect = light == null ? null : Effects.FirstOrDefault(info => info.Id == light.Effect);
-        bool lit = ready && state.Zones.Count > 0, known = lit && effect != null, live = ready && !state.ReadOnly;
+        bool lit = ready && state.HasLight, known = lit && effect != null, live = ready && !state.ReadOnly;
         // The G300 (SaveOnly) has no brightness: each colour is on or off.
         bool color = known && effect.Color, hasSpeed = known && effect.Speed,
             hasBrightness = known && light.Effect != 0x00 && !state.SaveOnly;
@@ -306,7 +316,8 @@ class MousePage : DevicePage
         layout.ShowRow(sensitivity, invertRow, ready && state.CanInvert);
         layout.ShowSection(lighting, lightRows || unsupported);
         layout.ShowRow(lighting, noteRow, unsupported);
-        foreach (int row in new[] { effectRowY, colorRow, speedRow }) layout.ShowRow(lighting, row, lightRows);
+        foreach (int row in new[] { effectRowY, speedRow }) layout.ShowRow(lighting, row, lightRows);
+        layout.ShowRow(lighting, colorRow, lightRows && (!ready || Effects.Any(info => info.Color)));
         // The G300 (SaveOnly) has no brightness at all.
         layout.ShowRow(lighting, brightRow, lightRows && !(ready && state.SaveOnly));
         bool canBind = ready && state.ButtonCount > 0 && state.Buttons != null;
@@ -370,6 +381,19 @@ class MousePage : DevicePage
         SyncButtons();
         saveButton.Enabled = ready && state.Savable && dirty && Keepable;
         saveButton.Visible = ready ? state.Writable : mouse.HasFactory;
+        bool picking = ready && live && state.Writable && state.Profiles.Length > 1;
+        var profileNames = picking ? state.Profiles.Select(sector => "P" + sector).ToArray() : new string[0];
+        if (!profileNames.SequenceEqual(profilePicker.Items))
+        {
+            profilePicker.Items = profileNames;
+            profilePicker.Width = (int)Math.Round(48 * Math.Max(1, profileNames.Length) * Ui.DpiScale);
+            PerformLayout();
+        }
+        profilePicker.Index = picking ? Array.IndexOf(state.Profiles, state.Sector) : -1;
+        profilePicker.Visible = picking;
+        FooterPickerShown = picking;
+        profilePicker.Invalidate();
+        saveButton.Text = picking && profilePicker.Index >= 0 ? "Save to P" + state.Sector : "Save to mouse";
         backupsButton.Visible = mouse.HasFactory || (ready && state.Writable);
 
         picture.Display(lit ? light : new MouseLight { Effect = 0 }, ready ? current.Dpi : 0,
@@ -384,7 +408,9 @@ class MousePage : DevicePage
     void Changed(bool now)
     {
         if (loading || state == null) return;
-        dirty = true;
+        // A live-only light changed alone would turn Save on and the status to not saved until it's kept: they flickered while a
+        // slider moved.
+        if (!found.LightIsLiveOnly || !SavedButLight) dirty = true;
         sequence++;
         Edited();
         RefreshControls();
@@ -421,8 +447,8 @@ class MousePage : DevicePage
                 + " when saved to the mouse");
             return;
         }
-        // Only formats 2 and 3 (and the G9x pages) get their LED records written; on formats 4 to 8 a light set stays live.
-        bool liveLight = state.Savable && !state.Flash && !state.SaveOnly && state.Zones.Count > 0
+        // Only formats 2 and 3 (and the G9x pages) get their LED records written; on formats 1 and 4 to 8 a light set stays live.
+        bool liveLight = state.Savable && !state.Flash && !state.SaveOnly && state.HasLight
             && !MouseProtocol.State.KnownFormat(state.Format)
             && stored != null && current.Light != null && !current.Light.Same(stored.Light);
         ShowStatus(!dirty ? "Matches the mouse"
@@ -493,6 +519,23 @@ class MousePage : DevicePage
         });
     }
 
+    // Unsaved changes are dropped, as on a keyboard's M keys: the screen shows the picked profile as saved.
+    void SwitchProfile(int sector)
+    {
+        if (state == null || sector == state.Sector) return;
+        LogUserAction("Switch to P" + sector);
+        debounce.Stop();
+        sequence++;
+        DropPreset();
+        lightSet = false;
+        dirty = false;
+        buttonRows.Recording = -1;
+        saveButton.Enabled = false;
+        var deviceState = state;
+        ShowStatus("Switching to P" + sector + "…");
+        RunOnDevice(hidpp => MouseProtocol.RunProfile(hidpp, deviceState, sector), () => Load());
+    }
+
     void Restore(byte[] data, string what)
     {
         var deviceState = state;
@@ -527,7 +570,7 @@ class MousePage : DevicePage
             if (!deviceState.Onboard && want.Rate > 0 && want.Rate != deviceState.Rate && (sent == null || sent.Rate != want.Rate)
                 && deviceState.Rates.Contains(want.Rate))
                 mouse.SetRate(hidpp, want.Rate);
-            if (want.Light != null && deviceState.Zones.Count > 0 && (sent == null || !want.Light.Same(sent.Light)))
+            if (want.Light != null && deviceState.HasLight && (sent == null || !want.Light.Same(sent.Light)))
             {
                 mouse.SetLight(hidpp, deviceState, want.Light);
                 lightSet = !found.LightIsLiveOnly && !want.Light.Same(deviceState.Light);
@@ -535,6 +578,7 @@ class MousePage : DevicePage
             sent = want;
         }, () =>
         {
+            if (deviceState.LedHeld) { ledRelease.Stop(); ledRelease.Start(); }
             if (startedAt != sequence) return;
             if (found.LightIsLiveOnly && want.Light != null) Keep(want.Light);
             ClearStatus();
@@ -647,8 +691,19 @@ class MousePage : DevicePage
         if (showingButtons) StartSpy();
     }
 
+    // The logo's control goes back to the mouse a second after the light was set last (MouseProtocol.SetLogo), or when the screen
+    // is left.
+    void ReleaseLogo()
+    {
+        var deviceState = state;
+        if (deviceState == null || !deviceState.LedHeld) return;
+        RunOnDevice(hidpp => MouseProtocol.ReleaseLogo(hidpp, deviceState), null, message => { });
+    }
+
     public override void Hidden()
     {
+        ledRelease.Stop();
+        ReleaseLogo();
         StopSpy();
         base.Hidden();
     }
@@ -681,6 +736,7 @@ class MousePage : DevicePage
         if (disposing)
         {
             watch.Dispose();
+            ledRelease.Dispose();
             pressedTimer.Dispose();
             if (spy != null) spy.Dispose();
         }
@@ -716,7 +772,7 @@ class MousePage : DevicePage
             try { if (hidpp.FeatureIndex(0x1D4B) != feature) return; }
             catch (NotSupportedException) { return; }
             Log.Add(DeviceLabel, "found", "woke up (wireless status event)");
-            if (kept != null && deviceState.Zones.Count > 0) mouse.SetLight(hidpp, deviceState, kept);
+            if (kept != null && deviceState.HasLight) mouse.SetLight(hidpp, deviceState, kept);
         }, null, message => { });
     }
 
@@ -740,10 +796,18 @@ class MousePage : DevicePage
         if (!light.Same(KeptLight())) Settings.Set(LightKey, light.ToText());
         if (stored == null) return;
         stored.Light = light.Clone();
-        if (current.Dpi == stored.Dpi && current.Stage == stored.Stage && current.Rate == stored.Rate
-            && Bindings.Same(current.Buttons, stored.Buttons))
-            dirty = false;
+        if (SavedButLight) dirty = false;
         RefreshControls();
+    }
+
+    // Everything but the light is as saved: on a mouse whose light is live only, there's nothing to save.
+    bool SavedButLight
+    {
+        get
+        {
+            return stored != null && current.Dpi == stored.Dpi && current.Stage == stored.Stage && current.Rate == stored.Rate
+                && Bindings.Same(current.Buttons, stored.Buttons);
+        }
     }
 
     void SendRate(int hz)
@@ -778,7 +842,7 @@ class MousePage : DevicePage
                 buttonRows.Recording = -1;
                 if (!lightSet || current.Light == null) current.Light = read.Light == null ? null : read.Light.Clone();
                 if (!lightSet) dirty = false;
-                var kept = found.LightIsLiveOnly && read.Zones.Count > 0 ? KeptLight() : null;
+                var kept = found.LightIsLiveOnly && read.HasLight ? KeptLight() : null;
                 if (kept != null)
                 {
                     current.Light = kept;

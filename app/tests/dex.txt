@@ -22,6 +22,8 @@ open
   8100 fn5  00 01 00 D0
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
+  8100 fn5
+  8100 fn5  00 00 00 10
   8100 fnB
   = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=800 DPI=14 Report rate=1k [Revert (off)] [Save to mouse (off)]
 pick View Bindings

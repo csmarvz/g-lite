@@ -1,0 +1,483 @@
+open
+  2201 fn1
+  2201 fn2
+  8060 fn0
+  8060 fn1
+  8070 fn0
+  1300 fn0
+  1300 fn1
+  1300 fn1  01
+  1300 fn1  02
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 F0
+  8100 fn5
+  8100 fnB
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2400 DPI=46 Report rate=1k Effect=- Brightness=100 (off) Speed=0 (off) Onboard profile=P1 [Revert (off)] [Save to P1 (off)]
+pick Effect Breathe
+  1300 fn3  01
+  1300 fn5  02 00 80 00 FF 13 88
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2400 DPI=46 Report rate=1k Effect=Breathe Brightness=100 Speed=79 Onboard profile=P1 [Revert (off)] [Save to P1 (off)]
+slide Brightness 40
+  1300 fn5  02 00 80 00 66 13 88
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2400 DPI=46 Report rate=1k Effect=Breathe Brightness=40 Speed=79 Onboard profile=P1 [Revert (off)] [Save to P1 (off)]
+slide Speed 80
+  1300 fn5  02 00 80 00 66 12 C0
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2400 DPI=46 Report rate=1k Effect=Breathe Brightness=40 Speed=80 Onboard profile=P1 [Revert (off)] [Save to P1 (off)]
+pick Effect Static
+  1300 fn5  02 00 80 00 66
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2400 DPI=46 Report rate=1k Effect=Static Brightness=40 Speed=80 (off) Onboard profile=P1 [Revert (off)] [Save to P1 (off)]
+pick Effect Off
+  1300 fn5  02 00 80
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2400 DPI=46 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P1 [Revert (off)] [Save to P1 (off)]
+pick DPI stage 3200
+  8100 fnC  02
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=3200 DPI=62 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P1 [Revert] [Save to P1]
+slide DPI 40
+  2201 fn3  00 08 34
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2100 DPI=40 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P1 [Revert] [Save to P1]
+pick Report rate 500
+  = status "Report rate changes when saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2100 DPI=40 Report rate=500 Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P1 [Revert] [Save to P1]
+press Save to P1
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 F0
+  8100 fn6  00 01 00 00 01
+  8100 fn7  02 02 00 B0 04 60 09 34 08 00 19 00 00 FF FF FF
+  8100 fn7  FF 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  80 01 00 01 80 01 00 02 80 01 00 04 80 01 00 08
+  8100 fn7  80 01 00 10 90 07 FF FF 90 04 FF FF 90 03 FF FF
+  8100 fn7  90 0A FF FF 90 02 FF FF 90 01 FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  80 01 00 01 80 01 00 02 80 01 00 04 80 01 00 08
+  8100 fn7  80 01 00 10 90 07 FF FF 90 04 FF FF 90 03 FF FF
+  8100 fn7  90 0A FF FF 90 02 FF FF 90 01 FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  50 00 72 00 6F 00 66 00 69 00 6C 00 20 00 31
+  8100 fn7
+  8100 fn7
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF E9 6A
+  8100 fn8
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 F0
+  8100 fn3  00 01
+  2201 fn1
+  2201 fn2
+  8060 fn0
+  8060 fn1
+  8070 fn0
+  1300 fn0
+  1300 fn1
+  1300 fn1  01
+  1300 fn1  02
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 01
+  8100 fn5  00 01 00 10
+  8100 fn5  00 01 00 20
+  8100 fn5  00 01 00 30
+  8100 fn5  00 01 00 40
+  8100 fn5  00 01 00 50
+  8100 fn5  00 01 00 60
+  8100 fn5  00 01 00 70
+  8100 fn5  00 01 00 80
+  8100 fn5  00 01 00 90
+  8100 fn5  00 01 00 A0
+  8100 fn5  00 01 00 B0
+  8100 fn5  00 01 00 C0
+  8100 fn5  00 01 00 D0
+  8100 fn5  00 01 00 E0
+  8100 fn5  00 01 00 F0
+  8100 fn5
+  8100 fnB
+  1300 fn3  01
+  1300 fn5  02 00 80
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2100 DPI=40 Report rate=500 Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P1 [Revert (off)] [Save to P1 (off)]
+pick Onboard profile P3
+  8100 fn3  00 03
+  2201 fn1
+  2201 fn2
+  8060 fn0
+  8060 fn1
+  8070 fn0
+  1300 fn0
+  1300 fn1
+  1300 fn1  01
+  1300 fn1  02
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 03
+  8100 fn5  00 03 00 10
+  8100 fn5  00 03 00 20
+  8100 fn5  00 03 00 30
+  8100 fn5  00 03 00 40
+  8100 fn5  00 03 00 50
+  8100 fn5  00 03 00 60
+  8100 fn5  00 03 00 70
+  8100 fn5  00 03 00 80
+  8100 fn5  00 03 00 90
+  8100 fn5  00 03 00 A0
+  8100 fn5  00 03 00 B0
+  8100 fn5  00 03 00 C0
+  8100 fn5  00 03 00 D0
+  8100 fn5  00 03 00 E0
+  8100 fn5  00 03 00 F0
+  8100 fn5
+  8100 fnB
+  1300 fn3  01
+  1300 fn5  02 00 80
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=7150 DPI=141 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert (off)] [Save to P3 (off)]
+pick DPI stage 8800
+  8100 fnC  01
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=8800 DPI=174 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert] [Save to P3]
+slide DPI 50
+  2201 fn3  00 0A 28
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2600 DPI=50 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert] [Save to P3]
+pick Onboard profile P2
+  8100 fn3  00 02
+  2201 fn1
+  2201 fn2
+  8060 fn0
+  8060 fn1
+  8070 fn0
+  1300 fn0
+  1300 fn1
+  1300 fn1  01
+  1300 fn1  02
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 02
+  8100 fn5  00 02 00 10
+  8100 fn5  00 02 00 20
+  8100 fn5  00 02 00 30
+  8100 fn5  00 02 00 40
+  8100 fn5  00 02 00 50
+  8100 fn5  00 02 00 60
+  8100 fn5  00 02 00 70
+  8100 fn5  00 02 00 80
+  8100 fn5  00 02 00 90
+  8100 fn5  00 02 00 A0
+  8100 fn5  00 02 00 B0
+  8100 fn5  00 02 00 C0
+  8100 fn5  00 02 00 D0
+  8100 fn5  00 02 00 E0
+  8100 fn5  00 02 00 F0
+  8100 fn5
+  8100 fnB
+  1300 fn3  01
+  1300 fn5  02 00 80
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P2 [Revert (off)] [Save to P2 (off)]
+pick Onboard profile P3
+  8100 fn3  00 03
+  2201 fn1
+  2201 fn2
+  8060 fn0
+  8060 fn1
+  8070 fn0
+  1300 fn0
+  1300 fn1
+  1300 fn1  01
+  1300 fn1  02
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 03
+  8100 fn5  00 03 00 10
+  8100 fn5  00 03 00 20
+  8100 fn5  00 03 00 30
+  8100 fn5  00 03 00 40
+  8100 fn5  00 03 00 50
+  8100 fn5  00 03 00 60
+  8100 fn5  00 03 00 70
+  8100 fn5  00 03 00 80
+  8100 fn5  00 03 00 90
+  8100 fn5  00 03 00 A0
+  8100 fn5  00 03 00 B0
+  8100 fn5  00 03 00 C0
+  8100 fn5  00 03 00 D0
+  8100 fn5  00 03 00 E0
+  8100 fn5  00 03 00 F0
+  8100 fn5
+  8100 fnB
+  1300 fn3  01
+  1300 fn5  02 00 80
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=7150 DPI=141 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert (off)] [Save to P3 (off)]
+pick DPI stage 10250
+  8100 fnC  02
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=10250 DPI=203 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert] [Save to P3]
+slide DPI 30
+  2201 fn3  00 06 40
+  = status "Applied to the mouse, not saved on it yet" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert] [Save to P3]
+press Save to P3
+  8100 fn5  00 03
+  8100 fn5  00 03 00 10
+  8100 fn5  00 03 00 20
+  8100 fn5  00 03 00 30
+  8100 fn5  00 03 00 40
+  8100 fn5  00 03 00 50
+  8100 fn5  00 03 00 60
+  8100 fn5  00 03 00 70
+  8100 fn5  00 03 00 80
+  8100 fn5  00 03 00 90
+  8100 fn5  00 03 00 A0
+  8100 fn5  00 03 00 B0
+  8100 fn5  00 03 00 C0
+  8100 fn5  00 03 00 D0
+  8100 fn5  00 03 00 E0
+  8100 fn5  00 03 00 F0
+  8100 fn6  00 03 00 00 01
+  8100 fn7  01 02 00 EE 1B 60 22 40 06 8E 2B 00 00 FF FF FF
+  8100 fn7  FF 00 04 00 FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  80 01 00 01 80 01 00 02 80 01 00 04 80 01 00 08
+  8100 fn7  80 01 00 10 90 0B FF FF 80 02 01 06 80 02 01 19
+  8100 fn7  90 0A FF FF 90 02 FF FF 90 01 FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  80 01 00 01 80 01 00 02 80 02 01 17 80 02 01 3D
+  8100 fn7  80 02 03 17 FF FF FF FF 80 02 01 1B 80 02 01 1D
+  8100 fn7  80 02 01 27 80 02 01 2B 80 02 03 2B FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  50 00 72 00 6F 00 66 00 69 00 6C 00 20 00 33
+  8100 fn7
+  8100 fn7
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF 6E 50
+  8100 fn8
+  8100 fn5  00 03
+  8100 fn5  00 03 00 10
+  8100 fn5  00 03 00 20
+  8100 fn5  00 03 00 30
+  8100 fn5  00 03 00 40
+  8100 fn5  00 03 00 50
+  8100 fn5  00 03 00 60
+  8100 fn5  00 03 00 70
+  8100 fn5  00 03 00 80
+  8100 fn5  00 03 00 90
+  8100 fn5  00 03 00 A0
+  8100 fn5  00 03 00 B0
+  8100 fn5  00 03 00 C0
+  8100 fn5  00 03 00 D0
+  8100 fn5  00 03 00 E0
+  8100 fn5  00 03 00 F0
+  8100 fn3  00 03
+  2201 fn1
+  2201 fn2
+  8060 fn0
+  8060 fn1
+  8070 fn0
+  1300 fn0
+  1300 fn1
+  1300 fn1  01
+  1300 fn1  02
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 03
+  8100 fn5  00 03 00 10
+  8100 fn5  00 03 00 20
+  8100 fn5  00 03 00 30
+  8100 fn5  00 03 00 40
+  8100 fn5  00 03 00 50
+  8100 fn5  00 03 00 60
+  8100 fn5  00 03 00 70
+  8100 fn5  00 03 00 80
+  8100 fn5  00 03 00 90
+  8100 fn5  00 03 00 A0
+  8100 fn5  00 03 00 B0
+  8100 fn5  00 03 00 C0
+  8100 fn5  00 03 00 D0
+  8100 fn5  00 03 00 E0
+  8100 fn5  00 03 00 F0
+  8100 fn5
+  8100 fnB
+  1300 fn3  01
+  1300 fn5  02 00 80
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert (off)] [Save to P3 (off)]
+menu Backups > Restore the factory profile
+  menu: Restore the factory profile | Restore a backup (off) | <when>, 7150 DPI, 1000 Hz | <when>, another profile, first backup (off) | Open the backups folder
+  8100 fn5  00 03
+  8100 fn5  00 03 00 10
+  8100 fn5  00 03 00 20
+  8100 fn5  00 03 00 30
+  8100 fn5  00 03 00 40
+  8100 fn5  00 03 00 50
+  8100 fn5  00 03 00 60
+  8100 fn5  00 03 00 70
+  8100 fn5  00 03 00 80
+  8100 fn5  00 03 00 90
+  8100 fn5  00 03 00 A0
+  8100 fn5  00 03 00 B0
+  8100 fn5  00 03 00 C0
+  8100 fn5  00 03 00 D0
+  8100 fn5  00 03 00 E0
+  8100 fn5  00 03 00 F0
+  8100 fn5  01 03
+  8100 fn5  01 03 00 10
+  8100 fn5  01 03 00 20
+  8100 fn5  01 03 00 30
+  8100 fn5  01 03 00 40
+  8100 fn5  01 03 00 50
+  8100 fn5  01 03 00 60
+  8100 fn5  01 03 00 70
+  8100 fn5  01 03 00 80
+  8100 fn5  01 03 00 90
+  8100 fn5  01 03 00 A0
+  8100 fn5  01 03 00 B0
+  8100 fn5  01 03 00 C0
+  8100 fn5  01 03 00 D0
+  8100 fn5  01 03 00 E0
+  8100 fn5  01 03 00 F0
+  8100 fn6  00 03 00 00 01
+  8100 fn7  02 00 00 60 09 00 00 00 00 00 00 00 00 FF FF FF
+  8100 fn7  FF 00 FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  80 01 00 01 80 01 00 02 80 01 00 04 80 01 00 08
+  8100 fn7  80 01 00 10 90 0B FF FF 80 02 01 06 80 02 01 19
+  8100 fn7  90 0A FF FF 90 02 FF FF 90 01 FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  80 01 00 01 80 01 00 02 80 02 01 17 80 02 01 3D
+  8100 fn7  80 02 03 17 FF FF FF FF 80 02 01 1B 80 02 01 1D
+  8100 fn7  80 02 01 27 80 02 01 2B 80 02 03 2B FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  50 00 72 00 6F 00 66 00 69 00 6C 00 20 00 33
+  8100 fn7
+  8100 fn7
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF
+  8100 fn7  FF FF FF FF FF FF FF FF FF FF FF FF FF FF 20 57
+  8100 fn8
+  8100 fn5  00 03
+  8100 fn5  00 03 00 10
+  8100 fn5  00 03 00 20
+  8100 fn5  00 03 00 30
+  8100 fn5  00 03 00 40
+  8100 fn5  00 03 00 50
+  8100 fn5  00 03 00 60
+  8100 fn5  00 03 00 70
+  8100 fn5  00 03 00 80
+  8100 fn5  00 03 00 90
+  8100 fn5  00 03 00 A0
+  8100 fn5  00 03 00 B0
+  8100 fn5  00 03 00 C0
+  8100 fn5  00 03 00 D0
+  8100 fn5  00 03 00 E0
+  8100 fn5  00 03 00 F0
+  8100 fn3  00 03
+  8100 fn1  02
+  8100 fn1  01
+  8100 fnC
+  2201 fn1
+  2201 fn2
+  8060 fn0
+  8060 fn1
+  8070 fn0
+  1300 fn0
+  1300 fn1
+  1300 fn1  01
+  1300 fn1  02
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 03
+  8100 fn5  00 03 00 10
+  8100 fn5  00 03 00 20
+  8100 fn5  00 03 00 30
+  8100 fn5  00 03 00 40
+  8100 fn5  00 03 00 50
+  8100 fn5  00 03 00 60
+  8100 fn5  00 03 00 70
+  8100 fn5  00 03 00 80
+  8100 fn5  00 03 00 90
+  8100 fn5  00 03 00 A0
+  8100 fn5  00 03 00 B0
+  8100 fn5  00 03 00 C0
+  8100 fn5  00 03 00 D0
+  8100 fn5  00 03 00 E0
+  8100 fn5  00 03 00 F0
+  8100 fn5
+  8100 fnB
+  1300 fn3  01
+  1300 fn5  02 00 80
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2400 DPI=46 Report rate=500 Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert (off)] [Save to P3 (off)]
+the mouse's profile button
+  8100 fn3  00 02
+  2201 fn1
+  2201 fn2
+  8060 fn0
+  8060 fn1
+  8070 fn0
+  1300 fn0
+  1300 fn1
+  1300 fn1  01
+  1300 fn1  02
+  8100 fn2
+  8100 fn0
+  8100 fn4
+  8100 fn5  00 02
+  8100 fn5  00 02 00 10
+  8100 fn5  00 02 00 20
+  8100 fn5  00 02 00 30
+  8100 fn5  00 02 00 40
+  8100 fn5  00 02 00 50
+  8100 fn5  00 02 00 60
+  8100 fn5  00 02 00 70
+  8100 fn5  00 02 00 80
+  8100 fn5  00 02 00 90
+  8100 fn5  00 02 00 A0
+  8100 fn5  00 02 00 B0
+  8100 fn5  00 02 00 C0
+  8100 fn5  00 02 00 D0
+  8100 fn5  00 02 00 E0
+  8100 fn5  00 02 00 F0
+  8100 fn5
+  8100 fnB
+  1300 fn3  01
+  1300 fn5  02 00 80
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P2 [Revert (off)] [Save to P2 (off)]

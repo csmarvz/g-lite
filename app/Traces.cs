@@ -1235,6 +1235,45 @@ static class Traces
         }
     }
 
+    // The original G502, wired: profile format 1 in 256-byte sectors, three profiles in the footer (P1 to P3), each saved and restored
+    // from its own factory copy, and the mouse's own profile switch (0x8100 event fn 0).
+    static string ProteusCore()
+    {
+        var device = FakeMouse.ProteusCore();
+        var found = new FoundDevice
+        {
+            Key = "trace|g502core", Name = "Tunable FPS Gaming Mouse G502", Kind = "mouse", Models = "USB C07D",
+            Link = "USB", Index = 0xFF, Features = new[] { 0x0001, 0x0003, 0x0005, 0x1300, 0x2201, 0x8060, 0x8100, 0x8110 }
+        };
+        using (var script = Begin(() => DeviceTable.For(found).Make(found, device)))
+        {
+            script.Pick("Effect", "Breathe");
+            script.Slide("Brightness", 40);
+            script.Slide("Speed", 80);
+            script.Pick("Effect", "Static");
+            script.Pick("Effect", "Off");
+            script.Pick("DPI stage", "3200");
+            script.Slide("DPI", 40);
+            script.Pick("Report rate", "500");
+            script.Press("Save to P1");
+            script.Pick("Onboard profile", "P3");
+            script.Pick("DPI stage", "8800");
+            script.Slide("DPI", 50);
+            script.Pick("Onboard profile", "P2");
+            script.Pick("Onboard profile", "P3");
+            script.Pick("DPI stage", "10250");
+            script.Slide("DPI", 30);
+            script.Press("Save to P3");
+            script.Menu("Backups", "Restore the factory profile");
+            script.Do("the mouse's profile button", () =>
+            {
+                device.Call(device.FeatureIndex(0x8100), 3, 0x00, 0x02);
+                ((MousePage)script.Page).Heard(device.FeatureIndex(0x8100), 0);
+            });
+            return script.Text;
+        }
+    }
+
     // Read only: feature reports F0 and the active mode's, every control off, 20 buttons in the Bindings view.
     static string G600()
     {
@@ -1384,6 +1423,7 @@ static class Traces
         yield return new KeyValuePair<string, Func<string>>("superlight", Superlight);
         yield return new KeyValuePair<string, Func<string>>("superlight2", TraceWideDpiMouse);
         yield return new KeyValuePair<string, Func<string>>("dex", Dex);
+        yield return new KeyValuePair<string, Func<string>>("g502core", ProteusCore);
         yield return new KeyValuePair<string, Func<string>>("g600", G600);
         yield return new KeyValuePair<string, Func<string>>("g300", G300);
         yield return new KeyValuePair<string, Func<string>>("gpro", () => Mouse("G Pro Wireless Gaming Mouse", new FakeMouse(),

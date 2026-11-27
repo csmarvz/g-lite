@@ -29,6 +29,15 @@ static class MouseProtocol
 
     public static EffectInfo EffectById(byte id) { return Effects.FirstOrDefault(effect => effect.Id == id); }
 
+    // A 0x1300 logo light that only takes breathing (the original G502's, docs/G502.md), without colour: breathing with a period of 0
+    // is static (it read so as the mouse came, lit steadily), and Off is taken to be a brightness of 0.
+    public static readonly EffectInfo[] LogoEffects =
+    {
+        new EffectInfo { Id = 0x00, Name = "Off" },
+        new EffectInfo { Id = 0x01, Name = "Static" },
+        new EffectInfo { Id = 0x0A, Name = "Breathe", Speed = true, MinPeriod = 1000, MaxPeriod = 20000, DefaultPeriod = 5000 }
+    };
+
     public class State
     {
         public int Dpi, Stage = -1, Rate;
@@ -45,6 +54,13 @@ static class MouseProtocol
         public int Sector = -1, SectorSize, Format, ButtonCount;
         // 0x8100 fn 0 byte 4; -1 until read. OMM offers no restore on a mouse that has none.
         public int FactoryProfiles = -1;
+        // The enabled profiles' sectors in the directory's order, read only when there are two or more to pick from.
+        public int[] Profiles = new int[0];
+        // A mouse without 0x8070 whose 0x1300 has a logo LED that breathes: its index, or -1.
+        public int LedLogo = -1;
+        // Whether G-Lite holds 0x1300's software control, taken for the logo and given back once it's left alone (ReleaseLogo).
+        public bool LedHeld;
+        public bool HasLight { get { return Zones.Count > 0 || LedLogo >= 0; } }
         public byte[][] Buttons;
         public byte[] Current, Profile;
 
@@ -78,13 +94,52 @@ static class MouseProtocol
         // onboard-lite (saved on one, wired and over LIGHTSPEED) both use it, and with g502-hub and libratbag treat formats 1–5 alike
         // there. So does format 5 (the G502 X PLUS: GOMM), per OMM's layout builders too (docs/research/omm). Both have a write counter
         // at 0x12 and timeouts at 0x1C and 0x1E, which G-Lite doesn't touch, and their LED records are left as they are
-        // (docs/newer-mice.md).
-        public static bool ClassicFormat(int format) { return KnownFormat(format) || format == 4 || format == 5; }
+        // (docs/newer-mice.md). Format 1 (the original G502, C07D) has it too, with nothing from 0xD0 (its lights are 0x1300) and
+        // 256-byte sectors: its report (docs/reports/g502-c07d.txt) has the live DPI at the default stage, the buttons at 0x20, the name
+        // at 0xA0 and a valid CRC in the last two bytes; libratbag and g502-hub read formats 1 to 5 alike there.
+        public static bool ClassicFormat(int format) { return KnownFormat(format) || format == 1 || format == 4 || format == 5; }
         public bool Savable { get { return Writable && ProfileOk; } }
         public string Key { get { return Sector.ToString("X4"); } }
     }
 
     public const int RomSector = 0x0101;
+
+    // Profile N's factory copy is 0x0100 + N when the mouse has that many (the G502's 0x0102 and 0x0103 are its profiles 2 and 3 as
+    // they left the factory, docs/reports/g502-c07d.txt); otherwise the first.
+    public static int FactorySector(State state)
+    {
+        return state.Sector >= 1 && state.Sector <= state.FactoryProfiles ? 0x0100 + state.Sector : RomSector;
+    }
+
+    // The directory: 4 bytes per profile, its sector (big-endian), enabled, then 00 (LGS, G-Lite) or FF (G HUB), up to FF FF. Only
+    // its first entries are read (one or two calls rather than 16 for the whole sector), so without its CRC an entry that isn't
+    // like these makes it no list at all.
+    public static int[] EnabledProfiles(byte[] directory, int count)
+    {
+        var sectors = new List<int>();
+        for (int i = 0; i < count && 4 * i + 3 < directory.Length; i++)
+        {
+            int sector = ReadUInt16BigEndian(directory, 4 * i);
+            if (sector == 0xFFFF) break;
+            if (sector == 0 || sector >= 0x100 || directory[4 * i + 2] > 1) return new int[0];
+            if (directory[4 * i + 2] == 1) sectors.Add(sector);
+        }
+        return sectors.ToArray();
+    }
+
+    static byte[] ReadDirectory(Hidpp hidpp, byte feature, int count)
+    {
+        var directory = new List<byte>();
+        for (int offset = 0; offset < 4 * count + 4; offset += 16) directory.AddRange(Memory(hidpp, feature, 0x0000, offset));
+        return directory.ToArray();
+    }
+
+    // fn 3 runs a profile, as the mouse's profile button does.
+    public static void RunProfile(Hidpp hidpp, State state, int sector)
+    {
+        if (Array.IndexOf(state.Profiles, sector) < 0) throw new RefusedException("That profile isn't on the mouse");
+        hidpp.Call(hidpp.FeatureIndex(0x8100), 3, (byte)(sector >> 8), (byte)sector);
+    }
 
     // Where things are in an onboard profile, formats 2 and 3 (libratbag, Solaar and cvuchener's hidpp agree): the report interval in ms,
     // the default DPI stage, five 2-byte stages (little-endian), 4 bytes per button, the name in UTF-16, then an 11-byte LED record per
@@ -172,7 +227,7 @@ static class MouseProtocol
         var light = Decode(profile.Skip(LightRecordsAt + LightRecordLength).Take(LightRecordLength).ToArray());
         int defaultStage = profile[DefaultStageAt], interval = profile[ReportIntervalAt];
         return (defaultStage < stages.Length ? stages[defaultStage] + " DPI" : "DPI stages")
-            + ", " + (light == null ? "lighting" : EffectById(light.Effect).Name)
+            + (light == null ? "" : ", " + EffectById(light.Effect).Name)
             + ", " + (interval > 0 ? 1000 / interval + " Hz" : "");
     }
 
@@ -479,6 +534,23 @@ static class MouseProtocol
         catch (NotSupportedException) { }
         catch (HidppError) { state.Zones.Clear(); }
         if (logo < 0) logo = state.Zones.Count - 1;
+        // 0x1300 fn 1: the LED, its type (4 the logo) and the modes it takes (big-endian bits, 0x80 breathing), per libratbag's hidpp20.h.
+        if (state.Zones.Count == 0)
+        {
+            try
+            {
+                byte ledFeature = hidpp.FeatureIndex(0x1300);
+                int count = Math.Min(8, (int)hidpp.Call(ledFeature, 0)[0]);
+                for (int led = 0; led < count; led++)
+                {
+                    var info = hidpp.Call(ledFeature, 1, (byte)led);
+                    if (info[1] == 4 && (ReadUInt16BigEndian(info, 3) & 0x80) != 0) state.LedLogo = led;
+                }
+                if (state.LedLogo >= 0) state.Effects = LogoEffects;
+            }
+            catch (NotSupportedException) { }
+            catch (HidppError) { state.LedLogo = -1; }
+        }
         try
         {
             byte wheelFeature = hidpp.FeatureIndex(0x2121);
@@ -499,7 +571,7 @@ static class MouseProtocol
                 state.ButtonCount = Math.Min(16, (int)info[5]);
                 state.Format = info[1];
                 state.FactoryProfiles = info[4];
-                // Formats 2 to 5 keep the rate as an interval in ms, so a faster rate couldn't be saved.
+                // Formats 1 to 5 keep the rate as an interval in ms, so a faster rate couldn't be saved.
                 if (State.ClassicFormat(state.Format)) state.Rates = state.Rates.Where(hz => hz <= 1000).ToArray();
                 state.SectorSize = ReadUInt16BigEndian(info, 7);
                 var current = hidpp.Call(profilesFeature, 4);
@@ -509,6 +581,12 @@ static class MouseProtocol
                 {
                     state.Profile = ReadSector(hidpp, state.Sector, state.SectorSize);
                     state.ProfileOk = Valid(state.Profile) || state.Sector >= 0x100;
+                    if (info[3] >= 2 && (State.ClassicFormat(state.Format) || State.WideFormat(state.Format)))
+                    {
+                        try { state.Profiles = EnabledProfiles(ReadDirectory(hidpp, profilesFeature, info[3]), info[3]); }
+                        catch (HidppError) { }
+                        if (state.Profiles.Length < 2) state.Profiles = new int[0];
+                    }
                     if (state.Format >= 6)
                     {
                         bool wide = State.WideFormat(state.Format);
@@ -594,6 +672,7 @@ static class MouseProtocol
 
     public static void SetLight(Hidpp hidpp, State state, MouseLight light)
     {
+        if (state.LedLogo >= 0) { SetLogo(hidpp, state, light); return; }
         byte feature = hidpp.FeatureIndex(0x8070);
         foreach (var zone in state.Zones)
         {
@@ -601,5 +680,28 @@ static class MouseProtocol
             if (!zone.Value.TryGetValue(light.Effect, out effectIndex)) continue;
             hidpp.Call(feature, 3, new byte[] { (byte)zone.Key, (byte)effectIndex }.Concat(Encode(light)).ToArray());
         }
+    }
+
+    // Tried on the original G502 (docs/G502.md): fn 5 is refused (error 02) until software control is 01 (fn 3), then takes the LED,
+    // the mode as two bytes (00 80, breathing), the brightness and the period in ms (two bytes each); brightness and speed showed on
+    // the logo. The brightness is taken to be 0 to 255, since the logo read FF lit steadily as it came. Control goes back to the
+    // firmware after (fn 3 00), as libratbag's driver does: the logo kept what was set and the DPI lights showed the DPI as before.
+    // Given back on each change, the logo flickered while a slider moved, so the page gives it back once the light is left alone.
+    static void SetLogo(Hidpp hidpp, State state, MouseLight light)
+    {
+        byte feature = hidpp.FeatureIndex(0x1300);
+        int brightness = light.Effect == 0x00 ? 0 : Math.Max(1, Math.Min(100, light.Bright)) * 255 / 100;
+        int period = light.Effect == 0x0A ? Math.Max(1000, Math.Min(20000, light.Period)) : 0;
+        if (!state.LedHeld) hidpp.Call(feature, 3, 0x01);
+        state.LedHeld = true;
+        hidpp.Call(feature, 5, (byte)state.LedLogo, 0x00, 0x80, (byte)(brightness >> 8), (byte)brightness, (byte)(period >> 8),
+            (byte)period);
+    }
+
+    public static void ReleaseLogo(Hidpp hidpp, State state)
+    {
+        if (!state.LedHeld) return;
+        hidpp.Call(hidpp.FeatureIndex(0x1300), 3, 0x00);
+        state.LedHeld = false;
     }
 }

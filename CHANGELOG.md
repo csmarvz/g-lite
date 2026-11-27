@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Added
+
+- The original G502 (Proteus Core, "Tunable FPS Gaming Mouse G502", C07D): Save to mouse, Bindings, the report rate and Restore the factory profile, as on the G502 HERO, and its buttons' names. Its profiles are format 1, which G-Lite only read until now. Tried on a real one.
+- The original G502's logo: Off, Static and Breathe, with brightness and speed. It's set live (the mouse doesn't store it), kept by G-Lite and sent again when the screen loads. Tried on a real one.
+- Mice with two or more onboard profiles show them in the footer, P1, P2 and so on, like a keyboard's M keys: picking one runs it on the mouse, and Save to mouse writes the one running (Save to P2). Restore the factory profile gives each profile its own factory copy when the mouse has one per profile. Tried on the original G502.
+
+### Fixed
+
+- A device screen repainted all of itself on every change, so its lines flickered while a slider moved.
+- On a mouse whose light is live only (the G305 and G304), moving a lighting slider turned Save on and the status to not saved, then back, flickering.
+
 ## [0.1.1-beta] - 2026-11-27
 
 ### Added

@@ -219,9 +219,20 @@ static class SelfTest
         MouseProtocol.Setup(heroFresh, heroFreshState, MouseProtocol.Build(heroFreshState.Profile, new MouseSettings { Dpi = 800 }, 2));
         Check(heroState.Savable && MouseProtocol.Read(hero).Dpi == 3200 && heroFreshState.Fresh && heroFreshState.Savable
             && MouseProtocol.Valid(heroFresh.Sectors[0x0000]) && MouseProtocol.Read(heroFresh).Sector == 1
-            && !MouseProtocol.Read(new FakeMouse { Info = "01010105050B1000FF0A01" }).Writable
             && MouseProtocol.Unwritten(Enumerable.Repeat((byte)0xFF, 255).ToArray()) && !MouseProtocol.Unwritten(restoredState.Profile),
-            "profile format 2 (G502 HERO) saves like format 3, a directory of zeros counts as none, format 1 stays read-only");
+            "profile format 2 (G502 HERO) saves like format 3, a directory of zeros counts as none");
+
+        var proteus = FakeMouse.ProteusCore();
+        var proteusState = MouseProtocol.Read(proteus);
+        var proteusBefore = (byte[])proteus.Sectors[0x0001].Clone();
+        var proteusWant = new MouseSettings { Dpi = 2800, Stage = 1, Rate = 500 };
+        MouseProtocol.Store(proteus, proteusState, MouseProtocol.Build(proteusState.Profile, proteusWant, 0));
+        var proteusSaved = proteus.Sectors[0x0001];
+        Check(proteusState.Savable && proteusState.SectorSize == 256 && proteusState.Stages.SequenceEqual(new[] { 1200, 2400, 3200, 6400 })
+            && proteusSaved.Length == 256 && MouseProtocol.Valid(proteusSaved) && MouseProtocol.Read(proteus).Stages[1] == 2800
+            && proteusSaved[0] == 2 && Enumerable.Range(0, 254).All(i => proteusSaved[i] == proteusBefore[i] || i == 0 || i == 5 || i == 6)
+            && MouseProtocol.Valid(MouseProtocol.Factory(proteus.Sectors[0x0101], proteusSaved, proteusState)),
+            "profile format 1 (the original G502) saves like format 3 in its 256-byte sectors, only the stage and rate change");
 
         var headset = new FakeHeadset();
         var headsetState = HeadsetProtocol.Read(headset, true);

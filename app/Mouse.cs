@@ -126,7 +126,7 @@ class HidppMouse : IMouse
     {
         return MouseProtocol.ReadSector(hidpp, state.Sector, state.SectorSize);
     }
-    // The LED records of formats 4 and 5 aren't checked, so they're kept: a zone count of 0 leaves them.
+    // The LED records of formats 4 and 5 aren't checked (format 1 has none), so they're kept: a zone count of 0 leaves them.
     byte[] Build(byte[] now, MouseSettings want, MouseProtocol.State state)
     {
         if (Wide) return MouseProtocol.BuildWide(now, want, state.Wired);
@@ -147,7 +147,7 @@ class HidppMouse : IMouse
     // `02` then `01`, tried by PeriHub on a G502 HERO), done only when the mouse runs its onboard profiles.
     public void Restore(Hidpp hidpp, MouseProtocol.State state, byte[] now, byte[] data)
     {
-        var restored = data ?? MouseProtocol.Factory(MouseProtocol.ReadSector(hidpp, MouseProtocol.RomSector, state.SectorSize), now, state);
+        var restored = data ?? MouseProtocol.Factory(MouseProtocol.ReadSector(hidpp, MouseProtocol.FactorySector(state), state.SectorSize), now, state);
         MouseProtocol.Store(hidpp, state, restored);
         if (state.Onboard)
         {

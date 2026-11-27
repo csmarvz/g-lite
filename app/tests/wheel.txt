@@ -35,6 +35,8 @@ open
   8100 fn5  00 01 00 D0
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
+  8100 fn5
+  8100 fn5  00 00 00 10
   8100 fnB
   = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Invert scrolling=off Effect=Cycle Brightness=100 [Revert (off)] [Save to mouse (off)] Speed=63
 watch, off

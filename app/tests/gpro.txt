@@ -33,6 +33,8 @@ open
   8100 fn5  00 01 00 D0
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
+  8100 fn5
+  8100 fn5  00 00 00 10
   8100 fnB
   = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Effect=Cycle Brightness=100 Speed=63 [Revert (off)] [Save to mouse (off)]
 slide DPI 20
@@ -141,6 +143,8 @@ press Save to mouse
   8100 fn5  00 01 00 D0
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
+  8100 fn5
+  8100 fn5  00 00 00 10
   8100 fnB
   = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=400 DPI=6 Report rate=500 Effect=Static <Your color> Brightness=60 Speed=63 (off) [Revert (off)] [Save to mouse (off)]
 pick Effect Breathe
@@ -272,6 +276,8 @@ menu Backups > Restore the factory profile
   8100 fn5  00 01 00 D0
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
+  8100 fn5
+  8100 fn5  00 00 00 10
   8100 fnB
   = status "Restored the factory profile" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Effect=Cycle Brightness=100 Speed=63 [Revert (off)] [Save to mouse (off)]
 the mouse's DPI button

@@ -251,12 +251,15 @@ abstract class DevicePage : Control, IPage
     void PlaceFooter()
     {
         if (Body == null) return;
-        int bottom = Height - Scaled(FooterHeight);
-        Body.Height = Math.Max(0, bottom - Body.Top);
+        int bottom = Height - Scaled(FooterHeight), height = Math.Max(0, bottom - Body.Top);
+        bool moved = Body.Height != height;
+        Body.Height = height;
         int top = Body.Bottom + Scaled(FooterGap);
         int shift = top - status.Top;
         if (shift != 0) foreach (var control in footer) control.Top += shift;
-        Invalidate();
+        // Only when the lines moved: a screen fits its rows on every change, and repainting it all each time made them flicker
+        // while a slider moved.
+        if (moved || shift != 0) Invalidate();
     }
 
     // A line under the header, which stays while Body scrolls, and one above the footer.

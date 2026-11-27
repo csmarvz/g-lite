@@ -21,3 +21,4 @@ Reports from G-Lite's Report button, kept as they were sent, so the facts in the
 | [mxmechanicalmini-b367.txt](mxmechanicalmini-b367.txt) | MX Mechanical Mini (Bluetooth B367), Swiss layout, after Logi Options+ updated its firmware | RBK 72.03, build 0014 | 2026-11-26 | [other-devices.md](../other-devices.md) |
 | [mxcreativekeypad-c354.txt](mxcreativekeypad-c354.txt) | MX Creative Keypad (USB C354) | U1 66.00, build 0017 | 2026-11-12 | [other-devices.md](../other-devices.md) |
 | [g502x-409f.txt](g502x-409f.txt) | G502 X LIGHTSPEED (409F, USB C098), through its receiver | MPM 30.00, build 0014 | 2026-11-19 | [G502X.md](../G502X.md) |
+| [g502-c07d.txt](g502-c07d.txt) | G502 Proteus Core, "Tunable FPS Gaming Mouse G502" (USB C07D), wired, profile format 1 | U 88.02, build 0017 | 2026-11-27 | [G502.md](../G502.md), `FakeMouse.ProteusCore` in `app/Fake.cs` |

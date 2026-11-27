@@ -162,10 +162,12 @@ static class Bindings
         return buttons == null ? null : buttons.Select(binding => (byte[])binding.Clone()).ToArray();
     }
 
-    // The G502 HERO (USB C08B) has the G502 LIGHTSPEED's slots (g502-hub's docs/hardware-notes.md, from its button spy).
+    // The G502 HERO (USB C08B) has the G502 LIGHTSPEED's slots (g502-hub's docs/hardware-notes.md, from its button spy), and so has
+    // the original G502 (C07D): its factory bindings are the HERO's (docs/reports/g502-c07d.txt), and g502-profile-manager (MIT)
+    // gives every G502 one button map.
     public static string[] Names(FoundDevice found, int count)
     {
-        int wpid = found.Models.Contains("C08B") ? 0x407F : found.WirelessId;
+        int wpid = found.Models.Contains("C08B") || found.IsOriginalG502 ? 0x407F : found.WirelessId;
         var known = found.IsG600
                 // libratbag's and g600prog's order: G4 and G5 tilt the wheel, G6 is under the ring finger, G7 and G8 are behind the
                 // wheel, G9 to G20 the thumb's keypad.

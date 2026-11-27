@@ -41,8 +41,9 @@ class FoundDevice
     public bool IsMouse { get { return Kind == "mouse" && (Has(0x2201) || Has(0x2202)); } }
 
     // The G305 and G304 (4074) have one status LED that 0x8070 drives live, but the mouse ignores the profile's lighting record: saved
-    // as Static, the LED went off at the reload (tried on a G305; libratbag lists no LEDs for it).
-    public bool LightIsLiveOnly { get { return WirelessId == 0x4074; } }
+    // as Static, the LED went off at the reload (tried on a G305; libratbag lists no LEDs for it). The original G502's logo (0x1300)
+    // has no record in its profile at all.
+    public bool LightIsLiveOnly { get { return WirelessId == 0x4074 || IsOriginalG502; } }
     public bool IsG9x { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_(C066|C249)", RegexOptions.IgnoreCase); } }
     public bool IsG500
     {
@@ -63,6 +64,11 @@ class FoundDevice
     public bool IsG300
     {
         get { return PlainHid && HasVendorCollection && Path != null && Regex.IsMatch(Path, @"PID_C246", RegexOptions.IgnoreCase); }
+    }
+    // The original G502 (Proteus Core) has no model id in 0x0003 (docs/reports/g502-c07d.txt), so its USB id tells it.
+    public bool IsOriginalG502
+    {
+        get { return Models.Contains("C07D") || (Path != null && Regex.IsMatch(Path, @"PID_C07D", RegexOptions.IgnoreCase)); }
     }
     public bool IsG9 { get { return Hidpp10 && Path != null && Regex.IsMatch(Path, @"PID_C048", RegexOptions.IgnoreCase); } }
     public G9xModel G500Model

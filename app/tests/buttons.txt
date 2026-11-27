@@ -35,6 +35,8 @@ open
   8100 fn5  00 01 00 D0
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
+  8100 fn5
+  8100 fn5  00 00 00 10
   8100 fnB
   = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Invert scrolling=off Effect=Cycle Brightness=100 [Revert (off)] [Save to mouse (off)] Speed=63
 pick View Bindings
@@ -135,6 +137,8 @@ press Save to mouse
   8100 fn5  00 01 00 D0
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
+  8100 fn5
+  8100 fn5  00 00 00 10
   8100 fnB
   = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Bindings Left button=Left click Right button=Right click Wheel click=Middle click Thumb, back=Back Thumb, front=Ctrl + Shift + M Sniper=DPI shift G7=Next profile G8=DPI up [Revert (off)] [Save to mouse (off)] G9=Next profile Wheel tilt right=Scroll right Wheel tilt left=Scroll left
 pick G8 Disabled
@@ -248,6 +252,8 @@ press Save to mouse
   8100 fn5  00 01 00 D0
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
+  8100 fn5
+  8100 fn5  00 00 00 10
   8100 fnB
   = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=500 Invert scrolling=off Effect=Cycle Brightness=100 [Revert (off)] [Save to mouse (off)] Speed=63
 pick G-Lite preset Keys
@@ -346,5 +352,7 @@ press Save to mouse
   8100 fn5  00 01 00 D0
   8100 fn5  00 01 00 E0
   8100 fn5  00 01 00 EF
+  8100 fn5
+  8100 fn5  00 00 00 10
   8100 fnB
   = status "Saved to the mouse" [Report] [Backups] G-Lite preset=Keys • [Update] […] View=Bindings Left button=Back Right button=Right click Wheel click=Middle click Thumb, back=Left click Thumb, front=Ctrl + Shift + M Sniper=DPI shift G7=Next profile G8=DPI up [Revert] [Save to mouse (off)] G9=Next profile Wheel tilt right=Scroll right Wheel tilt left=Scroll left
