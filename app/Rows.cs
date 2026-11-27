@@ -5,14 +5,20 @@ using System.Drawing;
 using System.Windows.Forms;
 
 // The layout Settings and the device screens share: titled sections one below the other, rows Ui.RowHeight high on the page (each
-// section's box is plain), each a title with a hint after it on its line at the left and its control at the right edge. Built in
-// design units (100%), like the rest of a page.
+// section's box is plain), each a title with an optional hint under it at the left, centred in the row, and its control at the
+// right edge. Built in design units (100%), like the rest of a page.
 static class Rows
 {
     public const int Width = 616, Inset = 0, TitleGap = 22, SectionGap = 28, TitleTop = 13;
 
-    // A titled section below the one before; top moves past it. Its heading in small dim capitals, spaced by hair spaces (a label
-    // has no letter spacing), read out as written.
+    // A section heading's text: capitals spaced by hair spaces (a label has no letter spacing). Its label is read out as written
+    // (AccessibleName) and drawn small and dim (8.25 pt semibold, Theme.Dim).
+    public static string Heading(string title)
+    {
+        return string.Join(" ", title.ToUpperInvariant().Select(character => character.ToString()));
+    }
+
+    // A titled section below the one before; top moves past it.
     public static T Section<T>(Control parent, string title, ref int top, T box, int height) where T : Control
     {
         Label heading;
@@ -21,8 +27,7 @@ static class Rows
 
     public static T Section<T>(Control parent, string title, ref int top, T box, int height, out Label heading) where T : Control
     {
-        heading = Ui.Text(parent, string.Join(" ", title.ToUpperInvariant().Select(character => character.ToString())), 20, top,
-            () => Theme.Dim, 8.25f, Ui.Semibold);
+        heading = Ui.Text(parent, Heading(title), 20, top, () => Theme.Dim, 8.25f, Ui.Semibold);
         heading.AccessibleName = title;
         Ui.Add(parent, box, 20, top + TitleGap, Width, height);
         var rounded = box as RoundedBox;
@@ -219,7 +224,8 @@ class RowTitle : Label
 {
     static readonly ToolTip tip = new ToolTip();
     public readonly Label Hint;
-    bool cut;
+    // The tooltip set last: null for none.
+    string tipText;
 
     public RowTitle(Label hint)
     {
@@ -236,9 +242,19 @@ class RowTitle : Label
         var flags = TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis;
         Ui.Draw(e.Graphics, Text, Font, new RectangleF(0, top, Width, titleHeight), ForeColor, flags);
         if (hintHeight > 0) Ui.Draw(e.Graphics, Hint.Text, Hint.Font, new RectangleF(0, top + titleHeight, Width, hintHeight), Hint.ForeColor, flags);
-        bool nowCut = TextRenderer.MeasureText(Text, Font).Width > Width
-            || (hintHeight > 0 && TextRenderer.MeasureText(Hint.Text, Hint.Font).Width > Width);
-        if (nowCut != cut) { cut = nowCut; tip.SetToolTip(this, cut ? Text + (hintHeight > 0 ? "\n" + Hint.Text : "") : null); }
+        // Measured as drawn: without padding, and & as itself.
+        var measure = TextFormatFlags.SingleLine | TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix;
+        bool cut = TextRenderer.MeasureText(Text, Font, Size.Empty, measure).Width > Width
+            || (hintHeight > 0 && TextRenderer.MeasureText(Hint.Text, Hint.Font, Size.Empty, measure).Width > Width);
+        string text = cut ? Text + (hintHeight > 0 ? "\n" + Hint.Text : "") : null;
+        if (text != tipText) { tipText = text; tip.SetToolTip(this, text); }
+    }
+
+    // The hint has no parent to dispose it, and Ui's style and font lists keep it until it is.
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) { tip.SetToolTip(this, null); Hint.Dispose(); }
+        base.Dispose(disposing);
     }
 }
 

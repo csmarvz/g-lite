@@ -5,7 +5,7 @@ Thanks for helping. Most help doesn't need any code.
 ## Without code
 
 - **Your device isn't supported, or says Untested.** Open it in G-Lite, click **Report**, then **Open GitHub issue**. The report only reads from the device. It leaves out serial numbers and paths.
-- **Something went wrong.** Open an issue with what you did, what you expected and what happened. Add the lines from **Logs** around that time.
+- **Something went wrong.** Open an issue with what you did, what you expected and what happened. Add the lines from the log around that time (**Show logs**, in Settings).
 - **A device marked Untested works for you.** Say so in an issue, with a report. It's how a device loses Untested.
 
 ## With code

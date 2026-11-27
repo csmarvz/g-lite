@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
-[assembly: System.Reflection.AssemblyVersion("0.1.0")]
-[assembly: System.Reflection.AssemblyFileVersion("0.1.0")]
-[assembly: System.Reflection.AssemblyInformationalVersion("0.1.0-beta")]
+[assembly: System.Reflection.AssemblyVersion("0.1.1")]
+[assembly: System.Reflection.AssemblyFileVersion("0.1.1")]
+[assembly: System.Reflection.AssemblyInformationalVersion("0.1.1-beta")]
 [assembly: System.Reflection.AssemblyTitle("G-Lite")]
 [assembly: System.Reflection.AssemblyProduct("G-Lite")]
 [assembly: System.Reflection.AssemblyCompany("com.csmarvz")]
@@ -1018,6 +1018,7 @@ class MainWindow : Form
         if (args.Length >= 3 && args[0] == "--services") { Environment.ExitCode = LogitechSoftware.RunElevated(args); return; }
         WindowHelpers.EnableDpiAwareness();
         bool fresh, demo = args.Contains("--demo");
+        DemoDevices.Few = args.Contains("--few");
         // The demo's devices are made up: this PC's Logi Options+ didn't divert their keys.
         if (demo) OtherDevicePage.OptionsPlusStopped = () => false;
         using (var mutex = new Mutex(true, demo ? "GLiteDemo" : "GLite", out fresh))

@@ -41,7 +41,9 @@ class LightPicture : DrawnControl
     {
         get
         {
-            float width = Width * 0.64f, height = width / 12;
+            // At most 4.1 times the picture's height, as at its design size (394 by 96): a wide window made the bar so tall that it
+            // covered the back light's zones.
+            float width = Math.Min(Width * 0.64f, Height * 4.1f), height = width / 12;
             // Centred, so the glow around it and the picked zone's mark (5 to 8 px under the bar) stay inside the picture.
             return new RectangleF((Width - width) / 2, (Height - height) / 2, width, height);
         }

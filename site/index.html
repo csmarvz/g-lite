@@ -25,7 +25,7 @@
 :root {
   --bg: #1C1C1C; --side: #161616; --card: #232323; --btn: #2B2B2B; --border: #3A3A3A;
   --text: #E8E8E8; --dim: #A3A3A3; --accent: #3FA98A; --accent-bg: #26302D; --on-accent: #0C1A15;
-  --wide: 1080px; --radius: 10px;
+  --wide: 1200px; --radius: 10px;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -73,6 +73,11 @@ nav .wrap { display: flex; align-items: center; gap: 28px; height: 60px; }
 .meta { color: var(--dim); font-size: 14px; margin-top: 10px; }
 .shot { display: block; width: 100%; height: auto; }
 .hero .shot { max-width: 950px; margin: 16px auto 0; filter: drop-shadow(0 30px 60px rgba(63,169,138,0.2)); }
+/* A screenshot opens at its real size, or as big as the window lets it (a phone's width); a click or Escape closes it. */
+.shot.zoom { cursor: zoom-in; }
+.viewer { padding: 0; border: 0; margin: 0; width: 100vw; height: 100vh; height: 100dvh; max-width: none; max-height: none; background: transparent; overflow: auto; }
+.viewer::backdrop { background: rgba(10, 10, 10, 0.9); }
+.viewer img { display: block; width: auto; height: auto; max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px); margin: auto; position: absolute; inset: 0; cursor: zoom-out; }
 
 /* Facts */
 .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: #262626; border: 1px solid #262626; border-radius: var(--radius); overflow: hidden; margin-top: 72px; }
@@ -93,7 +98,8 @@ section > .wrap > h2 { font-size: clamp(28px, 4vw, 38px); }
 .card p { color: var(--dim); font-size: 15px; }
 
 /* Split */
-.split { display: grid; grid-template-columns: 1fr 1.35fr; gap: 56px; align-items: center; margin-top: 72px; }
+.split { display: grid; grid-template-columns: 1fr 2fr; gap: 48px; align-items: center; margin-top: 72px; }
+.split.flip { grid-template-columns: 2fr 1fr; }
 .split.flip > :first-child { order: 2; }
 .split h3 { font-size: 26px; margin-bottom: 12px; }
 .split p { color: var(--dim); }
@@ -199,7 +205,7 @@ footer p { max-width: 460px; }
       </div>
       <a class="button" href="https://github.com/csmarvz/g-lite">View on GitHub</a>
     </div>
-    <img class="shot" src="img/keyboard.png" width="950" height="1077" fetchpriority="high" alt="G-Lite showing a G515 LIGHTSPEED TKL with the Wave effect on its live key picture, and the other devices in the sidebar">
+    <img class="shot" src="img/keyboard.png" width="1326" height="1440" fetchpriority="high" alt="G-Lite showing a G515 LIGHTSPEED TKL with the Wave effect on its live key picture, and the other devices in the sidebar">
 
     <div class="facts">
       <div class="fact"><b>Lightweight</b><span>Low RAM and low CPU</span></div>
@@ -257,7 +263,7 @@ footer p { max-width: 460px; }
             <li>Separate effects for the keys and the light bar</li>
           </ul>
         </div>
-        <img class="shot" src="img/keyboard.png" width="950" height="1077" loading="lazy" alt="The G515 TKL screen with its effects, colours and idle settings">
+        <img class="shot" src="img/keyboard.png" width="1326" height="1440" loading="lazy" alt="The G515 TKL screen with its effects, colours and idle settings">
       </div>
 
       <div class="split flip">
@@ -270,7 +276,7 @@ footer p { max-width: 460px; }
             <li>Button bindings, invert scrolling</li>
           </ul>
         </div>
-        <img class="shot" src="img/mouse.png" width="950" height="999" loading="lazy" alt="The G Pro Wireless screen with its DPI stages, report rate and lighting">
+        <img class="shot" src="img/mouse.png" width="1326" height="1440" loading="lazy" alt="The G Pro Wireless screen with its DPI stages, report rate and lighting">
       </div>
 
       <div class="split">
@@ -279,10 +285,10 @@ footer p { max-width: 460px; }
           <p>Sidetone, auto-off and an experimental equalizer on the PRO X Wireless, the G560's four zones and its Screen effect, and both lights of the Litra Beam LX. Every battery shows in the tray.</p>
           <ul>
             <li>Litra brightness and colour temperature</li>
-            <li>MX mice and keyboards: pointer speed, SmartShift, backlight, Easy-Switch</li>
+            <li>MX mice and keyboards: pointer speed, SmartShift, backlight and its effects, F1–F12, Easy-Switch</li>
           </ul>
         </div>
-        <img class="shot" src="img/light.png" width="950" height="1173" loading="lazy" alt="The Litra Beam LX screen with its front light and back light zones">
+        <img class="shot" src="img/light.png" width="1326" height="1440" loading="lazy" alt="The Litra Beam LX screen with its front light and back light zones">
       </div>
 
       <div class="split flip">
@@ -295,7 +301,7 @@ footer p { max-width: 460px; }
             <li>Light or dark, and your accent colour</li>
           </ul>
         </div>
-        <img class="shot" src="img/settings.png" width="950" height="984" loading="lazy" alt="G-Lite's Settings: theme, accent colour, updates, startup, and G HUB, Logitech Gaming Software, the LampArray service and Dynamic Lighting with Stop buttons">
+        <img class="shot" src="img/settings.png" width="1326" height="1440" loading="lazy" alt="G-Lite's Settings: theme, accent colour, updates, startup, and G HUB, Logitech Gaming Software, the LampArray service and Dynamic Lighting with Stop buttons">
       </div>
     </div>
   </section>
@@ -352,7 +358,7 @@ footer p { max-width: 460px; }
         <div class="rows">
           <div class="row"><div><b>PRO X Wireless</b><small>Its own receiver</small></div><span class="pill works">Works</span><p>Sidetone, auto-off, battery, an equalizer (experimental).</p></div>
           <div class="row"><div><b>MX Mechanical Mini</b><small>Bluetooth or Bolt</small></div><span class="pill works">Works</span><p>Backlight brightness, effects and fading, on a picture of the keyboard; F1–F12, disabled keys, Easy-Switch.</p></div>
-          <div class="row"><div><b>MX Master, MX Anywhere, MX Keys, MX Mechanical and others</b><small>Bolt, Unifying or USB</small></div><span class="pill">Untested</span><p>Pointer speed, SmartShift, scrolling, backlight, Easy-Switch.</p></div>
+          <div class="row"><div><b>MX Master, MX Anywhere, MX Keys, MX Mechanical and others</b><small>Bolt, Unifying or USB</small></div><span class="pill">Untested</span><p>Pointer speed, SmartShift, scrolling, backlight and its effects, F1–F12, disabled keys, Easy-Switch. A picture of the MX Keys S.</p></div>
           <div class="row"><div><b>Litra Beam LX, Beam, Glow</b><small>USB</small></div><span class="pill">Untested</span><p>Front light brightness and warmth; the Beam LX's back light and its effects.</p></div>
           <div class="row"><div><b>G560 Gaming Speaker</b><small>USB</small></div><span class="pill works">Works</span><p>Lighting on all four zones or each one, the Screen effect, a picture of the speakers.</p></div>
         </div>
@@ -370,7 +376,7 @@ footer p { max-width: 460px; }
         <div class="step"><b><a href="https://github.com/csmarvz/g-lite/releases/latest/download/GLite.exe">Download</a> and run GLite.exe</b>If Windows says it protected your PC, click More info, then Run anyway: G-Lite isn't code-signed yet.</div>
         <div class="step"><b>Pick a device</b>G-Lite lists what it finds. Change a setting, then Save to keyboard or Save to mouse to keep it on the device.</div>
       </div>
-      <p class="aside"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>Quit G HUB or Logitech Gaming Software, and turn off Dynamic Lighting on Windows 11 (Settings, Personalization, Dynamic Lighting). They control the same devices and would undo G-Lite's changes. G-Lite's Settings can stop them for you, and start them again.</p>
+      <p class="aside"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>Quit G HUB, Logitech Gaming Software or Logi Options+, and turn off Dynamic Lighting on Windows 11 (Settings, Personalization, Dynamic Lighting). They control the same devices and would undo G-Lite's changes. G-Lite's Settings can stop them for you, and start them again.</p>
       <p class="aside"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>To check your copy is the one GitHub built, run <code>Get-FileHash GLite.exe</code> in PowerShell and compare it with <code>checksums.txt</code> on the <a href="https://github.com/csmarvz/g-lite/releases/latest">release page</a>.</span></p>
     </div>
   </section>
@@ -381,11 +387,11 @@ footer p { max-width: 460px; }
       <h2>Questions</h2>
       <div class="faq">
         <details><summary>Can I use G-Lite and G HUB at the same time?</summary><p>Not well. Both control the same devices, so each undoes the other's changes. Stop G HUB, or Logitech Gaming Software, while you use G-Lite: Settings, Services does it for you.</p></details>
-        <details><summary>Do I need to uninstall G HUB or Logitech Gaming Software?</summary><p>No. In G-Lite's Settings, Services lists them, with Logitech's Dynamic Lighting service, and shows which are running. Stop ends their apps, stops their Windows services and keeps them from starting with Windows; Windows asks for administrator rights once per click. Start puts everything back, and so can Task Manager (Startup apps) and Services, even without G-Lite. G HUB still opens if you start it yourself.</p></details>
+        <details><summary>Do I need to uninstall G HUB or Logitech Gaming Software?</summary><p>No. In G-Lite's Settings, Services lists them, Logi Options+ and Logitech's Dynamic Lighting service, and shows which are running. Stop ends their apps, stops their Windows services and keeps them from starting with Windows; Windows asks for administrator rights once per click. Start puts everything back, and so can Task Manager (Startup apps) and Services, even without G-Lite. G HUB still opens if you start it yourself.</p></details>
         <details><summary>What if my device isn't supported yet?</summary><p>Open G-Lite anyway: it lists every Logitech device it finds, with its connection, battery and firmware. Click Report on its screen, then Open GitHub issue, and the report is filled in for you. It holds what G-Lite needs to add the device, and nothing personal.</p></details>
         <details><summary>What happens to my settings if I stop using G-Lite?</summary><p>Whatever you saved to a keyboard or mouse stays on it and works without any app. Settings that aren't saved to the device go back to the device's own when it restarts.</p></details>
         <details><summary>What if a save goes wrong?</summary><p>G-Lite backs up the device before every save and reads back everything it writes. If a save stops halfway, it offers to restore the backup. Any backup, or the factory profile, can be restored from Backups.</p></details>
-        <details><summary>Does G-Lite send any data?</summary><p>No. It goes online only to check GitHub for a new version, which you can turn off in Settings. A device report leaves your PC only when you paste or submit it yourself.</p></details>
+        <details><summary>Does G-Lite send any data?</summary><p>No. It goes online only to check GitHub for a new version, which you can turn off in Settings (Check for updates automatically). A device report leaves your PC only when you paste or submit it yourself.</p></details>
         <details><summary>Why does Windows warn me about it?</summary><p>The exe isn't code-signed yet, so SmartScreen doesn't know it. The source and the build are public, and each release lists the file's checksum.</p></details>
         <details><summary>How do I remove it?</summary><p>Quit it from the tray, turn off Run on startup in Settings, and delete GLite.exe with its settings.txt and log.txt. Backups are in %LOCALAPPDATA%\GLite\backups.</p></details>
       </div>
@@ -403,6 +409,31 @@ footer p { max-width: 460px; }
     </div>
   </section>
 </main>
+
+<dialog class="viewer" id="viewer" aria-label="Screenshot"><img alt=""></dialog>
+<script>
+(function () {
+  var viewer = document.getElementById('viewer');
+  if (!viewer || !viewer.showModal) return;
+  var big = viewer.querySelector('img');
+  function open(shot) {
+    big.src = shot.currentSrc || shot.src;
+    big.alt = shot.alt;
+    viewer.showModal();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('img.shot'), function (shot) {
+    shot.classList.add('zoom');
+    shot.tabIndex = 0;
+    shot.setAttribute('role', 'button');
+    shot.setAttribute('aria-haspopup', 'dialog');
+    shot.addEventListener('click', function () { open(shot); });
+    shot.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(shot); }
+    });
+  });
+  viewer.addEventListener('click', function () { viewer.close(); });
+})();
+</script>
 
 <footer>
   <div class="wrap">

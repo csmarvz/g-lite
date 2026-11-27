@@ -1113,10 +1113,14 @@ class FakeOther : Hidpp
 // The devices --demo finds in place of a scan; DeviceTable gives each its simulated device from this file.
 static class DemoDevices
 {
+    // --few: a keyboard, a mouse, a headset and a light, for the site's and README's screenshots.
+    public static bool Few;
+    static readonly string[] FewKeys = { "demo|keyboard", "demo|mouse", "demo|headset", "demo|litra" };
+
     public static List<FoundDevice> Scan()
     {
         Thread.Sleep(400);
-        return new List<FoundDevice>
+        var all = new List<FoundDevice>
         {
             new FoundDevice { Key = "demo|keyboard", Name = "G515 LIGHTSPEED TKL", Kind = "keyboard",
                 Link = "LIGHTSPEED", WirelessId = 0x40B4, Battery = 82, Firmware = "MPK 25.02, build 0016",
@@ -1233,5 +1237,6 @@ static class DemoDevices
                 Firmware = "U1 12.01, build 0203",
                 Features = new[] { 0x0001, 0x0003, 0x0005, 0x8310, 0x8300, 0x1F20 } },
         };
+        return Few ? all.Where(device => FewKeys.Contains(device.Key)).ToList() : all;
     }
 }

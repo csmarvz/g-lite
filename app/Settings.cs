@@ -23,8 +23,10 @@ static class Settings
         catch { return false; }
     }
 
-    // The lines read last, for when the file can't be read.
+    // The lines read last, for when the file can't be read; loaded once a read worked. Until then nothing is written: a change on top
+    // of the defaults alone would replace every preset in the file.
     static string[] lastLines = new string[0];
+    static bool loaded;
 
     // Another program can hold the file for a moment (an antivirus scan, a sync client): a read or write is tried again a few times,
     // and a read that still fails gives what was read last. A mouse screen's timer reading it threw out of G-Lite.
@@ -39,7 +41,9 @@ static class Settings
     static Dictionary<string, string> Read()
     {
         var settings = new Dictionary<string, string>();
-        var lines = lastLines = Retry(() => File.Exists(Location) ? File.ReadAllLines(Location) : new string[0], lastLines);
+        var lines = Retry(() => File.Exists(Location) ? File.ReadAllLines(Location) : new string[0], null);
+        if (lines == null) lines = lastLines;
+        else { lastLines = lines; loaded = true; }
         foreach (var line in Defaults.Concat(lines))
         {
             int equalsAt = line.IndexOf('=');
@@ -50,6 +54,7 @@ static class Settings
 
     static void Write(Dictionary<string, string> settings)
     {
+        if (!loaded) return;
         var lines = settings.Select(pair => pair.Key + "=" + pair.Value).ToArray();
         if (Retry(() => { File.WriteAllLines(Location, lines); return true; }, false)) lastLines = lines;
     }

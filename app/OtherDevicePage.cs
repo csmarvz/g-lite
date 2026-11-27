@@ -212,12 +212,11 @@ class OtherDevicePage : DevicePage
         effect = Rows.Dropdown(box, y, "Effect");
         effect.Picked += picked => Change(OtherSettings.Effect, EffectChoices()[picked]);
         string[] names = { "Hands away", "Hands near", "Plugged in" };
-        string[] hints = { "Fades after", "Fades after", "Fades after" };
         for (int index = 0; index < names.Length; index++)
         {
             int setting = OtherSettings.Delays[index];
             y = delayRows[index] = rows.Row(box);
-            delayTexts[index] = Rows.Row(box, y, names[index], hints[index]);
+            delayTexts[index] = Rows.Row(box, y, names[index], "Fades after");
             delayDropdowns[index] = Rows.Dropdown(box, y, "Fades after, " + names[index].ToLowerInvariant());
             delayDropdowns[index].Picked += picked => Change(setting, DelayChoices(current[setting])[picked]);
         }

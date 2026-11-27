@@ -224,7 +224,8 @@ class ButtonRows
         for (int i = 0; i < Max; i++)
         {
             int row = i, y = i * Ui.RowHeight;
-            rowNames[i] = Ui.Text(parent, "", Rows.Inset, y + Rows.TitleTop, () => row == Pressed ? Theme.Accent : Theme.Text, 9.75f);
+            // A row title like the other rows', so the names line up with theirs (a plain label adds its own padding).
+            rowNames[i] = Rows.Title(parent, y, "", "").Title;
             rowDropdowns[i] = Rows.Place(parent, y, new Dropdown(), Rows.ControlWidth, Rows.ControlHeight);
             rowNames[i].Visible = rowDropdowns[i].Visible = false;
             rowDropdowns[i].Items.AddRange(actionNames);

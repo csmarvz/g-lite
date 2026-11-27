@@ -53,7 +53,8 @@ class UpdatePage : Control
         installedText.Size = new Size(200, 20);
         installedText.TextAlign = ContentAlignment.TopRight;
 
-        whatsNew = Ui.Text(this, "What's new", 20, 172, () => Theme.Dim, 9f, Ui.Semibold);
+        whatsNew = Ui.Text(this, "", 20, 172, () => Theme.Dim, 8.25f, Ui.Semibold);
+        SetWhatsNew("What's new");
         notesBox = Ui.Add(this, new RoundedBox(), 20, 194, 616, 463);
         notesBox.Anchor = Ui.Tall;
         notes = Ui.Add(notesBox, new RichTextBox
@@ -81,6 +82,13 @@ class UpdatePage : Control
         primary = Ui.Add(this, new FlatButton { Style = ButtonStyle.Primary, Text = "Update now" }, 516, 685, 120, 32);
         primary.Anchor = Ui.Footer;
         primary.Click += (s, e) => Primary();
+    }
+
+    // Like the other screens' section headings (Rows.Heading).
+    void SetWhatsNew(string title)
+    {
+        whatsNew.Text = Rows.Heading(title);
+        whatsNew.AccessibleName = title;
     }
 
     public bool FromSettings { get { return fromSettings; } set { fromSettings = value; Arrange(); } }
@@ -170,7 +178,7 @@ class UpdatePage : Control
         meta.Text = detail;
         link.Visible = newVersion != null;
         whatsNew.Visible = notesBox.Visible = newVersion != null;
-        whatsNew.Text = newState == "current" ? "What's new in " + installed : "What's new";
+        SetWhatsNew(newState == "current" ? "What's new in " + installed : "What's new");
         showSkip = newState == "available" || newState == "failed" || newState == "downloading";
         skip.Enabled = primary.Enabled = newState != "downloading";
         showPrimary = newState != "checking";
@@ -262,7 +270,7 @@ class UpdatePage : Control
             var newest = list.FirstOrDefault(release => release.Version == version);
             if (state == "available" && newest != null && newest.Date != "")
                 meta.Text = "Released " + newest.Date + (list.Count > 1 ? ", " + list.Count + " versions newer than yours" : "");
-            if (list.Count > 1) whatsNew.Text = "What's new since " + installed;
+            if (list.Count > 1) SetWhatsNew("What's new since " + installed);
         }
         notes.Clear();
         string error;

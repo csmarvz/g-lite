@@ -2,25 +2,26 @@
 
 ## [Unreleased]
 
+## [0.1.1-beta] - 2026-11-27
+
 ### Added
 
-- MX Mechanical Mini and MX Keys S: a picture of the keyboard, lit while its backlight is on, as bright as its level and with its effect (Contrast, Breathing, Waves, Reaction to key presses, Random), with ISO's Enter when the keyboard's layout is ISO. Tried on a real Mini.
-- MX keyboards: the backlight's levels are numbered 0 (off) to 7, as in Logi Options+.
-- G305 and G304: a picture of the mouse in its own shape, from its top view, with the LED under the DPI button lit as the mouse's light is.
-- Reports read how each 0x1B04 control reports now (fn 2): diverted or remapped by an app like Logi Options+.
-- MX keyboards and mice: keys Logi Options+ had taken over (diverted) work again once it's stopped, from Settings or before G-Lite started; until now they did nothing until the device reconnected. Tried on an MX Mechanical Mini.
-- MX keyboards: the backlight's effects (Static, Contrast, Breathing, Waves, Reaction, Random) and battery saving, where the keyboard has them, and a Keys section: F1–F12 as media keys or standard keys, and turning off Caps Lock, Num Lock, Scroll Lock, Insert or the Windows key. The MX Mechanical Mini's effects, F1–F12 and disabled keys were tried on it. The effect and F1–F12 aren't set again when the keyboard comes back, since its own keys change them.
+- MX keyboards: the backlight's effects (Static, Contrast, Breathing, Waves, Reaction, Random) and battery saving, where the keyboard has them, and a Keys section: F1–F12 as media keys or standard keys, and turning off Caps Lock, Num Lock, Scroll Lock, Insert or the Windows key. F1–F12 is set for this computer by its Easy-Switch number, since the MX Keys S ignores the "computer in use" value. The effect and F1–F12 aren't set again when the keyboard comes back, since its own keys change them. Tried on a real MX Mechanical Mini (the effects, F1–F12 and disabled keys) and MX Keys S (F1–F12).
+- MX Mechanical Mini and MX Keys S: a picture of the keyboard, lit while its backlight is on, as bright as its level and with its effect, with ISO's Enter when the keyboard's layout is ISO. Tried on a real Mini.
 - A backlight setting the keyboard doesn't have is left out once it's read (the MX Mechanical Mini on its first firmware has no automatic mode, levels or fade delays).
+- MX keyboards and mice: keys Logi Options+ had taken over (diverted) work again once it's stopped, from Settings or before G-Lite started; until now they did nothing until the device reconnected. Tried on an MX Mechanical Mini.
 - Settings: Logi Options+ in the Services box, stopped and started like G HUB (its service and its programs), since it sets the MX devices' settings again over G-Lite's.
+- G305 and G304: a picture of the mouse in its own shape, from its top view, with the LED under the DPI button lit as the mouse's light is.
+- Reports read F1–F12's setting for each computer (0x40A3), the keys that can be turned off (0x4521), and how each 0x1B04 control reports now (fn 2): diverted or remapped by an app like Logi Options+.
 
 ### Changed
 
-- Settings and the device screens: lower rows, a title only, with a short hint under it in a smaller dim font where the hint says something the title doesn't (most hints are gone), on the page without lines or boxes, under small capital headings. Report and Backups have icons. A mouse's Bindings show the button being pressed by its name in the accent colour.
-- Logs has a Back button to Settings.
-- Settings: Enable logging, on by default; off, G-Lite writes nothing to log.txt.
-- The G560 is marked Works: it was tried on real speakers.
-- The window: screens fill the width right of the sidebar, their setting boxes widening with it and the controls on the right of each row keeping to its edge; the footer stays at the bottom. Thin lines along the sidebar's edge and the top of the screens, joined by the rounded corner, and under a screen's header and above its footer, so the rows scroll under the header instead of looking cut. More room under the device pictures and above the first section. Logs moves from the sidebar to Settings (Show logs, after Services); an empty device list says No device found.
+- Settings and the device screens: the rows sit on the page, without boxes or lines between them, under small capital headings, and are lower (44 pixels, from 64). A row shows its title, and under it, in a smaller dim font, a short hint only where it says something the title doesn't (most hints are gone). Report and Backups have icons. A mouse's Bindings show the button being pressed by its name in the accent colour.
+- The window: screens fill the width right of the sidebar, the controls on the right of each row keeping to its edge, and the footer stays at the bottom. Thin lines along the sidebar's edge and the top of the screens, joined by the rounded corner, and under a screen's header and above its footer, so the rows scroll under the header instead of looking cut. More room under the device pictures and above the first section. An empty device list says No device found.
 - The sidebar's edge and the line under a screen's picture can be dragged: a wider sidebar (up to 400), a taller or shorter picture on every screen. They start at their usual sizes each time.
+- Settings: Logs moves from the sidebar to a Logs section after Services, with Show logs, and Enable logging, on by default (off, G-Lite writes nothing to log.txt). The Logs screen has a Back button to Settings. Check for updates is now called Check for updates automatically.
+- MX keyboards: the backlight's levels are numbered 0 (off) to 7, as in Logi Options+.
+- The G560 is marked Works: it was tried on real speakers.
 
 ### Fixed
 
@@ -31,7 +32,6 @@
 - The Update and Logs screens: their footer stays at the bottom and the changelog or log fills the window when it was resized while they were hidden.
 - Easy-Switch: after switching, the Computer picker shows the computer the device went to, not the one it left, and the device is read again when it comes back.
 - MX keyboards: turning Automatic off sets the level the Level slider shows, not the one the room's light had set, level 0 (off) too.
-- MX Keys S: F1–F12 as media keys does something: it's set for this computer by its Easy-Switch number, since the MX Keys S ignores the "computer in use" G-Lite sent. Reports show the setting for each computer.
 
 ## [0.1.0-beta] - 2026-11-25
 

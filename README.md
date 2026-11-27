@@ -93,7 +93,7 @@ The preset you picked on each device is picked again when G-Lite starts, and set
 | Device | Connection | Status | What G-Lite can do |
 |---|---|---|---|
 | MX Mechanical Mini | Bluetooth or Bolt receiver | Works | The backlight: on and off, automatic or a level from 0 (off) to 7, its effects (Static, Contrast, Breathing, Waves, Reaction, Random), how long before it fades, and battery saving, on a picture of the keyboard (with ISO's Enter when its layout is ISO). F1–F12 as media keys or standard keys, turning off Caps Lock, Scroll Lock, Insert or the Windows key, and Easy-Switch with each computer's name. Levels and automatic need firmware 72.03 or later (Logi Options+ updates it). Tried on a real keyboard over Bluetooth; battery saving not tried yet. |
-| MX Master, MX Anywhere, MX Keys, MX Mechanical, MX Creative Keypad and other Logitech devices | Bolt or Unifying receiver, or USB | Untested | Pointer speed, SmartShift, inverted scrolling, the thumb wheel's direction, the backlight, brightness, and switching computers (Easy-Switch), when the device has them. G-Lite sets your changes again when the device comes back. Buttons, gestures and per-app settings stay in Logi Options+. See [docs/other-devices.md](docs/other-devices.md). |
+| MX Master, MX Anywhere, MX Keys, MX Mechanical, MX Creative Keypad and other Logitech devices | Bolt or Unifying receiver, or USB | Untested | Pointer speed, SmartShift, inverted scrolling, the thumb wheel's direction, the backlight and its effects, brightness, F1–F12 as media keys, turning off keys, and switching computers (Easy-Switch), when the device has them. The MX Keys S gets a picture of its keys, like the MX Mechanical Mini; F1–F12 as media keys was tried on a real one. G-Lite sets your changes again when the device comes back. Buttons, gestures and per-app settings stay in Logi Options+. See [docs/other-devices.md](docs/other-devices.md). |
 
 Logitech devices with none of these settings show up in the sidebar with their connection, battery and firmware. Devices that could come next are listed in [#11](https://github.com/csmarvz/g-lite/issues/11).
 
@@ -103,7 +103,7 @@ Logitech devices with none of these settings show up in the sidebar with their c
 Not well. Both control the same devices, so each would undo the other's changes. Stop G HUB while you use G-Lite: **Settings**, **Services** does it for you.
 
 **Do I need to uninstall G HUB or Logitech Gaming Software?**
-No. In **Settings**, **Services** lists G HUB, Logitech Gaming Software and the Logitech LampArray Service (which hands Logitech devices to Windows Dynamic Lighting), and shows which are running. **Stop** ends their apps, stops their Windows services and keeps them from starting with Windows; Windows asks for administrator rights once per click. **Start** puts everything back, and so can Task Manager (Startup apps) and Services, even without G-Lite. G HUB still opens if you start it yourself. See [docs/services.md](docs/services.md).
+No. In **Settings**, **Services** lists G HUB, Logitech Gaming Software, Logi Options+ and the Logitech LampArray Service (which hands Logitech devices to Windows Dynamic Lighting), and shows which are running. **Stop** ends their apps, stops their Windows services and keeps them from starting with Windows; Windows asks for administrator rights once per click. **Start** puts everything back, and so can Task Manager (Startup apps) and Services, even without G-Lite. G HUB still opens if you start it yourself. See [docs/services.md](docs/services.md).
 
 **What happens to my settings if I stop using G-Lite?**
 Whatever you saved to a keyboard or mouse stays on it, and works without any app. Settings that aren't saved to the device (the keyboards G-Lite can't save to, the G560, the Litra) go back to the device's own when it restarts.
@@ -116,7 +116,7 @@ Open G-Lite: if your device is listed with a screen of settings, yes. If it show
 
 ## Get help
 
-Open an [issue](https://github.com/csmarvz/g-lite/issues). Say what you did and what happened, and add the device's report (**Report** on its screen) and the lines from **Logs** around that time.
+Open an [issue](https://github.com/csmarvz/g-lite/issues). Say what you did and what happened, and add the device's report (**Report** on its screen) and the lines from the log around that time (**Show logs**, in Settings).
 
 ## Your files
 
@@ -133,7 +133,7 @@ To remove G-Lite, quit it from the tray, turn off **Run on startup** in Settings
 G-Lite never sends your data or how you use it anywhere. There are no accounts, no analytics and no tracking.
 
 - A device report stays on your PC. It only leaves when you copy it and paste it somewhere yourself. **Open GitHub issue** opens a new issue in your browser with the report filled in, and nothing is sent until you submit it.
-- The only time G-Lite goes online is to check GitHub for a new version when it starts, and to download one. You can turn that off in Settings.
+- The only time G-Lite goes online is to check GitHub for a new version when it starts, and to download one. You can turn that off in Settings (**Check for updates automatically**).
 
 ## Project status
 

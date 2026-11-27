@@ -168,7 +168,7 @@ static class Ui
     // Pages are laid out at this size before they're scaled and placed, so their anchors measure from it.
     public static readonly Size PageSize = new Size(656, 730);
 
-    // A row of a Settings box: its title and hint at 13, a 32 high control at 6.
+    // A row of Settings and the device screens: its title (and hint) centred, a single line label at 13, a 32 high control at 6.
     public const int RowHeight = 44;
 
     // A page's footer stays at the bottom of the window, and a box that ends above it grows down to it.
