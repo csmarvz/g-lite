@@ -201,7 +201,7 @@ class MainWindow : Form
         checkNow.Click += (s, e) => { ShowUpdatePage(true); CheckUpdates(true); };
 
         var start = Rows.Section(settings.Sheet, "Startup", ref sectionTop, new RoundedBox(), rowHeight);
-        Rows.Row(start, 0, "Run on startup", "In the tray, at sign-in");
+        Rows.Row(start, 0, "Run on startup", "");
         runToggle = Ui.Add(start, new Toggle { AccessibleName = "Run on startup" }, Rows.Width - Rows.Inset - 40, (rowHeight - 22) / 2, 40, 22);
         runToggle.Changed += () => SetStartup(runToggle.Checked);
 

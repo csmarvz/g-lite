@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Drawing;
 using System.Windows.Forms;
 
 // The layout Settings and the device screens share: titled sections one below the other, rows Ui.RowHeight high on the page (each
@@ -36,38 +37,36 @@ static class Rows
         return Title(box, y, title, hint);
     }
 
-    // A row's title, and its hint after it on the same line, dim. The hint ends with an ellipsis before the row's control, the
-    // whole text in a tooltip (AutoEllipsis), and moves with the title's width.
+    // A row's title, and its hint under it in a smaller dim font, both drawn by one label (RowTitle) as tall as the row, so the title
+    // is centred alone and the two together. The hint is a label that's never shown: it holds the text and colour that pages set.
     public static RowText Title(Control box, int y, string title, string hint)
     {
-        var titleLabel = Ui.Text(box, title, Inset, y + TitleTop, () => Theme.Text, 9.75f);
-        var hintLabel = Ui.Text(box, hint, Inset, y + TitleTop + 1, () => Theme.Dim, 9f);
-        hintLabel.AutoSize = false;
-        hintLabel.AutoEllipsis = true;
-        EventHandler fit = (s, e) => FitHint(box, titleLabel, hintLabel);
-        // Once the controls have moved: the Layout event comes before the anchors, and the hint was fitted to where they were.
+        var hintLabel = new Label { Text = hint, UseMnemonic = false };
+        Ui.Style(hintLabel, () => hintLabel.ForeColor = Theme.Dim);
+        Ui.Font(hintLabel, 8.25f, Ui.Regular);
+        var titleLabel = new RowTitle(hintLabel) { Text = title, BackColor = Color.Transparent, UseMnemonic = false };
+        Ui.Style(titleLabel, () => titleLabel.ForeColor = Theme.Text);
+        Ui.Font(titleLabel, 9.75f, Ui.Regular);
+        Ui.Add(box, titleLabel, Inset, y, Width - Inset - ControlWidth - 12, Ui.RowHeight);
+        EventHandler fit = (s, e) => FitTitle(box, titleLabel);
+        // Once the controls have moved: the Layout event comes before the anchors, and the title was fitted to where they were.
         var rounded = box as RoundedBox;
-        if (rounded != null) rounded.LaidOut += () => FitHint(box, titleLabel, hintLabel);
-        else box.Layout += (s, e) => FitHint(box, titleLabel, hintLabel);
+        if (rounded != null) rounded.LaidOut += () => FitTitle(box, titleLabel);
+        else box.Layout += (s, e) => FitTitle(box, titleLabel);
         box.VisibleChanged += fit;
-        titleLabel.SizeChanged += fit;
-        hintLabel.TextChanged += fit;
         return new RowText(titleLabel, hintLabel);
     }
 
-    // Visible reads false while the page is hidden, so a hidden box waits until it shows. A hidden control, like a row's that
-    // RowLayout hid where it was built, doesn't count.
-    static void FitHint(Control box, Label title, Label hint)
+    // The title reaches the row's control. Visible reads false while the page is hidden, so a hidden box waits until it shows. A
+    // hidden control, like a row's that RowLayout hid where it was built, doesn't count.
+    static void FitTitle(Control box, Label title)
     {
         if (!box.Visible) return;
-        float scale = Ui.DpiScale;
-        int left = title.Text.Length == 0 ? title.Left : title.Right + (int)Math.Round(8 * scale), right = box.ClientSize.Width;
-        int height = hint.PreferredHeight;
+        int right = box.ClientSize.Width;
         foreach (Control control in box.Controls)
-            if (control != title && control != hint && control.Visible && control.Left >= left && control.Top < hint.Top + height
-                && control.Bottom > hint.Top)
-                right = Math.Min(right, control.Left - (int)Math.Round(12 * scale));
-        hint.SetBounds(left, hint.Top, Math.Max(0, Math.Min(hint.PreferredWidth, right - left)), height);
+            if (control != title && control.Visible && control.Left > title.Left && control.Top < title.Bottom && control.Bottom > title.Top)
+                right = Math.Min(right, control.Left - (int)Math.Round(12 * Ui.DpiScale));
+        title.Width = Math.Max(0, right - title.Left);
     }
 
     // A control at the right of the row at y, centred in its height.
@@ -211,6 +210,35 @@ class RowLayout
                 row.Controls.Add(control);
                 builtTop[control] = control.Top;
             }
+    }
+}
+
+// A row's title with its hint under it (Hint.Text, empty for none), the two centred in the row and each ending with an ellipsis
+// at the label's width; a tooltip gives both when one is cut. Screen readers read the hint as the description.
+class RowTitle : Label
+{
+    static readonly ToolTip tip = new ToolTip();
+    public readonly Label Hint;
+    bool cut;
+
+    public RowTitle(Label hint)
+    {
+        Hint = hint;
+        hint.TextChanged += (s, e) => { AccessibleDescription = hint.Text; Invalidate(); };
+        hint.ForeColorChanged += (s, e) => Invalidate();
+        AccessibleDescription = hint.Text;
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        int titleHeight = Font.Height, hintHeight = Hint.Text.Length > 0 ? Hint.Font.Height : 0;
+        int top = (Height - titleHeight - hintHeight) / 2;
+        var flags = TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis;
+        Ui.Draw(e.Graphics, Text, Font, new RectangleF(0, top, Width, titleHeight), ForeColor, flags);
+        if (hintHeight > 0) Ui.Draw(e.Graphics, Hint.Text, Hint.Font, new RectangleF(0, top + titleHeight, Width, hintHeight), Hint.ForeColor, flags);
+        bool nowCut = TextRenderer.MeasureText(Text, Font).Width > Width
+            || (hintHeight > 0 && TextRenderer.MeasureText(Hint.Text, Hint.Font).Width > Width);
+        if (nowCut != cut) { cut = nowCut; tip.SetToolTip(this, cut ? Text + (hintHeight > 0 ? "\n" + Hint.Text : "") : null); }
     }
 }
 

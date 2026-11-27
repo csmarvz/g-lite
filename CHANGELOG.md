@@ -15,7 +15,7 @@
 
 ### Changed
 
-- Settings and the device screens: lower rows, a title only, with a short dim hint after it where the hint says something the title doesn't (most hints are gone), on the page without lines or boxes, under small capital headings. Report and Backups have icons. A mouse's Bindings show the button being pressed by its name in the accent colour.
+- Settings and the device screens: lower rows, a title only, with a short hint under it in a smaller dim font where the hint says something the title doesn't (most hints are gone), on the page without lines or boxes, under small capital headings. Report and Backups have icons. A mouse's Bindings show the button being pressed by its name in the accent colour.
 - Logs has a Back button to Settings.
 - Settings: Enable logging, on by default; off, G-Lite writes nothing to log.txt.
 - The G560 is marked Works: it was tried on real speakers.
