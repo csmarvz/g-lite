@@ -207,7 +207,6 @@ class ButtonRows
     public readonly Label Hint;
     readonly Label[] rowNames = new Label[Max];
     readonly Dropdown[] rowDropdowns = new Dropdown[Max];
-    readonly Control[] rules = new Control[Max];
     readonly TextField keyField;
     string[] names = new string[0];
     byte[][] bindings;
@@ -227,9 +226,7 @@ class ButtonRows
             int row = i, y = i * Ui.RowHeight;
             rowNames[i] = Ui.Text(parent, "", Rows.Inset, y + Rows.TitleTop, () => Theme.Text, 9.75f, Ui.Semibold);
             rowDropdowns[i] = Rows.Place(parent, y, new Dropdown(), Rows.ControlWidth, Rows.ControlHeight);
-            if (i > 0) rules[i] = Rows.Rule(parent, y);
             rowNames[i].Visible = rowDropdowns[i].Visible = false;
-            if (rules[i] != null) rules[i].Visible = false;
             rowDropdowns[i].Items.AddRange(actionNames);
             rowDropdowns[i].Picked += actionIndex => Pick(row, actionIndex);
         }
@@ -264,7 +261,6 @@ class ButtonRows
             bool on = i < count;
             rowNames[i].Visible = on;
             rowDropdowns[i].Visible = on && i != Recording;
-            if (rules[i] != null) rules[i].Visible = on;
             if (!on) continue;
             rowNames[i].Text = names[i];
             rowDropdowns[i].AccessibleName = names[i];

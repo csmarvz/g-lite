@@ -24,10 +24,9 @@ static class Rows
         return box;
     }
 
-    // The title and hint of the row at y, with a rule above it unless it's the box's first.
+    // The title and hint of the row at y. No line between rows: the rows' height and the box are enough.
     public static RowText Row(Control box, int y, string title, string hint)
     {
-        if (y > 0) Rule(box, y);
         return Title(box, y, title, hint);
     }
 
@@ -63,13 +62,6 @@ static class Rows
                 && control.Bottom > hint.Top)
                 right = Math.Min(right, control.Left - (int)Math.Round(12 * scale));
         hint.SetBounds(left, hint.Top, Math.Max(0, Math.Min(hint.PreferredWidth, right - left)), height);
-    }
-
-    public static Control Rule(Control box, int y)
-    {
-        var line = Ui.Add(box, new Control(), Inset, y, Width - 2 * Inset, 1);
-        Ui.Style(line, () => line.BackColor = Theme.Border);
-        return line;
     }
 
     // A control at the right of the row at y, centred in its height.
@@ -144,8 +136,6 @@ class RowLayout
     readonly Control sheet;
     readonly List<SectionSlot> sections = new List<SectionSlot>();
     readonly Dictionary<Control, int> builtTop = new Dictionary<Control, int>();
-    // A row's rule is hidden while it's its box's first shown row.
-    readonly HashSet<Control> rules = new HashSet<Control>();
     bool collected;
 
     public RowLayout(Control sheet) { this.sheet = sheet; }
@@ -189,10 +179,9 @@ class RowLayout
             {
                 if (row.Shown != row.Placed)
                 {
-                    foreach (var control in row.Controls.Where(control => !rules.Contains(control))) control.Visible = row.Shown;
+                    foreach (var control in row.Controls) control.Visible = row.Shown;
                     row.Placed = row.Shown;
                 }
-                foreach (var control in row.Controls.Where(control => rules.Contains(control))) control.Visible = row.Shown && y > 0;
                 if (!row.Shown) continue;
                 foreach (var control in row.Controls) control.Top = scaled(y + builtTop[control] - row.Top);
                 y += row.Height;
@@ -215,7 +204,6 @@ class RowLayout
                 if (row == null) continue;
                 row.Controls.Add(control);
                 builtTop[control] = control.Top;
-                if (control.Top == row.Top && control.Height <= 1) rules.Add(control);
             }
     }
 }
