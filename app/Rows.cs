@@ -40,7 +40,10 @@ static class Rows
         hintLabel.AutoSize = false;
         hintLabel.AutoEllipsis = true;
         EventHandler fit = (s, e) => FitHint(box, titleLabel, hintLabel);
-        box.Layout += (s, e) => FitHint(box, titleLabel, hintLabel);
+        // Once the controls have moved: the Layout event comes before the anchors, and the hint was fitted to where they were.
+        var rounded = box as RoundedBox;
+        if (rounded != null) rounded.LaidOut += () => FitHint(box, titleLabel, hintLabel);
+        else box.Layout += (s, e) => FitHint(box, titleLabel, hintLabel);
         box.VisibleChanged += fit;
         titleLabel.SizeChanged += fit;
         hintLabel.TextChanged += fit;
@@ -223,7 +226,7 @@ class RowText
 
     public RowText(Label title, Label hint) { Title = title; Hint = hint; }
 
-    // A row whose setting doesn't apply now is greyed, both lines.
+    // A row whose setting doesn't apply now is greyed, its title and hint.
     public void Enable(bool on)
     {
         Title.ForeColor = on ? Theme.Text : Ui.Off;

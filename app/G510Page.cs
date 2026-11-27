@@ -124,7 +124,7 @@ class G510Page : DevicePage
         viewParts[GameView].AddRange(new Control[] { heading, game });
         Rows.Note(game, NotePadding, gameNote);
         Rows.Row(game, noteHeight, "Game mode switch", "Read when this view opens");
-        gameState = Ui.Text(game, "", Rows.Width - Rows.Inset - 160, noteHeight + 22, () => Theme.Text, 9.75f, Ui.Semibold);
+        gameState = Ui.Text(game, "", Rows.Width - Rows.Inset - 160, noteHeight + Rows.TitleTop, () => Theme.Text, 9.75f, Ui.Semibold);
         gameState.AutoSize = false;
         gameState.Size = new Size(160, 20);
         gameState.TextAlign = ContentAlignment.TopRight;

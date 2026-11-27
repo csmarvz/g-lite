@@ -143,6 +143,15 @@ class RoundedBox : Control
         Ui.Style(this, () => BackColor = Theme.Card);
     }
 
+    // After the anchors have moved the controls inside: the Layout event comes before them (Rows fits the hints here).
+    public event Action LaidOut;
+
+    protected override void OnLayout(LayoutEventArgs e)
+    {
+        base.OnLayout(e);
+        if (LaidOut != null) LaidOut();
+    }
+
     protected override void OnPaint(PaintEventArgs e)
     {
         var graphics = e.Graphics;
@@ -330,7 +339,8 @@ class Swatch : DrawnControl
             using (var pen = new Pen(Ui.Mix(Under, Theme.Text, fade), 2 * DpiScale))
                 graphics.DrawPath(pen, path);
         float inset = Pressed ? 5 * DpiScale : 4 * DpiScale;
-        var box = new RectangleF(inset, inset, Width - 2 * inset - 1, Height - 2 * inset - 1);
+        // At x.5, the middle of the edge pixels, as Ui.Fill expects.
+        var box = new RectangleF(inset + 0.5f, inset + 0.5f, Width - 2 * inset - 1, Height - 2 * inset - 1);
         var fill = Fill ?? (Pressed ? Theme.ButtonPressed : hover && Enabled ? Theme.ButtonHover : Theme.Button);
         bool ring = Focused && ShowFocusCues && Enabled;
         Ui.Fill(graphics, box, 4 * DpiScale, Ui.Mix(Under, fill, fade), ring ? Theme.Text : Ui.Mix(Under, Theme.Border, fade));

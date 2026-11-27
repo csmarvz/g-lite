@@ -11,7 +11,14 @@ static class Log
     static readonly object gate = new object();
     const int Max = 512 * 1024;
     // Read once: Write runs for every message sent.
-    static bool on = Settings.Get("log") != "0";
+    static bool on = ReadOn();
+
+    // On when settings.txt can't be read (locked by a sync client): a throw here would break Log for the whole run.
+    static bool ReadOn()
+    {
+        try { return Settings.Get("log") != "0"; }
+        catch (Exception) { return true; }
+    }
 
     public class Line
     {

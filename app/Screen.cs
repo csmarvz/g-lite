@@ -667,7 +667,7 @@ class ZoneList : DrawnControl
         var font = Ui.Get(9f, Ui.Regular);
         for (int i = 0; i < Zones.Count; i++)
         {
-            var rowBox = new RectangleF(0.5f, i * Row + 1, Width - 1, Row - 2);
+            var rowBox = new RectangleF(0.5f, i * Row + 1.5f, Width - 1, Row - 2);
             bool on = i == Selected;
             Ui.Fill(graphics, rowBox, 4 * DpiScale, on ? Theme.AccentBackground : Theme.Button, on ? Theme.Accent : Theme.Button);
             var zone = Zones[i];
