@@ -483,14 +483,20 @@ class MousePage : DevicePage
         else ShowStatus(bad + " G-Lite can't repair it on this mouse.", true);
     }
 
+    // With the profiles in the footer, the menu names the one it restores and each backup's: a backup restores only the profile it
+    // was taken from, running.
     void ShowBackups()
     {
         bool canRestore = state != null && state.Writable && !state.Fresh && mouse.HasFactory;
-        BackupMenu(backupsButton, BackupId, canRestore ? "Restore the factory profile" : null, () => Restore(null, "the factory profile"),
+        bool named = state != null && state.Profiles.Length > 1;
+        string factory = "the factory profile" + (named ? " to P" + state.Sector : "");
+        BackupMenu(backupsButton, BackupId, canRestore ? "Restore " + factory : null, () => Restore(null, factory),
             entry =>
             {
                 var data = entry.Get(state == null ? "" : state.Key);
-                return data == null ? "another profile" : mouse.Describe(data);
+                if (data != null) return (named ? "P" + state.Sector + ", " : "") + mouse.Describe(data);
+                int sector = named ? state.Profiles.FirstOrDefault(profile => entry.Get(profile.ToString("X4")) != null) : 0;
+                return sector > 0 ? "P" + sector + ", " + mouse.Describe(entry.Get(sector.ToString("X4"))) : "another profile";
             },
             entry => Usable(entry) != null, entry => Restore(Usable(entry), "the backup from " + When(entry)));
     }
@@ -558,7 +564,8 @@ class MousePage : DevicePage
         });
     }
 
-    void Send()
+    // again: the kept light sent when the screen loads, which leaves the status as Load put it (Saved to the mouse, after a save).
+    void Send(bool again = false)
     {
         var want = current.Clone();
         var deviceState = state;
@@ -581,7 +588,7 @@ class MousePage : DevicePage
             if (deviceState.LedHeld) { ledRelease.Stop(); ledRelease.Start(); }
             if (startedAt != sequence) return;
             if (found.LightIsLiveOnly && want.Light != null) Keep(want.Light);
-            ClearStatus();
+            if (!again) ClearStatus();
         });
     }
 
@@ -853,7 +860,7 @@ class MousePage : DevicePage
                     Dpi = read.Dpi, Stage = start,
                     Light = lightSet && current.Light != null ? current.Light.Clone() : read.Light
                 };
-                if (kept != null) Send();
+                if (kept != null) Send(true);
             }
             RefreshControls();
             Loaded();

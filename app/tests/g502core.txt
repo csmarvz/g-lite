@@ -138,7 +138,7 @@ press Save to P1
   8100 fnB
   1300 fn3  01
   1300 fn5  02 00 80
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2100 DPI=40 Report rate=500 Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P1 [Revert (off)] [Save to P1 (off)]
+  = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2100 DPI=40 Report rate=500 Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P1 [Revert (off)] [Save to P1 (off)]
 pick Onboard profile P3
   8100 fn3  00 03
   2201 fn1
@@ -340,9 +340,9 @@ press Save to P3
   8100 fnB
   1300 fn3  01
   1300 fn5  02 00 80
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert (off)] [Save to P3 (off)]
-menu Backups > Restore the factory profile
-  menu: Restore the factory profile | Restore a backup (off) | <when>, 7150 DPI, 1000 Hz | <when>, another profile, first backup (off) | Open the backups folder
+  = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert (off)] [Save to P3 (off)]
+menu Backups > Restore the factory profile to P3
+  menu: Restore the factory profile to P3 | Restore a backup (off) | <when>, P3, 7150 DPI, 1000 Hz | <when>, P1, 2400 DPI, 1000 Hz, first backup (off) | Open the backups folder
   8100 fn5  00 03
   8100 fn5  00 03 00 10
   8100 fn5  00 03 00 20
@@ -445,7 +445,7 @@ menu Backups > Restore the factory profile
   8100 fnB
   1300 fn3  01
   1300 fn5  02 00 80
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2400 DPI=46 Report rate=500 Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert (off)] [Save to P3 (off)]
+  = status "Restored the factory profile to P3" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2400 DPI=46 Report rate=500 Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert (off)] [Save to P3 (off)]
 the mouse's profile button
   8100 fn3  00 02
   2201 fn1

@@ -157,10 +157,10 @@ press Save to mouse
   8100 fn5  00 01 00 EF
   8100 fnB
   8070 fn3  00 01 FF D0
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=400 DPI=6 Report rate=1k Effect=Static <Color FFD000> Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=400 DPI=6 Report rate=1k Effect=Static <Color FFD000> Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
 the mouse reconnects, switched off and on
   8070 fn3  00 01 FF D0
-  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=400 DPI=6 Report rate=1k Effect=Static <Color FFD000> Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
+  = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=400 DPI=6 Report rate=1k Effect=Static <Color FFD000> Brightness=100 Speed=0 (off) [Revert (off)] [Save to mouse (off)]
 the screen loads again
   2201 fn1
   2201 fn2

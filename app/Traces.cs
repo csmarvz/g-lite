@@ -1264,7 +1264,7 @@ static class Traces
             script.Pick("DPI stage", "10250");
             script.Slide("DPI", 30);
             script.Press("Save to P3");
-            script.Menu("Backups", "Restore the factory profile");
+            script.Menu("Backups", "Restore the factory profile to P3");
             script.Do("the mouse's profile button", () =>
             {
                 device.Call(device.FeatureIndex(0x8100), 3, 0x00, 0x02);
