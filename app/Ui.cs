@@ -168,8 +168,8 @@ static class Ui
     // Pages are laid out at this size before they're scaled and placed, so their anchors measure from it.
     public static readonly Size PageSize = new Size(656, 730);
 
-    // A row of a Settings box: a title at 12 and a hint at 33, or a 32 high control at 16.
-    public const int RowHeight = 64;
+    // A row of a Settings box: its title and hint at 13, a 32 high control at 6.
+    public const int RowHeight = 44;
 
     // A page's footer stays at the bottom of the window, and a box that ends above it grows down to it.
     public const AnchorStyles Footer = AnchorStyles.Bottom | AnchorStyles.Left;
@@ -236,8 +236,12 @@ static class Ui
         return path;
     }
 
+    // Callers outline at x.5 (0.5 to Width - 0.5), the middle of the edge pixels: with GDI+'s default pixel offset, pixel centres are
+    // on whole coordinates, so the 1 px edge fell between two pixels and was drawn half bright over both.
     public static void Fill(Graphics graphics, RectangleF bounds, float radius, Color fill, Color edge)
     {
+        var offset = graphics.PixelOffsetMode;
+        graphics.PixelOffsetMode = PixelOffsetMode.Half;
         using (var path = Round(bounds, radius))
         using (var brush = new SolidBrush(fill))
         using (var pen = new Pen(edge))
@@ -245,6 +249,7 @@ static class Ui
             graphics.FillPath(brush, path);
             if (edge != fill) graphics.DrawPath(pen, path);
         }
+        graphics.PixelOffsetMode = offset;
     }
 
     public static Color Mix(Color from, Color to, double amount)
@@ -279,6 +284,18 @@ static class Icons
                 case "refresh":
                     graphics.DrawArc(pen, 4, 4, 16, 16, -10, -305);
                     graphics.DrawLines(pen, new[] { new PointF(20, 4), new PointF(20, 10.5f), new PointF(13.5f, 10.5f) });
+                    break;
+                // A page with its corner folded, and two lines of text.
+                case "report":
+                    graphics.DrawLines(pen, new[] { new PointF(14, 3.5f), new PointF(6, 3.5f), new PointF(6, 20.5f), new PointF(18.5f, 20.5f),
+                        new PointF(18.5f, 8), new PointF(14, 3.5f), new PointF(14, 8), new PointF(18.5f, 8) });
+                    graphics.DrawLine(pen, 9, 13, 15.5f, 13); graphics.DrawLine(pen, 9, 16.5f, 15.5f, 16.5f);
+                    break;
+                // A clock with an arrow turning back: refresh's, mirrored, with hands.
+                case "history":
+                    graphics.DrawArc(pen, 4, 4, 16, 16, 190, 305);
+                    graphics.DrawLines(pen, new[] { new PointF(4, 4), new PointF(4, 10.5f), new PointF(10.5f, 10.5f) });
+                    graphics.DrawLines(pen, new[] { new PointF(12, 8), new PointF(12, 12), new PointF(15, 14) });
                     break;
                 case "lines":
                     graphics.DrawLine(pen, 5, 7, 19, 7); graphics.DrawLine(pen, 5, 12, 19, 12); graphics.DrawLine(pen, 5, 17, 13, 17);

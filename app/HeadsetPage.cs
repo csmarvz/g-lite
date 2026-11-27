@@ -82,11 +82,11 @@ class HeadsetPage : DevicePage
         Label heading;
         sound = rows.Section("Sound", out heading);
         sideRow = rows.Row(sound);
-        sideText = Rows.Row(sound, sideRow, "Sidetone", "Your own voice, while an app uses the microphone");
+        sideText = Rows.Row(sound, sideRow, "Sidetone", "While an app uses the microphone");
         sidetone = Rows.Slider(sound, sideRow, "Sidetone", out sideValue);
         sidetone.Changed += (s, e) => { current.Sidetone = sidetone.Value; Changed(false); };
         testRow = rows.Row(sound);
-        testText = Rows.Row(sound, testRow, "Test sidetone", "Hear yourself for 30 s");
+        testText = Rows.Row(sound, testRow, "Test sidetone", "For 30 s");
         testButton = Rows.Button(sound, testRow, "Test", "Test sidetone");
         testButton.Click += (s, e) => { if (microphone == null) StartTest(); else StopTest(); };
         testing.Tick += (s, e) =>
@@ -98,7 +98,7 @@ class HeadsetPage : DevicePage
 
         power = rows.Section("Power", out heading);
         int offRow = rows.Row(power);
-        offText = Rows.Row(power, offRow, "Turn off after", "When the headset isn't used");
+        offText = Rows.Row(power, offRow, "Turn off after", "");
         offBox = Rows.Dropdown(power, offRow, "Turn off after");
         offBox.Picked += i => { current.AutoOffMinutes = offMinutes[i]; Changed(true); };
 
@@ -123,7 +123,7 @@ class HeadsetPage : DevicePage
             bandSliders[i].MouseUp += (s, e) => { if (state != null) { debounce.Stop(); Send(); } };
         }
         int flatRow = rows.Row(equalizer);
-        Rows.Row(equalizer, flatRow, "Flat", "Every band back to 0 dB");
+        Rows.Row(equalizer, flatRow, "Flat", "Every band to 0 dB");
         flatButton = Rows.Button(equalizer, flatRow, "Flat", "Set every band to 0 dB");
         flatButton.Click += (s, e) =>
         {

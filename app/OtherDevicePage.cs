@@ -129,7 +129,7 @@ class OtherDevicePage : DevicePage
         Label heading;
         var box = rows.Section(found.Kind == "device" ? "Screens" : "Brightness", out heading);
         int y = rows.Row(box);
-        Rows.Row(box, y, "Brightness", found.Kind == "device" ? "The key screens; Logi Options+ may set it again" : "Logi Options+ may set it again when it starts");
+        Rows.Row(box, y, "Brightness", found.Kind == "device" ? "Key screens; Logi Options+ may set it again" : "Logi Options+ may set it again");
         bright = Rows.Slider(box, y, "Brightness", out brightValue);
         bright.Changed += (sender, e) => Change(OtherSettings.Bright, bright.Value);
     }
@@ -139,7 +139,7 @@ class OtherDevicePage : DevicePage
         Label heading;
         var box = rows.Section("Pointer", out heading);
         int y = rows.Row(box);
-        Rows.Row(box, y, "Speed", "How far the pointer moves");
+        Rows.Row(box, y, "Speed", "");
         dpi = Rows.Slider(box, y, "Speed", out dpiValue);
         dpi.Step = 1;
         // A mouse with one DPI shows it, read-only.
@@ -161,7 +161,7 @@ class OtherDevicePage : DevicePage
             shiftOn = Rows.Toggle(box, y, "SmartShift");
             shiftOn.Changed += () => Change(OtherSettings.Shift, shiftOn.Checked ? shift.Value + 1 : 255);
             y = rows.Row(box);
-            shiftText = Rows.Row(box, y, "Switch to free spin at", "How fast you scroll, in turns a second");
+            shiftText = Rows.Row(box, y, "Switch to free spin at", "Turns a second");
             shift = Rows.Slider(box, y, "Switch to free spin at", out shiftValue);
             shift.Max = 49;
             shift.Step = 1;
@@ -170,7 +170,7 @@ class OtherDevicePage : DevicePage
         if (found.Has(0x2121))
         {
             int y = rows.Row(box);
-            Rows.Row(box, y, "Invert scrolling", "The wheel scrolls the other way");
+            Rows.Row(box, y, "Invert scrolling", "");
             invert = Rows.Toggle(box, y, "Invert scrolling");
             invert.Changed += () => Change(OtherSettings.Invert, invert.Checked ? 1 : 0);
         }
@@ -181,7 +181,7 @@ class OtherDevicePage : DevicePage
         Label heading;
         var box = rows.Section("Thumb wheel", out heading);
         int y = rows.Row(box);
-        Rows.Row(box, y, "Invert", "The thumb wheel scrolls the other way");
+        Rows.Row(box, y, "Invert", "");
         thumb = Rows.Toggle(box, y, "Invert the thumb wheel");
         thumb.Changed += () => Change(OtherSettings.Thumb, thumb.Checked ? 1 : 0);
     }
@@ -193,15 +193,15 @@ class OtherDevicePage : DevicePage
         // Plugged in, the MX Keys S's hand sensor seems off: turned on, it stays dark until a key is pressed.
         // On battery it lights at once (tried on a real one, 2026-11). The MX Mechanical Mini does the same plugged in (tried on a real one, 2026-11-26).
         int y = rows.Row(box);
-        Rows.Row(box, y, "Backlight", "Plugged in, the keys light up when you next type");
+        Rows.Row(box, y, "Backlight", "Plugged in, lights up at the next key");
         light = Rows.Toggle(box, y, "Backlight");
         light.Changed += () => Change(OtherSettings.Light, light.Checked ? 1 : 0);
         y = autoRow = rows.Row(box);
-        autoText = Rows.Row(box, y, "Automatic", "Dims by itself with the room's light");
+        autoText = Rows.Row(box, y, "Automatic", "Follows the room's light");
         auto = Rows.Toggle(box, y, "Automatic");
         auto.Changed += () => Change(OtherSettings.Auto, auto.Checked ? 1 : 0);
         y = levelRow = rows.Row(box);
-        levelText = Rows.Row(box, y, "Level", "How bright the keys are, when not automatic");
+        levelText = Rows.Row(box, y, "Level", "When not automatic");
         level = Rows.Slider(box, y, "Level", out levelValue);
         level.Step = 1;
         // Its level shows while Automatic sets it.
@@ -212,7 +212,7 @@ class OtherDevicePage : DevicePage
         effect = Rows.Dropdown(box, y, "Effect");
         effect.Picked += picked => Change(OtherSettings.Effect, EffectChoices()[picked]);
         string[] names = { "Hands away", "Hands near", "Plugged in" };
-        string[] hints = { "Fades after this long without hands near", "Fades after this long with hands near", "Fades after this long, plugged in" };
+        string[] hints = { "Fades after", "Fades after", "Fades after" };
         for (int index = 0; index < names.Length; index++)
         {
             int setting = OtherSettings.Delays[index];
@@ -222,7 +222,7 @@ class OtherDevicePage : DevicePage
             delayDropdowns[index].Picked += picked => Change(setting, DelayChoices(current[setting])[picked]);
         }
         y = saverRow = rows.Row(box);
-        Rows.Row(box, y, "Battery saving", "Turns the backlight off below 10% battery");
+        Rows.Row(box, y, "Battery saving", "Backlight off below 10%");
         saver = Rows.Toggle(box, y, "Battery saving");
         saver.Changed += () => Change(OtherSettings.Saver, saver.Checked ? 1 : 0);
     }
@@ -242,7 +242,7 @@ class OtherDevicePage : DevicePage
         if (found.Has(0x40A3))
         {
             int y = mediaKeysRow = rows.Row(keysBox);
-            Rows.Row(keysBox, y, "F1–F12 as media keys", "Off, they type F1–F12. Fn and Esc switch it too");
+            Rows.Row(keysBox, y, "F1–F12 as media keys", "Fn and Esc switch it too");
             mediaKeys = Rows.Toggle(keysBox, y, "F1–F12 as media keys");
             mediaKeys.Changed += () => Change(OtherSettings.MediaKeys, mediaKeys.Checked ? 1 : 0);
         }
@@ -252,7 +252,7 @@ class OtherDevicePage : DevicePage
             int bit = OtherDevice.DisableBits[index];
             string name = "Disable " + OtherDevice.DisableNames[index];
             int y = disableRows[index] = rows.Row(keysBox);
-            Rows.Row(keysBox, y, name, "The key does nothing while this is on");
+            Rows.Row(keysBox, y, name, "");
             var toggle = disableToggles[index] = Rows.Toggle(keysBox, y, name);
             toggle.Changed += () => Change(OtherSettings.Disabled,
                 toggle.Checked ? current[OtherSettings.Disabled] | bit : current[OtherSettings.Disabled] & ~bit);

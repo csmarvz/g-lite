@@ -10,6 +10,8 @@ static class Log
     public static int Version;
     static readonly object gate = new object();
     const int Max = 512 * 1024;
+    // Read once: Write runs for every message sent.
+    static bool on = Settings.Get("log") != "0";
 
     public class Line
     {
@@ -22,6 +24,9 @@ static class Log
     {
         get { return Path.Combine(Path.GetDirectoryName(File), Path.GetFileNameWithoutExtension(File) + ".old.txt"); }
     }
+
+    // Settings' Enable logging, on by default. Off, nothing is written; the log already there stays.
+    public static bool On { get { return on; } set { on = value; Settings.Set("log", value ? "1" : "0"); } }
 
     public static void Add(string who, string kind, string text) { Write(who, kind, text, ""); }
 
@@ -56,6 +61,7 @@ static class Log
 
     static void Write(string who, string kind, string text, string result)
     {
+        if (!on) return;
         var line = string.Join("\t",
             DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture), OneLine(who), kind, OneLine(text), result);
         lock (gate)

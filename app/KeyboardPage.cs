@@ -233,16 +233,16 @@ class KeyboardPage : DevicePage
         int y = 0;
         if (Parts)
         {
-            Rows.Row(light, y, "Per zone", "The keys and the light bar lit apart");
+            Rows.Row(light, y, "Per zone", "Keys and light bar apart");
             perZone = Rows.Toggle(light, y, "Lighting per zone");
             perZone.Changed += () => PerZone(perZone.Checked);
             y += rowHeight;
-            partRow = Rows.Row(light, y, "Part", "Which one the settings below change");
+            partRow = Rows.Row(light, y, "Part", "");
             partPicker = Rows.Picker(light, y, "Part", new[] { "Keys", "Light bar" });
             partPicker.Picked += i => { part = i + 1; RefreshControls(); };
             y += rowHeight;
         }
-        effectText = Rows.Row(light, y, "Effect", "What the lighting does");
+        effectText = Rows.Row(light, y, "Effect", "");
         effects = Rows.Dropdown(light, y, "Effect");
         effects.Items.AddRange(names);
         effects.Badge = i => effectIds[i] == ScreenEffect || LiveEffects.Is(effectIds[i]) ? "Live" : null;
@@ -320,7 +320,7 @@ class KeyboardPage : DevicePage
             ScreenChanged();
         };
         screenY += ZonesHeight;
-        Rows.Row(screen, screenY, "Monitor", "The screen the keys follow");
+        Rows.Row(screen, screenY, "Monitor", "");
         monitorDropdown = Rows.Dropdown(screen, screenY, "Monitor");
         monitorDropdown.Picked += i =>
         {
@@ -331,7 +331,7 @@ class KeyboardPage : DevicePage
             Snap();
         };
         screenY += rowHeight;
-        Rows.Row(screen, screenY, "Color boost", "Stronger screen colors on the keys");
+        Rows.Row(screen, screenY, "Color boost", "");
         boostSlider = Rows.Slider(screen, screenY, "Color boost", out boostValue);
         boostSlider.Changed += (s, e) =>
         {
@@ -339,7 +339,7 @@ class KeyboardPage : DevicePage
             Edited(); if (!debounce.Enabled) debounce.Start();
         };
         screenY += rowHeight;
-        Rows.Row(screen, screenY, "Update rate", "How often the keys follow the screen");
+        Rows.Row(screen, screenY, "Update rate", "");
         rateSlider = Rows.Slider(screen, screenY, "Update rate", out rateValue);
         rateSlider.Max = 9;
         rateSlider.Step = 1;
@@ -352,23 +352,23 @@ class KeyboardPage : DevicePage
             if (!debounce.Enabled) debounce.Start();
         };
         screenY += rowHeight;
-        Rows.Row(screen, screenY, "Smooth changes", "Colors fade instead of jumping");
+        Rows.Row(screen, screenY, "Smooth changes", "");
         smoothToggle = Rows.Toggle(screen, screenY, "Smooth changes");
         smoothToggle.Changed += () => { setup.Smooth = smoothToggle.Checked; ScreenChanged(); };
         if (canScreen) y += ScreenHeight;
-        colorRow = Rows.Row(light, y, "Color", "The effect's color");
+        colorRow = Rows.Row(light, y, "Color", "");
         colors = new ColorRow(light, Rows.Width - Rows.Inset - ColorRow.Widest, y + (rowHeight - ColorRow.Size) / 2, true);
         colors.Picked += color => { Target().Color = color; Changed(true); };
         y += rowHeight;
         if (canScreen)
         {
-            solidRow = Rows.Row(light, y, "Solid color", "Audio: the color as it is, not turning with the height");
+            solidRow = Rows.Row(light, y, "Solid color", "Audio: one color at every height");
             solidToggle = Rows.Toggle(light, y, "Solid color");
             solidToggle.Changed += () => { Target().Solid = solidToggle.Checked; Changed(true); };
             y += rowHeight;
         }
 
-        directionRow = Rows.Row(light, y, "Direction", "Which way the effect moves");
+        directionRow = Rows.Row(light, y, "Direction", "");
         directionValues = kind.VerticalWave ? VerticalDirections : Directions;
         directions = Rows.Picker(light, y, "Direction", DirectionNames(), DirectionWidth);
         directions.Picked += i => { Target().Direction = directionValues[i]; Changed(true); };
@@ -378,12 +378,12 @@ class KeyboardPage : DevicePage
         liveDirections.Picked += i => { Target().Direction = LiveEffects.Directions[i]; Changed(true); };
         y += rowHeight;
 
-        Rows.Row(light, y, "Brightness", kind.Bar != null ? "The keys and the light bar together" : "How bright the keys are");
+        Rows.Row(light, y, "Brightness", kind.Bar != null ? "Keys and light bar together" : "");
         bright = Rows.Slider(light, y, "Brightness", out brightValue);
         bright.Stops = kind.BrightnessLevels;
         bright.Changed += (s, e) => BrightnessChanged(bright.Value);
         y += rowHeight;
-        speedRow = Rows.Row(light, y, "Speed", "How fast the effect moves");
+        speedRow = Rows.Row(light, y, "Speed", "");
         speed = Rows.Slider(light, y, "Speed", out speedValue);
         speed.Changed += (s, e) =>
         {
@@ -397,7 +397,7 @@ class KeyboardPage : DevicePage
         // Also for the live effects.
         if (kind.Intensity || canScreen)
         {
-            intensityRow = Rows.Row(light, y, "Intensity", "How strong the effect is");
+            intensityRow = Rows.Row(light, y, "Intensity", "");
             intensity = Rows.Slider(light, y, "Intensity", out intensityValue);
             intensity.Changed += (s, e) => { Target().Intensity = intensity.Value; Changed(false, true); };
             intensity.MouseUp += (s, e) => RefreshControls();
@@ -405,11 +405,11 @@ class KeyboardPage : DevicePage
         }
         if (canScreen)
         {
-            pauseRow = Rows.Row(light, y, "Pause when screen off or locked", "For the live effects and Screen");
+            pauseRow = Rows.Row(light, y, "Pause when screen off or locked", "Live effects");
             livePause = Rows.Toggle(light, y, "Pause when screen off or locked");
             livePause.Changed += () => { setup.PauseWhenLocked = livePause.Checked; ScreenChanged(); };
             y += rowHeight;
-            batteryRow = Rows.Row(light, y, "Pause on low battery", "For the live effects and Screen, on a wireless keyboard");
+            batteryRow = Rows.Row(light, y, "Pause on low battery", "Live effects");
             liveBattery = Rows.Toggle(light, y, "Pause on low battery");
             liveBattery.Changed += () => { setup.PauseOnBattery = liveBattery.Checked; ScreenChanged(); };
         }
@@ -458,10 +458,10 @@ class KeyboardPage : DevicePage
         contentHeight = sectionTop;
         // The G915 TKL reads 0 as at once, not never (tried on a real keyboard), so its profile keyboards don't offer Never.
         never = kind.Profile ? 1 : 0;
-        idleBox = Choice(idle, 0, "Dim after", "Time without typing before the keys dim", IdleText.Skip(never).ToArray(),
+        idleBox = Choice(idle, 0, "Dim after", "", IdleText.Skip(never).ToArray(),
             i => current.Idle = IdleSecs[i + never]);
-        dimBox = Choice(idle, rowHeight, "Dim to", "How bright the keys stay while dimmed", DimText, i => current.Dim = DimPcts[i]);
-        sleepBox = Choice(idle, 2 * rowHeight, "Turn off after", "Time without typing before the lighting goes off",
+        dimBox = Choice(idle, rowHeight, "Dim to", "", DimText, i => current.Dim = DimPcts[i]);
+        sleepBox = Choice(idle, 2 * rowHeight, "Turn off after", "",
             SleepText.Skip(never).ToArray(), i => current.Sleep = SleepSecs[i + never]);
 
         gameBitmap = !found.Has(0x4522) && found.Has(0x4523) && found.Has(0x1B10);
@@ -1110,7 +1110,7 @@ class KeyboardPage : DevicePage
             hasIntensity = known && effect != null && effect.Intensity && (kind.Intensity || LiveEffects.Is(effect.Id));
         effects.Index = known ? effectIds.IndexOf(view.Effect) : -1;
         // With nothing known, the dropdown is blank: the row says what runs instead.
-        effectText.Hint.Text = known || screening ? "What the lighting does"
+        effectText.Hint.Text = known || screening ? ""
             : broken ? "Half written on the keyboard"
             : live ? "The keyboard's own lighting, until you pick one"
             : "The keyboard's factory animation";

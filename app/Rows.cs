@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 
-// The layout Settings and the device screens share: titled boxes, one below the other, of rows Ui.RowHeight high, each a title and
-// a hint at the left and its control at the right. Built in design units (100%), like the rest of a page.
+// The layout Settings and the device screens share: titled boxes, one below the other, of rows Ui.RowHeight high, each a title with
+// a hint after it on its line at the left and its control at the right. Built in design units (100%), like the rest of a page.
 static class Rows
 {
-    public const int Width = 616, Inset = 14, TitleGap = 22, SectionGap = 20;
+    public const int Width = 616, Inset = 14, TitleGap = 22, SectionGap = 20, TitleTop = 13;
 
     // A titled box below the one before; top moves past it.
     public static T Section<T>(Control parent, string title, ref int top, T box, int height) where T : Control
@@ -28,8 +28,38 @@ static class Rows
     public static RowText Row(Control box, int y, string title, string hint)
     {
         if (y > 0) Rule(box, y);
-        return new RowText(Ui.Text(box, title, Inset, y + 12, () => Theme.Text, 9.75f, Ui.Semibold),
-            Ui.Text(box, hint, Inset, y + 33, () => Theme.Dim, 9f));
+        return Title(box, y, title, hint);
+    }
+
+    // A row's title, and its hint after it on the same line, dim. The hint ends with an ellipsis before the row's control, the
+    // whole text in a tooltip (AutoEllipsis), and moves with the title's width.
+    public static RowText Title(Control box, int y, string title, string hint)
+    {
+        var titleLabel = Ui.Text(box, title, Inset, y + TitleTop, () => Theme.Text, 9.75f, Ui.Semibold);
+        var hintLabel = Ui.Text(box, hint, Inset, y + TitleTop + 1, () => Theme.Dim, 9f);
+        hintLabel.AutoSize = false;
+        hintLabel.AutoEllipsis = true;
+        EventHandler fit = (s, e) => FitHint(box, titleLabel, hintLabel);
+        box.Layout += (s, e) => FitHint(box, titleLabel, hintLabel);
+        box.VisibleChanged += fit;
+        titleLabel.SizeChanged += fit;
+        hintLabel.TextChanged += fit;
+        return new RowText(titleLabel, hintLabel);
+    }
+
+    // Visible reads false while the page is hidden, so a hidden box waits until it shows. A hidden control, like a row's that
+    // RowLayout hid where it was built, doesn't count.
+    static void FitHint(Control box, Label title, Label hint)
+    {
+        if (!box.Visible) return;
+        float scale = title.Left / (float)Inset;
+        int left = title.Text.Length == 0 ? title.Left : title.Right + (int)Math.Round(8 * scale), right = box.ClientSize.Width - title.Left;
+        int height = hint.PreferredHeight;
+        foreach (Control control in box.Controls)
+            if (control != title && control != hint && control.Visible && control.Left >= left && control.Top < hint.Top + height
+                && control.Bottom > hint.Top)
+                right = Math.Min(right, control.Left - (int)Math.Round(12 * scale));
+        hint.SetBounds(left, hint.Top, Math.Max(0, Math.Min(hint.PreferredWidth, right - left)), height);
     }
 
     public static Control Rule(Control box, int y)
@@ -90,7 +120,7 @@ static class Rows
     // A slider with its value at its left, as "100%".
     public static Slider Slider(Control box, int y, string name, out Label value)
     {
-        value = Ui.Text(box, "", Width - Inset - ControlWidth - 8 - ValueWidth, y + 23, () => Theme.Dim, 9f);
+        value = Ui.Text(box, "", Width - Inset - ControlWidth - 8 - ValueWidth, y + TitleTop + 1, () => Theme.Dim, 9f);
         value.AutoSize = false;
         value.Size = new System.Drawing.Size(ValueWidth, 18);
         value.TextAlign = System.Drawing.ContentAlignment.TopRight;

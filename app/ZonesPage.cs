@@ -218,7 +218,7 @@ class ZonesPage : DevicePage
         zonePicker.Index = 0;
         zonePicker.Picked += index => { picked = index; RefreshControls(); };
         int effectRow = rows.Row(lighting);
-        effectText = Rows.Row(lighting, effectRow, "Effect", "What the lighting does");
+        effectText = Rows.Row(lighting, effectRow, "Effect", "");
         effects = Rows.Dropdown(lighting, effectRow, "Effect");
         perKey = keyboard && picture != null && !zonesModel && found.Has(0x8080);
         effectIds.AddRange(ZoneLighting.Effects.Select(effect => effect.Id));
@@ -255,7 +255,7 @@ class ZonesPage : DevicePage
             Rows.Width - Rows.Inset - 66, screenRow + 132, 66, 30);
         resetAreas.Click += (s, e) => { setup.Zones = ZoneLighting.ScreenZones(); selectedZone = 0; ScreenChanged(); };
         monitorRow = rows.Row(lighting);
-        Rows.Row(lighting, monitorRow, "Monitor", "The screen the lights follow");
+        Rows.Row(lighting, monitorRow, "Monitor", "");
         monitorDropdown = Rows.Dropdown(lighting, monitorRow, "Monitor");
         monitorDropdown.Picked += index =>
         {
@@ -266,11 +266,11 @@ class ZonesPage : DevicePage
             Snap();
         };
         boostRow = rows.Row(lighting);
-        Rows.Row(lighting, boostRow, "Color boost", "Stronger screen colors on the lights");
+        Rows.Row(lighting, boostRow, "Color boost", "");
         boost = Rows.Slider(lighting, boostRow, "Color boost", out boostValue);
         boost.Changed += (s, e) => { setup.Boost = boost.Value; boostValue.Text = setup.Boost + "%"; ScreenChanged(); };
         rateRow = rows.Row(lighting);
-        Rows.Row(lighting, rateRow, "Update rate", "How often the lights follow the screen");
+        Rows.Row(lighting, rateRow, "Update rate", "");
         rate = Rows.Slider(lighting, rateRow, "Update rate", out rateValue);
         rate.Max = 9;
         rate.Step = 1;
@@ -282,16 +282,16 @@ class ZonesPage : DevicePage
             ScreenChanged();
         };
         smoothRow = rows.Row(lighting);
-        Rows.Row(lighting, smoothRow, "Smooth changes", "Colors fade instead of jumping");
+        Rows.Row(lighting, smoothRow, "Smooth changes", "");
         smoothToggle = Rows.Toggle(lighting, smoothRow, "Smooth changes");
         smoothToggle.Changed += () => { setup.Smooth = smoothToggle.Checked; ScreenChanged(); };
 
         colorRow = rows.Row(lighting);
-        colorText = Rows.Row(lighting, colorRow, "Color", "The effect's color");
+        colorText = Rows.Row(lighting, colorRow, "Color", "");
         colors = new ColorRow(lighting, Rows.Width - Rows.Inset - ColorRow.Widest, colorRow + (Ui.RowHeight - ColorRow.Size) / 2, true);
         colors.Picked += color => Edit(edited => edited.Color = color, true);
         directionRow = rows.Row(lighting);
-        directionText = Rows.Row(lighting, directionRow, "Direction", "Which way the effect moves");
+        directionText = Rows.Row(lighting, directionRow, "Direction", "");
         directions = Rows.Picker(lighting, directionRow, "Direction", ZoneLighting.DirText, PickerWidth);
         directions.Picked += index =>
         {
@@ -313,7 +313,7 @@ class ZonesPage : DevicePage
         };
         bright.MouseUp += (s, e) => RefreshControls();
         int speedRow = rows.Row(lighting);
-        speedText = Rows.Row(lighting, speedRow, "Speed", "How fast the effect moves");
+        speedText = Rows.Row(lighting, speedRow, "Speed", "");
         speed = Rows.Slider(lighting, speedRow, "Speed", out speedValue);
         speed.Changed += (s, e) =>
         {
@@ -850,7 +850,7 @@ class ZonesPage : DevicePage
         zonePicker.Enabled = ready && !screening;
         zoneText.Enable(ready && !screening);
         zoneText.Hint.Text = mixed && !screening ? "Zones differ" : picture != null ? "Click a key to pick its zone"
-            : speakers != null ? "Click a light to pick it" : "The lights to set";
+            : speakers != null ? "Click a light to pick it" : "";
         zonePicker.Index = picked;
         zonePicker.Invalidate();
         // Audio is sent as Static, so it's listed where Static is; Screen and the live effects cover every zone, so only on All.
@@ -866,10 +866,10 @@ class ZonesPage : DevicePage
         effects.Index = screening ? shownEffects.IndexOf(ScreenEffect) : known ? shownEffects.IndexOf(displayed.Effect) : -1;
         effects.Invalidate();
         effectText.Enable(ready);
-        effectText.Hint.Text = screening ? "The lights follow the screen"
+        effectText.Hint.Text = screening ? ""
             : known && IsLive(displayed) ? "Drawn by G-Lite, key by key"
             : known && displayed.Effect == ZoneLighting.Audio.Id ? "Follows the PC's sound"
-            : known || !ready ? "What the lighting does"
+            : known || !ready ? ""
             : keyboard ? "The keyboard's own lighting, until you pick one"
             : "The speakers' own lighting, until you pick one";
 
@@ -886,8 +886,7 @@ class ZonesPage : DevicePage
         int level = screening ? setup.Bright : known ? displayed.Bright : 100;
         brightText.Enable(hasBrightness);
         // G HUB gives a one-colour keyboard a slider from black to white; G-Lite sends white, scaled by Brightness, which is the same.
-        brightText.Hint.Text = monochrome ? "One color: within the keyboard's own level (F7)"
-            : screening ? "How bright the screen's colors are" : "How bright the lights are";
+        brightText.Hint.Text = monochrome ? "Within the keyboard's own level (F7)" : "";
         bright.Enabled = hasBrightness;
         // Not while they're dragged (the refresh at each send runs then): Brightness at 0 is kept as 1. MouseUp refreshes them.
         if (!bright.Capture) bright.Value = level;

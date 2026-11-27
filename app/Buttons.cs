@@ -225,7 +225,7 @@ class ButtonRows
         for (int i = 0; i < Max; i++)
         {
             int row = i, y = i * Ui.RowHeight;
-            rowNames[i] = Ui.Text(parent, "", Rows.Inset, y + 22, () => Theme.Text, 9.75f, Ui.Semibold);
+            rowNames[i] = Ui.Text(parent, "", Rows.Inset, y + Rows.TitleTop, () => Theme.Text, 9.75f, Ui.Semibold);
             rowDropdowns[i] = Rows.Place(parent, y, new Dropdown(), Rows.ControlWidth, Rows.ControlHeight);
             if (i > 0) rules[i] = Rows.Rule(parent, y);
             rowNames[i].Visible = rowDropdowns[i].Visible = false;

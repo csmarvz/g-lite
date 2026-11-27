@@ -49,9 +49,9 @@ class MainWindow : Form
         batteries = new System.Windows.Forms.Timer { Interval = 60000 };
     readonly FlatButton updateButton;
     readonly UpdatePage updatePage;
-    readonly Label checkText, themeHint, accentHint;
+    readonly Label checkText, accentHint;
     readonly SegmentedPicker themePicker, accentPicker;
-    readonly Toggle runToggle, checkToggle, autoToggle;
+    readonly Toggle runToggle, checkToggle, autoToggle, logToggle;
     KeyboardView view;
     readonly bool demo;
     string available;
@@ -160,6 +160,7 @@ class MainWindow : Form
         updatePage = Ui.Add(this, new UpdatePage(), SidebarWidth, 0, WindowWidth - SidebarWidth, WindowHeight);
         if (demo) updatePage.Fetch = DemoChangelog;
         updatePage.BackClicked = ShowSettings;
+        logsPage.BackClicked = ShowSettings;
         updatePage.CheckClicked = () => CheckUpdates(true);
         updatePage.InstallClicked = Install;
         updatePage.RestartClicked = Restart;
@@ -176,35 +177,32 @@ class MainWindow : Form
         const int rowHeight = Ui.RowHeight;
         int sectionTop = 12;
         var look = Rows.Section(settings.Sheet, "Appearance", ref sectionTop, new RoundedBox(), 2 * rowHeight);
-        themeHint = Rows.Row(look, 0, "Theme", "").Hint;
+        Rows.Row(look, 0, "Theme", "");
         themePicker = Ui.Add(look, new SegmentedPicker { Items = new[] { "System", "Dark", "Light" }, AccessibleName = "Theme" },
-            616 - 14 - 240, 16, 240, 32);
+            616 - 14 - 240, (rowHeight - 32) / 2, 240, 32);
         themePicker.Picked += i => { Theme.Mode = Theme.Modes[i]; ShowThemeHint(); };
         accentHint = Rows.Row(look, rowHeight, "Accent color", "").Hint;
         accentPicker = Ui.Add(look, new SegmentedPicker { Items = new[] { "G-Lite", "Windows", "Custom" }, AccessibleName = "Accent color" },
-            616 - 14 - 240, rowHeight + 16, 240, 32);
+            616 - 14 - 240, rowHeight + (rowHeight - 32) / 2, 240, 32);
         // Custom opens the colour dialog, again when it's already picked.
         accentPicker.Picked += i => { if (i == 2) ChooseAccent(); else Theme.AccentMode = Theme.Accents[i]; ShowThemeHint(); };
 
         var updatesBox = Rows.Section(settings.Sheet, "Updates", ref sectionTop, new RoundedBox(), 3 * rowHeight);
-        Rows.Row(updatesBox, 0, "Check for updates", "Looks for a new release on GitHub when G-Lite starts");
-        checkToggle = Ui.Add(updatesBox, new Toggle { Checked = Updater.CheckForUpdates, AccessibleName = "Check for updates" },
-            616 - 14 - 40, 21, 40, 22);
+        Rows.Row(updatesBox, 0, "Check for updates automatically", "");
+        checkToggle = Ui.Add(updatesBox, new Toggle { Checked = Updater.CheckForUpdates, AccessibleName = "Check for updates automatically" },
+            616 - 14 - 40, (rowHeight - 22) / 2, 40, 22);
         checkToggle.Changed += () => Updater.CheckForUpdates = checkToggle.Checked;
-        Rows.Row(updatesBox, rowHeight, "Install updates automatically", "Otherwise G-Lite asks first");
+        Rows.Row(updatesBox, rowHeight, "Install updates automatically", "");
         autoToggle = Ui.Add(updatesBox, new Toggle { Checked = Updater.Auto, AccessibleName = "Install updates automatically" },
-            616 - 14 - 40, rowHeight + 21, 40, 22);
+            616 - 14 - 40, rowHeight + (rowHeight - 22) / 2, 40, 22);
         autoToggle.Changed += () => Updater.Auto = autoToggle.Checked;
         checkText = Rows.Row(updatesBox, 2 * rowHeight, "Version " + Application.ProductVersion, "").Hint;
-        checkText.AutoSize = false;
-        checkText.AutoEllipsis = true;
-        checkText.Size = new Size(616 - 14 - 180 - 14 - 14, 18);
-        var checkNow = Ui.Add(updatesBox, new FlatButton { Text = "Check for updates" }, 616 - 14 - 180, 2 * rowHeight + 16, 180, 32);
+        var checkNow = Ui.Add(updatesBox, new FlatButton { Text = "Check for updates" }, 616 - 14 - 180, 2 * rowHeight + (rowHeight - 32) / 2, 180, 32);
         checkNow.Click += (s, e) => { ShowUpdatePage(true); CheckUpdates(true); };
 
         var start = Rows.Section(settings.Sheet, "Startup", ref sectionTop, new RoundedBox(), rowHeight);
-        Rows.Row(start, 0, "Run on startup", "Starts in the tray when you sign in to Windows");
-        runToggle = Ui.Add(start, new Toggle { AccessibleName = "Run on startup" }, 616 - 14 - 40, 21, 40, 22);
+        Rows.Row(start, 0, "Run on startup", "In the tray, at sign-in");
+        runToggle = Ui.Add(start, new Toggle { AccessibleName = "Run on startup" }, 616 - 14 - 40, (rowHeight - 22) / 2, 40, 22);
         runToggle.Changed += () => SetStartup(runToggle.Checked);
 
         var services = new ServicesBox(demo);
@@ -212,9 +210,12 @@ class MainWindow : Form
         services.Stopped += id => { if (id == "optionsplus") foreach (var page in pages.Values.OfType<OtherDevicePage>()) page.ReleaseKeys(); };
         Rows.Section(settings.Sheet, "Services", ref sectionTop, services, ServicesBox.DesignHeight);
 
-        var logsBox = Rows.Section(settings.Sheet, "Logs", ref sectionTop, new RoundedBox(), rowHeight);
-        Rows.Row(logsBox, 0, "Logs", "What G-Lite sent to your devices, and what went wrong");
-        var showLogs = Ui.Add(logsBox, new FlatButton { Icon = "lines", Text = "Show logs" }, 616 - 14 - 180, 16, 180, 32);
+        var logsBox = Rows.Section(settings.Sheet, "Logs", ref sectionTop, new RoundedBox(), 2 * rowHeight);
+        Rows.Row(logsBox, 0, "Enable logging", "");
+        logToggle = Rows.Toggle(logsBox, 0, "Enable logging");
+        logToggle.Changed += () => Log.On = logToggle.Checked;
+        Rows.Row(logsBox, rowHeight, "Logs", "");
+        var showLogs = Rows.Place(logsBox, rowHeight, new FlatButton { Icon = "lines", Text = "Show logs" }, 180, 32);
         showLogs.Click += (s, e) => ShowLogs();
         settings.Fit(sectionTop);
 
@@ -255,12 +256,9 @@ class MainWindow : Form
     {
         var mode = Theme.Mode;
         themePicker.Index = Array.IndexOf(Theme.Modes, mode);
-        themeHint.Text = mode == "system"
-            ? "Follows Windows, which uses " + (Theme.SystemLight() ? "light" : "dark") + " mode right now"
-            : "Always " + mode;
         var accent = Theme.AccentMode;
         accentPicker.Index = Array.IndexOf(Theme.Accents, accent);
-        accentHint.Text = accent == "windows" ? "Follows Windows' accent color" : accent == "custom" ? "Your color, in both themes" : "G-Lite's green";
+        accentHint.Text = accent == "custom" ? "In both themes" : "";
     }
 
     // Cancelled, the accent stays as it was.
@@ -312,6 +310,7 @@ class MainWindow : Form
         runToggle.Checked = StartupOn();
         checkToggle.Checked = Updater.CheckForUpdates;
         autoToggle.Checked = Updater.Auto;
+        logToggle.Checked = Log.On;
         ShowThemeHint();
         foreach (var page in pages.Values) page.Visible = false;
         empty.Visible = false;

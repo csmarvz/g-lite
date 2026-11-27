@@ -37,17 +37,17 @@ pick G-Lite preset –
   set feature  05 FF FF FF
   = status "" [Report] G-Lite preset=– [New…] […] View=Settings Effect=Static <Color FFFFFF> Brightness=100 Speed=79 (off) M key=M1 [Revert (off)]
 pick View Bindings
-  = status "" [Report] G-Lite preset=– [New…] […] View=Bindings G1=Disabled G2=Disabled G3=Disabled G4=Disabled G5=Disabled G6=Disabled M key=M1 [Revert (off)] G7=Disabled G8=Disabled G9=Disabled G10=Disabled G11=Disabled G12=Disabled G13=Disabled G14=Disabled G15=Disabled G16=Disabled G17=Disabled G18=Disabled
+  = status "" [Report] G-Lite preset=– [New…] […] View=Bindings G1=Disabled G2=Disabled G3=Disabled G4=Disabled G5=Disabled G6=Disabled G7=Disabled G8=Disabled M key=M1 [Revert (off)] G9=Disabled G10=Disabled G11=Disabled G12=Disabled G13=Disabled G14=Disabled G15=Disabled G16=Disabled G17=Disabled G18=Disabled
 pick G5 Volume up
-  = status "" [Report] G-Lite preset=– [New…] […] View=Bindings G1=Disabled G2=Disabled G3=Disabled G4=Disabled G5=Volume up G6=Disabled M key=M1 [Revert (off)] G7=Disabled G8=Disabled G9=Disabled G10=Disabled G11=Disabled G12=Disabled G13=Disabled G14=Disabled G15=Disabled G16=Disabled G17=Disabled G18=Disabled
+  = status "" [Report] G-Lite preset=– [New…] […] View=Bindings G1=Disabled G2=Disabled G3=Disabled G4=Disabled G5=Volume up G6=Disabled G7=Disabled G8=Disabled M key=M1 [Revert (off)] G9=Disabled G10=Disabled G11=Disabled G12=Disabled G13=Disabled G14=Disabled G15=Disabled G16=Disabled G17=Disabled G18=Disabled
 pick M key M2
   set feature  04 40
-  = status "" [Report] G-Lite preset=– [New…] […] View=Bindings G1=Disabled G2=Disabled G3=Disabled G4=Disabled G5=Disabled G6=Disabled M key=M2 [Revert (off)] G7=Disabled G8=Disabled G9=Disabled G10=Disabled G11=Disabled G12=Disabled G13=Disabled G14=Disabled G15=Disabled G16=Disabled G17=Disabled G18=Disabled
+  = status "" [Report] G-Lite preset=– [New…] […] View=Bindings G1=Disabled G2=Disabled G3=Disabled G4=Disabled G5=Disabled G6=Disabled G7=Disabled G8=Disabled M key=M2 [Revert (off)] G9=Disabled G10=Disabled G11=Disabled G12=Disabled G13=Disabled G14=Disabled G15=Disabled G16=Disabled G17=Disabled G18=Disabled
 pick G1 Play or pause
-  = status "" [Report] G-Lite preset=– [New…] […] View=Bindings G1=Play or pause G2=Disabled G3=Disabled G4=Disabled G5=Disabled G6=Disabled M key=M2 [Revert (off)] G7=Disabled G8=Disabled G9=Disabled G10=Disabled G11=Disabled G12=Disabled G13=Disabled G14=Disabled G15=Disabled G16=Disabled G17=Disabled G18=Disabled
+  = status "" [Report] G-Lite preset=– [New…] […] View=Bindings G1=Play or pause G2=Disabled G3=Disabled G4=Disabled G5=Disabled G6=Disabled G7=Disabled G8=Disabled M key=M2 [Revert (off)] G9=Disabled G10=Disabled G11=Disabled G12=Disabled G13=Disabled G14=Disabled G15=Disabled G16=Disabled G17=Disabled G18=Disabled
 pick M key M1
   set feature  04 80
-  = status "" [Report] G-Lite preset=– [New…] […] View=Bindings G1=Disabled G2=Disabled G3=Disabled G4=Disabled G5=Volume up G6=Disabled M key=M1 [Revert (off)] G7=Disabled G8=Disabled G9=Disabled G10=Disabled G11=Disabled G12=Disabled G13=Disabled G14=Disabled G15=Disabled G16=Disabled G17=Disabled G18=Disabled
+  = status "" [Report] G-Lite preset=– [New…] […] View=Bindings G1=Disabled G2=Disabled G3=Disabled G4=Disabled G5=Volume up G6=Disabled G7=Disabled G8=Disabled M key=M1 [Revert (off)] G9=Disabled G10=Disabled G11=Disabled G12=Disabled G13=Disabled G14=Disabled G15=Disabled G16=Disabled G17=Disabled G18=Disabled
 pick View Game
   get input 03
   = status "" [Report] G-Lite preset=– [New…] […] View=Game M key=M1 [Revert (off)]

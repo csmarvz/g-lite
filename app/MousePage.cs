@@ -155,11 +155,11 @@ class MousePage : DevicePage
         Label heading;
         sensitivity = layout.Section("Sensitivity", out heading);
         stageRow = layout.Row(sensitivity);
-        stageText = Rows.Row(sensitivity, stageRow, "DPI stage", "The DPI buttons switch between these");
+        stageText = Rows.Row(sensitivity, stageRow, "DPI stage", "Switched by the DPI buttons");
         stages = Rows.Picker(sensitivity, stageRow, "DPI stage", new string[0], PickerWidth);
         stages.Picked += index => { current.Stage = index; current.Dpi = state.Stages[index]; Changed(true); };
         int dpiRow = layout.Row(sensitivity);
-        Rows.Row(sensitivity, dpiRow, "DPI", "The picked stage's sensitivity");
+        Rows.Row(sensitivity, dpiRow, "DPI", "");
         dpi = Rows.Slider(sensitivity, dpiRow, "DPI", out dpiValue);
         dpi.Step = 1;
         // DPI always applies: off only on a read-only mouse, which shows its value.
@@ -175,7 +175,7 @@ class MousePage : DevicePage
             Changed(true);
         };
         invertRow = layout.Row(sensitivity);
-        Rows.Row(sensitivity, invertRow, "Invert scrolling", "The wheel scrolls the other way");
+        Rows.Row(sensitivity, invertRow, "Invert scrolling", "");
         invert = Rows.Toggle(sensitivity, invertRow, "Invert scrolling");
         invert.Changed += () => SetInvert(invert.Checked);
 
@@ -196,15 +196,15 @@ class MousePage : DevicePage
             Changed(true);
         };
         colorRow = layout.Row(lighting);
-        colorText = Rows.Row(lighting, colorRow, "Color", "The effect's color");
+        colorText = Rows.Row(lighting, colorRow, "Color", "");
         colors = new ColorRow(lighting, Rows.Width - Rows.Inset - ColorRow.Widest, colorRow + (Ui.RowHeight - ColorRow.Size) / 2, true);
         colors.Picked += color => { Light().Color = color; Changed(true); };
         brightRow = layout.Row(lighting);
-        brightText = Rows.Row(lighting, brightRow, "Brightness", "How bright the light is");
+        brightText = Rows.Row(lighting, brightRow, "Brightness", "");
         bright = Rows.Slider(lighting, brightRow, "Brightness", out brightValue);
         bright.Changed += (s, e) => { Light().Bright = Math.Max(1, bright.Value); Changed(false); };
         speedRow = layout.Row(lighting);
-        speedText = Rows.Row(lighting, speedRow, "Speed", "How fast the effect moves");
+        speedText = Rows.Row(lighting, speedRow, "Speed", "");
         speed = Rows.Slider(lighting, speedRow, "Speed", out speedValue);
         speed.Changed += (s, e) =>
         {
@@ -315,7 +315,7 @@ class MousePage : DevicePage
         // The light as saved on the mouse when there's no record of it shows no effect, so the row says why.
         effectText.Hint.Text = found.LightIsLiveOnly ? "Live only: not saved to the mouse"
             : lit && light == null ? "As saved on the mouse"
-            : "What the lighting does";
+            : "";
         var effectNames = Effects.Select(info => info.Name).ToList();
         if (!effectNames.SequenceEqual(effects.Items)) { effects.Items.Clear(); effects.Items.AddRange(effectNames); }
         effects.Enabled = lit && live;
@@ -361,9 +361,9 @@ class MousePage : DevicePage
         rates.Enabled = rateOn;
         rates.Invalidate();
         rateText.Enable(rateOn);
-        rateText.Hint.Text = ready && state.Onboard && state.Savable ? "In Hz, applies when you save"
-            : ready && state.Onboard && !state.ReadOnly ? "In Hz, set by the saved profile"
-            : "How often the mouse reports, in Hz";
+        rateText.Hint.Text = ready && state.Onboard && state.Savable ? "In Hz, on save"
+            : ready && state.Onboard && !state.ReadOnly ? "In Hz, from the profile"
+            : "In Hz";
         invert.Checked = ready && state.Inverted;
         viewPick.Visible = canBind;
         viewPick.Index = showingButtons ? 1 : 0;

@@ -89,17 +89,17 @@ pick G-Lite preset –
 pick G-Lite preset Green
   = status "Set by G-Lite, not saved to the speakers" [Report] G-Lite preset=Green • [Update] […] Zone=All Effect=Off Brightness=50 (off) Speed=80 (off) Pause when screen off or locked=on (off) [Revert]
 pick Effect Screen
-  = status "Screen effect, not saved to the speakers" [Report] G-Lite preset=Green • [Update] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> [Revert] Color boost=33 Update rate=9 Smooth changes=on Brightness=100 Speed=80 (off) Pause when screen off or locked=on
+  = status "Screen effect, not saved to the speakers" [Report] G-Lite preset=Green • [Update] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> Color boost=33 [Revert] Update rate=9 Smooth changes=on Brightness=100 Speed=80 (off) Pause when screen off or locked=on
 press Update
-  = status "Updated the preset Green" [Report] G-Lite preset=Green [Update (off)] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> [Revert (off)] Color boost=33 Update rate=9 Smooth changes=on Brightness=100 Speed=80 (off) Pause when screen off or locked=on
+  = status "Updated the preset Green" [Report] G-Lite preset=Green [Update (off)] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> Color boost=33 [Revert (off)] Update rate=9 Smooth changes=on Brightness=100 Speed=80 (off) Pause when screen off or locked=on
 slide Color boost 80
-  = status "Updated the preset Green" [Report] G-Lite preset=Green • [Update] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> [Revert] Color boost=80 Update rate=9 Smooth changes=on Brightness=100 Speed=80 (off) Pause when screen off or locked=on
+  = status "Updated the preset Green" [Report] G-Lite preset=Green • [Update] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> Color boost=80 [Revert] Update rate=9 Smooth changes=on Brightness=100 Speed=80 (off) Pause when screen off or locked=on
 press Revert changes
-  = status "Updated the preset Green" [Report] G-Lite preset=Green [Update (off)] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> [Revert (off)] Color boost=33 Update rate=9 Smooth changes=on Brightness=100 Speed=80 (off) Pause when screen off or locked=on
+  = status "Updated the preset Green" [Report] G-Lite preset=Green [Update (off)] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> Color boost=33 [Revert (off)] Update rate=9 Smooth changes=on Brightness=100 Speed=80 (off) Pause when screen off or locked=on
 pick G-Lite preset –
-  = status "Updated the preset Green" [Report] G-Lite preset=– [New…] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> [Revert (off)] Color boost=33 Update rate=9 Smooth changes=on Brightness=100 Speed=80 (off) Pause when screen off or locked=on
+  = status "Updated the preset Green" [Report] G-Lite preset=– [New…] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> Color boost=33 [Revert (off)] Update rate=9 Smooth changes=on Brightness=100 Speed=80 (off) Pause when screen off or locked=on
 pick G-Lite preset Green
-  = status "Updated the preset Green" [Report] G-Lite preset=Green [Update (off)] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> [Revert (off)] Color boost=33 Update rate=9 Smooth changes=on Brightness=100 Speed=80 (off) Pause when screen off or locked=on
+  = status "Updated the preset Green" [Report] G-Lite preset=Green [Update (off)] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> Color boost=33 [Revert (off)] Update rate=9 Smooth changes=on Brightness=100 Speed=80 (off) Pause when screen off or locked=on
 pick Effect Static
   8070 fn3  00 01 18 68 28
   8070 fn3  01 01 18 68 28
@@ -107,7 +107,7 @@ pick Effect Static
   8070 fn3  03 01 18 68 28
   = status "Set by G-Lite, not saved to the speakers" [Report] G-Lite preset=Green • [Update] […] Zone=All Effect=Static <Color 30D050> Brightness=50 Speed=80 (off) Pause when screen off or locked=on (off) [Revert]
 press Revert changes
-  = status "Screen effect, not saved to the speakers" [Report] G-Lite preset=Green [Update (off)] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> [Revert (off)] Color boost=33 Update rate=9 Smooth changes=on Brightness=100 Speed=80 (off) Pause when screen off or locked=on
+  = status "Screen effect, not saved to the speakers" [Report] G-Lite preset=Green [Update (off)] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> Color boost=33 [Revert (off)] Update rate=9 Smooth changes=on Brightness=100 Speed=80 (off) Pause when screen off or locked=on
 restart
 open
   8070 fn0
@@ -160,7 +160,7 @@ open
   8070 fn2  03 02 FF
   8070 fn2  03 03 FF
   8070 fn2  03 04 FF
-  = status "Screen effect, not saved to the speakers" [Report] G-Lite preset=Green [Update (off)] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> [Revert (off)] Color boost=33 Update rate=9 Smooth changes=on Brightness=100 Speed=0 (off) Pause when screen off or locked=on
+  = status "Screen effect, not saved to the speakers" [Report] G-Lite preset=Green [Update (off)] […] Zone=All (off) Effect=Screen [Reset] Monitor=<monitor> Color boost=33 [Revert (off)] Update rate=9 Smooth changes=on Brightness=100 Speed=0 (off) Pause when screen off or locked=on
 pick Effect Static
   8070 fn3  00 01 18 68 28
   8070 fn3  01 01 18 68 28

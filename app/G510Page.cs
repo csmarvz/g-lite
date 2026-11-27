@@ -73,15 +73,15 @@ class G510Page : DevicePage
         effects.Badge = i => i > G510Settings.Static + 1 ? "Live" : null;
         effects.Picked += index => Edit(settings => { settings.On = index > 0; if (index > 0) settings.Effect = index - 1; }, true);
         y += rowHeight;
-        colorText = Rows.Row(light, y, "Color", "One color for the whole keyboard");
+        colorText = Rows.Row(light, y, "Color", "One for the whole keyboard");
         colors = new ColorRow(light, Rows.Width - Rows.Inset - ColorRow.Widest, y + (rowHeight - ColorRow.Size) / 2, true);
         colors.Picked += color => Edit(settings => settings.Color = color, true);
         y += rowHeight;
-        brightText = Rows.Row(light, y, "Brightness", "How bright the keys are");
+        brightText = Rows.Row(light, y, "Brightness", "");
         bright = Rows.Slider(light, y, "Brightness", out brightValue);
         bright.Changed += (s, e) => { int brightness = Math.Max(1, bright.Value); Edit(settings => settings.Bright = brightness, false); };
         y += rowHeight;
-        speedText = Rows.Row(light, y, "Speed", "How fast the effect moves");
+        speedText = Rows.Row(light, y, "Speed", "");
         speed = Rows.Slider(light, y, "Speed", out speedValue);
         speed.Changed += (s, e) =>
         {
@@ -123,7 +123,7 @@ class G510Page : DevicePage
         var game = Rows.Section(sheet, "Game mode", ref top, new RoundedBox(), noteHeight + rowHeight, out heading);
         viewParts[GameView].AddRange(new Control[] { heading, game });
         Rows.Note(game, NotePadding, gameNote);
-        Rows.Row(game, noteHeight, "Game mode switch", "Read from the keyboard when this view opens");
+        Rows.Row(game, noteHeight, "Game mode switch", "Read when this view opens");
         gameState = Ui.Text(game, "", Rows.Width - Rows.Inset - 160, noteHeight + 22, () => Theme.Text, 9.75f, Ui.Semibold);
         gameState.AutoSize = false;
         gameState.Size = new Size(160, 20);
@@ -236,7 +236,7 @@ class G510Page : DevicePage
         bool known = ready && settings != null, lit = known && settings.On,
             color = lit && settings.Effect != G510Settings.Cycle, moving = lit && settings.Effect != G510Settings.Static;
         effectText.Enable(ready);
-        effectText.Hint.Text = moving ? "Drawn by G-Lite: it stops when you quit G-Lite" : "What the lighting does";
+        effectText.Hint.Text = moving ? "Drawn by G-Lite while it runs" : "";
         effects.Enabled = ready;
         effects.Index = known ? (settings.On ? settings.Effect + 1 : 0) : -1;
         effects.Invalidate();

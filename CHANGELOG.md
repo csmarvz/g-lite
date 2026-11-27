@@ -15,12 +15,17 @@
 
 ### Changed
 
+- Settings and the device screens: lower rows, a title only, with a short dim hint after it where the hint says something the title doesn't (most hints are gone). Report and Backups have icons.
+- Logs has a Back button to Settings.
+- Settings: Enable logging, on by default; off, G-Lite writes nothing to log.txt.
 - The G560 is marked Works: it was tried on real speakers.
 - The window: screens fill the width right of the sidebar, their setting boxes widening with it and the controls on the right of each row keeping to its edge; the footer stays at the bottom. Thin lines along the sidebar's edge and the top of the screens, joined by the rounded corner, and under a screen's header and above its footer, so the rows scroll under the header instead of looking cut. More room under the device pictures and above the first section. Logs moves from the sidebar to Settings (Show logs, after Services); an empty device list says No device found.
 - The sidebar's edge and the line under a screen's picture can be dragged: a wider sidebar (up to 400), a taller or shorter picture on every screen. They start at their usual sizes each time.
 
 ### Fixed
 
+- The outlines of boxes, buttons, dropdowns, pickers and switches are one sharp pixel; they were drawn half bright over two.
+- The Update and Logs screens: their footer stays at the bottom and the changelog or log fills the window when it was resized while they were hidden.
 - Easy-Switch: after switching, the Computer picker shows the computer the device went to, not the one it left, and the device is read again when it comes back.
 - MX keyboards: turning Automatic off sets the level the Level slider shows, not the one the room's light had set, level 0 (off) too.
 - MX Keys S: F1–F12 as media keys does something: it's set for this computer by its Easy-Switch number, since the MX Keys S ignores the "computer in use" G-Lite sent. Reports show the setting for each computer.

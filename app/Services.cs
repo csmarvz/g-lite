@@ -279,14 +279,14 @@ class ServicesBox : RoundedBox
         for (int row = 0; row < Rows; row++)
         {
             int y = RowHeight * row, picked = row;
-            Ui.Text(this, row < Rows - 1 ? LogitechSoftware.All[row].Name : "Windows Dynamic Lighting", 14, y + 12, () => Theme.Text,
-                9.75f, Ui.Semibold);
-            detailLabels[row] = Ui.Text(this, "", 14, y + 33, () => DetailColor(picked), 9f);
+            var detail = global::Rows.Title(this, y, row < Rows - 1 ? LogitechSoftware.All[row].Name : "Windows Dynamic Lighting", "").Hint;
+            Ui.Style(detail, () => detail.ForeColor = DetailColor(picked));
+            detailLabels[row] = detail;
             stateLabels[row] = Ui.Text(this, "", StatusX + 13, y, () => Theme.Text, 9f);
             stateLabels[row].Top = y + (RowHeight - stateLabels[row].Height) / 2;
             buttons[row] = Ui.Add(this,
                 new FlatButton { Text = row < Rows - 1 ? "Stop" : "Settings", Icon = row < Rows - 1 ? "shield" : null, Visible = false },
-                ButtonX, y + 16, 96, 32);
+                ButtonX, y + (RowHeight - 32) / 2, 96, 32);
             buttons[row].Click += (s, e) => Clicked(picked);
         }
         timer.Tick += (s, e) => Read();
@@ -351,7 +351,7 @@ class ServicesBox : RoundedBox
             detailLabels[row].Text = problems[row] ?? LogitechSoftware.All[row].Detail;
         }
         stateLabels[Rows - 1].Text = lighting ? "On" : "Off";
-        detailLabels[Rows - 1].Text = lighting ? "May override G-Lite's lighting" : "Windows' own control of RGB devices";
+        detailLabels[Rows - 1].Text = lighting ? "May override G-Lite's lighting" : "";
         buttons[Rows - 1].Visible = true;
         foreach (var button in buttons) { button.Enabled = !busy; button.Invalidate(); }
         for (int row = 0; row < Rows; row++) detailLabels[row].ForeColor = DetailColor(row);

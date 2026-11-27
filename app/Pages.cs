@@ -60,8 +60,9 @@ abstract class DevicePage : Control, IPage
         heading = Ui.Text(this, title, 20, 14, () => Theme.Text, 13.5f, Ui.Semibold);
         heading.SizeChanged += (s, e) => PlaceHeaderButtons();
         subtitle = Ui.Add(this, new DeviceSubtitle(), 21, 42, 540, 20);
-        reportButton = Ui.Add(this, new FlatButton { Style = ButtonStyle.Ghost, Text = "Report", AccessibleName = "Report of the " + noun },
-            20, 10, 80, 28);
+        reportButton = Ui.Add(this,
+            new FlatButton { Style = ButtonStyle.Ghost, Icon = "report", Text = "Report", AccessibleName = "Report of the " + noun },
+            20, 10, 94, 28);
 
         Ui.Text(this, "G-Lite preset", 20, 79, () => Theme.Dim, 9.75f);
         profiles = Ui.Add(this, new Dropdown { AccessibleName = "G-Lite preset" }, 108, 72, 160, 32);
@@ -110,7 +111,8 @@ abstract class DevicePage : Control, IPage
     protected FlatButton BackupsButton(string noun)
     {
         headerBackupsButton = Ui.Add(this,
-            new FlatButton { Style = ButtonStyle.Ghost, Text = "Backups", AccessibleName = "Backups of the " + noun }, 104, 10, 80, 28);
+            new FlatButton { Style = ButtonStyle.Ghost, Icon = "history", Text = "Backups", AccessibleName = "Backups of the " + noun },
+            118, 10, 104, 28);
         PlaceHeaderButtons();
         return headerBackupsButton;
     }
@@ -835,8 +837,9 @@ class InfoPage : Control
         features = Row(details, "Supports", 124);
         features.AutoSize = false;
         features.Size = new Size(470, 60);
-        reportButton = Ui.Add(this, new FlatButton { Style = ButtonStyle.Ghost, Text = "Report", AccessibleName = "Report of this device" },
-            20, 10, 80, 28);
+        reportButton = Ui.Add(this,
+            new FlatButton { Style = ButtonStyle.Ghost, Icon = "report", Text = "Report", AccessibleName = "Report of this device" },
+            20, 10, 94, 28);
         report = Ui.Add(this, new ReportView("device", () => ReportView.TitleFor(found), Collect), 0, 72, 656, 658);
         report.Anchor = Ui.Tall;
         report.Closed += () => { reportButton.On = false; reportButton.Invalidate(); reportButton.Focus(); };

@@ -166,7 +166,7 @@ class LightPage : DevicePage
         Label heading;
         var front = rows.Section("Front light", out heading);
         int y = rows.Row(front);
-        frontText = Rows.Row(front, y, "Power", "The light facing you");
+        frontText = Rows.Row(front, y, "Power", "");
         frontPower = Rows.Toggle(front, y, "Front light on");
         frontPower.Changed += () => Edit(edited => edited.FrontOn = frontPower.Checked, true);
         y = rows.Row(front);
@@ -178,7 +178,7 @@ class LightPage : DevicePage
             Edit(edited => edited.Lumen = snapped, false);
         };
         y = rows.Row(front);
-        kelvinText = Rows.Row(front, y, "Color temperature", "Warm to cool, in kelvins");
+        kelvinText = Rows.Row(front, y, "Color temperature", "In kelvins");
         kelvin = Rows.Slider(front, y, "Color temperature", out kelvinValue);
         kelvin.Step = 1;
         kelvin.Changed += (s, e) =>
@@ -190,7 +190,7 @@ class LightPage : DevicePage
         // The back light (0x8081): its rows, the Screen effect's after Effect while it runs, and Try effect on a light with 0x8071.
         backBox = rows.Section("Back light", out heading);
         y = rows.Row(backBox);
-        backText = Rows.Row(backBox, y, "Power", "The colored light at the back");
+        backText = Rows.Row(backBox, y, "Power", "");
         backPower = Rows.Toggle(backBox, y, "Back light on");
         backPower.Changed += () => Edit(edited => edited.BackOn = backPower.Checked, true);
         y = rows.Row(backBox);
@@ -215,7 +215,7 @@ class LightPage : DevicePage
             Rows.Width - Rows.Inset - 66, screenRow + 132, 66, 30);
         resetAreas.Click += (s, e) => { setup.Zones = LitraProtocol.ScreenZones(); selectedZone = 0; ScreenChanged(); };
         monitorRow = rows.Row(backBox);
-        Rows.Row(backBox, monitorRow, "Monitor", "The screen the light follows");
+        Rows.Row(backBox, monitorRow, "Monitor", "");
         monitorDropdown = Rows.Dropdown(backBox, monitorRow, "Monitor");
         monitorDropdown.Picked += index =>
         {
@@ -226,11 +226,11 @@ class LightPage : DevicePage
             Snap();
         };
         boostRow = rows.Row(backBox);
-        Rows.Row(backBox, boostRow, "Color boost", "Stronger screen colors on the light");
+        Rows.Row(backBox, boostRow, "Color boost", "");
         boost = Rows.Slider(backBox, boostRow, "Color boost", out boostValue);
         boost.Changed += (s, e) => { setup.Boost = boost.Value; boostValue.Text = setup.Boost + "%"; ScreenChanged(); };
         rateRow = rows.Row(backBox);
-        Rows.Row(backBox, rateRow, "Update rate", "How often the light follows the screen");
+        Rows.Row(backBox, rateRow, "Update rate", "");
         rate = Rows.Slider(backBox, rateRow, "Update rate", out rateValue);
         rate.Max = 9;
         rate.Step = 1;
@@ -242,7 +242,7 @@ class LightPage : DevicePage
             ScreenChanged();
         };
         smoothRow = rows.Row(backBox);
-        Rows.Row(backBox, smoothRow, "Smooth changes", "Colors fade instead of jumping");
+        Rows.Row(backBox, smoothRow, "Smooth changes", "");
         smoothToggle = Rows.Toggle(backBox, smoothRow, "Smooth changes");
         smoothToggle.Changed += () => { setup.Smooth = smoothToggle.Checked; ScreenChanged(); };
         y = rows.Row(backBox);
@@ -252,7 +252,7 @@ class LightPage : DevicePage
         zonePicker.Index = 0;
         zonePicker.Picked += index => { picked = index; RefreshControls(); };
         y = rows.Row(backBox);
-        colorText = Rows.Row(backBox, y, "Color", "The picked zone's color");
+        colorText = Rows.Row(backBox, y, "Color", "");
         colors = new ColorRow(backBox, Rows.Width - Rows.Inset - ColorRow.Widest, y + (Ui.RowHeight - ColorRow.Size) / 2, true);
         colors.Picked += color => Edit(edited =>
         {
@@ -260,11 +260,11 @@ class LightPage : DevicePage
             for (int zone = 0; zone < LightState.Zones; zone++) if (picked == 0 || picked == zone + 1) edited.Colors[zone] = color;
         }, true);
         y = rows.Row(backBox);
-        levelText = Rows.Row(backBox, y, "Brightness", "How bright the back light is");
+        levelText = Rows.Row(backBox, y, "Brightness", "");
         level = Rows.Slider(backBox, y, "Back brightness", out levelValue);
         level.Changed += (s, e) => { int brightness = Math.Max(1, level.Value); Edit(edited => edited.BackLevel = brightness, false); };
         y = rows.Row(backBox);
-        speedText = Rows.Row(backBox, y, "Speed", "How fast the effect moves");
+        speedText = Rows.Row(backBox, y, "Speed", "");
         speed = Rows.Slider(backBox, y, "Speed", out speedValue);
         speed.Changed += (s, e) =>
         {
@@ -574,8 +574,7 @@ class LightPage : DevicePage
         effectText.Enable(ready);
         bool zoned = ready && light != null && !screening && (light.Effect == LightState.Static || light.Effect == LightState.Breathe);
         bool moving = ready && light != null && !screening && light.Effect != LightState.Static;
-        effectText.Hint.Text = screening ? "The light follows the screen"
-            : moving ? "Drawn by G-Lite: it stops when you quit G-Lite" : "What the back light does";
+        effectText.Hint.Text = !screening && moving ? "Drawn by G-Lite while it runs" : "";
         effects.Index = screening ? LightState.Effects.Length : light == null ? -1 : light.Effect;
         effects.Invalidate();
         zonePicker.Index = picked;
@@ -594,7 +593,7 @@ class LightPage : DevicePage
         bool canTryNow = ready && !screening && groups != null;
         tryButton.Enabled = canTryNow;
         tryText.Enable(canTryNow);
-        tryText.Hint.Text = trying ? "Trying " + tried + ": look at the light" : "Experimental: what each one does isn't known yet";
+        tryText.Hint.Text = trying ? "Trying " + tried + ": look at the light" : "Experimental";
         Show(light == null ? null
             : light.Effect == LightState.Static ? light.Colors
             : LitraProtocol.Frame(light, clock.Elapsed.TotalMilliseconds));

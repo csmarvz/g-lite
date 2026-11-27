@@ -188,17 +188,23 @@ class UpdatePage : Control
         back.Visible = fromSettings;
         skip.Visible = showSkip;
         primary.Visible = showPrimary;
-        // From the right edge, at the screen's scale: the page is as wide as the window.
+        // From the right and bottom edges, at the screen's scale: the page is as big as the window. Placed here, not anchored: the
+        // footer stayed where it was built when the window grew while the page was hidden.
         float scale = Ui.DpiScale;
-        int x = Width - (int)Math.Round(20 * scale);
+        int x = Width - (int)Math.Round(20 * scale), buttonTop = Height - (int)Math.Round(45 * scale);
         foreach (var button in new[] { primary, skip, back })
         {
+            button.Top = buttonTop;
             if (button == back ? !fromSettings : button == skip ? !showSkip : !showPrimary) continue;
             x -= button.Width;
             button.Left = x;
             x -= (int)Math.Round(8 * scale);
         }
+        status.Top = buttonTop - (int)Math.Round(2 * scale);
         status.Width = Math.Max(0, x + (int)Math.Round(8 * scale) - status.Left - (int)Math.Round(12 * scale));
+        // Its whole bounds: the Layout event comes before the anchors, so setting only the height kept the old width.
+        notesBox.SetBounds(notesBox.Left, notesBox.Top, Math.Max(0, Width - 2 * notesBox.Left),
+            Math.Max(0, buttonTop - (int)Math.Round(28 * scale) - notesBox.Top));
     }
 
     void Load()
