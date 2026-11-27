@@ -24,6 +24,8 @@
 
 ### Fixed
 
+- Device screens scroll to their last row again after the window moves to a screen with another scale and back; the rows' height came back short (a third, from 150% to 100%).
+- A program holding settings.txt for a moment (an antivirus scan, a sync client) no longer stops G-Lite with an error: reading and writing it are tried again, and a read that still fails gives what was read last.
 - The scroll bar of Settings and the device screens shows as soon as the rows grow taller than the screen (an effect or view picked, the first load); it waited for something else to repaint it.
 - The outlines of boxes, buttons, dropdowns, pickers and switches are one sharp pixel; they were drawn half bright over two.
 - The Update and Logs screens: their footer stays at the bottom and the changelog or log fills the window when it was resized while they were hidden.

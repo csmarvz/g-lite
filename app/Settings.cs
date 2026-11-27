@@ -23,10 +23,23 @@ static class Settings
         catch { return false; }
     }
 
+    // The lines read last, for when the file can't be read.
+    static string[] lastLines = new string[0];
+
+    // Another program can hold the file for a moment (an antivirus scan, a sync client): a read or write is tried again a few times,
+    // and a read that still fails gives what was read last. A mouse screen's timer reading it threw out of G-Lite.
+    static T Retry<T>(Func<T> action, T failed)
+    {
+        for (int attempt = 0; ; attempt++)
+            try { return action(); }
+            catch (IOException) { if (attempt == 4) return failed; System.Threading.Thread.Sleep(20); }
+            catch (UnauthorizedAccessException) { if (attempt == 4) return failed; System.Threading.Thread.Sleep(20); }
+    }
+
     static Dictionary<string, string> Read()
     {
         var settings = new Dictionary<string, string>();
-        var lines = File.Exists(Location) ? File.ReadAllLines(Location) : new string[0];
+        var lines = lastLines = Retry(() => File.Exists(Location) ? File.ReadAllLines(Location) : new string[0], lastLines);
         foreach (var line in Defaults.Concat(lines))
         {
             int equalsAt = line.IndexOf('=');
@@ -37,7 +50,8 @@ static class Settings
 
     static void Write(Dictionary<string, string> settings)
     {
-        try { File.WriteAllLines(Location, settings.Select(pair => pair.Key + "=" + pair.Value)); } catch { }
+        var lines = settings.Select(pair => pair.Key + "=" + pair.Value).ToArray();
+        if (Retry(() => { File.WriteAllLines(Location, lines); return true; }, false)) lastLines = lines;
     }
 
     public static void Init()

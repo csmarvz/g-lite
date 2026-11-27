@@ -125,7 +125,13 @@ abstract class DevicePage : Control, IPage
         // A window made smaller limits the picture again.
         FitPicture();
         PlaceFooter();
+        // After a move to a screen with another scale and back, the content's height came back short (a third, from 150% to 100%):
+        // set again from the design height, the rest of the rows couldn't be scrolled to.
+        if (Body != null && bodyHeight >= 0 && Body.ContentHeight != Scaled(bodyHeight)) Body.Fit(Scaled(bodyHeight));
     }
+
+    // The rows' height FitBody was given last, in design units; -1 before.
+    int bodyHeight = -1;
 
     // top: where Body starts, in design units, lower when the screen keeps something above it (the keyboard's picture).
     protected ScrollPanel UseBody(int top = BodyTop)
@@ -149,6 +155,7 @@ abstract class DevicePage : Control, IPage
     // How tall the rows are, in design units.
     protected void FitBody(int height)
     {
+        bodyHeight = height;
         Body.Fit(Scaled(height));
         PlaceFooter();
     }

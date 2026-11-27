@@ -717,6 +717,9 @@ class ScrollPanel : Control
 
     public int Offset { get { return offset; } }
 
+    // The height Fit was given, scaled with the panel since.
+    public int ContentHeight { get { return content - TopPadding; } }
+
     public void Fit(int height)
     {
         content = height + TopPadding;
