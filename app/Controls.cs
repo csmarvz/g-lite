@@ -140,7 +140,16 @@ class RoundedBox : Control
     {
         SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer
             | ControlStyles.ResizeRedraw, true);
-        Ui.Style(this, () => BackColor = Theme.Card);
+        Ui.Style(this, () => BackColor = plain ? Theme.Background : Theme.Card);
+    }
+
+    bool plain;
+
+    // Without fill or outline: a rows section (Rows.Section), its rows on the page.
+    public bool Plain
+    {
+        get { return plain; }
+        set { plain = value; BackColor = plain ? Theme.Background : Theme.Card; Invalidate(); }
     }
 
     // After the anchors have moved the controls inside: the Layout event comes before them (Rows fits the hints here).
@@ -157,7 +166,7 @@ class RoundedBox : Control
         var graphics = e.Graphics;
         graphics.Clear(Parent != null ? Parent.BackColor : Theme.Background);
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
-        Ui.Fill(graphics, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 8 * Ui.DpiScale, Theme.Card, Theme.Border);
+        if (!plain) Ui.Fill(graphics, new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), 8 * Ui.DpiScale, Theme.Card, Theme.Border);
         base.OnPaint(e);
     }
 }
@@ -398,12 +407,12 @@ class Toggle : DrawnControl
         float position = Now;
         float faded = Enabled ? 0 : 0.6f;
         Ui.Fill(graphics, box, box.Height / 2,
-            Ui.Mix(Ui.Mix(Theme.Button, Theme.Accent, position), Theme.Card, faded),
-            Ui.Mix(Ui.Mix(Theme.Border, Theme.Accent, position), Theme.Card, faded));
+            Ui.Mix(Ui.Mix(Theme.Button, Theme.Accent, position), Under, faded),
+            Ui.Mix(Ui.Mix(Theme.Border, Theme.Accent, position), Under, faded));
         DrawFocusRing(graphics, box.Height / 2);
         float knob = Height - 8 * DpiScale;
         float stretch = Pressed ? 4 * DpiScale : 0;
-        using (var brush = new SolidBrush(Ui.Mix(Ui.Mix(Theme.Dim, Theme.OnAccent, position), Theme.Card, faded)))
+        using (var brush = new SolidBrush(Ui.Mix(Ui.Mix(Theme.Dim, Theme.OnAccent, position), Under, faded)))
         using (var path = Ui.Round(
             new RectangleF(4 * DpiScale + position * (Width - 8 * DpiScale - knob - stretch), 4 * DpiScale, knob + stretch, knob),
             knob / 2))

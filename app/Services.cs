@@ -257,7 +257,7 @@ class LogitechSoftware
 class ServicesBox : RoundedBox
 {
     public const int DesignHeight = RowHeight * Rows;
-    const int RowHeight = Ui.RowHeight, BoxWidth = 616, ButtonX = BoxWidth - 14 - 96, StatusX = ButtonX - 12 - 84, Rows = 5;
+    const int RowHeight = Ui.RowHeight, BoxWidth = 616, ButtonX = BoxWidth - global::Rows.Inset - 96, StatusX = ButtonX - 12 - 84, Rows = 5;
     readonly bool demo;
     readonly Timer timer = new Timer { Interval = 3000 };
     readonly Label[] detailLabels = new Label[Rows], stateLabels = new Label[Rows];

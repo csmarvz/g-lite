@@ -179,30 +179,30 @@ class MainWindow : Form
         var look = Rows.Section(settings.Sheet, "Appearance", ref sectionTop, new RoundedBox(), 2 * rowHeight);
         Rows.Row(look, 0, "Theme", "");
         themePicker = Ui.Add(look, new SegmentedPicker { Items = new[] { "System", "Dark", "Light" }, AccessibleName = "Theme" },
-            616 - 14 - 240, (rowHeight - 32) / 2, 240, 32);
+            Rows.Width - Rows.Inset - 240, (rowHeight - 32) / 2, 240, 32);
         themePicker.Picked += i => { Theme.Mode = Theme.Modes[i]; ShowThemeHint(); };
         accentHint = Rows.Row(look, rowHeight, "Accent color", "").Hint;
         accentPicker = Ui.Add(look, new SegmentedPicker { Items = new[] { "G-Lite", "Windows", "Custom" }, AccessibleName = "Accent color" },
-            616 - 14 - 240, rowHeight + (rowHeight - 32) / 2, 240, 32);
+            Rows.Width - Rows.Inset - 240, rowHeight + (rowHeight - 32) / 2, 240, 32);
         // Custom opens the colour dialog, again when it's already picked.
         accentPicker.Picked += i => { if (i == 2) ChooseAccent(); else Theme.AccentMode = Theme.Accents[i]; ShowThemeHint(); };
 
         var updatesBox = Rows.Section(settings.Sheet, "Updates", ref sectionTop, new RoundedBox(), 3 * rowHeight);
         Rows.Row(updatesBox, 0, "Check for updates automatically", "");
         checkToggle = Ui.Add(updatesBox, new Toggle { Checked = Updater.CheckForUpdates, AccessibleName = "Check for updates automatically" },
-            616 - 14 - 40, (rowHeight - 22) / 2, 40, 22);
+            Rows.Width - Rows.Inset - 40, (rowHeight - 22) / 2, 40, 22);
         checkToggle.Changed += () => Updater.CheckForUpdates = checkToggle.Checked;
         Rows.Row(updatesBox, rowHeight, "Install updates automatically", "");
         autoToggle = Ui.Add(updatesBox, new Toggle { Checked = Updater.Auto, AccessibleName = "Install updates automatically" },
-            616 - 14 - 40, rowHeight + (rowHeight - 22) / 2, 40, 22);
+            Rows.Width - Rows.Inset - 40, rowHeight + (rowHeight - 22) / 2, 40, 22);
         autoToggle.Changed += () => Updater.Auto = autoToggle.Checked;
         checkText = Rows.Row(updatesBox, 2 * rowHeight, "Version " + Application.ProductVersion, "").Hint;
-        var checkNow = Ui.Add(updatesBox, new FlatButton { Text = "Check for updates" }, 616 - 14 - 180, 2 * rowHeight + (rowHeight - 32) / 2, 180, 32);
+        var checkNow = Ui.Add(updatesBox, new FlatButton { Text = "Check for updates" }, Rows.Width - Rows.Inset - 180, 2 * rowHeight + (rowHeight - 32) / 2, 180, 32);
         checkNow.Click += (s, e) => { ShowUpdatePage(true); CheckUpdates(true); };
 
         var start = Rows.Section(settings.Sheet, "Startup", ref sectionTop, new RoundedBox(), rowHeight);
         Rows.Row(start, 0, "Run on startup", "In the tray, at sign-in");
-        runToggle = Ui.Add(start, new Toggle { AccessibleName = "Run on startup" }, 616 - 14 - 40, (rowHeight - 22) / 2, 40, 22);
+        runToggle = Ui.Add(start, new Toggle { AccessibleName = "Run on startup" }, Rows.Width - Rows.Inset - 40, (rowHeight - 22) / 2, 40, 22);
         runToggle.Changed += () => SetStartup(runToggle.Checked);
 
         var services = new ServicesBox(demo);

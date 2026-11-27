@@ -224,21 +224,12 @@ class ButtonRows
         for (int i = 0; i < Max; i++)
         {
             int row = i, y = i * Ui.RowHeight;
-            rowNames[i] = Ui.Text(parent, "", Rows.Inset, y + Rows.TitleTop, () => Theme.Text, 9.75f, Ui.Semibold);
+            rowNames[i] = Ui.Text(parent, "", Rows.Inset, y + Rows.TitleTop, () => row == Pressed ? Theme.Accent : Theme.Text, 9.75f);
             rowDropdowns[i] = Rows.Place(parent, y, new Dropdown(), Rows.ControlWidth, Rows.ControlHeight);
             rowNames[i].Visible = rowDropdowns[i].Visible = false;
             rowDropdowns[i].Items.AddRange(actionNames);
             rowDropdowns[i].Picked += actionIndex => Pick(row, actionIndex);
         }
-        parent.Paint += (s, e) =>
-        {
-            if (Pressed < 0 || Pressed >= Max || !rowNames[Pressed].Visible) return;
-            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            // The parent is scaled with its page, and as wide as the window lets it.
-            float scale = Ui.DpiScale;
-            Ui.Fill(e.Graphics, new RectangleF(6 * scale, (Pressed * Ui.RowHeight + 6) * scale, parent.Width - 12 * scale,
-                (Ui.RowHeight - 12) * scale), 6 * scale, Theme.AccentBackground, Theme.AccentBackground);
-        };
         keyField = Rows.Place(parent, 0, new TextField { Visible = false }, Rows.ControlWidth, Rows.ControlHeight);
         keyField.Box.KeyDown += (s, e) => { e.Handled = e.SuppressKeyPress = true; Recorded(e.KeyData); };
     }
@@ -260,6 +251,8 @@ class ButtonRows
         {
             bool on = i < count;
             rowNames[i].Visible = on;
+            // The button being pressed (the mouse screen's spy) has its name in the accent colour: the rows have no box to tint.
+            rowNames[i].ForeColor = i == Pressed ? Theme.Accent : Theme.Text;
             rowDropdowns[i].Visible = on && i != Recording;
             if (!on) continue;
             rowNames[i].Text = names[i];

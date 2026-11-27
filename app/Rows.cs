@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 
-// The layout Settings and the device screens share: titled boxes, one below the other, of rows Ui.RowHeight high, each a title with
-// a hint after it on its line at the left and its control at the right. Built in design units (100%), like the rest of a page.
+// The layout Settings and the device screens share: titled sections one below the other, rows Ui.RowHeight high on the page (each
+// section's box is plain), each a title with a hint after it on its line at the left and its control at the right edge. Built in
+// design units (100%), like the rest of a page.
 static class Rows
 {
-    public const int Width = 616, Inset = 14, TitleGap = 22, SectionGap = 20, TitleTop = 13;
+    public const int Width = 616, Inset = 0, TitleGap = 22, SectionGap = 28, TitleTop = 13;
 
-    // A titled box below the one before; top moves past it.
+    // A titled section below the one before; top moves past it. Its heading in small dim capitals, spaced by hair spaces (a label
+    // has no letter spacing), read out as written.
     public static T Section<T>(Control parent, string title, ref int top, T box, int height) where T : Control
     {
         Label heading;
@@ -18,13 +20,17 @@ static class Rows
 
     public static T Section<T>(Control parent, string title, ref int top, T box, int height, out Label heading) where T : Control
     {
-        heading = Ui.Text(parent, title, 20, top, () => Theme.Dim, 9f, Ui.Semibold);
+        heading = Ui.Text(parent, string.Join(" ", title.ToUpperInvariant().Select(character => character.ToString())), 20, top,
+            () => Theme.Dim, 8.25f, Ui.Semibold);
+        heading.AccessibleName = title;
         Ui.Add(parent, box, 20, top + TitleGap, Width, height);
+        var rounded = box as RoundedBox;
+        if (rounded != null) rounded.Plain = true;
         top += TitleGap + height + SectionGap;
         return box;
     }
 
-    // The title and hint of the row at y. No line between rows: the rows' height and the box are enough.
+    // The title and hint of the row at y. No line between rows: their height and the section's heading are enough.
     public static RowText Row(Control box, int y, string title, string hint)
     {
         return Title(box, y, title, hint);
@@ -34,7 +40,7 @@ static class Rows
     // whole text in a tooltip (AutoEllipsis), and moves with the title's width.
     public static RowText Title(Control box, int y, string title, string hint)
     {
-        var titleLabel = Ui.Text(box, title, Inset, y + TitleTop, () => Theme.Text, 9.75f, Ui.Semibold);
+        var titleLabel = Ui.Text(box, title, Inset, y + TitleTop, () => Theme.Text, 9.75f);
         var hintLabel = Ui.Text(box, hint, Inset, y + TitleTop + 1, () => Theme.Dim, 9f);
         hintLabel.AutoSize = false;
         hintLabel.AutoEllipsis = true;
@@ -54,8 +60,8 @@ static class Rows
     static void FitHint(Control box, Label title, Label hint)
     {
         if (!box.Visible) return;
-        float scale = title.Left / (float)Inset;
-        int left = title.Text.Length == 0 ? title.Left : title.Right + (int)Math.Round(8 * scale), right = box.ClientSize.Width - title.Left;
+        float scale = Ui.DpiScale;
+        int left = title.Text.Length == 0 ? title.Left : title.Right + (int)Math.Round(8 * scale), right = box.ClientSize.Width;
         int height = hint.PreferredHeight;
         foreach (Control control in box.Controls)
             if (control != title && control != hint && control.Visible && control.Left >= left && control.Top < hint.Top + height
