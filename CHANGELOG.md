@@ -24,6 +24,7 @@
 
 ### Fixed
 
+- The scroll bar of Settings and the device screens shows as soon as the rows grow taller than the screen (an effect or view picked, the first load); it waited for something else to repaint it.
 - The outlines of boxes, buttons, dropdowns, pickers and switches are one sharp pixel; they were drawn half bright over two.
 - The Update and Logs screens: their footer stays at the bottom and the changelog or log fills the window when it was resized while they were hidden.
 - Easy-Switch: after switching, the Computer picker shows the computer the device went to, not the one it left, and the device is read again when it comes back.

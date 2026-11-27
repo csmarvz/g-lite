@@ -722,6 +722,8 @@ class ScrollPanel : Control
         content = height + TopPadding;
         FitSheet();
         ScrollTo(offset);
+        // The bar comes, goes or changes with the content: without this it stayed as it was until something else painted the panel.
+        if (ShowBar) Invalidate();
     }
 
     // item is on the sheet.
