@@ -53,6 +53,7 @@ class G9xMouse : IMouse
         G9xRegisters.SetLight(hidpp, light);
     }
 
+    public void ReleaseLight(Hidpp hidpp) { }
     public void SetRate(Hidpp hidpp, int hz) { G9xRegisters.SetRate(hidpp, hz); }
     public void SetInvert(Hidpp hidpp, bool on) { throw new RefusedException("This mouse can't invert its wheel"); }
     public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state) { return G9xRegisters.ReadPage(hidpp, state.Sector); }
@@ -123,6 +124,7 @@ class G5Mouse : IMouse
     {
         throw new RefusedException("G-Lite can't set this mouse's light yet");
     }
+    public void ReleaseLight(Hidpp hidpp) { }
     public void SetRate(Hidpp hidpp, int hz) { G9xRegisters.SetRate(hidpp, hz); }
     public void SetInvert(Hidpp hidpp, bool on) { throw new RefusedException("This mouse can't invert its wheel"); }
     public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state) { return null; }

@@ -185,6 +185,7 @@ class G300Mouse : IMouse
 
     public void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSettings want, MouseSettings sent) { }
     public void SetLight(Hidpp hidpp, MouseProtocol.State state, MouseLight light) { }
+    public void ReleaseLight(Hidpp hidpp) { }
     public void SetRate(Hidpp hidpp, int hz) { }
     public void SetInvert(Hidpp hidpp, bool on) { throw new NotSupportedException(); }
     public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state) { return ReadReport(hidpp, state.Profile[0] - FirstProfileReport); }

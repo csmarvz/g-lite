@@ -58,8 +58,6 @@ static class MouseProtocol
         public int[] Profiles = new int[0];
         // A mouse without 0x8070 whose 0x1300 has a logo LED that breathes: its index, or -1.
         public int LedLogo = -1;
-        // Whether G-Lite holds 0x1300's software control, taken for the logo and given back once it's left alone (ReleaseLogo).
-        public bool LedHeld;
         public bool HasLight { get { return Zones.Count > 0 || LedLogo >= 0; } }
         public byte[][] Buttons;
         public byte[] Current, Profile;
@@ -672,7 +670,7 @@ static class MouseProtocol
 
     public static void SetLight(Hidpp hidpp, State state, MouseLight light)
     {
-        if (state.LedLogo >= 0) { SetLogo(hidpp, state, light); return; }
+        if (state.LedLogo >= 0) { TakeLeds(hidpp); SetLogo(hidpp, state.LedLogo, light); return; }
         byte feature = hidpp.FeatureIndex(0x8070);
         foreach (var zone in state.Zones)
         {
@@ -686,22 +684,16 @@ static class MouseProtocol
     // the mode as two bytes (00 80, breathing), the brightness and the period in ms (two bytes each); brightness and speed showed on
     // the logo. The brightness is taken to be 0 to 255, since the logo read FF lit steadily as it came. Control goes back to the
     // firmware after (fn 3 00), as libratbag's driver does: the logo kept what was set and the DPI lights showed the DPI as before.
-    // Given back on each change, the logo flickered while a slider moved, so the page gives it back once the light is left alone.
-    static void SetLogo(Hidpp hidpp, State state, MouseLight light)
+    // Given back on each change, the logo flickered while a slider moved, so HidppMouse holds it until the page gives it back.
+    public static void SetLogo(Hidpp hidpp, int led, MouseLight light)
     {
-        byte feature = hidpp.FeatureIndex(0x1300);
         int brightness = light.Effect == 0x00 ? 0 : Math.Max(1, Math.Min(100, light.Bright)) * 255 / 100;
         int period = light.Effect == 0x0A ? Math.Max(1000, Math.Min(20000, light.Period)) : 0;
-        if (!state.LedHeld) hidpp.Call(feature, 3, 0x01);
-        state.LedHeld = true;
-        hidpp.Call(feature, 5, (byte)state.LedLogo, 0x00, 0x80, (byte)(brightness >> 8), (byte)brightness, (byte)(period >> 8),
-            (byte)period);
+        hidpp.Call(hidpp.FeatureIndex(0x1300), 5, (byte)led, 0x00, 0x80, (byte)(brightness >> 8), (byte)brightness,
+            (byte)(period >> 8), (byte)period);
     }
 
-    public static void ReleaseLogo(Hidpp hidpp, State state)
-    {
-        if (!state.LedHeld) return;
-        hidpp.Call(hidpp.FeatureIndex(0x1300), 3, 0x00);
-        state.LedHeld = false;
-    }
+    public static void TakeLeds(Hidpp hidpp) { hidpp.Call(hidpp.FeatureIndex(0x1300), 3, 0x01); }
+
+    public static void ReleaseLeds(Hidpp hidpp) { hidpp.Call(hidpp.FeatureIndex(0x1300), 3, 0x00); }
 }

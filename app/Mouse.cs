@@ -81,6 +81,8 @@ interface IMouse
     MouseProtocol.State Read(Hidpp hidpp);
     void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSettings want, MouseSettings sent);
     void SetLight(Hidpp hidpp, MouseProtocol.State state, MouseLight light);
+    // Gives back a light control SetLight kept (the original G502's 0x1300); nothing on the others.
+    void ReleaseLight(Hidpp hidpp);
     void SetRate(Hidpp hidpp, int hz);
     void SetInvert(Hidpp hidpp, bool on);
     byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state);
@@ -119,7 +121,23 @@ class HidppMouse : IMouse
         else MouseProtocol.SetDpi(hidpp, want.Dpi);
     }
 
-    public void SetLight(Hidpp hidpp, MouseProtocol.State state, MouseLight light) { MouseProtocol.SetLight(hidpp, state, light); }
+    // Whether G-Lite holds 0x1300's software control: here rather than in the State each load replaces, which forgot it was held.
+    // Only the page's work queue touches it.
+    bool ledsHeld;
+
+    public void SetLight(Hidpp hidpp, MouseProtocol.State state, MouseLight light)
+    {
+        if (state.LedLogo < 0) { MouseProtocol.SetLight(hidpp, state, light); return; }
+        if (!ledsHeld) { MouseProtocol.TakeLeds(hidpp); ledsHeld = true; }
+        MouseProtocol.SetLogo(hidpp, state.LedLogo, light);
+    }
+
+    public void ReleaseLight(Hidpp hidpp)
+    {
+        if (!ledsHeld) return;
+        MouseProtocol.ReleaseLeds(hidpp);
+        ledsHeld = false;
+    }
     public void SetRate(Hidpp hidpp, int hz) { MouseProtocol.SetRate(hidpp, hz); }
     public void SetInvert(Hidpp hidpp, bool on) { MouseProtocol.SetInvert(hidpp, on); }
     public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state)

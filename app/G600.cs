@@ -85,6 +85,7 @@ class G600Mouse : IMouse
 
     public void SendDpi(Hidpp hidpp, MouseProtocol.State state, MouseSettings want, MouseSettings sent) { throw ReadOnly(); }
     public void SetLight(Hidpp hidpp, MouseProtocol.State state, MouseLight light) { throw ReadOnly(); }
+    public void ReleaseLight(Hidpp hidpp) { }
     public void SetRate(Hidpp hidpp, int hz) { throw ReadOnly(); }
     public void SetInvert(Hidpp hidpp, bool on) { throw new NotSupportedException(); }
     public byte[] ReadProfile(Hidpp hidpp, MouseProtocol.State state) { throw ReadOnly(); }

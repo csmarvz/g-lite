@@ -19,6 +19,8 @@ What works, learned while adding the G305, G502 LIGHTSPEED, G510 and G512 X. Fol
 - Settings the device forgets when it turns off (like the wheel mode) need G-Lite to set them again: a timer on the device's screen that reads, and writes only when needed, catching timeouts so an asleep device logs nothing.
 - To learn what an unknown event or bit means, run a listener script in the background that stops on a file (`stop.flag`) rather than a timer, and let the user press things in a known order, with a picture of the order. Button spy on the G502 was mapped this way in one go.
 - Names the device doesn't give (which zone is which, which button is G7) need the user to look. Don't put a guess in the UI.
+- A device with no model id in 0x0003 (the original G502) is told by its USB id in the path (`FoundDevice.IsOriginalG502`). The demo and the traces set `Models` by hand, so only the real device shows whether the check works.
+- A light that needs software control (0x1300 fn 3 `01`) can stop the device's own lights while it's held: the G502's DPI lights stopped showing the DPI. Hold it while changes come and give it back after a pause: given back after each change, the logo flickered.
 
 ## 3. Build it behind the traces
 

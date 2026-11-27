@@ -211,7 +211,8 @@ class MousePage : DevicePage
         speed.Changed += (s, e) =>
         {
             var edited = Light();
-            var effect = MouseProtocol.EffectById(edited.Effect);
+            var effect = Effects.FirstOrDefault(info => info.Id == edited.Effect);
+            if (effect == null || !effect.Speed) return;
             edited.Period = SpeedScale.Period(speed.Value, effect.MinPeriod, effect.MaxPeriod);
             Changed(false);
         };
@@ -324,7 +325,7 @@ class MousePage : DevicePage
         if (!canBind && showingButtons) ShowView(false);
         PlaceView();
         // The light as saved on the mouse when there's no record of it shows no effect, so the row says why.
-        effectText.Hint.Text = found.LightIsLiveOnly ? "Live only: not saved to the mouse"
+        effectText.Hint.Text = LiveOnly ? "Live only: not saved to the mouse"
             : lit && light == null ? "As saved on the mouse"
             : "";
         var effectNames = Effects.Select(info => info.Name).ToList();
@@ -410,7 +411,7 @@ class MousePage : DevicePage
         if (loading || state == null) return;
         // A live-only light changed alone would turn Save on and the status to not saved until it's kept: they flickered while a
         // slider moved.
-        if (!found.LightIsLiveOnly || !SavedButLight) dirty = true;
+        if (!LiveOnly || !SavedButLight) dirty = true;
         sequence++;
         Edited();
         RefreshControls();
@@ -504,7 +505,7 @@ class MousePage : DevicePage
     void Save()
     {
         var want = current.Clone();
-        if (found.LightIsLiveOnly) want.Light = null;
+        if (LiveOnly) want.Light = null;
         var deviceState = state;
         debounce.Stop();
         saveButton.Enabled = false;
@@ -539,7 +540,11 @@ class MousePage : DevicePage
         saveButton.Enabled = false;
         var deviceState = state;
         ShowStatus("Switching to P" + sector + "…");
-        RunOnDevice(hidpp => MouseProtocol.RunProfile(hidpp, deviceState, sector), () => Load());
+        RunOnDevice(hidpp => MouseProtocol.RunProfile(hidpp, deviceState, sector), () => Load(), message =>
+        {
+            ShowStatus(message, true);
+            Load();
+        });
     }
 
     void Restore(byte[] data, string what)
@@ -580,15 +585,19 @@ class MousePage : DevicePage
             if (want.Light != null && deviceState.HasLight && (sent == null || !want.Light.Same(sent.Light)))
             {
                 mouse.SetLight(hidpp, deviceState, want.Light);
-                lightSet = !found.LightIsLiveOnly && !want.Light.Same(deviceState.Light);
+                lightSet = !LiveOnly && !want.Light.Same(deviceState.Light);
             }
             sent = want;
         }, () =>
         {
-            if (deviceState.LedHeld) { ledRelease.Stop(); ledRelease.Start(); }
+            ReleaseSoon(deviceState);
             if (startedAt != sequence) return;
-            if (found.LightIsLiveOnly && want.Light != null) Keep(want.Light);
+            if (LiveOnly && want.Light != null) Keep(want.Light);
             if (!again) ClearStatus();
+        }, message =>
+        {
+            ReleaseSoon(deviceState);
+            ShowStatus(message, true);
         });
     }
 
@@ -698,13 +707,19 @@ class MousePage : DevicePage
         if (showingButtons) StartSpy();
     }
 
-    // The logo's control goes back to the mouse a second after the light was set last (MouseProtocol.SetLogo), or when the screen
-    // is left.
+    // The logo's control goes back to the mouse a second after the light was set last (HidppMouse.SetLight), or when the screen
+    // is left or closed. Queued after any send, so it comes after the light; ReleaseLight does nothing when control isn't held.
+    void ReleaseSoon(MouseProtocol.State deviceState)
+    {
+        if (deviceState.LedLogo < 0) return;
+        ledRelease.Stop();
+        ledRelease.Start();
+    }
+
     void ReleaseLogo()
     {
-        var deviceState = state;
-        if (deviceState == null || !deviceState.LedHeld) return;
-        RunOnDevice(hidpp => MouseProtocol.ReleaseLogo(hidpp, deviceState), null, message => { });
+        if (state == null || state.LedLogo < 0) return;
+        RunOnDevice(hidpp => mouse.ReleaseLight(hidpp), null, message => { });
     }
 
     public override void Hidden()
@@ -743,7 +758,9 @@ class MousePage : DevicePage
         if (disposing)
         {
             watch.Dispose();
+            ledRelease.Stop();
             ledRelease.Dispose();
+            ReleaseLogo();
             pressedTimer.Dispose();
             if (spy != null) spy.Dispose();
         }
@@ -786,7 +803,11 @@ class MousePage : DevicePage
     string LightKey { get { return "lighting." + found.SettingsKey; } }
 
     // A G305 loses its live light when switched off, and a scan remakes its screen: the new one reads the mouse to send it again.
-    protected override bool SendsAgain { get { return base.SendsAgain || (found.LightIsLiveOnly && KeptLight() != null); } }
+    protected override bool SendsAgain { get { return base.SendsAgain || (LiveOnly && KeptLight() != null); } }
+
+    // A light G-Lite keeps and sends again, the mouse keeping none in its profile: the G305's (0x8070) and a 0x1300 logo's, like the
+    // original G502's, which is known before the mouse is read.
+    bool LiveOnly { get { return found.LightIsLiveOnly || found.IsOriginalG502 || (state != null && state.LedLogo >= 0); } }
 
     MouseLight KeptLight()
     {
@@ -849,7 +870,7 @@ class MousePage : DevicePage
                 buttonRows.Recording = -1;
                 if (!lightSet || current.Light == null) current.Light = read.Light == null ? null : read.Light.Clone();
                 if (!lightSet) dirty = false;
-                var kept = found.LightIsLiveOnly && read.HasLight ? KeptLight() : null;
+                var kept = LiveOnly && read.HasLight ? KeptLight() : null;
                 if (kept != null)
                 {
                     current.Light = kept;

@@ -92,7 +92,7 @@ class MainWindow : Form
         var quit = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "power", Text = "Quit" },
             10, bottom, SidebarInnerWidth, 36);
         quit.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-        quit.Click += (s, e) => { HidePanel(); WaitAll(); Application.Exit(); };
+        quit.Click += (s, e) => Quit();
         quit.TabIndex = 103;
         bottom -= 40;
         settingsButton = Ui.Add(side, new FlatButton { Style = ButtonStyle.Ghost, Icon = "gear", Text = "Settings" },
@@ -1003,6 +1003,15 @@ class MainWindow : Form
         Settings.Set("tray-tip-shown", "1");
     }
 
+    // The screen shown is left first and every device's queue finished, so what it hands back on leaving (a mouse's light control,
+    // a keyboard's lighting) reaches the device: the tray's Quit didn't wait.
+    public void Quit()
+    {
+        HidePanel();
+        WaitAll();
+        Application.Exit();
+    }
+
     public void HidePanel()
     {
         Hide();
@@ -1082,7 +1091,7 @@ class MainWindow : Form
                 if (panel.Listed.Count > 0) menu.Items.Add(new ToolStripSeparator());
                 menu.Items.Add("Scan for devices", null, (s, e) => panel.Rescan());
                 menu.Items.Add("Settings", null, (s, e) => panel.OpenSettings());
-                menu.Items.Add("Quit G-Lite", null, (s, e) => { tray.Visible = false; Application.Exit(); });
+                menu.Items.Add("Quit G-Lite", null, (s, e) => { tray.Visible = false; panel.Quit(); });
                 float scale = WindowHelpers.At(Cursor.Position);
                 menu.Padding = new Padding((int)(4 * scale), (int)(6 * scale), (int)(4 * scale), (int)(6 * scale));
                 menu.Items.Insert(0, new ToolStripLabel { AutoSize = false, Height = (int)(5 * scale), Enabled = false });

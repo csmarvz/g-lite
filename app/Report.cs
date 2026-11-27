@@ -14,6 +14,8 @@ static class Report
     {
         { 0x0001, new[] { 0, 1 } },
         { 0x0003, new[] { 0, 1 } },
+        // Read on the original G502 (docs/G502.md): the count, each LED's info and state, and who controls them.
+        { 0x1300, new[] { 0, 1, 2, 4 } },
         { 0x1990, new[] { 0, 2, 3, 7, 8 } },
         { 0x1814, new[] { 0 } },
         { 0x1815, new[] { 0, 1 } },
@@ -404,6 +406,17 @@ static class Report
                 for (int host = 0; host < 3; host++) reader.Show("computer " + (host + 1), id, 0, (byte)host);
                 break;
             case 0x4521: reader.Show("can disable", id, 0); reader.Show("disabled", id, 1); break;
+            case 0x1300:
+                {
+                    var count = reader.Show("count", id, 0);
+                    for (int led = 0; count != null && led < Math.Min((int)count[0], 8); led++)
+                    {
+                        reader.Show("LED " + led, id, 1, (byte)led);
+                        reader.Show("LED " + led + " state", id, 4, (byte)led);
+                    }
+                    reader.Show("control", id, 2);
+                    break;
+                }
             case 0x8010:
             case 0x8020: reader.Show("count", id, 0); break;
             case 0x8040: reader.Show("info", id, 0); reader.Show("now", id, 1); break;

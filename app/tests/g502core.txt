@@ -136,7 +136,6 @@ press Save to P1
   8100 fn5  00 01 00 F0
   8100 fn5
   8100 fnB
-  1300 fn3  01
   1300 fn5  02 00 80
   = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2100 DPI=40 Report rate=500 Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P1 [Revert (off)] [Save to P1 (off)]
 pick Onboard profile P3
@@ -171,7 +170,6 @@ pick Onboard profile P3
   8100 fn5  00 03 00 F0
   8100 fn5
   8100 fnB
-  1300 fn3  01
   1300 fn5  02 00 80
   = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=7150 DPI=141 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert (off)] [Save to P3 (off)]
 pick DPI stage 8800
@@ -212,7 +210,6 @@ pick Onboard profile P2
   8100 fn5  00 02 00 F0
   8100 fn5
   8100 fnB
-  1300 fn3  01
   1300 fn5  02 00 80
   = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P2 [Revert (off)] [Save to P2 (off)]
 pick Onboard profile P3
@@ -247,7 +244,6 @@ pick Onboard profile P3
   8100 fn5  00 03 00 F0
   8100 fn5
   8100 fnB
-  1300 fn3  01
   1300 fn5  02 00 80
   = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=7150 DPI=141 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert (off)] [Save to P3 (off)]
 pick DPI stage 10250
@@ -338,7 +334,6 @@ press Save to P3
   8100 fn5  00 03 00 F0
   8100 fn5
   8100 fnB
-  1300 fn3  01
   1300 fn5  02 00 80
   = status "Saved to the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert (off)] [Save to P3 (off)]
 menu Backups > Restore the factory profile to P3
@@ -443,7 +438,6 @@ menu Backups > Restore the factory profile to P3
   8100 fn5  00 03 00 F0
   8100 fn5
   8100 fnB
-  1300 fn3  01
   1300 fn5  02 00 80
   = status "Restored the factory profile to P3" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=2400 DPI=46 Report rate=500 Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P3 [Revert (off)] [Save to P3 (off)]
 the mouse's profile button
@@ -478,6 +472,8 @@ the mouse's profile button
   8100 fn5  00 02 00 F0
   8100 fn5
   8100 fnB
-  1300 fn3  01
   1300 fn5  02 00 80
+  = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P2 [Revert (off)] [Save to P2 (off)]
+the screen left
+  1300 fn3
   = status "Matches the mouse" [Report] [Backups] G-Lite preset=– [New…] […] View=Settings DPI stage=1600 DPI=30 Report rate=1k Effect=Off Brightness=40 (off) Speed=80 (off) Onboard profile=P2 [Revert (off)] [Save to P2 (off)]

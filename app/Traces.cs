@@ -1270,6 +1270,7 @@ static class Traces
                 device.Call(device.FeatureIndex(0x8100), 3, 0x00, 0x02);
                 ((MousePage)script.Page).Heard(device.FeatureIndex(0x8100), 0);
             });
+            script.Do("the screen left", () => ((MousePage)script.Page).Hidden());
             return script.Text;
         }
     }
